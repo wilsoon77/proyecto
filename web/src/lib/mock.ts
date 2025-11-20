@@ -1,0 +1,93 @@
+import type { Product } from "@/types"
+
+// Utilidad para crear un SVG embebido como placeholder
+function svgPlaceholder(text: string, bg = '#F3F4F6', fg = '#111827') {
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='800' height='800'>
+    <rect width='100%' height='100%' fill='${bg}' />
+    <text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-size='64' fill='${fg}' font-family='sans-serif'>${text}</text>
+  </svg>`
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`
+}
+
+export const MOCK_PRODUCTS: Product[] = [
+  {
+    id: 1,
+    name: "Pan Francés",
+    slug: "pan-frances",
+    description: "Crocante por fuera, suave por dentro. Ideal para el desayuno.",
+    price: 2.5,
+    discount: 0,
+    mainImage: svgPlaceholder('Pan'),
+    imageUrl: svgPlaceholder('Pan'),
+    images: [svgPlaceholder('Pan 1'), svgPlaceholder('Pan 2'), svgPlaceholder('Pan 3')],
+    category: "pan",
+    stock: 20,
+    isAvailable: true,
+    isFeatured: true,
+    isNew: true,
+    rating: 4.6,
+    reviewCount: 28,
+    tags: ["popular", "desayuno"],
+    allergens: ["gluten"],
+  },
+  {
+    id: 2,
+    name: "Pan Dulce",
+    slug: "pan-dulce",
+    description: "Tradicional y esponjoso, la receta de la abuela.",
+    price: 3,
+    discount: 10,
+    mainImage: svgPlaceholder('Dulce'),
+    imageUrl: svgPlaceholder('Dulce'),
+    images: [svgPlaceholder('Dulce 1'), svgPlaceholder('Dulce 2')],
+    category: "dulces",
+    stock: 12,
+    isAvailable: true,
+    isFeatured: true,
+    isNew: false,
+    rating: 4.4,
+    reviewCount: 19,
+    tags: ["tradicional"],
+    allergens: ["gluten", "huevo"],
+  },
+  {
+    id: 3,
+    name: "Galletas Surtidas (Docena)",
+    slug: "galletas-surtidas-docena",
+    description: "Docena de galletas mixtas: chispas, vainilla y canela.",
+    price: 25,
+    discount: 0,
+    mainImage: svgPlaceholder('Galletas'),
+    imageUrl: svgPlaceholder('Galletas'),
+    images: [svgPlaceholder('Galletas 1'), svgPlaceholder('Galletas 2')],
+    category: "galletas",
+    stock: 6,
+    isAvailable: true,
+    isFeatured: false,
+    isNew: false,
+    rating: 4.8,
+    reviewCount: 45,
+    tags: ["para compartir"],
+    allergens: ["gluten", "leche"],
+  },
+  {
+    id: 4,
+    name: "Pastel Pequeño (4-6)",
+    slug: "pastel-pequeno",
+    description: "Pastel de vainilla con betún ligero, perfecto para reuniones.",
+    price: 120,
+    discount: 15,
+    mainImage: svgPlaceholder('Pastel'),
+    imageUrl: svgPlaceholder('Pastel'),
+    images: [svgPlaceholder('Pastel 1'), svgPlaceholder('Pastel 2'), svgPlaceholder('Pastel 3')],
+    category: "pasteles",
+    stock: 3,
+    isAvailable: true,
+    isFeatured: true,
+    isNew: false,
+    rating: 4.7,
+    reviewCount: 11,
+    tags: ["cumpleaños"],
+    allergens: ["gluten", "huevo", "leche"],
+  },
+]

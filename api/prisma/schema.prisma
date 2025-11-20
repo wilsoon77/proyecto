@@ -1,0 +1,193 @@
+// Prisma schema for PanaderIA backend (initial draft)
+// Adjust enums and indexes as needed.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // Use direct connection (no pooler) for migrations/introspection
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  READY
+  IN_DELIVERY
+  DELIVERED
+  CANCELLED
+  PICKED_UP
+}
+
+// Origen del producto: producido internamente o comprado (abarrotes)
+enum ProductOrigin {
+  PRODUCIDO
+  COMPRADO
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String
+  firstName     String
+  lastName      String
+  phone         String?  @db.VarChar(32)
+  role          UserRole @default(USER)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  addresses     Address[]
+  orders        Order[]
+  stockMovements StockMovement[]
+}
+
+model Address {
+  id           Int      @id @default(autoincrement())
+  user         User?    @relation(fields: [userId], references: [id])
+  userId       String?
+  street       String
+  city         String
+  state        String?
+  zone         String?
+  reference    String?
+  createdAt    DateTime @default(now())
+  orders       Order[]
+}
+
+model Category {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  slug        String    @unique
+  description String?   
+  products    Product[]
+}
+
+model Product {
+  id           Int        @id @default(autoincrement())
+  name         String
+  slug         String     @unique
+  description  String?
+  price        Decimal    @db.Decimal(10,2)
+  discountPct  Int?       // percentage
+  isNew        Boolean    @default(false)
+  category     Category   @relation(fields: [categoryId], references: [id])
+  categoryId   Int
+  origin       ProductOrigin @default(PRODUCIDO)
+  isActive     Boolean    @default(true)
+  images       ProductImage[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  orderItems   OrderItem[]
+  inventories  Inventory[]
+  stockMovements StockMovement[]
+}
+
+// Inventario por sucursal (bloqueo lógico): disponible = quantity - reserved
+model Inventory {
+  id         Int      @id @default(autoincrement())
+  product    Product  @relation(fields: [productId], references: [id])
+  productId  Int
+  branch     Branch   @relation(fields: [branchId], references: [id])
+  branchId   Int
+  quantity   Int      @default(0)  // físico
+  reserved   Int      @default(0)  // comprometido (pedidos no retirados)
+  updatedAt  DateTime @updatedAt
+  createdAt  DateTime @default(now())
+  @@unique([productId, branchId])
+  @@index([branchId])
+  @@index([productId])
+}
+
+// Tipos de movimiento (cantidad siempre positiva, tipo define operación)
+enum StockMovementType {
+  PRODUCCION      // Suma (+)
+  COMPRA          // Suma (+)
+  VENTA           // Resta (-)
+  TRANSFERENCIA   // Resta en A, Suma en B
+  MERMA           // Resta (-) conocida
+  PERDIDA_ROBO    // Resta (-) desconocida
+  SOBRANTE        // Suma (+) ajuste positivo
+}
+
+model StockMovement {
+  id           Int               @id @default(autoincrement())
+  product      Product           @relation(fields: [productId], references: [id])
+  productId    Int
+  fromBranch   Branch?           @relation("FromBranch", fields: [fromBranchId], references: [id])
+  fromBranchId Int?
+  toBranch     Branch?           @relation("ToBranch", fields: [toBranchId], references: [id])
+  toBranchId   Int?
+  type         StockMovementType
+  quantity     Int
+  user         User?             @relation(fields: [userId], references: [id])
+  userId       String?
+  referenceId  String?
+  note         String?
+  createdAt    DateTime          @default(now())
+  @@index([productId])
+  @@index([createdAt])
+  @@index([type, createdAt])
+}
+
+model ProductImage {
+  id        Int      @id @default(autoincrement())
+  product   Product  @relation(fields: [productId], references: [id])
+  productId Int
+  url       String
+  position  Int      @default(0)
+}
+
+model Branch {
+  id        Int      @id @default(autoincrement())
+  name      String
+  slug      String    @unique
+  address   String
+  phone     String?
+  latitude  Float?
+  longitude Float?
+  createdAt DateTime  @default(now())
+  inventories Inventory[]
+  stockMovementsFrom StockMovement[] @relation("FromBranch")
+  stockMovementsTo   StockMovement[] @relation("ToBranch")
+  orders     Order[]
+}
+
+model Order {
+  id             Int          @id @default(autoincrement())
+  orderNumber    String       @unique
+  user           User?        @relation(fields: [userId], references: [id])
+  userId         String?
+  status         OrderStatus  @default(PENDING)
+  subtotal       Decimal      @db.Decimal(10,2)
+  deliveryFee    Decimal      @db.Decimal(10,2)
+  discount       Decimal      @db.Decimal(10,2) @default(0)
+  total          Decimal      @db.Decimal(10,2)
+  paymentMethod  String?
+  shippingMethod String?
+  branch         Branch?      @relation(fields: [branchId], references: [id])
+  branchId       Int?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  items          OrderItem[]
+  address        Address?     @relation(fields: [addressId], references: [id])
+  addressId      Int?
+}
+
+model OrderItem {
+  id        Int      @id @default(autoincrement())
+  order     Order    @relation(fields: [orderId], references: [id])
+  orderId   Int
+  product   Product  @relation(fields: [productId], references: [id])
+  productId Int
+  quantity  Int
+  unitPrice Decimal  @db.Decimal(10,2)
+}

@@ -1,0 +1,39 @@
+# Root ignore for monorepo
+
+# General
+.env
+.env.*
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Nested git (avoid accidental submodule linkage)
+api/.git/
+web/.git/
+
+# Backend (api)
+api/node_modules/
+api/dist/
+api/coverage/
+api/openapi.json
+api/jest-cache/
+api/jest-temp/
+
+# Prisma
+api/prisma/*.db
+api/prisma/migrations/**/steps.json
+
+# Frontend (web)
+web/node_modules/
+web/.next/
+web/out/
+web/build/
+web/dist/
+web/.turbo/
+
+# Documentation outputs
+documentation/.cache/
+documentation/build/

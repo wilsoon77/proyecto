@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service.js';
 import { ReserveOrderDto } from './dto.js';
 import { StockMovementType } from '@prisma/client';
+import { LoggerService } from '../common/logger/logger.service.js';
 
 function formatOrderNumber(id: number) {
   return 'ORD-' + id.toString().padStart(6, '0');
@@ -9,7 +10,10 @@ function formatOrderNumber(id: number) {
 
 @Injectable()
 export class OrdersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly logger: LoggerService,
+  ) {}
 
   async reserve(dto: ReserveOrderDto, userId?: string) {
     const branch = await this.prisma.branch.findUnique({ where: { slug: dto.branchSlug } });
@@ -56,11 +60,14 @@ export class OrdersService {
         });
         const price = Number(p.price);
         subtotal += price * item.quantity;
-        await tx.orderItem.create({ data: { orderId: created.id, productId: p.id, quantity: item.quantity, unitPrice: p.price } });
+        await tx.orderItem.create({ data: { orderId: created.id, productId: p.id, productName: p.name, quantity: item.quantity, unitPrice: p.price } });
       }
       const updated = await tx.order.update({ where: { id: created.id }, data: { orderNumber: formatOrderNumber(created.id), subtotal, total: subtotal } });
       return updated;
     });
+
+    // Auditoría
+    this.logger.auditOrderCreated(order.id, userId, Number(order.total));
 
     return order;
   }
@@ -79,6 +86,9 @@ export class OrdersService {
       }
       await tx.order.update({ where: { id: order.id }, data: { status: 'CANCELLED', userId: userId ?? order.userId } });
     });
+
+    // Auditoría
+    this.logger.auditOrderCancelled(orderId, userId);
 
     return { ok: true };
   }
@@ -100,6 +110,9 @@ export class OrdersService {
       }
       await tx.order.update({ where: { id: order.id }, data: { status: 'DELIVERED', userId: userId ?? order.userId } });
     });
+
+    // Auditoría
+    this.logger.auditOrderPickup(orderId, userId);
 
     return { ok: true };
   }
@@ -124,9 +137,63 @@ export class OrdersService {
     };
   }
 
-  async detail(id: number) {
+  async detail(id: number, userId?: string) {
     const order = await this.prisma.order.findUnique({ where: { id }, include: { items: true, branch: true } });
     if (!order) throw new NotFoundException('Orden no encontrada');
+    
+    // Validar que el usuario solo pueda ver sus propias órdenes (excepto ADMIN)
+    if (userId && order.userId !== userId) {
+      throw new NotFoundException('Orden no encontrada');
+    }
+    
     return order;
+  }
+
+  async findByUser(userId: string, filters: { status?: string; page?: number; pageSize?: number }) {
+    const where: any = { userId };
+    if (filters.status) where.status = filters.status;
+    
+    const page = Math.max(1, filters.page ?? 1);
+    const pageSize = Math.max(1, Math.min(100, filters.pageSize ?? 10));
+    const [total, data] = await this.prisma.$transaction([
+      this.prisma.order.count({ where }),
+      this.prisma.order.findMany({ 
+        where, 
+        orderBy: { createdAt: 'desc' }, 
+        skip: (page - 1) * pageSize, 
+        take: pageSize, 
+        include: { items: true, branch: true } 
+      }),
+    ]);
+    return {
+      data,
+      meta: { total, pageCount: Math.ceil(total / pageSize) || 0, page, pageSize },
+    };
+  }
+
+  async confirm(orderId: number) {
+    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) throw new NotFoundException('Orden no encontrada');
+    if (order.status !== 'PENDING') throw new BadRequestException('Solo se pueden confirmar órdenes PENDING');
+    
+    return this.prisma.order.update({
+      where: { id: orderId },
+      data: { status: 'CONFIRMED' },
+    });
+  }
+
+  async updateStatus(orderId: number, newStatus: string) {
+    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) throw new NotFoundException('Orden no encontrada');
+    
+    const validStatuses = ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'IN_DELIVERY', 'DELIVERED', 'CANCELLED', 'PICKED_UP'];
+    if (!validStatuses.includes(newStatus)) {
+      throw new BadRequestException(`Estado inválido. Debe ser uno de: ${validStatuses.join(', ')}`);
+    }
+    
+    return this.prisma.order.update({
+      where: { id: orderId },
+      data: { status: newStatus as any },
+    });
   }
 }

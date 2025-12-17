@@ -2,10 +2,14 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateStockMovementDto } from './dto.js';
 import { StockMovementType } from '@prisma/client';
+import { LoggerService } from '../common/logger/logger.service.js';
 
 @Injectable()
 export class StockMovementsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly logger: LoggerService,
+  ) {}
 
   async create(dto: CreateStockMovementDto, userId?: string) {
     const product = await this.prisma.product.findUnique({ where: { slug: dto.productSlug } });
@@ -81,6 +85,17 @@ export class StockMovementsService {
           note: dto.note,
         },
       });
+
+      // Auditoría
+      this.logger.auditStockMovement(
+        product.id,
+        dto.type,
+        dto.quantity,
+        fromBranch?.id,
+        toBranch?.id,
+        userId
+      );
+
       return movement;
     });
   }

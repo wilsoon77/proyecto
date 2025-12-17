@@ -3,6 +3,8 @@ import { StockMovementsService } from './stock-movements.service.js';
 import { CreateStockMovementDto } from './dto.js';
 import { ApiTags, ApiBody, ApiBearerAuth, ApiQuery, ApiOperation, ApiResponse, ApiBadRequestResponse } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
+import { RolesGuard } from '../auth/roles.guard.js';
+import { Roles } from '../auth/roles.decorator.js';
 import type { Response } from 'express';
 import { setPaginationHeaders } from '../common/utils/pagination.util.js';
 
@@ -12,9 +14,10 @@ export class StockMovementsController {
   constructor(private readonly service: StockMovementsService) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'EMPLOYEE')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Registrar movimiento', description: 'Crea un movimiento de inventario según el tipo indicado.' })
+  @ApiOperation({ summary: 'Registrar movimiento', description: 'Crea un movimiento de inventario (solo ADMIN o EMPLOYEE).' })
   @ApiBody({ type: CreateStockMovementDto })
   @ApiResponse({ status: 201, description: 'Movimiento creado', content: { 'application/json': { examples: { ejemplo: { value: { id: 1, type: 'PRODUCCION', quantity: 10 } } } } } })
   @ApiBadRequestResponse({ description: 'Validaciones de negocio', schema: { example: { statusCode: 400, error: 'Bad Request', message: 'fromBranchSlug requerido' } } })
@@ -23,9 +26,10 @@ export class StockMovementsController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'EMPLOYEE')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Listar movimientos', description: 'Listado paginado con filtros por producto, sucursal, tipo y fecha.' })
+  @ApiOperation({ summary: 'Listar movimientos', description: 'Listado paginado de movimientos (solo ADMIN o EMPLOYEE).' })
   @ApiQuery({ name: 'productSlug', required: false })
   @ApiQuery({ name: 'branchSlug', required: false })
   @ApiQuery({ name: 'type', required: false })

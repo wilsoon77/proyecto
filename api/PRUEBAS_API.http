@@ -1,0 +1,413 @@
+### ========================================
+### PRUEBAS API - PanaderIA Backend
+### ========================================
+### Instrucciones:
+### 1. Instala la extensión "REST Client" en VS Code
+### 2. El servidor debe estar corriendo en http://localhost:4000
+### 3. Haz clic en "Send Request" sobre cada petición
+### 4. Los tokens se guardan automáticamente en variables
+### ========================================
+
+@baseUrl = http://localhost:4000
+@adminEmail = admin@panaderia.com
+@adminPassword = Admin123!
+@customerEmail = customer@panaderia.com
+@customerPassword = Customer123!
+
+### Variables que se actualizan automáticamente
+@adminToken = {{login-admin.response.body.accessToken}}
+@customToken = {{login-customer.response.body.accessToken}}
+@categorySlug = {{create-category.response.body.slug}}
+@branchId = {{create-branch.response.body.id}}
+@productSlug = {{create-product.response.body.slug}}
+@userId = {{create-user.response.body.id}}
+@addressId = {{create-address.response.body.id}}
+@orderId = {{reserve-order.response.body.id}}
+
+### ========================================
+### 1. AUTENTICACIÓN (Auth)
+### ========================================
+
+### 1.1 Registrar nuevo cliente
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "{{customerEmail}}",
+  "password": "{{customerPassword}}",
+  "firstName": "Juan",
+  "lastName": "Pérez",
+  "phone": "+58 424-1234567"
+}
+
+### 1.2 Login como ADMIN (crear este usuario manualmente en DB primero)
+# @name login-admin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
+}
+
+### 1.3 Login como CUSTOMER
+# @name login-customer
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{customerEmail}}",
+  "password": "{{customerPassword}}"
+}
+
+### 1.4 Ver perfil actual (requiere token)
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{adminToken}}
+
+### 1.5 Refresh token
+POST {{baseUrl}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{login-admin.response.body.refreshToken}}"
+}
+
+### ========================================
+### 2. CATEGORÍAS (Categories) - Solo ADMIN
+### ========================================
+
+### 2.1 Crear categoría
+# @name create-category
+POST {{baseUrl}}/categories
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Pan Dulce",
+  "slug": "pan-dulce",
+  "description": "Panes dulces tradicionales mexicanos"
+}
+
+### 2.2 Listar categorías (público)
+GET {{baseUrl}}/categories
+
+### 2.3 Ver categoría por slug (público)
+GET {{baseUrl}}/categories/{{categorySlug}}
+
+### 2.4 Listar productos de una categoría
+GET {{baseUrl}}/categories/{{categorySlug}}/products?page=1&pageSize=20&sort=precio-asc
+
+### 2.5 Actualizar categoría
+PATCH {{baseUrl}}/categories/{{categorySlug}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "description": "Panes dulces artesanales mexicanos"
+}
+
+### 2.5 Eliminar categoría (solo si no tiene productos)
+DELETE {{baseUrl}}/categories/{{categorySlug}}
+Authorization: Bearer {{adminToken}}
+
+### ========================================
+### 3. SUCURSALES (Branches) - Solo ADMIN
+### ========================================
+
+### 3.1 Crear sucursal
+# @name create-branch
+POST {{baseUrl}}/branches
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Sucursal Centro",
+  "slug": "sucursal-centro",
+  "address": "Av. Principal #123, Centro",
+  "phone": "+58 424-1234567",
+  "latitude": 10.4806,
+  "longitude": -66.9036
+}
+
+### 3.2 Listar sucursales (público)
+GET {{baseUrl}}/branches
+
+### 3.3 Ver sucursal por ID (público)
+GET {{baseUrl}}/branches/{{branchId}}
+
+### 3.4 Actualizar sucursal
+PATCH {{baseUrl}}/branches/{{branchId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "phone": "+58 424-9999999"
+}
+
+### 3.5 Eliminar sucursal (solo si no tiene inventario)
+DELETE {{baseUrl}}/branches/{{branchId}}
+Authorization: Bearer {{adminToken}}
+
+### ========================================
+### 4. PRODUCTOS (Products)
+### ========================================
+
+### 4.1 Listar productos destacados (homepage)
+GET {{baseUrl}}/products/featured?limit=10
+
+### 4.2 Crear producto (ADMIN)
+# @name create-product
+POST {{baseUrl}}/products
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "sku": "CONCHA-001",
+  "name": "Concha de Vainilla",
+  "slug": "concha-vainilla",
+  "description": "Pan dulce tradicional mexicano con cobertura de vainilla",
+  "price": 12.50,
+  "discountPct": 10,
+  "isNew": true,
+  "categoryId": 1,
+  "origin": "PRODUCIDO"
+}
+
+### 4.3 Listar productos (público con filtros)
+GET {{baseUrl}}/products?search=concha&category=pan-dulce&sort=precio-asc&page=1&pageSize=10
+
+### 4.3 Ver producto por slug (público)
+GET {{baseUrl}}/products/{{productSlug}}
+
+### 4.4 Actualizar producto (ADMIN)
+PATCH {{baseUrl}}/products/{{productSlug}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "price": 15.00,
+  "discountPct": 15
+}
+
+### 4.5 Desactivar producto (ADMIN)
+POST {{baseUrl}}/products/{{productSlug}}/deactivate
+Authorization: Bearer {{adminToken}}
+
+### 4.6 Eliminar producto (ADMIN)
+DELETE {{baseUrl}}/products/{{productSlug}}
+Authorization: Bearer {{adminToken}}
+
+### ========================================
+### 5. INVENTARIO (Inventory)
+### ========================================
+
+### 5.1 Listar inventario por sucursal
+GET {{baseUrl}}/inventory?branchSlug=sucursal-centro&productSlug=concha-vainilla
+
+### ========================================
+### 6. MOVIMIENTOS DE STOCK (Stock Movements)
+### ========================================
+
+### 6.1 Crear movimiento - PRODUCCION (agrega stock)
+POST {{baseUrl}}/stock-movements
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "productSlug": "concha-vainilla",
+  "toBranchSlug": "sucursal-centro",
+  "type": "PRODUCCION",
+  "quantity": 50,
+  "note": "Producción matutina"
+}
+
+### 6.2 Crear movimiento - TRANSFERENCIA (entre sucursales)
+POST {{baseUrl}}/stock-movements
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "productSlug": "concha-vainilla",
+  "fromBranchSlug": "sucursal-centro",
+  "toBranchSlug": "sucursal-norte",
+  "type": "TRANSFERENCIA",
+  "quantity": 10,
+  "note": "Transferencia inter-sucursales"
+}
+
+### 6.3 Listar movimientos de stock
+GET {{baseUrl}}/stock-movements?productSlug=concha-vainilla&branchSlug=sucursal-centro&page=1
+
+### ========================================
+### 7. ÓRDENES (Orders)
+### ========================================
+
+### 7.1 Reservar orden (CUSTOMER)
+# @name reserve-order
+POST {{baseUrl}}/orders/reserve
+Authorization: Bearer {{customToken}}
+Content-Type: application/json
+
+{
+  "branchSlug": "sucursal-centro",
+  "paymentMethod": "EFECTIVO",
+  "items": [
+    {
+      "productSlug": "concha-vainilla",
+      "quantity": 3
+    }
+  ]
+}
+
+### 7.2 Ver MIS órdenes (cliente autenticado)
+GET {{baseUrl}}/orders/my-orders?page=1&pageSize=10
+Authorization: Bearer {{customToken}}
+
+### 7.3 Listar TODAS las órdenes (ADMIN con filtros)
+GET {{baseUrl}}/orders?branchSlug=sucursal-centro&status=PENDING&page=1&pageSize=10
+Authorization: Bearer {{adminToken}}
+
+### 7.4 Ver detalle de orden (usuario ve solo sus órdenes, ADMIN ve todas)
+GET {{baseUrl}}/orders/{{orderId}}
+Authorization: Bearer {{customToken}}
+
+### 7.4 Cancelar orden (libera reserva)
+POST {{baseUrl}}/orders/{{orderId}}/cancel
+Authorization: Bearer {{customToken}}
+
+### 7.5 Entregar orden (descuenta inventario)
+POST {{baseUrl}}/orders/{{orderId}}/pickup
+Authorization: Bearer {{adminToken}}
+
+### ========================================
+### 8. USUARIOS ADMIN (Users) - Solo ADMIN
+### ========================================
+
+### 8.1 Crear usuario con rol específico (ADMIN)
+# @name create-user
+POST {{baseUrl}}/users
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "email": "empleado@panaderia.com",
+  "password": "Empleado123!",
+  "firstName": "María",
+  "lastName": "González",
+  "phone": "+58 424-7777777",
+  "role": "EMPLOYEE"
+}
+
+### 8.2 Listar todos los usuarios (ADMIN)
+GET {{baseUrl}}/users
+Authorization: Bearer {{adminToken}}
+
+### 8.3 Ver usuario por ID (ADMIN)
+GET {{baseUrl}}/users/{{userId}}
+Authorization: Bearer {{adminToken}}
+
+### 8.4 Actualizar usuario (ADMIN)
+PATCH {{baseUrl}}/users/{{userId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "role": "ADMIN",
+  "phone": "+58 424-8888888"
+}
+
+### 8.5 Desactivar usuario (ADMIN)
+DELETE {{baseUrl}}/users/{{userId}}/deactivate
+Authorization: Bearer {{adminToken}}
+
+### 8.6 Reactivar usuario (ADMIN)
+POST {{baseUrl}}/users/{{userId}}/reactivate
+Authorization: Bearer {{adminToken}}
+
+### ========================================
+### 9. DIRECCIONES (Addresses)
+### ========================================
+
+### 9.1 Crear dirección (usuario autenticado)
+# @name create-address
+POST {{baseUrl}}/addresses
+Authorization: Bearer {{customToken}}
+Content-Type: application/json
+
+{
+  "street": "Calle 5 #123",
+  "city": "Caracas",
+  "state": "Distrito Capital",
+  "zone": "Centro",
+  "reference": "Edificio azul, piso 3"
+}
+
+### 9.2 Listar mis direcciones (usuario normal ve solo las suyas)
+GET {{baseUrl}}/addresses
+Authorization: Bearer {{customToken}}
+
+### 9.3 Listar TODAS las direcciones (ADMIN ve todas)
+GET {{baseUrl}}/addresses
+Authorization: Bearer {{adminToken}}
+
+### 9.4 Ver dirección específica
+GET {{baseUrl}}/addresses/{{addressId}}
+Authorization: Bearer {{customToken}}
+
+### 9.5 Actualizar dirección
+PATCH {{baseUrl}}/addresses/{{addressId}}
+Authorization: Bearer {{customToken}}
+Content-Type: application/json
+
+{
+  "reference": "Edificio azul, piso 4, apartamento 4B"
+}
+
+### 9.6 Eliminar dirección (solo si no tiene pedidos)
+DELETE {{baseUrl}}/addresses/{{addressId}}
+Authorization: Bearer {{customToken}}
+
+### ========================================
+### 10. SALUD Y MÉTRICAS
+### ========================================
+
+### 10.1 Health check (público)
+GET {{baseUrl}}/health
+
+### 10.2 Métricas (solo ADMIN)
+GET {{baseUrl}}/metrics
+Authorization: Bearer {{adminToken}}
+
+### ========================================
+### NOTAS IMPORTANTES:
+### ========================================
+### 
+### 1. ORDEN DE EJECUCIÓN RECOMENDADO:
+###    a) Login admin (1.2)
+###    b) Crear categoría (2.1)
+###    c) Crear sucursal (3.1)
+###    d) Crear producto (4.1)
+###    e) Agregar stock (6.1)
+###    f) Registrar cliente (1.1)
+###    g) Login cliente (1.3)
+###    h) Crear dirección (9.1)
+###    i) Reservar orden (7.1)
+###
+### 2. CREAR USUARIO ADMIN MANUALMENTE:
+###    - Usa Prisma Studio: npx prisma studio
+###    - O SQL directo en Supabase
+###    - Email: admin@panaderia.com
+###    - Password hash de "Admin123!" usando bcryptjs
+###    - Role: ADMIN
+###
+### 3. SWAGGER DOCS:
+###    - Abre http://localhost:4000/docs
+###    - Prueba endpoints interactivamente
+###    - Autoriza con el token JWT
+###
+### 4. ERRORES COMUNES:
+###    - 401 Unauthorized: Token inválido o expirado
+###    - 403 Forbidden: No tienes permisos (rol incorrecto)
+###    - 400 Bad Request: Validación falló (revisa el body)
+###    - 404 Not Found: Recurso no existe
+###

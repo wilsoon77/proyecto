@@ -78,6 +78,19 @@ export class ProductsController {
     });
   }
 
+  @Get('featured')
+  @ApiOperation({ summary: 'Productos destacados', description: 'Productos nuevos o con descuento para homepage.' })
+  @ApiQuery({ name: 'limit', required: false, description: 'Cantidad de productos (default: 10, max: 50)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de productos destacados',
+    type: [ProductDto],
+  })
+  findFeatured(@Query('limit') limit?: string) {
+    const parsedLimit = limit ? Math.min(50, Number(limit)) : 10;
+    return this.productsService.findFeatured(parsedLimit);
+  }
+
   @Get(':slug')
   @ApiOperation({ summary: 'Obtener detalle de producto', description: 'Obtiene información completa de un producto por su slug.' })
   @ApiResponse({ status: 200, description: 'Producto encontrado', type: ProductDto })

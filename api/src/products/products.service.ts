@@ -146,25 +146,31 @@ export class ProductsService {
     return invAll.reduce((sum, i) => sum + (i.quantity - i.reserved), 0);
   }
 
-  async create(data: { name: string; slug: string; description?: string; price: number; categorySlug: string; origin?: string; isNew?: boolean }) {
+  async create(data: { sku: string; name: string; slug: string; description?: string; price: number; categorySlug: string; origin?: string; isNew?: boolean; isAvailable?: boolean }) {
     const category = await this.prisma.category.findUnique({ where: { slug: data.categorySlug } });
     if (!category) throw new BadRequestException('Categoría no encontrada');
     const existing = await this.prisma.product.findUnique({ where: { slug: data.slug } });
     if (existing) throw new BadRequestException('Slug ya existe');
-    const product = await this.prisma.product.create({ data: { name: data.name, slug: data.slug, description: data.description, price: data.price, categoryId: category.id, origin: (data.origin as any) ?? undefined, isNew: data.isNew ?? false } });
+    const existingSku = await this.prisma.product.findUnique({ where: { sku: data.sku } });
+    if (existingSku) throw new BadRequestException('SKU ya existe');
+    const product = await this.prisma.product.create({ data: { sku: data.sku, name: data.name, slug: data.slug, description: data.description, price: data.price, categoryId: category.id, origin: (data.origin as any) ?? undefined, isNew: data.isNew ?? false, isAvailable: data.isAvailable ?? true } });
     return product;
   }
 
-  async update(slug: string, data: { name?: string; description?: string; price?: number; discountPct?: number; categorySlug?: string; origin?: string; isNew?: boolean; isActive?: boolean }) {
+  async update(slug: string, data: { sku?: string; name?: string; description?: string; price?: number; discountPct?: number; categorySlug?: string; origin?: string; isNew?: boolean; isActive?: boolean; isAvailable?: boolean }) {
     const prod = await this.prisma.product.findUnique({ where: { slug } });
     if (!prod) throw new NotFoundException('Producto no encontrado');
+    if (data.sku && data.sku !== prod.sku) {
+      const existingSku = await this.prisma.product.findUnique({ where: { sku: data.sku } });
+      if (existingSku) throw new BadRequestException('SKU ya existe');
+    }
     let categoryId = prod.categoryId;
     if (data.categorySlug) {
       const category = await this.prisma.category.findUnique({ where: { slug: data.categorySlug } });
       if (!category) throw new BadRequestException('Categoría no encontrada');
       categoryId = category.id;
     }
-    const updated = await this.prisma.product.update({ where: { id: prod.id }, data: { name: data.name, description: data.description, price: data.price, discountPct: data.discountPct, categoryId, origin: (data.origin as any) ?? undefined, isNew: data.isNew, isActive: data.isActive } });
+    const updated = await this.prisma.product.update({ where: { id: prod.id }, data: { sku: data.sku, name: data.name, description: data.description, price: data.price, discountPct: data.discountPct, categoryId, origin: (data.origin as any) ?? undefined, isNew: data.isNew, isActive: data.isActive, isAvailable: data.isAvailable } });
     return updated;
   }
 
@@ -197,5 +203,132 @@ export class ProductsService {
       discountPct: data.discountPct,
     }});
     return updated;
+  }
+
+  async findFeatured(limit: number = 10) {
+    // Productos destacados: nuevos o con descuento, activos y disponibles
+    const products = await this.prisma.product.findMany({
+      where: {
+        isActive: true,
+        isAvailable: true,
+        OR: [
+          { isNew: true },
+          { discountPct: { gt: 0 } },
+        ],
+      },
+      include: { category: true },
+      orderBy: [
+        { isNew: 'desc' },
+        { discountPct: 'desc' },
+        { createdAt: 'desc' },
+      ],
+      take: limit,
+    });
+
+    // Cargar inventarios agregados
+    let inventoriesByProduct: Record<number, { quantity: number; reserved: number }[]> = {};
+    if (products.length) {
+      const invAll = await this.prisma.inventory.findMany({ 
+        where: { productId: { in: products.map(p => p.id) } } 
+      });
+      inventoriesByProduct = invAll.reduce((acc, i) => {
+        (acc[i.productId] ||= []).push({ quantity: i.quantity, reserved: i.reserved });
+        return acc;
+      }, {} as Record<number, { quantity: number; reserved: number }[]>);
+    }
+
+    return products.map(p => {
+      const list = inventoriesByProduct[p.id] || [];
+      const available = list.reduce((sum, r) => sum + (r.quantity - r.reserved), 0);
+      return {
+        id: p.id,
+        name: p.name,
+        slug: p.slug,
+        description: p.description ?? undefined,
+        price: Number(p.price),
+        category: p.category.name,
+        isNew: p.isNew ?? undefined,
+        discount: p.discountPct ?? undefined,
+        available,
+      };
+    });
+  }
+
+  async findByCategory(categorySlug: string, query: { page?: number; pageSize?: number; sort?: string }) {
+    const category = await this.prisma.category.findUnique({ where: { slug: categorySlug } });
+    if (!category) throw new NotFoundException(`Categoría "${categorySlug}" no encontrada`);
+
+    const where: any = { 
+      categoryId: category.id,
+      isActive: true,
+    };
+
+    let orderBy: any = undefined;
+    switch (query.sort) {
+      case 'precio-asc':
+        orderBy = { price: 'asc' };
+        break;
+      case 'precio-desc':
+        orderBy = { price: 'desc' };
+        break;
+      case 'nuevo':
+        orderBy = { createdAt: 'desc' };
+        break;
+      default:
+        orderBy = { name: 'asc' };
+    }
+
+    const page = Math.max(1, query.page ?? 1);
+    const pageSize = Math.max(1, Math.min(100, query.pageSize ?? 20));
+
+    const [total, products] = await this.prisma.$transaction([
+      this.prisma.product.count({ where }),
+      this.prisma.product.findMany({
+        where,
+        orderBy,
+        include: { category: true },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+    ]);
+
+    // Cargar inventarios
+    let inventoriesByProduct: Record<number, { quantity: number; reserved: number }[]> = {};
+    if (products.length) {
+      const invAll = await this.prisma.inventory.findMany({ 
+        where: { productId: { in: products.map(p => p.id) } } 
+      });
+      inventoriesByProduct = invAll.reduce((acc, i) => {
+        (acc[i.productId] ||= []).push({ quantity: i.quantity, reserved: i.reserved });
+        return acc;
+      }, {} as Record<number, { quantity: number; reserved: number }[]>);
+    }
+
+    const mapped = products.map(p => {
+      const list = inventoriesByProduct[p.id] || [];
+      const available = list.reduce((sum, r) => sum + (r.quantity - r.reserved), 0);
+      return {
+        id: p.id,
+        name: p.name,
+        slug: p.slug,
+        description: p.description ?? undefined,
+        price: Number(p.price),
+        category: p.category.name,
+        isNew: p.isNew ?? undefined,
+        discount: p.discountPct ?? undefined,
+        available,
+      };
+    });
+
+    return {
+      category: {
+        id: category.id,
+        name: category.name,
+        slug: category.slug,
+        description: category.description,
+      },
+      data: mapped,
+      meta: { total, pageCount: Math.ceil(total / pageSize) || 0, page, pageSize },
+    };
   }
 }

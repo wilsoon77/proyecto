@@ -80,11 +80,55 @@ export class OrdersController {
     });
   }
 
+  @Get('my-orders')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Mis órdenes', description: 'Lista las órdenes del usuario autenticado.' })
+  @ApiQuery({ name: 'status', required: false })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'pageSize', required: false })
+  @ApiResponse({ status: 200, description: 'Listado de mis órdenes' })
+  myOrders(
+    @Req() req: any,
+    @Res({ passthrough: true }) res: Response,
+    @Query('status') status?: string,
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string
+  ) {
+    const result = this.service.findByUser(
+      req.user.userId,
+      { status, page: page ? Number(page) : undefined, pageSize: pageSize ? Number(pageSize) : undefined }
+    );
+    return Promise.resolve(result).then((r: any) => {
+      setPaginationHeaders({
+        res,
+        baseUrl: req.originalUrl?.split('?')[0] || req.url,
+        query: req.query || {},
+        total: r.meta.total,
+        page: r.meta.page,
+        pageSize: r.meta.pageSize,
+      });
+      return r;
+    });
+  }
+
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Detalle de orden', description: 'Obtiene una orden con items y sucursal.' })
-  detail(@Param('id', ParseIntPipe) id: number) {
-    return this.service.detail(id);
+  @ApiOperation({ summary: 'Detalle de orden', description: 'Obtiene una orden con items y sucursal. Usuarios solo ven sus órdenes.' })
+  detail(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
+    // Si no es ADMIN, validar que la orden pertenezca al usuario
+    const userId = req.user.role === 'ADMIN' ? undefined : req.user.userId;
+    return this.service.detail(id, userId);
+  }
+
+  @Post(':id/confirm')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Confirmar orden', description: 'Cambia estado de PENDING a CONFIRMED (pago recibido).' })
+  @ApiResponse({ status: 200, description: 'Orden confirmada' })
+  @ApiBadRequestResponse({ description: 'Solo se pueden confirmar órdenes PENDING' })
+  confirmOrder(@Param('id', ParseIntPipe) id: number) {
+    return this.service.confirm(id);
   }
 }

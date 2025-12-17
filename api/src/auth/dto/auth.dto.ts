@@ -52,6 +52,12 @@ export class UpdateMeDto {
   phone?: string;
 }
 
+export class RefreshDto {
+  @ApiProperty({ example: 'abc123def456...', description: 'Refresh token recibido en login/register' })
+  @IsString()
+  refreshToken!: string;
+}
+
 export class UserDto {
   @ApiProperty({ example: 'ckv8x9qz40001abcde' })
   id!: string;
@@ -65,13 +71,15 @@ export class UserDto {
   phone?: string | null;
   @ApiProperty({ example: true })
   isActive!: boolean;
-  @ApiProperty({ example: 'USER', enum: ['USER','ADMIN'] })
+  @ApiProperty({ example: 'CUSTOMER', enum: ['CUSTOMER','EMPLOYEE','ADMIN'] })
   role!: string;
 }
 
 export class AuthResponseDto {
-  @ApiProperty({ example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' })
+  @ApiProperty({ example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...', description: 'Access token (15 min)' })
   token!: string;
+  @ApiProperty({ example: 'abc123def456...', description: 'Refresh token (7 días)' })
+  refreshToken!: string;
   @ApiProperty({ type: UserDto })
   user!: UserDto;
 }

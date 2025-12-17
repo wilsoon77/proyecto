@@ -1,7 +1,56 @@
 import { PrismaClient } from '@prisma/client';
+import bcryptjs from 'bcryptjs';
+const bcrypt = bcryptjs.default || bcryptjs;
+
 const prisma = new PrismaClient();
 
 async function main() {
+  // Users con diferentes roles
+  const adminPassword = await bcrypt.hash('admin123', 10);
+  const employeePassword = await bcrypt.hash('empleado123', 10);
+  const customerPassword = await bcrypt.hash('cliente123', 10);
+
+  await prisma.user.upsert({
+    where: { email: 'admin@panaderia.com' },
+    update: {},
+    create: {
+      email: 'admin@panaderia.com',
+      passwordHash: adminPassword,
+      firstName: 'Admin',
+      lastName: 'Sistema',
+      role: 'ADMIN',
+      isActive: true,
+    },
+  });
+
+  await prisma.user.upsert({
+    where: { email: 'empleado@panaderia.com' },
+    update: {},
+    create: {
+      email: 'empleado@panaderia.com',
+      passwordHash: employeePassword,
+      firstName: 'Juan',
+      lastName: 'Pérez',
+      phone: '+50212345678',
+      role: 'EMPLOYEE',
+      isActive: true,
+    },
+  });
+
+  await prisma.user.upsert({
+    where: { email: 'cliente@panaderia.com' },
+    update: {},
+    create: {
+      email: 'cliente@panaderia.com',
+      passwordHash: customerPassword,
+      firstName: 'María',
+      lastName: 'García',
+      phone: '+50287654321',
+      role: 'CUSTOMER',
+      isActive: true,
+    },
+  });
+
   // Categories
   const categories = [
     { name: 'Pan', slug: 'pan', description: 'Variedad de panes frescos' },
@@ -30,7 +79,7 @@ async function main() {
     });
   }
 
-  // Products (basic examples)
+  // Products (basic examples) - Ahora con SKU e isAvailable
   const panCat = await prisma.category.findUnique({ where: { slug: 'pan' } });
   const pastelesCat = await prisma.category.findUnique({ where: { slug: 'pasteles' } });
 
@@ -39,7 +88,15 @@ async function main() {
       where: { slug: 'pan-frances' },
       update: {},
       create: {
-        name: 'Pan Francés', slug: 'pan-frances', price: 2.5, description: 'Pan tradicional fresco', categoryId: panCat.id, isNew: true, origin: 'PRODUCIDO',
+        sku: 'PAN-001',
+        name: 'Pan Francés', 
+        slug: 'pan-frances', 
+        price: 2.5, 
+        description: 'Pan tradicional fresco', 
+        categoryId: panCat.id, 
+        isNew: true, 
+        isAvailable: true,
+        origin: 'PRODUCIDO',
       },
     });
   }
@@ -48,7 +105,14 @@ async function main() {
       where: { slug: 'pastel-chocolate' },
       update: {},
       create: {
-        name: 'Pastel Chocolate', slug: 'pastel-chocolate', price: 45, description: 'Pastel húmedo de cacao', categoryId: pastelesCat.id, origin: 'PRODUCIDO',
+        sku: 'PAST-001',
+        name: 'Pastel Chocolate', 
+        slug: 'pastel-chocolate', 
+        price: 45, 
+        description: 'Pastel húmedo de cacao', 
+        categoryId: pastelesCat.id, 
+        isAvailable: true,
+        origin: 'PRODUCIDO',
       },
     });
   }
@@ -81,7 +145,11 @@ async function main() {
     });
   }
 
-  console.log('Seed complete');
+  console.log('✅ Seed complete');
+  // console.log('👤 Usuarios creados:');
+  // console.log('   - Admin: admin@panaderia.com / admin123');
+  // console.log('   - Empleado: empleado@panaderia.com / empleado123');
+  // console.log('   - Cliente: cliente@panaderia.com / cliente123');
 }
 
 main().catch(e => {

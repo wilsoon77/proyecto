@@ -13,7 +13,8 @@ datasource db {
 }
 
 enum UserRole {
-  USER
+  CUSTOMER
+  EMPLOYEE
   ADMIN
 }
 
@@ -41,13 +42,14 @@ model User {
   firstName     String
   lastName      String
   phone         String?  @db.VarChar(32)
-  role          UserRole @default(USER)
+  role          UserRole @default(CUSTOMER)
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   addresses     Address[]
   orders        Order[]
   stockMovements StockMovement[]
+  refreshTokens RefreshToken[]
 }
 
 model Address {
@@ -73,6 +75,7 @@ model Category {
 
 model Product {
   id           Int        @id @default(autoincrement())
+  sku          String     @unique
   name         String
   slug         String     @unique
   description  String?
@@ -83,6 +86,7 @@ model Product {
   categoryId   Int
   origin       ProductOrigin @default(PRODUCIDO)
   isActive     Boolean    @default(true)
+  isAvailable  Boolean    @default(true)
   images       ProductImage[]
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
@@ -175,6 +179,7 @@ model Order {
   shippingMethod String?
   branch         Branch?      @relation(fields: [branchId], references: [id])
   branchId       Int?
+  customerNotes  String?      @db.Text
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   items          OrderItem[]
@@ -183,11 +188,27 @@ model Order {
 }
 
 model OrderItem {
-  id        Int      @id @default(autoincrement())
-  order     Order    @relation(fields: [orderId], references: [id])
-  orderId   Int
-  product   Product  @relation(fields: [productId], references: [id])
-  productId Int
-  quantity  Int
-  unitPrice Decimal  @db.Decimal(10,2)
+  id          Int      @id @default(autoincrement())
+  order       Order    @relation(fields: [orderId], references: [id])
+  orderId     Int
+  product     Product  @relation(fields: [productId], references: [id])
+  productId   Int
+  productName String
+  quantity    Int
+  unitPrice   Decimal  @db.Decimal(10,2)
+}
+
+model RefreshToken {
+  id          String    @id @default(cuid())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  hashedToken String    // Token hasheado con bcrypt
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  userAgent   String?   @db.VarChar(500)
+  ipAddress   String?   @db.VarChar(45)
+  createdAt   DateTime  @default(now())
+  
+  @@index([userId])
+  @@index([expiresAt])
 }

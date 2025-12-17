@@ -14,6 +14,9 @@ export class ProductDto {
 }
 
 export class CreateProductDto {
+  @ApiProperty({ example: 'PROD-0001', description: 'Código SKU único' })
+  @IsString() @MinLength(1) sku!: string;
+
   @ApiProperty({ example: 'Concha' })
   @IsString() @MinLength(2) name!: string;
 
@@ -34,9 +37,15 @@ export class CreateProductDto {
 
   @ApiProperty({ example: true, required: false })
   @IsOptional() @IsBoolean() isNew?: boolean;
+
+  @ApiProperty({ example: true, required: false, description: 'Si está disponible para venta' })
+  @IsOptional() @IsBoolean() isAvailable?: boolean;
 }
 
 export class UpdateProductDto {
+  @ApiProperty({ example: 'PROD-0001', required: false })
+  @IsOptional() @IsString() sku?: string;
+
   @ApiProperty({ example: 'Concha vainilla', required: false })
   @IsOptional() @IsString() name?: string;
 
@@ -60,6 +69,9 @@ export class UpdateProductDto {
 
   @ApiProperty({ example: true, required: false })
   @IsOptional() @IsBoolean() isActive?: boolean;
+
+  @ApiProperty({ example: true, required: false, description: 'Si está disponible para venta' })
+  @IsOptional() @IsBoolean() isAvailable?: boolean;
 }
 
 export class PutProductDto {

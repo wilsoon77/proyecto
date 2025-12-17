@@ -47,8 +47,31 @@ Bienvenido a la documentación completa del proyecto **PanaderIA Smart System**.
 
 ---
 
-### **3. 📝 Casos de Uso**
-**Archivo:** `3_CASOS_DE_USO.md`
+### **3. 🔒 Pruebas de Seguridad**
+**Archivo:** `3_PRUEBAS_SEGURIDAD.md`
+
+**Contenido:**
+- ✅ Documentación completa de pruebas realizadas (22/11/2025)
+- ✅ Tests de autenticación (login, refresh tokens, logout)
+- ✅ Verificación de rate limiting (100 global, 10 login/min)
+- ✅ Rotación de refresh tokens validada
+- ✅ Revocación de tokens funcionando
+- ✅ Validación de DTOs (forbidNonWhitelisted)
+- ✅ Configuración de Helmet, CORS, Throttler
+- ✅ Tests automatizados con Jest/Supertest
+
+**Úsalo para:**
+- Verificar funcionalidades de seguridad
+- Ejecutar tests automatizados
+- Referencia de configuración
+- Validar implementación
+
+**Tests automatizados:** `api/test/auth-security.e2e-spec.ts`
+
+---
+
+### **4. 📝 Casos de Uso**
+**Archivo:** `3_CASOS_DE_USO.md` *(Pendiente de renombrar)*
 
 **Contenido:**
 - ✅ 50 Casos de uso completos
@@ -66,7 +89,7 @@ Bienvenido a la documentación completa del proyecto **PanaderIA Smart System**.
 
 ---
 
-### **4. 📁 Estructura del Proyecto**
+### **5. 📁 Estructura del Proyecto**
 **Archivo:** `4_ESTRUCTURA_PROYECTO.md`
 
 **Contenido:**

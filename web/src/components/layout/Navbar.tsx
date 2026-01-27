@@ -1,14 +1,23 @@
 "use client"
 
 import Link from "next/link"
-import { Search, ShoppingCart, User, Menu, MapPin, Apple, Play } from "lucide-react"
+import { Search, ShoppingCart, User, Menu, MapPin, Apple, Play, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ROUTES } from "@/lib/constants"
 import { useState } from "react"
 import { useCart } from "@/context/CartContext"
+import { useAuth } from "@/context/AuthContext"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 export function Navbar() {
   const { itemCount } = useCart()
+  const { user, isLoggedIn, logout, isLoading } = useAuth()
   const [selectedSucursal, setSelectedSucursal] = useState("Sucursal Central")
 
   return (
@@ -113,21 +122,51 @@ export function Navbar() {
             </Link>
 
             {/* User Menu */}
-            <Link href="/login">
-              <Button variant="ghost" size="icon">
-                <User className="h-5 w-5" />
-              </Button>
-            </Link>
+            {isLoggedIn ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="relative">
+                    <User className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <div className="px-2 py-1.5">
+                    <p className="text-sm font-medium">{user?.firstName} {user?.lastName}</p>
+                    <p className="text-xs text-gray-500">{user?.email}</p>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href={ROUTES.profile}>Mi perfil</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href={ROUTES.orders}>Mis pedidos</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => logout()} className="text-red-600">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Cerrar sesión
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Link href="/login">
+                <Button variant="ghost" size="icon">
+                  <User className="h-5 w-5" />
+                </Button>
+              </Link>
+            )}
 
             {/* Auth Buttons - Desktop */}
-            <div className="hidden items-center gap-2 sm:flex">
-              <Link href="/login">
-                <Button variant="outline">Ingresar</Button>
-              </Link>
-              <Link href="/registro">
-                <Button>Crear cuenta</Button>
-              </Link>
-            </div>
+            {!isLoggedIn && (
+              <div className="hidden items-center gap-2 sm:flex">
+                <Link href="/login">
+                  <Button variant="outline">Ingresar</Button>
+                </Link>
+                <Link href="/registro">
+                  <Button>Crear cuenta</Button>
+                </Link>
+              </div>
+            )}
 
             {/* Mobile Menu */}
             <Button

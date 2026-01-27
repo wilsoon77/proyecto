@@ -12,6 +12,7 @@ import { CategoriesModule } from './categories/categories.module.js';
 import { BranchesModule } from './branches/branches.module.js';
 import { UsersModule } from './users/users.module.js';
 import { AddressesModule } from './addresses/addresses.module.js';
+import { DashboardModule } from './dashboard/dashboard.module.js';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { AddressesModule } from './addresses/addresses.module.js';
     BranchesModule,
     UsersModule,
     AddressesModule,
+    DashboardModule,
   ],
   controllers: [],
   providers: [

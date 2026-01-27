@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
 import { ToastProvider } from "@/context/ToastContext";
 
@@ -33,13 +34,15 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ToastProvider>
-          <CartProvider>
-            <Navbar />
-            <main className="min-h-screen">
-              {children}
-            </main>
-            <Footer />
-          </CartProvider>
+          <AuthProvider>
+            <CartProvider>
+              <Navbar />
+              <main className="min-h-screen">
+                {children}
+              </main>
+              <Footer />
+            </CartProvider>
+          </AuthProvider>
         </ToastProvider>
       </body>
     </html>

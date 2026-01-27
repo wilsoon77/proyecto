@@ -2,6 +2,12 @@
 
 Backend para el sistema de gestión de panaderías.
 
+## 📚 Documentación API
+
+**Documentación pública:** [https://bump.sh/wilson-exe/doc/panaderia-api](https://bump.sh/wilson-exe/doc/panaderia-api)
+
+**Swagger local:** http://localhost:4000/docs (cuando el servidor esté corriendo)
+
 ## Stack
 - NestJS (Framework HTTP / modular)
 - Prisma (ORM para PostgreSQL)

@@ -13,6 +13,9 @@
     "seed": "node --loader ts-node/esm prisma/seed.ts",
     "openapi:gen": "node --loader ts-node/esm scripts/generate-openapi.ts",
     "openapi:gen:dist": "npm run build && node scripts/generate-openapi-runtime.js",
+    "docs:validate": "bump deploy --dry-run --doc panaderia-api --token 9LQdK2XJ8m5WbJeEApXp3BKGFe1NgmKq openapi.json",
+    "docs:deploy": "bump deploy --doc panaderia-api --token 9LQdK2XJ8m5WbJeEApXp3BKGFe1NgmKq openapi.json",
+    "docs:diff": "bump diff --doc panaderia-api --token 9LQdK2XJ8m5WbJeEApXp3BKGFe1NgmKq openapi.json",
     "test": "jest -c jest.config.cjs",
     "test:e2e": "jest -c jest.config.cjs"
   },

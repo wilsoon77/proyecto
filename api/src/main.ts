@@ -60,6 +60,7 @@ async function bootstrap() {
       .addTag('inventory')
       .addTag('stock-movements')
       .addTag('orders')
+      .addTag('dashboard')
       .addTag('health')
       .build();
     const document = SwaggerModule.createDocument(app, config);

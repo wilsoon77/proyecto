@@ -1,4 +1,4 @@
-import { Body, Controller, Param, ParseIntPipe, Post, Get, Query, UseGuards, Req, Res } from '@nestjs/common';
+import { Body, Controller, Param, ParseIntPipe, Post, Get, Query, UseGuards, Req, Res, Patch } from '@nestjs/common';
 import { ApiTags, ApiBody, ApiQuery, ApiBearerAuth, ApiOperation, ApiResponse, ApiBadRequestResponse } from '@nestjs/swagger';
 import { OrdersService } from './orders.service.js';
 import { ReserveOrderDto } from './dto.js';
@@ -130,5 +130,16 @@ export class OrdersController {
   @ApiBadRequestResponse({ description: 'Solo se pueden confirmar órdenes PENDING' })
   confirmOrder(@Param('id', ParseIntPipe) id: number) {
     return this.service.confirm(id);
+  }
+
+  @Patch(':id/status')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Cambiar estado de orden', description: 'Actualiza el estado de una orden. Válido para ADMIN y EMPLOYEE.' })
+  @ApiBody({ schema: { example: { status: 'CONFIRMED' }, properties: { status: { type: 'string', description: 'Nuevo estado (PENDING, CONFIRMED, PREPARING, READY, IN_DELIVERY, DELIVERED, CANCELLED)' } } } })
+  @ApiResponse({ status: 200, description: 'Estado actualizado' })
+  @ApiBadRequestResponse({ description: 'Estado inválido o error en la actualización' })
+  updateStatus(@Param('id', ParseIntPipe) id: number, @Body() { status }: { status: string }) {
+    return this.service.updateStatus(id, status);
   }
 }

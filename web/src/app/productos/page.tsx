@@ -1,21 +1,32 @@
 "use client"
 
-import { Product } from "@/types"
+import { useEffect, useState, useCallback, Suspense } from "react"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { ProductGrid } from "@/components/products/ProductGrid"
 import { useCart } from "@/context/CartContext"
 import { Button } from "@/components/ui/button"
 import { CategoryBadge } from "@/components/products/CategoryBadge"
-import { MOCK_PRODUCTS } from "@/lib/mock"
-import { useEffect, useMemo, useState } from "react"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useToast } from "@/context/ToastContext"
+import { productsService, categoriesService } from "@/lib/api"
+import { apiProductToProduct } from "@/lib/api/transformers"
+import type { Product } from "@/types"
+import type { ApiCategory, ProductFilters } from "@/lib/api/types"
 
-export default function ProductosPage() {
+function ProductosContent() {
   const { addItem } = useCart()
   const { show } = useToast()
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  
+  // Estado de productos
+  const [products, setProducts] = useState<Product[]>([])
+  const [categories, setCategories] = useState<ApiCategory[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [totalProducts, setTotalProducts] = useState(0)
+  
+  // Filtros
   const [search, setSearch] = useState("")
   const [category, setCategory] = useState<string | null>(null)
   const [minPrice, setMinPrice] = useState<string>("")
@@ -23,36 +34,45 @@ export default function ProductosPage() {
   const [sort, setSort] = useState<string>("relevancia")
   const [initialized, setInitialized] = useState(false)
 
-  const resetFilters = () => {
-    setSearch("")
-    setCategory(null)
-    setMinPrice("")
-    setMaxPrice("")
-    setSort("relevancia")
-  }
+  // Cargar categorías
+  useEffect(() => {
+    categoriesService.list()
+      .then(setCategories)
+      .catch(err => console.error('Error cargando categorías:', err))
+  }, [])
 
-  const filtered = useMemo(() => {
-    let list = [...MOCK_PRODUCTS]
-    if (category) list = list.filter(p => p.category === category)
-    if (search.trim()) list = list.filter(p =>
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.description.toLowerCase().includes(search.toLowerCase())
-    )
-  const min = parseFloat(minPrice)
-  const max = parseFloat(maxPrice)
-  if (!isNaN(min)) list = list.filter(p => p.price >= min)
-  if (!isNaN(max)) list = list.filter(p => p.price <= max)
-
-    if (sort === 'precio-asc') list.sort((a,b)=> (a.price)-(b.price))
-    if (sort === 'precio-desc') list.sort((a,b)=> (b.price)-(a.price))
-    if (sort === 'nuevo') list.sort((a,b)=> (b.isNew?1:0) - (a.isNew?1:0))
-    if (sort === 'populares') list.sort((a,b)=> (b.reviewCount||0)-(a.reviewCount||0))
-    return list
+  // Cargar productos
+  const fetchProducts = useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+    
+    try {
+      const filters: ProductFilters = {}
+      
+      if (search.trim()) filters.search = search.trim()
+      if (category) filters.category = category
+      if (minPrice.trim()) filters.min = parseFloat(minPrice)
+      if (maxPrice.trim()) filters.max = parseFloat(maxPrice)
+      if (sort && sort !== 'relevancia') {
+        filters.sort = sort as ProductFilters['sort']
+      }
+      
+      const response = await productsService.list(filters)
+      const transformedProducts = response.data.map(apiProductToProduct)
+      setProducts(transformedProducts)
+      setTotalProducts(response.meta.total)
+    } catch (err) {
+      console.error('Error cargando productos:', err)
+      setError('Error al cargar productos. Por favor, intenta de nuevo.')
+    } finally {
+      setIsLoading(false)
+    }
   }, [search, category, minPrice, maxPrice, sort])
 
-  // Initialize state from URL on first render
+  // Inicializar desde URL
   useEffect(() => {
     if (initialized) return
+    
     const q = searchParams.get('q') ?? ''
     const cat = searchParams.get('cat')
     const min = searchParams.get('min') ?? ''
@@ -68,9 +88,16 @@ export default function ProductosPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Sync state to URL when filters change
+  // Cargar productos cuando cambian filtros
   useEffect(() => {
     if (!initialized) return
+    fetchProducts()
+  }, [initialized, fetchProducts])
+
+  // Sincronizar URL con filtros
+  useEffect(() => {
+    if (!initialized) return
+    
     const params = new URLSearchParams()
     if (search.trim()) params.set('q', search.trim())
     if (category) params.set('cat', category)
@@ -85,20 +112,37 @@ export default function ProductosPage() {
     }
   }, [search, category, minPrice, maxPrice, sort, initialized, pathname, router, searchParams])
 
+  const resetFilters = () => {
+    setSearch("")
+    setCategory(null)
+    setMinPrice("")
+    setMaxPrice("")
+    setSort("relevancia")
+  }
+
+  const handleAddToCart = (productId: number) => {
+    const product = products.find(p => p.id === productId)
+    if (product) {
+      addItem(product, 1)
+    }
+  }
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Productos</h1>
-        <p className="mt-1 text-gray-600">Explora nuestros panes, pasteles y más.</p>
+        <p className="mt-1 text-gray-600">
+          {isLoading ? 'Cargando...' : `${totalProducts} productos encontrados`}
+        </p>
       </div>
 
       {/* Filtros */}
-  <div className="mb-8 grid gap-4 rounded-lg border bg-white p-4 sm:grid-cols-2 lg:grid-cols-4 items-end">
+      <div className="mb-8 grid gap-4 rounded-lg border bg-white p-4 sm:grid-cols-2 lg:grid-cols-4 items-end">
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">Buscar</label>
           <input
             value={search}
-            onChange={(e)=>setSearch(e.target.value)}
+            onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar productos..."
             className="h-10 w-full rounded-md border border-gray-300 px-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           />
@@ -107,14 +151,13 @@ export default function ProductosPage() {
           <label className="mb-1 block text-sm font-medium text-gray-700">Categoría</label>
           <select
             value={category ?? ''}
-            onChange={(e)=>setCategory(e.target.value || null)}
+            onChange={(e) => setCategory(e.target.value || null)}
             className="h-10 w-full rounded-md border border-gray-300 px-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           >
             <option value="">Todas</option>
-            <option value="pan">Pan</option>
-            <option value="pasteles">Pasteles</option>
-            <option value="galletas">Galletas</option>
-            <option value="dulces">Dulces</option>
+            {categories.map(cat => (
+              <option key={cat.id} value={cat.slug}>{cat.name}</option>
+            ))}
           </select>
         </div>
         <div className="flex gap-2">
@@ -122,8 +165,10 @@ export default function ProductosPage() {
             <label className="mb-1 block text-sm font-medium text-gray-700">Precio mín.</label>
             <input
               value={minPrice}
-              onChange={e=>setMinPrice(e.target.value)}
+              onChange={e => setMinPrice(e.target.value)}
               placeholder="0"
+              type="number"
+              min="0"
               className="h-10 w-full rounded-md border border-gray-300 px-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
@@ -131,8 +176,10 @@ export default function ProductosPage() {
             <label className="mb-1 block text-sm font-medium text-gray-700">Precio máx.</label>
             <input
               value={maxPrice}
-              onChange={e=>setMaxPrice(e.target.value)}
+              onChange={e => setMaxPrice(e.target.value)}
               placeholder="100"
+              type="number"
+              min="0"
               className="h-10 w-full rounded-md border border-gray-300 px-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
@@ -140,40 +187,79 @@ export default function ProductosPage() {
         <div>
           <div className="mb-1 flex items-center justify-between">
             <label className="block text-sm font-medium text-gray-700">Ordenar</label>
-            <Button variant="link" size="sm" className="px-0" onClick={resetFilters}>Limpiar filtros</Button>
+            <Button variant="link" size="sm" className="px-0" onClick={resetFilters}>
+              Limpiar filtros
+            </Button>
           </div>
-          <select value={sort} onChange={e=>setSort(e.target.value)} className="h-10 w-full rounded-md border border-gray-300 px-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary">
+          <select 
+            value={sort} 
+            onChange={e => setSort(e.target.value)} 
+            className="h-10 w-full rounded-md border border-gray-300 px-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          >
             <option value="relevancia">Relevancia</option>
             <option value="precio-asc">Precio: menor a mayor</option>
             <option value="precio-desc">Precio: mayor a menor</option>
             <option value="nuevo">Novedades</option>
-            <option value="populares">Más populares</option>
           </select>
         </div>
       </div>
 
       {/* Chips de categorías rápidas */}
       <div className="mb-6 flex flex-wrap items-center gap-2">
-        {['pan','pasteles','galletas','dulces'].map(cat => (
-          <button key={cat} onClick={()=> setCategory(cat)}>
-            <CategoryBadge category={cat} />
+        {categories.slice(0, 6).map(cat => (
+          <button key={cat.id} onClick={() => setCategory(cat.slug)}>
+            <CategoryBadge category={cat.slug} />
           </button>
         ))}
         {category && (
-          <Button variant="ghost" onClick={()=> setCategory(null)}>Limpiar categoría</Button>
+          <Button variant="ghost" onClick={() => setCategory(null)}>
+            Limpiar categoría
+          </Button>
         )}
       </div>
 
-      <ProductGrid
-        products={filtered}
-        onAddToCart={(productId) => {
-          const product = MOCK_PRODUCTS.find(p => p.id === productId)
-          if (product) {
-            addItem(product, 1)
-            show(`Agregado: ${product.name}`)
-          }
-        }}
-      />
+      {/* Estado de error */}
+      {error && (
+        <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
+          <p>{error}</p>
+          <Button variant="outline" size="sm" className="mt-2" onClick={fetchProducts}>
+            Reintentar
+          </Button>
+        </div>
+      )}
+
+      {/* Grid de productos */}
+      {isLoading ? (
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {[...Array(8)].map((_, i) => (
+            <div key={i} className="animate-pulse">
+              <div className="aspect-square rounded-lg bg-gray-200" />
+              <div className="mt-4 h-4 w-3/4 rounded bg-gray-200" />
+              <div className="mt-2 h-4 w-1/2 rounded bg-gray-200" />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <ProductGrid
+          products={products}
+          onAddToCart={handleAddToCart}
+        />
+      )}
     </div>
+  )
+}
+
+export default function ProductosPage() {
+  return (
+    <Suspense fallback={
+      <div className="mx-auto max-w-7xl px-4 py-10">
+        <div className="animate-pulse">
+          <div className="h-8 w-48 rounded bg-gray-200 mb-4" />
+          <div className="h-4 w-32 rounded bg-gray-200" />
+        </div>
+      </div>
+    }>
+      <ProductosContent />
+    </Suspense>
   )
 }

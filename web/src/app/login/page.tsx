@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { ROUTES } from "@/lib/constants"
@@ -8,7 +8,7 @@ import { useAuth } from "@/context/AuthContext"
 import { useToast } from "@/context/ToastContext"
 import { Button } from "@/components/ui/button"
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const returnUrl = searchParams.get('returnUrl') || ROUTES.home
@@ -32,8 +32,9 @@ export default function LoginPage() {
       await login({ email, password })
       show("¡Bienvenido de vuelta!", { variant: "success" })
       router.push(returnUrl)
-    } catch (err: any) {
-      setError(err.message || "Error al iniciar sesión")
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Error al iniciar sesión"
+      setError(message)
       show("Error al iniciar sesión", { variant: "error" })
     }
   }
@@ -108,5 +109,25 @@ export default function LoginPage() {
         </Link>
       </p>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="mx-auto max-w-md px-4 py-16">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/2 mb-4"></div>
+          <div className="h-4 bg-gray-200 rounded w-3/4 mb-8"></div>
+          <div className="space-y-4">
+            <div className="h-12 bg-gray-200 rounded"></div>
+            <div className="h-12 bg-gray-200 rounded"></div>
+            <div className="h-12 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   )
 }

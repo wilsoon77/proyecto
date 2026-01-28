@@ -5,9 +5,6 @@
 
 import { Client, Storage, ID } from 'node-appwrite';
 import { Injectable, BadRequestException } from '@nestjs/common';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
 
 @Injectable()
 export class StorageService {
@@ -30,6 +27,9 @@ export class StorageService {
         .setKey(apiKey);
 
       this.storage = new Storage(this.client);
+      console.log('✅ Appwrite Storage configured:', { endpoint: this.endpoint, bucketId: this.bucketId });
+    } else {
+      console.warn('⚠️ Appwrite Storage not configured. Missing environment variables.');
     }
   }
 
@@ -67,22 +67,23 @@ export class StorageService {
     const fileId = ID.unique();
     const ext = file.originalname.split('.').pop() || 'jpg';
     const uniqueFilename = `${fileId}.${ext}`;
-    
-    // Crear archivo temporal
-    const tempDir = os.tmpdir();
-    const tempFilePath = path.join(tempDir, uniqueFilename);
 
     try {
-      // Escribir buffer a archivo temporal
-      fs.writeFileSync(tempFilePath, file.buffer);
+      // Convertir Buffer a Uint8Array y luego a File (Node 20+)
+      const uint8Array = new Uint8Array(file.buffer);
+      const blob = new Blob([uint8Array], { type: file.mimetype });
+      const nativeFile = new File([blob], uniqueFilename, { type: file.mimetype });
 
-      // Subir a Appwrite usando la ruta del archivo
-      // La API de node-appwrite acepta rutas de archivo directamente
+      console.log('📁 Uploading file:', { name: uniqueFilename, size: file.buffer.length, type: file.mimetype });
+
+      // Subir a Appwrite
       const result = await this.storage.createFile(
         this.bucketId,
         fileId,
-        tempFilePath as unknown as File, // La API acepta string path internamente
+        nativeFile,
       );
+
+      console.log('✅ File uploaded to Appwrite:', result.$id);
 
       // Construir URL pública
       const url = this.getPublicUrl(result.$id);
@@ -92,17 +93,8 @@ export class StorageService {
         url,
       };
     } catch (error) {
-      console.error('Error uploading to Appwrite:', error);
+      console.error('❌ Error uploading to Appwrite:', error);
       throw new BadRequestException('Failed to upload image. Check Appwrite configuration.');
-    } finally {
-      // Limpiar archivo temporal
-      try {
-        if (fs.existsSync(tempFilePath)) {
-          fs.unlinkSync(tempFilePath);
-        }
-      } catch {
-        // Ignorar errores al limpiar
-      }
     }
   }
 

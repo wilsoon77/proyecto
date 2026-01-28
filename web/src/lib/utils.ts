@@ -8,11 +8,13 @@ export function cn(...inputs: ClassValue[]) {
 
 /**
  * Formatea un precio en Quetzales (GTQ)
- * @param amount - Monto a formatear
+ * @param amount - Monto a formatear (puede ser número, string o Decimal de Prisma)
  * @returns String formateado "Q 25.50"
  */
-export function formatPrice(amount: number): string {
-  return `${CURRENCY.symbol} ${amount.toFixed(2)}`
+export function formatPrice(amount: number | string | unknown): string {
+  const num = typeof amount === 'number' ? amount : Number(amount)
+  if (isNaN(num)) return `${CURRENCY.symbol} 0.00`
+  return `${CURRENCY.symbol} ${num.toFixed(2)}`
 }
 
 /**

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { ROUTES } from "@/lib/constants"
 import { useAuth } from "@/context/AuthContext"
@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button"
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const returnUrl = searchParams.get('returnUrl') || ROUTES.home
   const { login, isLoading } = useAuth()
   const { show } = useToast()
   
@@ -29,7 +31,7 @@ export default function LoginPage() {
     try {
       await login({ email, password })
       show("¡Bienvenido de vuelta!", { variant: "success" })
-      router.push(ROUTES.home)
+      router.push(returnUrl)
     } catch (err: any) {
       setError(err.message || "Error al iniciar sesión")
       show("Error al iniciar sesión", { variant: "error" })

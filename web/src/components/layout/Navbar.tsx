@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Search, ShoppingCart, User, Menu, MapPin, Apple, Play, LogOut } from "lucide-react"
+import { ShoppingCart, User, Menu, MapPin, Apple, Play, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ROUTES } from "@/lib/constants"
 import { useState } from "react"
@@ -28,7 +28,7 @@ export function Navbar() {
           <div className="flex items-center gap-2 text-gray-600">
             <MapPin className="h-4 w-4" />
             <span className="hidden sm:inline">{selectedSucursal}</span>
-            <button className="text-primary hover:underline">Cambiar</button>
+            <Link href="/sucursales" className="text-primary hover:underline">Ver sucursales</Link>
           </div>
           <div className="flex items-center gap-4 text-gray-600">
             <span className="hidden md:inline">📞 +502 1234-5678</span>
@@ -56,18 +56,6 @@ export function Navbar() {
               <span className="text-xs text-gray-500">Smart System</span>
             </div>
           </Link>
-
-          {/* Search Bar - Desktop */}
-          <div className="hidden flex-1 md:block md:max-w-md lg:max-w-lg">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              <input
-                type="search"
-                placeholder="Buscar productos..."
-                className="h-10 w-full rounded-md border border-gray-300 pl-10 pr-4 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-            </div>
-          </div>
 
           {/* Navigation Links - Desktop */}
           <nav className="hidden items-center gap-6 lg:flex">
@@ -99,16 +87,6 @@ export function Navbar() {
 
           {/* Actions */}
           <div className="flex items-center gap-2">
-            {/* Search Button - Mobile */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden"
-              aria-label="Buscar"
-            >
-              <Search className="h-5 w-5" />
-            </Button>
-
             {/* Cart */}
             <Link href={ROUTES.cart}>
               <Button variant="ghost" size="icon" className="relative">
@@ -177,18 +155,6 @@ export function Navbar() {
             >
               <Menu className="h-5 w-5" />
             </Button>
-          </div>
-        </div>
-
-        {/* Search Bar - Mobile */}
-        <div className="pb-4 md:hidden">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <input
-              type="search"
-              placeholder="Buscar productos..."
-              className="h-10 w-full rounded-md border border-gray-300 pl-10 pr-4 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-            />
           </div>
         </div>
       </div>

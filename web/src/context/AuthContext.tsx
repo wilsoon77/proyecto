@@ -8,6 +8,7 @@ interface AuthContextType {
   user: ApiUser | null
   isLoading: boolean
   isLoggedIn: boolean
+  isAuthenticated: boolean // Alias de isLoggedIn
   login: (data: LoginDto) => Promise<void>
   register: (data: RegisterDto) => Promise<void>
   logout: () => Promise<void>
@@ -94,6 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     isLoading,
     isLoggedIn: !!user,
+    isAuthenticated: !!user, // Alias de isLoggedIn
     login,
     register,
     logout,

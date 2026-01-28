@@ -177,12 +177,9 @@ export interface ApiOrderItem {
 }
 
 export interface ReserveOrderDto {
-  branchId: number
-  addressId?: number
+  branchSlug: string
   paymentMethod?: string
-  shippingMethod?: string
-  customerNotes?: string
-  items: { productId: number; quantity: number }[]
+  items: { productSlug: string; quantity: number }[]
 }
 
 // ==================== INVENTARIO ====================

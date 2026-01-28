@@ -3,17 +3,21 @@
 import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
 import { useCart } from "@/context/CartContext"
+import { useAuth } from "@/context/AuthContext"
 import { SHIPPING, ROUTES } from "@/lib/constants"
 import { formatPrice } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import type { Order } from "@/types"
+import { ordersService, branchesService, addressesService } from "@/lib/api"
+import type { ApiBranch, CreateAddressDto } from "@/lib/api/types"
 
 type ShippingMethod = "domicilio" | "recoger"
 type PaymentMethod = 'efectivo' | 'transferencia' | 'tarjeta' | 'paypal'
 
 export default function CheckoutPage() {
   const { items, subtotal, clearCart } = useCart()
+  const { user, isAuthenticated } = useAuth()
+  
   const [method, setMethod] = useState<ShippingMethod>("domicilio")
   const [payment, setPayment] = useState<PaymentMethod>('efectivo')
   const [fullName, setFullName] = useState("")
@@ -23,10 +27,16 @@ export default function CheckoutPage() {
   const [zone, setZone] = useState("")
   const [address, setAddress] = useState("")
   const [reference, setReference] = useState("")
+  const [customerNotes, setCustomerNotes] = useState("")
   const [placing, setPlacing] = useState(false)
   const [placed, setPlaced] = useState(false)
   const [orderNumber, setOrderNumber] = useState<string | null>(null)
   const [hydrated, setHydrated] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  
+  // Para selección de sucursal (pickup)
+  const [branches, setBranches] = useState<ApiBranch[]>([])
+  const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null)
 
   const shippingCost = useMemo(() => {
     if (method === "recoger") return 0
@@ -39,34 +49,57 @@ export default function CheckoutPage() {
 
   const canPlace = useMemo(() => {
     if (items.length === 0) return false
-    if (method === "domicilio") {
-      return Boolean(fullName && phone && department && municipality && address) && !belowMin
+    if (method === "recoger") {
+      return Boolean(fullName && phone && selectedBranchId)
     }
-    return Boolean(fullName && phone)
-  }, [items.length, method, fullName, phone, department, municipality, address, belowMin])
+    return Boolean(fullName && phone && department && municipality && address) && !belowMin
+  }, [items.length, method, fullName, phone, department, municipality, address, belowMin, selectedBranchId])
+
+  // Cargar sucursales
+  useEffect(() => {
+    const loadBranches = async () => {
+      try {
+        const branchList = await branchesService.list()
+        setBranches(branchList)
+        if (branchList.length > 0 && !selectedBranchId) {
+          setSelectedBranchId(branchList[0].id)
+        }
+      } catch (err) {
+        console.error('Error cargando sucursales:', err)
+      }
+    }
+    loadBranches()
+  }, [selectedBranchId])
 
   // Load saved customer data on mount
   useEffect(() => {
     try {
-      // Prefill from profile if available
-      const profileRaw = localStorage.getItem('profile')
-      if (profileRaw) {
-        const p = JSON.parse(profileRaw) as Record<string, string>
-        const full = `${p.firstName ?? ''} ${p.lastName ?? ''}`.trim()
+      // Si usuario autenticado, usar sus datos
+      if (user) {
+        const full = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim()
         if (full) setFullName(full)
-        if (p.phone) setPhone(p.phone)
-        if (p.department) setDepartment(p.department)
-        if (p.municipality) setMunicipality(p.municipality)
-        if (p.zone) setZone(p.zone)
-        if (p.address) setAddress(p.address)
+        if (user.phone) setPhone(user.phone)
+      } else {
+        // Prefill from profile if available
+        const profileRaw = localStorage.getItem('profile')
+        if (profileRaw) {
+          const p = JSON.parse(profileRaw) as Record<string, string>
+          const full = `${p.firstName ?? ''} ${p.lastName ?? ''}`.trim()
+          if (full) setFullName(full)
+          if (p.phone) setPhone(p.phone)
+          if (p.department) setDepartment(p.department)
+          if (p.municipality) setMunicipality(p.municipality)
+          if (p.zone) setZone(p.zone)
+          if (p.address) setAddress(p.address)
+        }
       }
 
       // Then override with last checkout data if exists
       const raw = localStorage.getItem('checkoutCustomer')
       if (raw) {
         const data = JSON.parse(raw) as Record<string, string>
-        if (data.fullName) setFullName(data.fullName)
-        if (data.phone) setPhone(data.phone)
+        if (data.fullName && !user) setFullName(data.fullName)
+        if (data.phone && !user) setPhone(data.phone)
         if (data.department) setDepartment(data.department)
         if (data.municipality) setMunicipality(data.municipality)
         if (data.zone) setZone(data.zone)
@@ -75,7 +108,7 @@ export default function CheckoutPage() {
       }
     } catch {}
     setHydrated(true)
-  }, [])
+  }, [user])
 
   // Persist customer data on change
   useEffect(() => {
@@ -87,32 +120,85 @@ export default function CheckoutPage() {
   const placeOrder = async () => {
     if (!canPlace) return
     setPlacing(true)
-    // Simulación de orden creada
-    await new Promise(r => setTimeout(r, 800))
+    setError(null)
 
-    const now = new Date()
-    const seq = Math.floor(1000 + Math.random() * 9000)
-    const ordNumber = `PED-${now.toISOString().slice(0,10).replace(/-/g, '')}-${seq}`
+    try {
+      // Si el usuario está autenticado, usar la API
+      if (isAuthenticated && user) {
+        // Obtener el slug de la sucursal seleccionada
+        const selectedBranch = branches.find(b => b.id === selectedBranchId) || branches[0]
+        if (!selectedBranch) {
+          throw new Error('Debes seleccionar una sucursal')
+        }
 
-    const order: Order = {
-      id: now.getTime(),
-      orderNumber: ordNumber,
-      status: 'pending',
-      items: items,
-      subtotal: subtotal,
-      deliveryFee: shippingCost,
-      discount: 0,
-      total: subtotal + shippingCost,
-      paymentMethod: payment,
-      shippingMethod: method,
-      createdAt: now.toISOString(),
+        // Crear la orden con la API
+        const orderData = {
+          branchSlug: selectedBranch.slug,
+          paymentMethod: payment.toUpperCase(),
+          items: items.map(item => ({
+            productSlug: item.product.slug,
+            quantity: item.quantity
+          }))
+        }
+
+        const order = await ordersService.reserve(orderData)
+        
+        // Guardar dirección de envío si es a domicilio (para referencia futura)
+        if (method === "domicilio") {
+          try {
+            await addressesService.create({
+              street: address,
+              city: municipality,
+              state: department,
+              zone: zone || undefined,
+              reference: reference || undefined,
+            })
+          } catch (addrErr) {
+            console.warn('No se pudo guardar la dirección:', addrErr)
+          }
+        }
+
+        setOrderNumber(order.orderNumber)
+        setPlaced(true)
+        clearCart()
+      } else {
+        // Usuario no autenticado: simular orden (guardar en localStorage)
+        await new Promise(r => setTimeout(r, 800))
+
+        const now = new Date()
+        const seq = Math.floor(1000 + Math.random() * 9000)
+        const ordNumber = `PED-${now.toISOString().slice(0,10).replace(/-/g, '')}-${seq}`
+
+        const order = {
+          id: now.getTime(),
+          orderNumber: ordNumber,
+          status: 'PENDING',
+          items: items.map(item => ({
+            product: item.product,
+            quantity: item.quantity,
+            price: item.product.price,
+          })),
+          subtotal: subtotal,
+          deliveryFee: shippingCost,
+          discount: 0,
+          total: subtotal + shippingCost,
+          paymentMethod: payment,
+          shippingMethod: method,
+          createdAt: now.toISOString(),
+          customerInfo: { fullName, phone, address, department, municipality, zone, reference },
+        }
+
+        try { localStorage.setItem('lastOrder', JSON.stringify(order)) } catch {}
+        setOrderNumber(ordNumber)
+        setPlaced(true)
+        clearCart()
+      }
+    } catch (err) {
+      console.error('Error al crear orden:', err)
+      setError(err instanceof Error ? err.message : 'Error al procesar el pedido. Intenta de nuevo.')
+    } finally {
+      setPlacing(false)
     }
-
-    try { localStorage.setItem('lastOrder', JSON.stringify(order)) } catch {}
-    setOrderNumber(ordNumber)
-    setPlaced(true)
-    clearCart()
-    setPlacing(false)
   }
 
   if (items.length === 0 && !placed) {
@@ -174,6 +260,22 @@ export default function CheckoutPage() {
               <Button variant={method === "domicilio" ? "default" : "outline"} onClick={()=>setMethod("domicilio")}>A domicilio</Button>
               <Button variant={method === "recoger" ? "default" : "outline"} onClick={()=>setMethod("recoger")}>Recoger en tienda</Button>
             </div>
+            {method === "recoger" && branches.length > 0 && (
+              <div className="mt-4">
+                <label className="mb-1 block text-sm font-medium">Selecciona sucursal</label>
+                <select 
+                  className="w-full rounded-md border px-3 py-2"
+                  value={selectedBranchId || ''}
+                  onChange={e => setSelectedBranchId(Number(e.target.value))}
+                >
+                  {branches.map(branch => (
+                    <option key={branch.id} value={branch.id}>
+                      {branch.name} - {branch.address}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             {method === "domicilio" && (
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 <div>
@@ -230,6 +332,36 @@ export default function CheckoutPage() {
               </div>
             )}
           </div>
+
+          {/* Notas del cliente */}
+          <div className="rounded-lg border bg-white p-6">
+            <h2 className="mb-4 text-xl font-semibold">Notas adicionales</h2>
+            <textarea
+              className="w-full rounded-md border px-3 py-2 text-sm"
+              rows={3}
+              value={customerNotes}
+              onChange={e => setCustomerNotes(e.target.value)}
+              placeholder="¿Alguna instrucción especial para tu pedido?"
+            />
+          </div>
+
+          {/* Mensaje para usuarios no autenticados */}
+          {!isAuthenticated && (
+            <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
+              <p className="font-medium">💡 ¿Ya tienes cuenta?</p>
+              <p>
+                <Link href={ROUTES.login} className="underline hover:no-underline">Inicia sesión</Link> para guardar tus pedidos y ver tu historial de compras.
+              </p>
+            </div>
+          )}
+
+          {/* Error */}
+          {error && (
+            <div className="rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-800">
+              <p className="font-medium">Error</p>
+              <p>{error}</p>
+            </div>
+          )}
         </div>
 
         {/* Resumen */}

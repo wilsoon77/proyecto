@@ -13,6 +13,7 @@ import { BranchesModule } from './branches/branches.module.js';
 import { UsersModule } from './users/users.module.js';
 import { AddressesModule } from './addresses/addresses.module.js';
 import { DashboardModule } from './dashboard/dashboard.module.js';
+import { StorageModule } from './storage/storage.module.js';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { DashboardModule } from './dashboard/dashboard.module.js';
     UsersModule,
     AddressesModule,
     DashboardModule,
+    StorageModule,
   ],
   controllers: [],
   providers: [

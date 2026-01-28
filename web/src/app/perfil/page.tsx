@@ -1,64 +1,162 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { useAuth } from "@/context/AuthContext"
+import { addressesService, ordersService } from "@/lib/api"
+import type { ApiAddress, ApiOrder } from "@/lib/api/types"
+import { ROUTES } from "@/lib/constants"
+import { formatDate, formatPrice } from "@/lib/utils"
 
 export default function PerfilPage() {
+  const { user, isAuthenticated, isLoading: authLoading, updateProfile, logout } = useAuth()
+  const router = useRouter()
+
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
   const [email, setEmail] = useState("")
   const [phone, setPhone] = useState("")
-  const [department, setDepartment] = useState("")
-  const [municipality, setMunicipality] = useState("")
-  const [zone, setZone] = useState("")
-  const [address, setAddress] = useState("")
+  
+  // Direcciones
+  const [addresses, setAddresses] = useState<ApiAddress[]>([])
+  const [loadingAddresses, setLoadingAddresses] = useState(false)
+  
+  // Últimos pedidos
+  const [recentOrders, setRecentOrders] = useState<ApiOrder[]>([])
+  const [loadingOrders, setLoadingOrders] = useState(false)
+
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
+  // Cargar datos del usuario
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem('profile')
-      if (raw) {
-        const p = JSON.parse(raw)
-        setFirstName(p.firstName ?? "")
-        setLastName(p.lastName ?? "")
-        setEmail(p.email ?? "")
-        setPhone(p.phone ?? "")
-        setDepartment(p.department ?? "")
-        setMunicipality(p.municipality ?? "")
-        setZone(p.zone ?? "")
-        setAddress(p.address ?? "")
+    if (user) {
+      setFirstName(user.firstName ?? "")
+      setLastName(user.lastName ?? "")
+      setEmail(user.email ?? "")
+      setPhone(user.phone ?? "")
+    } else if (!authLoading && !isAuthenticated) {
+      // Cargar de localStorage si no está autenticado
+      try {
+        const raw = localStorage.getItem('profile')
+        if (raw) {
+          const p = JSON.parse(raw)
+          setFirstName(p.firstName ?? "")
+          setLastName(p.lastName ?? "")
+          setEmail(p.email ?? "")
+          setPhone(p.phone ?? "")
+        }
+      } catch {}
+    }
+  }, [user, authLoading, isAuthenticated])
+
+  // Cargar direcciones y pedidos si está autenticado
+  useEffect(() => {
+    const loadUserData = async () => {
+      if (!isAuthenticated) return
+
+      setLoadingAddresses(true)
+      setLoadingOrders(true)
+
+      try {
+        const [addressList, ordersResponse] = await Promise.all([
+          addressesService.list().catch(() => []),
+          ordersService.myOrders({ pageSize: 5 }).catch(() => ({ data: [] }))
+        ])
+        setAddresses(addressList)
+        setRecentOrders(ordersResponse.data)
+      } catch (err) {
+        console.error('Error cargando datos del usuario:', err)
+      } finally {
+        setLoadingAddresses(false)
+        setLoadingOrders(false)
       }
-    } catch {}
-  }, [])
+    }
+
+    if (!authLoading) {
+      loadUserData()
+    }
+  }, [isAuthenticated, authLoading])
 
   const save = async () => {
     setSaving(true)
-    const data = { firstName, lastName, email, phone, department, municipality, zone, address }
-    try { localStorage.setItem('profile', JSON.stringify(data)) } catch {}
-    // Opcional: también prellenar checkout
+    setError(null)
+
     try {
-      const checkout = {
-        fullName: `${firstName} ${lastName}`.trim(),
-        phone,
-        department,
-        municipality,
-        zone,
-        address,
-        reference: "",
+      if (isAuthenticated) {
+        // Actualizar en la API
+        await updateProfile({ firstName, lastName, phone })
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
+      } else {
+        // Guardar en localStorage
+        const data = { firstName, lastName, email, phone }
+        localStorage.setItem('profile', JSON.stringify(data))
+        // Prellenar checkout
+        const checkout = {
+          fullName: `${firstName} ${lastName}`.trim(),
+          phone,
+          department: "",
+          municipality: "",
+          zone: "",
+          address: "",
+          reference: "",
+        }
+        localStorage.setItem('checkoutCustomer', JSON.stringify(checkout))
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
       }
-      localStorage.setItem('checkoutCustomer', JSON.stringify(checkout))
-    } catch {}
-    setSaved(true)
-    setTimeout(() => setSaved(false), 1500)
-    setSaving(false)
+    } catch (err) {
+      console.error('Error guardando perfil:', err)
+      setError(err instanceof Error ? err.message : 'Error al guardar')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleLogout = () => {
+    logout()
+    router.push(ROUTES.home)
+  }
+
+  // Redirigir a login si no está autenticado
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push(`${ROUTES.login}?returnUrl=${encodeURIComponent('/perfil')}`)
+    }
+  }, [authLoading, isAuthenticated, router])
+
+  // Mostrar loading o redirigiendo
+  if (authLoading || !isAuthenticated) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <div className="text-center">
+          <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <p className="text-gray-600">{authLoading ? 'Cargando...' : 'Redirigiendo al login...'}</p>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
-      <h1 className="mb-6 text-3xl font-bold">Mi Perfil</h1>
-      <div className="grid gap-6 md:grid-cols-2">
+    <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Mi Perfil</h1>
+        <Button variant="outline" onClick={handleLogout}>Cerrar sesión</Button>
+      </div>
+
+      {error && (
+        <div className="mb-6 rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-800">
+          {error}
+        </div>
+      )}
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Información personal */}
         <div className="rounded-lg border bg-white p-6">
           <h2 className="mb-4 text-xl font-semibold">Información personal</h2>
           <div className="grid gap-4">
@@ -72,39 +170,75 @@ export default function PerfilPage() {
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">Correo</label>
-              <Input value={email} onChange={e=>setEmail(e.target.value)} placeholder="juan@correo.com" />
+              <Input value={email} disabled className="bg-gray-50" />
+              <p className="mt-1 text-xs text-gray-500">El correo no se puede cambiar</p>
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">Teléfono</label>
               <Input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="5555-5555" />
             </div>
           </div>
-        </div>
-        <div className="rounded-lg border bg-white p-6">
-          <h2 className="mb-4 text-xl font-semibold">Dirección</h2>
-          <div className="grid gap-4">
-            <div>
-              <label className="mb-1 block text-sm font-medium">Departamento</label>
-              <Input value={department} onChange={e=>setDepartment(e.target.value)} placeholder="Guatemala" />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">Municipio</label>
-              <Input value={municipality} onChange={e=>setMunicipality(e.target.value)} placeholder="Guatemala" />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">Zona</label>
-              <Input value={zone} onChange={e=>setZone(e.target.value)} placeholder="Zona 1" />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">Dirección</label>
-              <Input value={address} onChange={e=>setAddress(e.target.value)} placeholder="Calle, No., colonia" />
-            </div>
+          <div className="mt-4 flex items-center gap-3">
+            <Button onClick={save} disabled={saving}>{saving ? 'Guardando…' : 'Guardar cambios'}</Button>
+            {saved && <span className="text-sm text-emerald-700">✓ Cambios guardados</span>}
           </div>
         </div>
+
+        {/* Direcciones */}
+        <div className="rounded-lg border bg-white p-6">
+          <h2 className="mb-4 text-xl font-semibold">Mis direcciones</h2>
+          {loadingAddresses ? (
+            <div className="animate-pulse space-y-2">
+              <div className="h-16 rounded bg-gray-200" />
+              <div className="h-16 rounded bg-gray-200" />
+            </div>
+          ) : addresses.length === 0 ? (
+            <p className="text-gray-600">No tienes direcciones guardadas. Se crearán automáticamente cuando hagas un pedido a domicilio.</p>
+          ) : (
+            <div className="space-y-3">
+              {addresses.map(addr => (
+                <div key={addr.id} className="rounded-md border p-3 text-sm">
+                  <p className="font-medium">{addr.street}</p>
+                  <p className="text-gray-600">{addr.city}{addr.state ? `, ${addr.state}` : ''}{addr.zone ? ` - ${addr.zone}` : ''}</p>
+                  {addr.reference && <p className="text-gray-500 text-xs">Ref: {addr.reference}</p>}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-      <div className="mt-6 flex items-center gap-3">
-        <Button onClick={save} disabled={saving}>{saving ? 'Guardando…' : 'Guardar cambios'}</Button>
-        {saved && <span className="text-sm text-emerald-700">Cambios guardados</span>}
+
+      {/* Últimos pedidos */}
+      <div className="mt-6 rounded-lg border bg-white p-6">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-xl font-semibold">Últimos pedidos</h2>
+          <Link href={ROUTES.orders} className="text-sm text-primary hover:underline">
+            Ver todos →
+          </Link>
+        </div>
+        {loadingOrders ? (
+          <div className="animate-pulse space-y-2">
+            <div className="h-12 rounded bg-gray-200" />
+            <div className="h-12 rounded bg-gray-200" />
+          </div>
+        ) : recentOrders.length === 0 ? (
+          <p className="text-gray-600">Aún no tienes pedidos.</p>
+        ) : (
+          <div className="divide-y">
+            {recentOrders.map(order => (
+              <div key={order.id} className="flex items-center justify-between py-3">
+                <div>
+                  <p className="font-medium">{order.orderNumber}</p>
+                  <p className="text-sm text-gray-600">{formatDate(new Date(order.createdAt))}</p>
+                </div>
+                <div className="text-right">
+                  <p className="font-bold text-primary">{formatPrice(order.total)}</p>
+                  <p className="text-sm text-gray-600">{order.status}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

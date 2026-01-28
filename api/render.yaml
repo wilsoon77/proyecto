@@ -1,0 +1,52 @@
+# ===========================================
+# Configuración de Render.com para el Backend
+# ===========================================
+# Este archivo define cómo Render debe construir y ejecutar la API
+
+services:
+  - type: web
+    name: panaderia-api
+    runtime: node
+    region: oregon  # Cambiar según tu preferencia
+    plan: free      # Cambiar a 'starter' para producción real
+    
+    # Directorio raíz del servicio
+    rootDir: api
+    
+    # Comandos de build
+    buildCommand: npm ci && npx prisma generate && npm run build
+    
+    # Comando para iniciar
+    startCommand: npm run start:prod
+    
+    # Variables de entorno (configurar en dashboard de Render)
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      - key: DATABASE_URL
+        sync: false  # Configurar manualmente con tu URL de Supabase
+      - key: DIRECT_URL
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        generateValue: true  # Render genera un valor aleatorio
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: CORS_ORIGINS
+        sync: false  # Configurar con tu dominio de Vercel
+      # Appwrite Storage (opcional)
+      - key: APPWRITE_ENDPOINT
+        sync: false
+      - key: APPWRITE_PROJECT_ID
+        sync: false
+      - key: APPWRITE_API_KEY
+        sync: false
+      - key: APPWRITE_BUCKET_ID
+        sync: false
+    
+    # Health check
+    healthCheckPath: /health
+    
+    # Auto-deploy cuando hay push a main
+    autoDeploy: true

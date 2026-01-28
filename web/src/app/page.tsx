@@ -1,8 +1,36 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import Link from "next/link"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { formatPrice } from "@/lib/utils"
-import { SHIPPING } from "@/lib/constants"
+import { SHIPPING, ROUTES } from "@/lib/constants"
+import { useCart } from "@/context/CartContext"
+import { productsService } from "@/lib/api"
+import { apiProductToProduct } from "@/lib/api/transformers"
+import type { Product } from "@/types"
 
 export default function Home() {
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const { addItem } = useCart()
+
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        const response = await productsService.list({ pageSize: 8 })
+        const products = response.data.map(apiProductToProduct)
+        setFeaturedProducts(products)
+      } catch (err) {
+        console.error('Error cargando productos destacados:', err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    loadProducts()
+  }, [])
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white">
       {/* Hero Section */}
@@ -18,12 +46,16 @@ export default function Home() {
             Entrega a domicilio en toda Guatemala.
           </p>
           <div className="mt-10 flex items-center justify-center gap-4">
-            <Button size="lg" className="text-base">
-              Ver Productos
-            </Button>
-            <Button size="lg" variant="outline" className="text-base">
-              Conocer Más
-            </Button>
+            <Link href={ROUTES.products}>
+              <Button size="lg" className="text-base">
+                Ver Productos
+              </Button>
+            </Link>
+            <Link href={ROUTES.about}>
+              <Button size="lg" variant="outline" className="text-base">
+                Conocer Más
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
@@ -74,82 +106,92 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {/* Product Card 1 */}
-          <div className="group overflow-hidden rounded-lg border bg-white shadow-sm transition-shadow hover:shadow-md">
-            <div className="aspect-square bg-gray-100">
-              <div className="flex h-full items-center justify-center text-6xl">
-                🥖
+        {isLoading ? (
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="animate-pulse overflow-hidden rounded-lg border bg-white">
+                <div className="aspect-square bg-gray-200" />
+                <div className="p-4 space-y-2">
+                  <div className="h-5 w-3/4 rounded bg-gray-200" />
+                  <div className="h-4 w-1/2 rounded bg-gray-200" />
+                  <div className="h-8 w-full rounded bg-gray-200" />
+                </div>
               </div>
-            </div>
-            <div className="p-4">
-              <h3 className="font-semibold text-gray-900">Pan Francés</h3>
-              <p className="mt-1 text-sm text-gray-500">Tradicional guatemalteco</p>
-              <div className="mt-3 flex items-center justify-between">
-                <span className="text-lg font-bold text-primary">
-                  {formatPrice(2.50)}
-                </span>
-                <Button size="sm">Agregar</Button>
-              </div>
-            </div>
+            ))}
           </div>
+        ) : featuredProducts.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-600">No hay productos disponibles en este momento.</p>
+            <Link href={ROUTES.products}>
+              <Button className="mt-4">Ver catálogo completo</Button>
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {featuredProducts.slice(0, 8).map(product => {
+              const finalPrice = product.discount && product.discount > 0
+                ? product.price * (1 - product.discount / 100)
+                : product.price
 
-          {/* Product Card 2 */}
-          <div className="group overflow-hidden rounded-lg border bg-white shadow-sm transition-shadow hover:shadow-md">
-            <div className="aspect-square bg-gray-100">
-              <div className="flex h-full items-center justify-center text-6xl">
-                🍞
-              </div>
-            </div>
-            <div className="p-4">
-              <h3 className="font-semibold text-gray-900">Pan Dulce</h3>
-              <p className="mt-1 text-sm text-gray-500">Receta tradicional</p>
-              <div className="mt-3 flex items-center justify-between">
-                <span className="text-lg font-bold text-primary">
-                  {formatPrice(3.00)}
-                </span>
-                <Button size="sm">Agregar</Button>
-              </div>
-            </div>
+              return (
+                <div key={product.id} className="group overflow-hidden rounded-lg border bg-white shadow-sm transition-shadow hover:shadow-md">
+                  <Link href={`${ROUTES.products}/${product.slug}`}>
+                    <div className="aspect-square bg-gray-100 relative overflow-hidden">
+                      {product.imageUrl ? (
+                        <Image
+                          src={product.imageUrl}
+                          alt={product.name}
+                          fill
+                          className="object-cover transition-transform group-hover:scale-105"
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-6xl">
+                          🥖
+                        </div>
+                      )}
+                      {product.discount && product.discount > 0 && (
+                        <span className="absolute top-2 right-2 rounded-full bg-red-500 px-2 py-1 text-xs font-bold text-white">
+                          -{product.discount}%
+                        </span>
+                      )}
+                    </div>
+                  </Link>
+                  <div className="p-4">
+                    <Link href={`${ROUTES.products}/${product.slug}`}>
+                      <h3 className="font-semibold text-gray-900 hover:text-primary">{product.name}</h3>
+                    </Link>
+                    <p className="mt-1 text-sm text-gray-500 line-clamp-1">{product.category}</p>
+                    <div className="mt-3 flex items-center justify-between">
+                      <div>
+                        <span className="text-lg font-bold text-primary">
+                          {formatPrice(finalPrice)}
+                        </span>
+                        {product.discount && product.discount > 0 && (
+                          <span className="ml-2 text-sm text-gray-400 line-through">
+                            {formatPrice(product.price)}
+                          </span>
+                        )}
+                      </div>
+                      <Button 
+                        size="sm" 
+                        disabled={!product.isAvailable}
+                        onClick={() => addItem(product, 1)}
+                      >
+                        Agregar
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
           </div>
+        )}
 
-          {/* Product Card 3 */}
-          <div className="group overflow-hidden rounded-lg border bg-white shadow-sm transition-shadow hover:shadow-md">
-            <div className="aspect-square bg-gray-100">
-              <div className="flex h-full items-center justify-center text-6xl">
-                🍪
-              </div>
-            </div>
-            <div className="p-4">
-              <h3 className="font-semibold text-gray-900">Galletas</h3>
-              <p className="mt-1 text-sm text-gray-500">Docena surtida</p>
-              <div className="mt-3 flex items-center justify-between">
-                <span className="text-lg font-bold text-primary">
-                  {formatPrice(25.00)}
-                </span>
-                <Button size="sm">Agregar</Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Product Card 4 */}
-          <div className="group overflow-hidden rounded-lg border bg-white shadow-sm transition-shadow hover:shadow-md">
-            <div className="aspect-square bg-gray-100">
-              <div className="flex h-full items-center justify-center text-6xl">
-                🎂
-              </div>
-            </div>
-            <div className="p-4">
-              <h3 className="font-semibold text-gray-900">Pastel Pequeño</h3>
-              <p className="mt-1 text-sm text-gray-500">Para 4-6 personas</p>
-              <div className="mt-3 flex items-center justify-between">
-                <span className="text-lg font-bold text-primary">
-                  {formatPrice(120.00)}
-                </span>
-                <Button size="sm">Agregar</Button>
-              </div>
-            </div>
-          </div>
+        <div className="mt-12 text-center">
+          <Link href={ROUTES.products}>
+            <Button size="lg" variant="outline">Ver todos los productos</Button>
+          </Link>
         </div>
       </section>
     </div>

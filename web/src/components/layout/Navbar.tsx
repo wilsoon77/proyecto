@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { ShoppingCart, User, Menu, MapPin, Apple, Play, LogOut } from "lucide-react"
+import { ShoppingCart, User, Menu, MapPin, Apple, Play, LogOut, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ROUTES } from "@/lib/constants"
 import { useState } from "react"
@@ -119,6 +119,17 @@ export function Navbar() {
                   <DropdownMenuItem asChild>
                     <Link href={ROUTES.orders}>Mis pedidos</Link>
                   </DropdownMenuItem>
+                  {user?.role === 'ADMIN' && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link href="/admin" className="text-amber-600 font-medium">
+                          <Settings className="mr-2 h-4 w-4" />
+                          Panel Admin
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => logout()} className="text-red-600">
                     <LogOut className="mr-2 h-4 w-4" />

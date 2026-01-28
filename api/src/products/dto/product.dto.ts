@@ -49,6 +49,9 @@ export class UpdateProductDto {
   @ApiProperty({ example: 'Concha vainilla', required: false })
   @IsOptional() @IsString() name?: string;
 
+  @ApiProperty({ example: 'concha-vainilla', required: false })
+  @IsOptional() @IsString() slug?: string;
+
   @ApiProperty({ example: 'Pan dulce con vainilla', required: false })
   @IsOptional() @IsString() description?: string;
 

@@ -52,6 +52,13 @@ export const productsService = {
   },
 
   /**
+   * Obtener un producto por ID
+   */
+  async getById(id: number): Promise<ApiProduct> {
+    return api.get<ApiProduct>(`/products/by-id/${id}`, { skipAuth: true })
+  },
+
+  /**
    * Crear producto (ADMIN)
    */
   async create(data: CreateProductDto): Promise<ApiProduct> {

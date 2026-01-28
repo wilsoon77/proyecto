@@ -3,7 +3,7 @@
  */
 
 // Cliente HTTP base
-export { api, ApiClientError, getToken, clearTokens, isAuthenticated, setTokens } from './client'
+export { api, api as apiClient, ApiClientError, getToken, clearTokens, isAuthenticated, setTokens } from './client'
 
 // Servicios
 export { authService } from './auth'
@@ -12,6 +12,8 @@ export { categoriesService } from './categories'
 export { branchesService } from './branches'
 export { ordersService } from './orders'
 export { addressesService } from './addresses'
+export { adminService } from './admin.service'
+export type { ProductDetailResponse, CreateProductData, UpdateProductData } from './admin.service'
 
 // Transformadores
 export * from './transformers'

@@ -178,6 +178,55 @@ class ApiClient {
   delete<T>(endpoint: string, options?: RequestOptions): Promise<T> {
     return this.request<T>(endpoint, { ...options, method: 'DELETE' })
   }
+
+  // Método para subir archivos (FormData)
+  async uploadFile<T>(endpoint: string, formData: FormData): Promise<T> {
+    const headers: HeadersInit = {}
+    
+    const token = getToken()
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+
+    let response = await fetch(`${this.baseUrl}${endpoint}`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    })
+
+    // Si el token expiró, intentar refrescar
+    if (response.status === 401) {
+      const refreshed = await this.handleRefresh()
+      
+      if (refreshed) {
+        const newToken = getToken()
+        if (newToken) {
+          headers['Authorization'] = `Bearer ${newToken}`
+        }
+        response = await fetch(`${this.baseUrl}${endpoint}`, {
+          method: 'POST',
+          headers,
+          body: formData,
+        })
+      } else {
+        clearTokens()
+        throw new ApiClientError('Sesión expirada', 401)
+      }
+    }
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      const error = data as ApiError
+      throw new ApiClientError(
+        Array.isArray(error.message) ? error.message.join(', ') : error.message,
+        response.status,
+        error
+      )
+    }
+
+    return data as T
+  }
 }
 
 // ==================== ERROR PERSONALIZADO ====================

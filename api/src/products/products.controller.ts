@@ -91,6 +91,56 @@ export class ProductsController {
     return this.productsService.findFeatured(parsedLimit);
   }
 
+  // ==================== ENDPOINTS POR ID (para admin) ====================
+
+  @Get('by-id/:id')
+  @ApiOperation({ summary: 'Obtener producto por ID', description: 'Obtiene información completa de un producto por su ID numérico.' })
+  @ApiResponse({ status: 200, description: 'Producto encontrado', type: ProductDto })
+  @ApiNotFoundResponse({ description: 'Producto no encontrado' })
+  async findOneById(@Param('id') id: string) {
+    const prod = await this.productsService.findById(Number(id));
+    if (!prod) return { message: 'Producto no encontrado' };
+    return prod;
+  }
+
+  @Patch('by-id/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Actualizar producto por ID', description: 'Actualiza parcialmente un producto por ID. Requiere rol ADMIN.' })
+  @ApiBearerAuth()
+  @ApiBody({ type: UpdateProductDto })
+  @ApiResponse({ status: 200, description: 'Producto actualizado', type: ProductDto })
+  @ApiBadRequestResponse({ description: 'Datos inválidos' })
+  @ApiNotFoundResponse({ description: 'Producto no encontrado' })
+  updateById(@Param('id') id: string, @Body() body: UpdateProductDto) {
+    return this.productsService.updateById(Number(id), body);
+  }
+
+  @Post('by-id/:id/deactivate')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Desactivar producto por ID', description: 'Desactiva un producto (soft delete). Requiere rol ADMIN.' })
+  @ApiBearerAuth()
+  @ApiResponse({ status: 200, description: 'Producto desactivado' })
+  @ApiNotFoundResponse({ description: 'Producto no encontrado' })
+  deactivateById(@Param('id') id: string) {
+    return this.productsService.deactivateById(Number(id));
+  }
+
+  @Delete('by-id/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Eliminar producto por ID', description: 'Elimina físicamente si no está referenciado. Requiere rol ADMIN.' })
+  @ApiBearerAuth()
+  @ApiResponse({ status: 200, description: 'Producto eliminado' })
+  @ApiNotFoundResponse({ description: 'Producto no encontrado' })
+  @ApiBadRequestResponse({ description: 'No se puede eliminar: referenciado' })
+  removeById(@Param('id') id: string) {
+    return this.productsService.deleteById(Number(id));
+  }
+
+  // ==================== ENDPOINTS POR SLUG (compatibilidad) ====================
+
   @Get(':slug')
   @ApiOperation({ summary: 'Obtener detalle de producto', description: 'Obtiene información completa de un producto por su slug.' })
   @ApiResponse({ status: 200, description: 'Producto encontrado', type: ProductDto })

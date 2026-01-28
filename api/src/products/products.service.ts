@@ -127,10 +127,112 @@ export class ProductsService {
       description: p.description ?? undefined,
       price: Number(p.price),
       category: p.category.name,
+      categorySlug: p.category.slug,
       isNew: p.isNew ?? undefined,
       discount: p.discountPct ?? undefined,
       available,
-    } satisfies ProductDTO;
+    };
+  }
+
+  // ==================== MÉTODOS POR ID ====================
+  
+  async findById(id: number) {
+    const p = await this.prisma.product.findUnique({
+      where: { id },
+      include: { category: true, images: true },
+    });
+    if (!p) return null;
+    const inv = await this.prisma.inventory.findMany({ where: { productId: p.id } });
+    const available = inv.reduce((sum, i) => sum + (i.quantity - i.reserved), 0);
+    return {
+      id: p.id,
+      sku: p.sku,
+      name: p.name,
+      slug: p.slug,
+      description: p.description ?? undefined,
+      price: Number(p.price),
+      category: p.category.name,
+      categorySlug: p.category.slug,
+      categoryId: p.categoryId,
+      origin: p.origin,
+      isNew: p.isNew ?? false,
+      isActive: p.isActive,
+      isAvailable: p.isAvailable,
+      discountPct: p.discountPct ?? undefined,
+      images: p.images.map(img => ({ id: img.id, url: img.url, position: img.position })),
+      available,
+      createdAt: p.createdAt,
+      updatedAt: p.updatedAt,
+    };
+  }
+
+  async updateById(id: number, data: { sku?: string; name?: string; slug?: string; description?: string; price?: number; discountPct?: number; categorySlug?: string; origin?: string; isNew?: boolean; isActive?: boolean; isAvailable?: boolean }) {
+    const prod = await this.prisma.product.findUnique({ where: { id } });
+    if (!prod) throw new NotFoundException('Producto no encontrado');
+    
+    // Validar SKU único si cambia
+    if (data.sku && data.sku !== prod.sku) {
+      const existingSku = await this.prisma.product.findUnique({ where: { sku: data.sku } });
+      if (existingSku) throw new BadRequestException('SKU ya existe');
+    }
+    
+    // Validar slug único si cambia
+    if (data.slug && data.slug !== prod.slug) {
+      const existingSlug = await this.prisma.product.findUnique({ where: { slug: data.slug } });
+      if (existingSlug) throw new BadRequestException('Slug ya existe');
+    }
+    
+    let categoryId = prod.categoryId;
+    if (data.categorySlug) {
+      const category = await this.prisma.category.findUnique({ where: { slug: data.categorySlug } });
+      if (!category) throw new BadRequestException('Categoría no encontrada');
+      categoryId = category.id;
+    }
+    
+    const updated = await this.prisma.product.update({ 
+      where: { id }, 
+      data: { 
+        sku: data.sku, 
+        name: data.name,
+        slug: data.slug,
+        description: data.description, 
+        price: data.price, 
+        discountPct: data.discountPct, 
+        categoryId, 
+        origin: (data.origin as any) ?? undefined, 
+        isNew: data.isNew, 
+        isActive: data.isActive, 
+        isAvailable: data.isAvailable 
+      },
+      include: { category: true },
+    });
+    
+    return {
+      id: updated.id,
+      sku: updated.sku,
+      name: updated.name,
+      slug: updated.slug,
+      description: updated.description ?? undefined,
+      price: Number(updated.price),
+      category: updated.category.name,
+      categorySlug: updated.category.slug,
+      isNew: updated.isNew,
+      isActive: updated.isActive,
+    };
+  }
+
+  async deactivateById(id: number) {
+    const prod = await this.prisma.product.findUnique({ where: { id } });
+    if (!prod) throw new NotFoundException('Producto no encontrado');
+    return this.prisma.product.update({ where: { id }, data: { isActive: false } });
+  }
+
+  async deleteById(id: number) {
+    const prod = await this.prisma.product.findUnique({ where: { id }, include: { orderItems: true } });
+    if (!prod) throw new NotFoundException('Producto no encontrado');
+    if (prod.orderItems.length) throw new BadRequestException('No se puede eliminar: producto referenciado en órdenes');
+    await this.prisma.product.delete({ where: { id } });
+    return { deleted: true, id };
   }
 
   // Helper reutilizable

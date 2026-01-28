@@ -1,0 +1,271 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import Link from "next/link"
+import Image from "next/image"
+import { 
+  Plus, 
+  Search, 
+  Edit, 
+  Trash2, 
+  MoreHorizontal,
+  ChevronLeft,
+  ChevronRight,
+  ImageIcon
+} from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { productsService, adminService } from "@/lib/api"
+import type { ApiProduct } from "@/lib/api/types"
+import { formatPrice } from "@/lib/utils"
+
+export default function AdminProductosPage() {
+  const [products, setProducts] = useState<ApiProduct[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null)
+
+  const loadProducts = async (page: number = 1, search: string = "") => {
+    setIsLoading(true)
+    try {
+      const params: Record<string, string | number> = { 
+        page, 
+        pageSize: 10,
+      }
+      if (search) {
+        params.search = search
+      }
+      
+      const response = await productsService.list(params)
+      setProducts(response.data || [])
+      setTotalPages(response.meta?.pageCount || 1)
+      setCurrentPage(response.meta?.page || 1)
+    } catch (error) {
+      console.error("Error loading products:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadProducts()
+  }, [])
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    loadProducts(1, searchQuery)
+  }
+
+  const handleDelete = async (productId: number) => {
+    try {
+      await adminService.deleteProduct(productId)
+      setDeleteConfirm(null)
+      loadProducts(currentPage, searchQuery)
+    } catch (error) {
+      console.error("Error deleting product:", error)
+      alert("Error al eliminar el producto. Puede que esté referenciado en órdenes.")
+      setDeleteConfirm(null)
+    }
+  }
+
+  return (
+    <div className="p-8">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Productos</h1>
+          <p className="text-gray-500 mt-1">Gestiona el catálogo de productos</p>
+        </div>
+        <Link href="/admin/productos/nuevo">
+          <Button className="bg-amber-600 hover:bg-amber-700">
+            <Plus className="h-4 w-4 mr-2" />
+            Nuevo Producto
+          </Button>
+        </Link>
+      </div>
+
+      {/* Search */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+        <form onSubmit={handleSearch} className="flex gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Buscar productos..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+            />
+          </div>
+          <Button type="submit" variant="outline">
+            Buscar
+          </Button>
+        </form>
+      </div>
+
+      {/* Products Table */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        {isLoading ? (
+          <div className="p-8">
+            <div className="animate-pulse space-y-4">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="flex items-center gap-4">
+                  <div className="h-16 w-16 bg-gray-200 rounded-lg"></div>
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+                    <div className="h-3 bg-gray-200 rounded w-1/4"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : products.length === 0 ? (
+          <div className="p-8 text-center">
+            <ImageIcon className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500">No se encontraron productos</p>
+            <Link href="/admin/productos/nuevo">
+              <Button className="mt-4 bg-amber-600 hover:bg-amber-700">
+                <Plus className="h-4 w-4 mr-2" />
+                Crear primer producto
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          <>
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-100">
+                <tr>
+                  <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Producto</th>
+                  <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Categoría</th>
+                  <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Precio</th>
+                  <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Stock</th>
+                  <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Estado</th>
+                  <th className="text-right px-6 py-4 text-sm font-medium text-gray-500">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {products.map((product) => (
+                  <tr key={product.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-4">
+                        <div className="h-14 w-14 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
+                          {product.images && product.images.length > 0 ? (
+                            <Image
+                              src={product.images[0].url}
+                              alt={product.name}
+                              width={56}
+                              height={56}
+                              className="object-cover w-full h-full"
+                            />
+                          ) : (
+                            <ImageIcon className="h-6 w-6 text-gray-400" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{product.name}</p>
+                          <p className="text-sm text-gray-500">{product.slug}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                        {product.category}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 font-medium text-gray-900">
+                      {formatPrice(product.price)}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`font-medium ${
+                        (product.available || 0) > 10 ? "text-green-600" : 
+                        (product.available || 0) > 0 ? "text-yellow-600" : "text-red-600"
+                      }`}>
+                        {product.available || 0}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      {product.isNew ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          Nuevo
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                          Normal
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-end gap-2">
+                        <Link href={`/admin/productos/${product.id}/editar`}>
+                          <Button variant="ghost" size="sm">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                        {deleteConfirm === product.id ? (
+                          <div className="flex items-center gap-1">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => setDeleteConfirm(null)}
+                            >
+                              Cancelar
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              onClick={() => handleDelete(product.id)}
+                            >
+                              Confirmar
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => setDeleteConfirm(product.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100">
+                <p className="text-sm text-gray-500">
+                  Página {currentPage} de {totalPages}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage <= 1}
+                    onClick={() => loadProducts(currentPage - 1, searchQuery)}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage >= totalPages}
+                    onClick={() => loadProducts(currentPage + 1, searchQuery)}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  )
+}

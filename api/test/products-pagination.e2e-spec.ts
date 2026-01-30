@@ -19,6 +19,7 @@ const mockService: Partial<ProductsService> = {
         isNew: true,
         discount: 10,
         available: 24,
+        images: [],
       },
     ],
     meta: { total: 1, pageCount: 1, page: 1, pageSize: 10 },

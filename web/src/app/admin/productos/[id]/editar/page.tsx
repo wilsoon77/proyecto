@@ -6,6 +6,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { ArrowLeft, Upload, X, Loader2, Save, ImageIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useToast } from "@/components/ui/toast"
 import { adminService, categoriesService, ApiClientError } from "@/lib/api"
 import type { ProductDetailResponse } from "@/lib/api/admin.service"
 
@@ -19,6 +20,7 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
   const resolvedParams = use(params)
   const productId = parseInt(resolvedParams.id) // Ahora usamos ID numérico
   const router = useRouter()
+  const { showToast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   const [product, setProduct] = useState<ProductDetailResponse | null>(null)
@@ -171,8 +173,10 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
         price: parseFloat(price),
         categorySlug: selectedCategory?.slug || '',
         isNew,
+        imageUrl: imageUrl || undefined,
       })
 
+      showToast(`Producto "${name.trim()}" actualizado correctamente`, "success")
       router.push("/admin/productos")
     } catch (err) {
       if (err instanceof ApiClientError) {

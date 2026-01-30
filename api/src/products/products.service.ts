@@ -58,7 +58,7 @@ export class ProductsService {
       this.prisma.product.findMany({
       where,
       orderBy,
-      include: { category: true },
+      include: { category: true, images: true },
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
@@ -98,7 +98,8 @@ export class ProductsService {
         isNew: p.isNew ?? undefined,
         discount: p.discountPct ?? undefined,
         available,
-      } satisfies ProductDTO;
+        images: p.images.map(img => ({ id: img.id, url: img.url, position: img.position })),
+      };
     });
 
     return {
@@ -166,7 +167,7 @@ export class ProductsService {
     };
   }
 
-  async updateById(id: number, data: { sku?: string; name?: string; slug?: string; description?: string; price?: number; discountPct?: number; categorySlug?: string; origin?: string; isNew?: boolean; isActive?: boolean; isAvailable?: boolean }) {
+  async updateById(id: number, data: { sku?: string; name?: string; slug?: string; description?: string; price?: number; discountPct?: number; categorySlug?: string; origin?: string; isNew?: boolean; isActive?: boolean; isAvailable?: boolean; imageUrl?: string }) {
     const prod = await this.prisma.product.findUnique({ where: { id } });
     if (!prod) throw new NotFoundException('Producto no encontrado');
     
@@ -206,6 +207,19 @@ export class ProductsService {
       },
       include: { category: true },
     });
+    
+    // Actualizar imagen si se proporciona URL
+    if (data.imageUrl) {
+      // Eliminar imágenes anteriores y crear nueva
+      await this.prisma.productImage.deleteMany({ where: { productId: id } });
+      await this.prisma.productImage.create({
+        data: {
+          productId: id,
+          url: data.imageUrl,
+          position: 0,
+        }
+      });
+    }
     
     return {
       id: updated.id,
@@ -248,14 +262,39 @@ export class ProductsService {
     return invAll.reduce((sum, i) => sum + (i.quantity - i.reserved), 0);
   }
 
-  async create(data: { sku: string; name: string; slug: string; description?: string; price: number; categorySlug: string; origin?: string; isNew?: boolean; isAvailable?: boolean }) {
+  async create(data: { sku: string; name: string; slug: string; description?: string; price: number; categorySlug: string; origin?: string; isNew?: boolean; isAvailable?: boolean; imageUrl?: string }) {
     const category = await this.prisma.category.findUnique({ where: { slug: data.categorySlug } });
     if (!category) throw new BadRequestException('Categoría no encontrada');
     const existing = await this.prisma.product.findUnique({ where: { slug: data.slug } });
     if (existing) throw new BadRequestException('Slug ya existe');
     const existingSku = await this.prisma.product.findUnique({ where: { sku: data.sku } });
     if (existingSku) throw new BadRequestException('SKU ya existe');
-    const product = await this.prisma.product.create({ data: { sku: data.sku, name: data.name, slug: data.slug, description: data.description, price: data.price, categoryId: category.id, origin: (data.origin as any) ?? undefined, isNew: data.isNew ?? false, isAvailable: data.isAvailable ?? true } });
+    
+    const product = await this.prisma.product.create({ 
+      data: { 
+        sku: data.sku, 
+        name: data.name, 
+        slug: data.slug, 
+        description: data.description, 
+        price: data.price, 
+        categoryId: category.id, 
+        origin: (data.origin as any) ?? undefined, 
+        isNew: data.isNew ?? false, 
+        isAvailable: data.isAvailable ?? true 
+      } 
+    });
+    
+    // Crear imagen si se proporciona URL
+    if (data.imageUrl) {
+      await this.prisma.productImage.create({
+        data: {
+          productId: product.id,
+          url: data.imageUrl,
+          position: 0,
+        }
+      });
+    }
+    
     return product;
   }
 

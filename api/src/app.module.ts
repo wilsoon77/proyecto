@@ -14,6 +14,7 @@ import { UsersModule } from './users/users.module.js';
 import { AddressesModule } from './addresses/addresses.module.js';
 import { DashboardModule } from './dashboard/dashboard.module.js';
 import { StorageModule } from './storage/storage.module.js';
+import { SupabaseModule } from './supabase/supabase.module.js';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { StorageModule } from './storage/storage.module.js';
     AddressesModule,
     DashboardModule,
     StorageModule,
+    SupabaseModule,
   ],
   controllers: [],
   providers: [

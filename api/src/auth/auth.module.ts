@@ -7,6 +7,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { JwtStrategy } from './jwt.strategy.js';
 import { RolesGuard } from './roles.guard.js';
 import { LoggerService } from '../common/logger/logger.service.js';
+import { SupabaseService } from '../supabase/supabase.service.js';
 
 @Module({
   imports: [
@@ -16,7 +17,7 @@ import { LoggerService } from '../common/logger/logger.service.js';
       signOptions: { expiresIn: '15m' }, // Access token ahora expira en 15 min
     }),
   ],
-  providers: [AuthService, PrismaService, JwtStrategy, RolesGuard, LoggerService],
+  providers: [AuthService, PrismaService, JwtStrategy, RolesGuard, LoggerService, SupabaseService],
   controllers: [AuthController],
   exports: [LoggerService], // Exportamos para usar en otros módulos
 })

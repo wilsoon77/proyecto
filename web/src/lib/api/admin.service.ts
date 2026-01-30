@@ -10,6 +10,7 @@ export interface CreateProductData {
   categorySlug: string
   isNew?: boolean
   origin?: 'PRODUCIDO' | 'COMPRADO'
+  imageUrl?: string
 }
 
 export interface UpdateProductData {
@@ -23,6 +24,7 @@ export interface UpdateProductData {
   isActive?: boolean
   isAvailable?: boolean
   origin?: 'PRODUCIDO' | 'COMPRADO'
+  imageUrl?: string
 }
 
 // Respuesta detallada del producto por ID

@@ -6,6 +6,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { ArrowLeft, Upload, X, Loader2, Save, ImageIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useToast } from "@/components/ui/toast"
 import { adminService, categoriesService, ApiClientError } from "@/lib/api"
 
 interface Category {
@@ -27,6 +28,7 @@ function generateSlug(name: string): string {
 
 export default function NuevoProductoPage() {
   const router = useRouter()
+  const { showToast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   const [categories, setCategories] = useState<Category[]>([])
@@ -159,8 +161,10 @@ export default function NuevoProductoPage() {
         price: parseFloat(price),
         categorySlug: selectedCategory?.slug || '',
         isNew,
+        imageUrl: imageUrl || undefined,
       })
 
+      showToast(`Producto "${name.trim()}" creado correctamente`, "success")
       router.push("/admin/productos")
     } catch (err) {
       if (err instanceof ApiClientError) {

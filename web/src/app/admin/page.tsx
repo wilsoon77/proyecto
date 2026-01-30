@@ -21,6 +21,7 @@ interface DashboardResponse {
     activeProducts: number
     totalCategories: number
     totalBranches: number
+    totalUsers: number
   }
   last30Days: {
     ordersCount: number
@@ -91,7 +92,7 @@ export default function AdminDashboardPage() {
         setStats({
           totalProducts: response.summary.activeProducts,
           totalOrders: response.summary.totalOrders,
-          totalUsers: 0, // No se incluye en el endpoint
+          totalUsers: response.summary.totalUsers || 0,
           totalRevenue: response.summary.totalRevenue,
           pendingOrders: response.summary.pendingOrders,
           lowStockProducts: response.lowStockProducts?.length || 0,

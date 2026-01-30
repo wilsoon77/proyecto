@@ -1,32 +1,46 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { 
   Plus, 
   Search, 
   Edit, 
-  Trash2, 
-  MoreHorizontal,
+  Trash2,
   ChevronLeft,
   ChevronRight,
-  ImageIcon
+  ImageIcon,
+  X
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
+import { useToast } from "@/components/ui/toast"
 import { productsService, adminService } from "@/lib/api"
 import type { ApiProduct } from "@/lib/api/types"
 import { formatPrice } from "@/lib/utils"
 
 export default function AdminProductosPage() {
+  const { showToast } = useToast()
   const [products, setProducts] = useState<ApiProduct[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
-  const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null)
+  
+  // Delete modal state
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean
+    productId: number | null
+    productName: string
+  }>({
+    isOpen: false,
+    productId: null,
+    productName: ""
+  })
+  const [isDeleting, setIsDeleting] = useState(false)
 
-  const loadProducts = async (page: number = 1, search: string = "") => {
+  const loadProducts = useCallback(async (page: number = 1, search: string = "") => {
     setIsLoading(true)
     try {
       const params: Record<string, string | number> = { 
@@ -43,29 +57,63 @@ export default function AdminProductosPage() {
       setCurrentPage(response.meta?.page || 1)
     } catch (error) {
       console.error("Error loading products:", error)
+      showToast("Error al cargar los productos", "error")
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [showToast])
 
+  // Initial load
   useEffect(() => {
     loadProducts()
-  }, [])
+  }, [loadProducts])
+
+  // Debounced search - auto search when user types (with 500ms delay)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadProducts(1, searchQuery)
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [searchQuery, loadProducts])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     loadProducts(1, searchQuery)
   }
 
-  const handleDelete = async (productId: number) => {
+  const handleClearSearch = () => {
+    setSearchQuery("")
+  }
+
+  const openDeleteModal = (product: ApiProduct) => {
+    setDeleteModal({
+      isOpen: true,
+      productId: product.id,
+      productName: product.name
+    })
+  }
+
+  const closeDeleteModal = () => {
+    if (!isDeleting) {
+      setDeleteModal({ isOpen: false, productId: null, productName: "" })
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!deleteModal.productId || isDeleting) return
+
+    setIsDeleting(true)
     try {
-      await adminService.deleteProduct(productId)
-      setDeleteConfirm(null)
+      await adminService.deleteProduct(deleteModal.productId)
+      showToast(`Producto "${deleteModal.productName}" eliminado correctamente`, "success")
+      setDeleteModal({ isOpen: false, productId: null, productName: "" })
       loadProducts(currentPage, searchQuery)
     } catch (error) {
       console.error("Error deleting product:", error)
-      alert("Error al eliminar el producto. Puede que esté referenciado en órdenes.")
-      setDeleteConfirm(null)
+      showToast("Error al eliminar el producto. Puede que esté referenciado en órdenes.", "error")
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -92,13 +140,22 @@ export default function AdminProductosPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
               type="text"
-              placeholder="Buscar productos..."
+              placeholder="Buscar productos... (búsqueda automática)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              className="w-full pl-10 pr-10 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
             />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={handleClearSearch}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            )}
           </div>
-          <Button type="submit" variant="outline">
+          <Button type="submit" variant="outline" disabled={isLoading}>
             Buscar
           </Button>
         </form>
@@ -123,13 +180,17 @@ export default function AdminProductosPage() {
         ) : products.length === 0 ? (
           <div className="p-8 text-center">
             <ImageIcon className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500">No se encontraron productos</p>
-            <Link href="/admin/productos/nuevo">
-              <Button className="mt-4 bg-amber-600 hover:bg-amber-700">
-                <Plus className="h-4 w-4 mr-2" />
-                Crear primer producto
-              </Button>
-            </Link>
+            <p className="text-gray-500">
+              {searchQuery ? "No se encontraron productos para esta búsqueda" : "No hay productos"}
+            </p>
+            {!searchQuery && (
+              <Link href="/admin/productos/nuevo">
+                <Button className="mt-4 bg-amber-600 hover:bg-amber-700">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Crear primer producto
+                </Button>
+              </Link>
+            )}
           </div>
         ) : (
           <>
@@ -198,38 +259,19 @@ export default function AdminProductosPage() {
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
                         <Link href={`/admin/productos/${product.id}/editar`}>
-                          <Button variant="ghost" size="sm">
+                          <Button variant="ghost" size="sm" title="Editar producto">
                             <Edit className="h-4 w-4" />
                           </Button>
                         </Link>
-                        {deleteConfirm === product.id ? (
-                          <div className="flex items-center gap-1">
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              onClick={() => setDeleteConfirm(null)}
-                            >
-                              Cancelar
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                              onClick={() => handleDelete(product.id)}
-                            >
-                              Confirmar
-                            </Button>
-                          </div>
-                        ) : (
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            onClick={() => setDeleteConfirm(product.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => openDeleteModal(product)}
+                          title="Eliminar producto"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -247,7 +289,7 @@ export default function AdminProductosPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={currentPage <= 1}
+                    disabled={currentPage <= 1 || isLoading}
                     onClick={() => loadProducts(currentPage - 1, searchQuery)}
                   >
                     <ChevronLeft className="h-4 w-4" />
@@ -255,7 +297,7 @@ export default function AdminProductosPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={currentPage >= totalPages}
+                    disabled={currentPage >= totalPages || isLoading}
                     onClick={() => loadProducts(currentPage + 1, searchQuery)}
                   >
                     <ChevronRight className="h-4 w-4" />
@@ -266,6 +308,19 @@ export default function AdminProductosPage() {
           </>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmDialog
+        isOpen={deleteModal.isOpen}
+        title="Eliminar producto"
+        message={`¿Estás seguro de que quieres eliminar "${deleteModal.productName}"? Esta acción no se puede deshacer.`}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        variant="danger"
+        isLoading={isDeleting}
+        onConfirm={handleDelete}
+        onCancel={closeDeleteModal}
+      />
     </div>
   )
 }

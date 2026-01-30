@@ -4,6 +4,7 @@ import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { useAuth } from "@/context/AuthContext"
+import { ToastProvider } from "@/components/ui/toast"
 import { 
   LayoutDashboard, 
   Package, 
@@ -109,7 +110,9 @@ export default function AdminLayout({
 
       {/* Main content */}
       <main className="flex-1 overflow-auto">
-        {children}
+        <ToastProvider>
+          {children}
+        </ToastProvider>
       </main>
     </div>
   )

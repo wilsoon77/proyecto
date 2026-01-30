@@ -5,6 +5,7 @@ import bcryptjs from 'bcryptjs';
 const bcrypt = bcryptjs.default || bcryptjs;
 import { randomBytes } from 'crypto';
 import { LoggerService } from '../common/logger/logger.service.js';
+import { SupabaseService } from '../supabase/supabase.service.js';
 
 @Injectable()
 export class AuthService {
@@ -12,18 +13,71 @@ export class AuthService {
     private prisma: PrismaService, 
     private jwt: JwtService,
     private logger: LoggerService,
+    private supabase: SupabaseService,
   ) {}
 
   async register(input: { email: string; password: string; firstName: string; lastName: string; phone?: string }, metadata?: { userAgent?: string; ip?: string }) {
     const existing = await this.prisma.user.findUnique({ where: { email: input.email } });
     if (existing) throw new BadRequestException('Email ya registrado');
-    const passwordHash = await bcrypt.hash(input.password, 10);
-    const user = await this.prisma.user.create({ data: { email: input.email, passwordHash, firstName: input.firstName, lastName: input.lastName, phone: input.phone } });
+
+    let user;
+
+    // Si Supabase Auth está configurado, crear usuario allí primero
+    if (this.supabase.isConfigured()) {
+      const { data: authUser, error: authError } = await this.supabase.admin.createUser({
+        email: input.email,
+        password: input.password,
+        email_confirm: true, // Auto-confirmar email
+        user_metadata: {
+          first_name: input.firstName,
+          last_name: input.lastName,
+          phone: input.phone,
+        },
+      });
+
+      if (authError) {
+        this.logger.error('Error creando usuario en Supabase Auth', { error: authError.message, email: input.email });
+        throw new BadRequestException(authError.message);
+      }
+
+      // El trigger en Supabase creará el registro en public.User
+      // Esperamos un momento para que el trigger se ejecute
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Verificamos que el usuario fue creado por el trigger
+      user = await this.prisma.user.findUnique({ where: { id: authUser.user.id } });
+      
+      if (!user) {
+        // Si el trigger no lo creó, lo creamos manualmente
+        const passwordHash = await bcrypt.hash(input.password, 10);
+        user = await this.prisma.user.create({
+          data: {
+            id: authUser.user.id, // Usar el mismo ID de Supabase Auth
+            email: input.email,
+            passwordHash,
+            firstName: input.firstName,
+            lastName: input.lastName,
+            phone: input.phone,
+          },
+        });
+      } else {
+        // Actualizar el passwordHash ya que el trigger no lo puede saber
+        const passwordHash = await bcrypt.hash(input.password, 10);
+        user = await this.prisma.user.update({
+          where: { id: user.id },
+          data: { passwordHash },
+        });
+      }
+    } else {
+      // Fallback: crear solo en la tabla User (comportamiento anterior)
+      const passwordHash = await bcrypt.hash(input.password, 10);
+      user = await this.prisma.user.create({ data: { email: input.email, passwordHash, firstName: input.firstName, lastName: input.lastName, phone: input.phone } });
+    }
     
     const accessToken = this.sign(user.id, user.role);
     const refreshToken = await this.createRefreshToken(user.id, metadata);
     
-    this.logger.info('Usuario registrado', { userId: user.id, email: user.email, action: 'REGISTER', ip: metadata?.ip });
+    this.logger.info('Usuario registrado', { userId: user.id, email: user.email, action: 'REGISTER', ip: metadata?.ip, supabaseAuth: this.supabase.isConfigured() });
     
     return { 
       token: accessToken,

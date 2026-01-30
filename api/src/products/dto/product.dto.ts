@@ -40,6 +40,9 @@ export class CreateProductDto {
 
   @ApiProperty({ example: true, required: false, description: 'Si está disponible para venta' })
   @IsOptional() @IsBoolean() isAvailable?: boolean;
+
+  @ApiProperty({ example: 'https://example.com/image.jpg', required: false, description: 'URL de la imagen del producto' })
+  @IsOptional() @IsString() imageUrl?: string;
 }
 
 export class UpdateProductDto {
@@ -75,6 +78,9 @@ export class UpdateProductDto {
 
   @ApiProperty({ example: true, required: false, description: 'Si está disponible para venta' })
   @IsOptional() @IsBoolean() isAvailable?: boolean;
+
+  @ApiProperty({ example: 'https://example.com/image.jpg', required: false, description: 'URL de la imagen del producto' })
+  @IsOptional() @IsString() imageUrl?: string;
 }
 
 export class PutProductDto {

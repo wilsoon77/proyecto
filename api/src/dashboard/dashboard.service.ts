@@ -107,6 +107,9 @@ export class DashboardService {
       where: { status: 'PENDING' },
     });
 
+    // Total de usuarios registrados
+    const totalUsers = await this.prisma.user.count();
+
     return {
       summary: {
         totalOrders,
@@ -116,6 +119,7 @@ export class DashboardService {
         activeProducts,
         totalCategories,
         totalBranches,
+        totalUsers,
       },
       last30Days: {
         ordersCount: ordersLast30Days.length,

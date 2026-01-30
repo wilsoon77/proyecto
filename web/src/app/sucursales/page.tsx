@@ -9,8 +9,8 @@ import { Button } from "@/components/ui/button"
 // Centro por defecto: Guatemala City
 const DEFAULT_CENTER = { lat: 14.6349, lng: -90.5069 }
 
-// API Key de Google Maps (usar variable de entorno en producción)
-const MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || 'AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8'
+// API Key de Google Maps (configurar en variable de entorno)
+const MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || ''
 
 export default function SucursalesPage() {
   const [branches, setBranches] = useState<ApiBranch[]>([])

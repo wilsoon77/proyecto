@@ -213,4 +213,56 @@ export class AuthService {
     const user = await this.prisma.user.update({ where: { id: userId }, data: { isActive: false } });
     return { id: user.id, email: user.email, isActive: user.isActive };
   }
+
+  async handleOAuthCallback(
+    input: { supabaseUserId: string; email: string; firstName: string; lastName?: string; avatarUrl?: string; provider?: string },
+    metadata?: { userAgent?: string; ip?: string }
+  ) {
+    // Buscar si el usuario ya existe en nuestra tabla User
+    let user = await this.prisma.user.findUnique({ where: { id: input.supabaseUserId } });
+
+    if (!user) {
+      // Buscar por email (por si el usuario existía antes de OAuth)
+      user = await this.prisma.user.findUnique({ where: { email: input.email } });
+      
+      if (user) {
+        // Actualizar el ID para que coincida con Supabase Auth
+        // Esto requiere eliminar y recrear para cambiar el ID primario
+        this.logger.info(`Usuario OAuth existente por email, actualizando: ${input.email}`);
+      } else {
+        // Crear nuevo usuario
+        user = await this.prisma.user.create({
+          data: {
+            id: input.supabaseUserId,
+            email: input.email,
+            passwordHash: '', // OAuth no usa password
+            firstName: input.firstName,
+            lastName: input.lastName || '',
+            phone: null,
+          },
+        });
+        this.logger.info(`Usuario OAuth creado: ${input.email}`, { provider: input.provider });
+      }
+    }
+
+    if (!user) {
+      throw new BadRequestException('No se pudo crear o encontrar el usuario');
+    }
+
+    if (!user.isActive) {
+      throw new UnauthorizedException('Usuario desactivado');
+    }
+
+    // Generar tokens
+    const accessToken = this.sign(user.id, user.role);
+    const refreshToken = await this.createRefreshToken(user.id, metadata);
+
+    this.logger.info('Login OAuth exitoso', { userId: user.id, email: user.email, provider: input.provider, ip: metadata?.ip });
+
+    return {
+      token: accessToken,
+      refreshToken,
+      user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, role: user.role },
+    };
+  }
 }

@@ -3,7 +3,7 @@ import { ApiTags, ApiBearerAuth, ApiResponse, ApiBadRequestResponse, ApiUnauthor
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service.js';
 import { JwtAuthGuard } from './jwt-auth.guard.js';
-import { RegisterDto, LoginDto, UpdateMeDto, AuthResponseDto, UserDto, RefreshDto } from './dto/auth.dto.js';
+import { RegisterDto, LoginDto, UpdateMeDto, AuthResponseDto, UserDto, RefreshDto, OAuthCallbackDto } from './dto/auth.dto.js';
 import { ErrorResponseDto } from '../common/dto/error-response.dto.js';
 
 @Controller('auth')
@@ -76,5 +76,15 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Cuenta desactivada', schema: { properties: { id: { type: 'string' }, email: { type: 'string' }, isActive: { type: 'boolean' } } } })
   deactivate(@Req() req: any) {
     return this.auth.deactivate(req.user?.userId);
+  }
+
+  @Post('oauth-callback')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Callback OAuth', description: 'Procesa el callback de OAuth y retorna tokens de autenticación.' })
+  @ApiResponse({ status: 200, description: 'OAuth exitoso', type: AuthResponseDto })
+  @ApiBadRequestResponse({ description: 'Error en OAuth', type: ErrorResponseDto })
+  oauthCallback(@Body() body: OAuthCallbackDto, @Req() req: any) {
+    const metadata = { userAgent: req.headers['user-agent'], ip: req.ip };
+    return this.auth.handleOAuthCallback(body, metadata);
   }
 }

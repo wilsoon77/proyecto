@@ -83,3 +83,32 @@ export class AuthResponseDto {
   @ApiProperty({ type: UserDto })
   user!: UserDto;
 }
+
+export class OAuthCallbackDto {
+  @ApiProperty({ example: '7e10e811-dc6b-42b1-bea8-1753b1857921', description: 'ID del usuario en Supabase Auth' })
+  @IsString()
+  supabaseUserId!: string;
+
+  @ApiProperty({ example: 'usuario@gmail.com' })
+  @IsEmail()
+  email!: string;
+
+  @ApiProperty({ example: 'Juan' })
+  @IsString()
+  firstName!: string;
+
+  @ApiProperty({ example: 'Pérez', required: false })
+  @IsOptional()
+  @IsString()
+  lastName?: string;
+
+  @ApiProperty({ example: 'https://lh3.googleusercontent.com/...', required: false })
+  @IsOptional()
+  @IsString()
+  avatarUrl?: string;
+
+  @ApiProperty({ example: 'google', required: false })
+  @IsOptional()
+  @IsString()
+  provider?: string;
+}

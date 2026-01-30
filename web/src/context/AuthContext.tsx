@@ -1,7 +1,8 @@
 "use client"
 
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from "react"
-import { authService, isAuthenticated, clearTokens, getToken } from "@/lib/api"
+import { useSearchParams, useRouter } from "next/navigation"
+import { authService, isAuthenticated, clearTokens, getToken, syncTokensFromCookies } from "@/lib/api"
 import type { ApiUser, LoginDto, RegisterDto, UpdateMeDto } from "@/lib/api/types"
 
 interface AuthContextType {
@@ -21,14 +22,27 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<ApiUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const router = useRouter()
 
   // Cargar usuario al montar si hay token
   useEffect(() => {
     const loadUser = async () => {
-      if (isAuthenticated()) {
+      // Primero, verificar si venimos de OAuth (tokens en cookies)
+      const syncedFromOAuth = syncTokensFromCookies()
+      
+      if (syncedFromOAuth || isAuthenticated()) {
         try {
           const userData = await authService.me()
           setUser(userData)
+          
+          // Si venimos de OAuth, limpiar el parámetro de la URL
+          if (syncedFromOAuth && typeof window !== 'undefined') {
+            const url = new URL(window.location.href)
+            if (url.searchParams.has('oauth')) {
+              url.searchParams.delete('oauth')
+              router.replace(url.pathname, { scroll: false })
+            }
+          }
         } catch (error) {
           console.error('Error cargando usuario:', error)
           clearTokens()
@@ -38,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     loadUser()
-  }, [])
+  }, [router])
 
   const login = useCallback(async (data: LoginDto) => {
     setIsLoading(true)

@@ -13,6 +13,27 @@ const REFRESH_TOKEN_KEY = 'auth_refresh_token'
 
 // ==================== GESTIÓN DE TOKENS ====================
 
+// Leer token de cookie (para OAuth callback)
+function getCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null
+  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'))
+  return match ? match[2] : null
+}
+
+// Sincronizar tokens de cookies a localStorage (después de OAuth)
+export function syncTokensFromCookies(): boolean {
+  if (typeof window === 'undefined') return false
+  
+  const cookieToken = getCookie('auth_token')
+  if (cookieToken) {
+    localStorage.setItem(TOKEN_KEY, cookieToken)
+    // Limpiar la cookie después de copiar a localStorage
+    document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
+    return true
+  }
+  return false
+}
+
 export function getToken(): string | null {
   if (typeof window === 'undefined') return null
   return localStorage.getItem(TOKEN_KEY)

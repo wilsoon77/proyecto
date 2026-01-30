@@ -3,7 +3,7 @@
  */
 
 // Cliente HTTP base
-export { api, api as apiClient, ApiClientError, getToken, clearTokens, isAuthenticated, setTokens } from './client'
+export { api, api as apiClient, ApiClientError, getToken, clearTokens, isAuthenticated, setTokens, syncTokensFromCookies } from './client'
 
 // Servicios
 export { authService } from './auth'

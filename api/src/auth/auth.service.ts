@@ -36,7 +36,7 @@ export class AuthService {
       });
 
       if (authError) {
-        this.logger.error('Error creando usuario en Supabase Auth', { error: authError.message, email: input.email });
+        this.logger.error(`Error creando usuario en Supabase Auth: ${authError.message} - Email: ${input.email}`);
         throw new BadRequestException(authError.message);
       }
 

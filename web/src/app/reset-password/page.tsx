@@ -115,6 +115,7 @@ export default function ResetPasswordPage() {
     }
 
     setIsLoading(true)
+    setDebugInfo(prev => prev + `\n--- Iniciando actualización ---\n`)
 
     try {
       // Usar la misma instancia de Supabase que estableció la sesión
@@ -123,34 +124,43 @@ export default function ResetPasswordPage() {
       // Verificar que hay sesión antes de actualizar
       const { data: { session } } = await supabase.auth.getSession()
       console.log("🔍 Session before update:", !!session, session?.user?.email)
-      setDebugInfo(prev => prev + `Pre-update session: ${session ? 'OK' : 'NONE'}\n`)
+      setDebugInfo(prev => prev + `Sesión: ${session ? session.user?.email : 'NINGUNA'}\n`)
       
       if (!session) {
         throw new Error("No hay sesión válida. Por favor, usa el enlace del email nuevamente.")
       }
       
+      console.log("🔍 Calling updateUser with new password...")
+      setDebugInfo(prev => prev + `Llamando updateUser...\n`)
+      
       const { data, error } = await supabase.auth.updateUser({
         password: password,
       })
 
-      console.log("🔍 updateUser result:", { data: !!data?.user, error })
-      setDebugInfo(prev => prev + `updateUser: ${error ? 'Error: ' + error.message : 'OK'}\n`)
-
+      console.log("🔍 updateUser response:", JSON.stringify({ data: data?.user?.id, error }, null, 2))
+      
       if (error) {
+        setDebugInfo(prev => prev + `❌ Error: ${error.message}\n`)
         throw error
       }
 
-      console.log("✅ Password updated successfully")
+      setDebugInfo(prev => prev + `✅ updateUser exitoso!\n`)
+      setDebugInfo(prev => prev + `Usuario actualizado: ${data?.user?.email}\n`)
+      setDebugInfo(prev => prev + `ID: ${data?.user?.id}\n`)
+      setDebugInfo(prev => prev + `updated_at: ${data?.user?.updated_at}\n`)
+      
+      console.log("✅ Password updated successfully for user:", data?.user?.email)
+      
+      // NO cerrar sesión inmediatamente - mostrar éxito primero
+      show("¡Contraseña actualizada exitosamente! Redirigiendo al login...", { variant: "success" })
+      
+      // Esperar un momento antes de cerrar sesión y redirigir
+      await new Promise(resolve => setTimeout(resolve, 2000))
       
       // Cerrar sesión después de cambiar la contraseña para forzar re-login
       await supabase.auth.signOut()
       
-      show("¡Contraseña actualizada exitosamente!", { variant: "success" })
-      
-      // Redirigir al login después de un breve delay
-      setTimeout(() => {
-        router.push(ROUTES.login)
-      }, 1500)
+      router.push(ROUTES.login)
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Error al actualizar la contraseña"
       setError(message)
@@ -220,15 +230,13 @@ export default function ResetPasswordPage() {
         Ingresa tu nueva contraseña. Asegúrate de que sea segura y fácil de recordar.
       </p>
 
-      {/* Debug info - Quitar en producción */}
-      {debugInfo && (
-        <details className="mb-4">
-          <summary className="cursor-pointer text-xs text-gray-500">🔧 Debug Info</summary>
-          <pre className="mt-2 rounded bg-gray-100 p-2 text-xs overflow-auto max-h-40">
-            {debugInfo}
-          </pre>
-        </details>
-      )}
+      {/* Debug info - SIEMPRE VISIBLE para diagnóstico */}
+      <div className="mb-4 rounded bg-blue-50 border border-blue-200 p-3">
+        <p className="text-xs font-semibold text-blue-700 mb-1">🔧 Debug Info (temporal):</p>
+        <pre className="text-xs text-blue-600 overflow-auto max-h-48 whitespace-pre-wrap">
+          {debugInfo || "Cargando..."}
+        </pre>
+      </div>
 
       {error && (
         <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">

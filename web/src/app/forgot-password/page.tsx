@@ -5,7 +5,7 @@ import Link from "next/link"
 import HCaptcha from "@hcaptcha/react-hcaptcha"
 import { ROUTES } from "@/lib/constants"
 import { Button } from "@/components/ui/button"
-import Captcha from "@/components/ui/captcha"
+import Captcha, { isCaptchaEnabled } from "@/components/ui/captcha"
 import { createClient } from "@/lib/supabase/client"
 
 export default function ForgotPasswordPage() {
@@ -22,6 +22,12 @@ export default function ForgotPasswordPage() {
 
     if (!email) {
       setError("Por favor, ingresa tu correo electrónico")
+      return
+    }
+
+    // Validar CAPTCHA si está habilitado
+    if (isCaptchaEnabled() && !captchaToken) {
+      setError("Por favor, completa la verificación de seguridad")
       return
     }
 

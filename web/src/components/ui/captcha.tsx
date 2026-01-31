@@ -10,6 +10,13 @@ interface CaptchaProps {
 }
 
 /**
+ * Verifica si el CAPTCHA está habilitado (hay sitekey configurada)
+ */
+export function isCaptchaEnabled(): boolean {
+  return !!process.env.NEXT_PUBLIC_HCAPTCHA_SITEKEY
+}
+
+/**
  * Componente de CAPTCHA usando hCaptcha
  * 
  * Para usar este componente, necesitas configurar tu Sitekey en:

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { formatPrice } from "@/lib/utils"
 import { SHIPPING, ROUTES } from "@/lib/constants"
@@ -12,9 +13,19 @@ import { apiProductToProduct } from "@/lib/api/transformers"
 import type { Product } from "@/types"
 
 export default function Home() {
+  const router = useRouter()
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const { addItem } = useCart()
+
+  // Detectar tokens de recuperación de contraseña y redirigir
+  useEffect(() => {
+    const hash = window.location.hash
+    if (hash && hash.includes('type=recovery')) {
+      // Redirigir a reset-password manteniendo el hash con los tokens
+      router.replace(`/reset-password${hash}`)
+    }
+  }, [router])
 
   useEffect(() => {
     const loadProducts = async () => {

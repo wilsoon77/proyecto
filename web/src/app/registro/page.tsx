@@ -1,12 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import HCaptcha from "@hcaptcha/react-hcaptcha"
 import { ROUTES } from "@/lib/constants"
 import { useAuth } from "@/context/AuthContext"
 import { useToast } from "@/context/ToastContext"
 import { Button } from "@/components/ui/button"
+import Captcha from "@/components/ui/captcha"
 
 export default function RegistroPage() {
   const router = useRouter()
@@ -22,6 +24,8 @@ export default function RegistroPage() {
     phone: "",
   })
   const [error, setError] = useState<string | null>(null)
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const captchaRef = useRef<HCaptcha>(null)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }))
@@ -54,12 +58,16 @@ export default function RegistroPage() {
         email: formData.email,
         password: formData.password,
         phone: formData.phone || undefined,
+        captchaToken: captchaToken || undefined,
       })
       show("¡Cuenta creada exitosamente!", { variant: "success" })
       router.push(ROUTES.home)
     } catch (err: any) {
       setError(err.message || "Error al crear la cuenta")
       show("Error al registrarse", { variant: "error" })
+      // Resetear el captcha si hay error
+      captchaRef.current?.resetCaptcha()
+      setCaptchaToken(null)
     }
   }
 
@@ -163,6 +171,12 @@ export default function RegistroPage() {
             disabled={isLoading}
           />
         </div>
+
+        <Captcha
+          ref={captchaRef}
+          onVerify={(token) => setCaptchaToken(token)}
+          onExpire={() => setCaptchaToken(null)}
+        />
         
         <Button 
           type="submit" 

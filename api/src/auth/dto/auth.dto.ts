@@ -23,6 +23,11 @@ export class RegisterDto {
   @IsOptional()
   @IsString()
   phone?: string;
+
+  @ApiProperty({ example: 'hcaptcha-token', required: false, description: 'Token de hCaptcha para protección anti-bots' })
+  @IsOptional()
+  @IsString()
+  captchaToken?: string;
 }
 
 export class LoginDto {
@@ -33,6 +38,11 @@ export class LoginDto {
   @ApiProperty({ example: 'S3gura123' })
   @IsString()
   password!: string;
+
+  @ApiProperty({ example: 'hcaptcha-token', required: false, description: 'Token de hCaptcha para protección anti-bots' })
+  @IsOptional()
+  @IsString()
+  captchaToken?: string;
 }
 
 export class UpdateMeDto {

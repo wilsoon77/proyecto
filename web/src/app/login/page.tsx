@@ -1,12 +1,14 @@
 "use client"
 
-import { useState, Suspense } from "react"
+import { useState, Suspense, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
+import HCaptcha from "@hcaptcha/react-hcaptcha"
 import { ROUTES } from "@/lib/constants"
 import { useAuth } from "@/context/AuthContext"
 import { useToast } from "@/context/ToastContext"
 import { Button } from "@/components/ui/button"
+import Captcha from "@/components/ui/captcha"
 import { signInWithOAuth } from "@/lib/supabase/oauth"
 
 function LoginForm() {
@@ -21,6 +23,8 @@ function LoginForm() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(oauthError === 'oauth_failed' ? 'Error al iniciar sesión con OAuth' : null)
   const [oauthLoading, setOauthLoading] = useState<'google' | 'github' | null>(null)
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const captchaRef = useRef<HCaptcha>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -32,13 +36,16 @@ function LoginForm() {
     }
 
     try {
-      await login({ email, password })
+      await login({ email, password, captchaToken: captchaToken || undefined })
       show("¡Bienvenido de vuelta!", { variant: "success" })
       router.push(returnUrl)
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Error al iniciar sesión"
       setError(message)
       show("Error al iniciar sesión", { variant: "error" })
+      // Resetear el captcha si hay error
+      captchaRef.current?.resetCaptcha()
+      setCaptchaToken(null)
     }
   }
 
@@ -94,7 +101,19 @@ function LoginForm() {
             placeholder="••••••••"
             disabled={isLoading || !!oauthLoading}
           />
+          <div className="mt-1 text-right">
+            <Link href="/forgot-password" className="text-sm text-primary hover:underline">
+              ¿Olvidaste tu contraseña?
+            </Link>
+          </div>
         </div>
+
+        <Captcha
+          ref={captchaRef}
+          onVerify={(token) => setCaptchaToken(token)}
+          onExpire={() => setCaptchaToken(null)}
+        />
+
         <Button 
           type="submit" 
           className="w-full"

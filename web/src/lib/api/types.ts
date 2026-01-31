@@ -25,6 +25,7 @@ export interface ApiUser {
 export interface LoginDto {
   email: string
   password: string
+  captchaToken?: string
 }
 
 export interface RegisterDto {
@@ -33,6 +34,7 @@ export interface RegisterDto {
   firstName: string
   lastName: string
   phone?: string
+  captchaToken?: string
 }
 
 export interface UpdateMeDto {

@@ -1,16 +1,18 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ROUTES } from "@/lib/constants"
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
 import { useToast } from "@/context/ToastContext"
+import type { SupabaseClient } from "@supabase/supabase-js"
 
 export default function ResetPasswordPage() {
   const router = useRouter()
   const { show } = useToast()
+  const supabaseRef = useRef<SupabaseClient | null>(null)
   
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
@@ -19,35 +21,58 @@ export default function ResetPasswordPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isValidSession, setIsValidSession] = useState<boolean | null>(null)
+  const [debugInfo, setDebugInfo] = useState<string>("")
 
   useEffect(() => {
+    // Usar una única instancia del cliente Supabase
     const supabase = createClient()
+    supabaseRef.current = supabase
 
     // Procesar el hash de la URL que contiene el token de recuperación
     const handleRecoveryToken = async () => {
+      const hash = window.location.hash
+      console.log("🔍 URL Hash:", hash)
+      setDebugInfo(prev => prev + `Hash: ${hash.substring(0, 50)}...\n`)
+      
       // Verificar si hay tokens en el hash de la URL (formato: #access_token=...&refresh_token=...&type=recovery)
-      const hashParams = new URLSearchParams(window.location.hash.substring(1))
+      const hashParams = new URLSearchParams(hash.substring(1))
       const accessToken = hashParams.get('access_token')
       const refreshToken = hashParams.get('refresh_token')
       const type = hashParams.get('type')
 
+      console.log("🔍 Token type:", type)
+      console.log("🔍 Has access_token:", !!accessToken)
+      console.log("🔍 Has refresh_token:", !!refreshToken)
+
       if (accessToken && refreshToken && type === 'recovery') {
+        setDebugInfo(prev => prev + `Type: ${type}, Tokens: ✓\n`)
+        
         // Establecer la sesión con los tokens del enlace de recuperación
-        const { error } = await supabase.auth.setSession({
+        const { data, error } = await supabase.auth.setSession({
           access_token: accessToken,
           refresh_token: refreshToken,
         })
 
-        if (!error) {
+        console.log("🔍 setSession result:", { data: !!data?.session, error })
+        setDebugInfo(prev => prev + `setSession: ${error ? 'Error: ' + error.message : 'OK'}\n`)
+
+        if (!error && data?.session) {
+          console.log("✅ Session established for:", data.session.user?.email)
+          setDebugInfo(prev => prev + `User: ${data.session.user?.email}\n`)
           setIsValidSession(true)
           // Limpiar el hash de la URL por seguridad
           window.history.replaceState(null, '', window.location.pathname)
           return
+        } else if (error) {
+          console.error("❌ setSession error:", error)
+          setDebugInfo(prev => prev + `Error: ${error.message}\n`)
         }
       }
 
       // Verificar si ya hay una sesión válida (el usuario ya procesó el token)
       const { data: { session } } = await supabase.auth.getSession()
+      console.log("🔍 Existing session:", !!session)
+      setDebugInfo(prev => prev + `Existing session: ${session ? session.user?.email : 'None'}\n`)
       setIsValidSession(!!session)
     }
 
@@ -55,6 +80,9 @@ export default function ResetPasswordPage() {
 
     // Escuchar eventos de auth para detectar PASSWORD_RECOVERY
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("🔍 Auth event:", event)
+      setDebugInfo(prev => prev + `Event: ${event}\n`)
+      
       if (event === 'PASSWORD_RECOVERY') {
         setIsValidSession(true)
       } else if (event === 'SIGNED_IN' && session) {
@@ -89,16 +117,31 @@ export default function ResetPasswordPage() {
     setIsLoading(true)
 
     try {
-      const supabase = createClient()
+      // Usar la misma instancia de Supabase que estableció la sesión
+      const supabase = supabaseRef.current || createClient()
       
-      const { error } = await supabase.auth.updateUser({
+      // Verificar que hay sesión antes de actualizar
+      const { data: { session } } = await supabase.auth.getSession()
+      console.log("🔍 Session before update:", !!session, session?.user?.email)
+      setDebugInfo(prev => prev + `Pre-update session: ${session ? 'OK' : 'NONE'}\n`)
+      
+      if (!session) {
+        throw new Error("No hay sesión válida. Por favor, usa el enlace del email nuevamente.")
+      }
+      
+      const { data, error } = await supabase.auth.updateUser({
         password: password,
       })
+
+      console.log("🔍 updateUser result:", { data: !!data?.user, error })
+      setDebugInfo(prev => prev + `updateUser: ${error ? 'Error: ' + error.message : 'OK'}\n`)
 
       if (error) {
         throw error
       }
 
+      console.log("✅ Password updated successfully")
+      
       // Cerrar sesión después de cambiar la contraseña para forzar re-login
       await supabase.auth.signOut()
       
@@ -142,6 +185,17 @@ export default function ResetPasswordPage() {
             El enlace de recuperación de contraseña no es válido o ha expirado. 
             Por favor, solicita uno nuevo.
           </p>
+          
+          {/* Debug info - Quitar en producción */}
+          {debugInfo && (
+            <details className="mb-4 text-left">
+              <summary className="cursor-pointer text-xs text-gray-500">🔧 Debug Info</summary>
+              <pre className="mt-2 rounded bg-gray-100 p-2 text-xs overflow-auto max-h-40">
+                {debugInfo}
+              </pre>
+            </details>
+          )}
+          
           <div className="space-y-3">
             <Link href="/forgot-password">
               <Button className="w-full">
@@ -165,6 +219,16 @@ export default function ResetPasswordPage() {
       <p className="mb-8 text-gray-600">
         Ingresa tu nueva contraseña. Asegúrate de que sea segura y fácil de recordar.
       </p>
+
+      {/* Debug info - Quitar en producción */}
+      {debugInfo && (
+        <details className="mb-4">
+          <summary className="cursor-pointer text-xs text-gray-500">🔧 Debug Info</summary>
+          <pre className="mt-2 rounded bg-gray-100 p-2 text-xs overflow-auto max-h-40">
+            {debugInfo}
+          </pre>
+        </details>
+      )}
 
       {error && (
         <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">

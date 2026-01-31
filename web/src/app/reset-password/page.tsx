@@ -56,7 +56,7 @@ export default function ResetPasswordPage() {
         console.log("🔍 setSession result:", { data: !!data?.session, error })
         setDebugInfo(prev => prev + `setSession: ${error ? 'Error: ' + error.message : 'OK'}\n`)
 
-        if (!error && data?.session) {
+        if (!error && data.session) {
           console.log("✅ Session established for:", data.session.user?.email)
           setDebugInfo(prev => prev + `User: ${data.session.user?.email}\n`)
           setIsValidSession(true)

@@ -203,6 +203,64 @@ export class AuthService {
     return { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, phone: user.phone, isActive: user.isActive, role: user.role };
   }
 
+  /**
+   * Actualiza la contraseña del usuario en la base de datos local.
+   * Este método se usa cuando el usuario cambia su contraseña desde Supabase Auth.
+   */
+  async updatePassword(userId: string | undefined, newPassword: string) {
+    if (!userId) throw new UnauthorizedException();
+    
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash },
+    });
+
+    // También actualizar en Supabase Auth si está configurado
+    if (this.supabase.isConfigured()) {
+      const { error } = await this.supabase.admin.updateUserById(userId, {
+        password: newPassword,
+      });
+      
+      if (error) {
+        this.logger.warn(`Error actualizando password en Supabase Auth: ${error.message}`, { userId });
+      }
+    }
+
+    this.logger.info('Contraseña actualizada', { userId, email: user.email, action: 'PASSWORD_CHANGE' });
+    
+    return { success: true };
+  }
+
+  /**
+   * Reset de contraseña usando un token de Supabase.
+   * Este método es llamado desde el frontend después de que Supabase Auth validó el token.
+   */
+  async resetPasswordWithSupabaseToken(supabaseUserId: string, newPassword: string) {
+    // Buscar usuario por ID de Supabase
+    const user = await this.prisma.user.findUnique({ where: { id: supabaseUserId } });
+    
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    if (!user.isActive) {
+      throw new UnauthorizedException('Usuario desactivado');
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    
+    await this.prisma.user.update({
+      where: { id: supabaseUserId },
+      data: { passwordHash },
+    });
+
+    this.logger.info('Contraseña reseteada via Supabase', { userId: user.id, email: user.email, action: 'PASSWORD_RESET' });
+    
+    return { success: true };
+  }
+
   async deactivate(userId: string | undefined) {
     if (!userId) throw new UnauthorizedException();
     // Revocar todos los refresh tokens al desactivar

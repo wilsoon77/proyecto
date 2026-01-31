@@ -130,10 +130,14 @@ export default function ResetPasswordPage() {
       if (!session) {
         throw new Error("No hay sesión válida. Por favor, usa el enlace del email nuevamente.")
       }
+
+      const userId = session.user.id
+      setDebugInfo(prev => prev + `User ID: ${userId}\n`)
       
       console.log("🔍 Calling updateUser with new password...")
-      setDebugInfo(prev => prev + `Llamando updateUser...\n`)
+      setDebugInfo(prev => prev + `Llamando Supabase updateUser...\n`)
       
+      // Paso 1: Actualizar en Supabase Auth
       const { data, error } = await supabase.auth.updateUser({
         password: password,
       })
@@ -141,16 +145,38 @@ export default function ResetPasswordPage() {
       console.log("🔍 updateUser response:", JSON.stringify({ data: data?.user?.id, error }, null, 2))
       
       if (error) {
-        setDebugInfo(prev => prev + `❌ Error: ${error.message}\n`)
+        setDebugInfo(prev => prev + `❌ Supabase Error: ${error.message}\n`)
         throw error
       }
 
-      setDebugInfo(prev => prev + `✅ updateUser exitoso!\n`)
-      setDebugInfo(prev => prev + `Usuario actualizado: ${data?.user?.email}\n`)
-      setDebugInfo(prev => prev + `ID: ${data?.user?.id}\n`)
-      setDebugInfo(prev => prev + `updated_at: ${data?.user?.updated_at}\n`)
+      setDebugInfo(prev => prev + `✅ Supabase updateUser exitoso!\n`)
       
-      console.log("✅ Password updated successfully for user:", data?.user?.email)
+      // Paso 2: Actualizar en el backend (tabla User)
+      setDebugInfo(prev => prev + `Llamando Backend reset-password...\n`)
+      console.log("🔍 Calling backend reset-password...")
+      
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://proyecto-dp81.onrender.com'
+      const backendResponse = await fetch(`${apiUrl}/auth/reset-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          supabaseUserId: userId,
+          newPassword: password,
+        }),
+      })
+
+      const backendData = await backendResponse.json()
+      console.log("🔍 Backend response:", backendData)
+      
+      if (!backendResponse.ok) {
+        setDebugInfo(prev => prev + `❌ Backend Error: ${backendData.message || 'Error desconocido'}\n`)
+        throw new Error(backendData.message || 'Error al actualizar en el servidor')
+      }
+
+      setDebugInfo(prev => prev + `✅ Backend actualizado exitosamente!\n`)
+      console.log("✅ Password updated in both Supabase and Backend")
       
       // NO cerrar sesión inmediatamente - mostrar éxito primero
       show("¡Contraseña actualizada exitosamente! Redirigiendo al login...", { variant: "success" })

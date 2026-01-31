@@ -3,7 +3,7 @@ import { ApiTags, ApiBearerAuth, ApiResponse, ApiBadRequestResponse, ApiUnauthor
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service.js';
 import { JwtAuthGuard } from './jwt-auth.guard.js';
-import { RegisterDto, LoginDto, UpdateMeDto, AuthResponseDto, UserDto, RefreshDto, OAuthCallbackDto } from './dto/auth.dto.js';
+import { RegisterDto, LoginDto, UpdateMeDto, AuthResponseDto, UserDto, RefreshDto, OAuthCallbackDto, ResetPasswordDto } from './dto/auth.dto.js';
 import { ErrorResponseDto } from '../common/dto/error-response.dto.js';
 
 @Controller('auth')
@@ -86,5 +86,18 @@ export class AuthController {
   oauthCallback(@Body() body: OAuthCallbackDto, @Req() req: any) {
     const metadata = { userAgent: req.headers['user-agent'], ip: req.ip };
     return this.auth.handleOAuthCallback(body, metadata);
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 intentos por minuto
+  @ApiOperation({ 
+    summary: 'Resetear contraseña', 
+    description: 'Actualiza la contraseña del usuario después de verificación con Supabase Auth. El supabaseUserId viene del token de recuperación.' 
+  })
+  @ApiResponse({ status: 200, description: 'Contraseña actualizada', schema: { properties: { success: { type: 'boolean' } } } })
+  @ApiBadRequestResponse({ description: 'Error al resetear contraseña', type: ErrorResponseDto })
+  resetPassword(@Body() body: ResetPasswordDto) {
+    return this.auth.resetPasswordWithSupabaseToken(body.supabaseUserId, body.newPassword);
   }
 }

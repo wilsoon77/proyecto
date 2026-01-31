@@ -53,12 +53,13 @@ export default function ResetPasswordPage() {
           refresh_token: refreshToken,
         })
 
-        console.log("🔍 setSession result:", { data: !!data?.session, error })
+        console.log("🔍 setSession result:", { hasSession: !!data?.session, error })
         setDebugInfo(prev => prev + `setSession: ${error ? 'Error: ' + error.message : 'OK'}\n`)
 
-        if (!error && data.session) {
-          console.log("✅ Session established for:", data.session.user?.email)
-          setDebugInfo(prev => prev + `User: ${data.session.user?.email}\n`)
+        const session = data?.session
+        if (!error && session) {
+          console.log("✅ Session established for:", session.user?.email)
+          setDebugInfo(prev => prev + `User: ${session.user?.email}\n`)
           setIsValidSession(true)
           // Limpiar el hash de la URL por seguridad
           window.history.replaceState(null, '', window.location.pathname)

@@ -21,7 +21,6 @@ export default function ResetPasswordPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isValidSession, setIsValidSession] = useState<boolean | null>(null)
-  const [debugInfo, setDebugInfo] = useState<string>("")
 
   useEffect(() => {
     // Usar una única instancia del cliente Supabase
@@ -31,8 +30,6 @@ export default function ResetPasswordPage() {
     // Procesar el hash de la URL que contiene el token de recuperación
     const handleRecoveryToken = async () => {
       const hash = window.location.hash
-      console.log("🔍 URL Hash:", hash)
-      setDebugInfo(prev => prev + `Hash: ${hash.substring(0, 50)}...\n`)
       
       // Verificar si hay tokens en el hash de la URL (formato: #access_token=...&refresh_token=...&type=recovery)
       const hashParams = new URLSearchParams(hash.substring(1))
@@ -40,40 +37,24 @@ export default function ResetPasswordPage() {
       const refreshToken = hashParams.get('refresh_token')
       const type = hashParams.get('type')
 
-      console.log("🔍 Token type:", type)
-      console.log("🔍 Has access_token:", !!accessToken)
-      console.log("🔍 Has refresh_token:", !!refreshToken)
-
       if (accessToken && refreshToken && type === 'recovery') {
-        setDebugInfo(prev => prev + `Type: ${type}, Tokens: ✓\n`)
-        
         // Establecer la sesión con los tokens del enlace de recuperación
         const { data, error } = await supabase.auth.setSession({
           access_token: accessToken,
           refresh_token: refreshToken,
         })
 
-        console.log("🔍 setSession result:", { hasSession: !!data?.session, error })
-        setDebugInfo(prev => prev + `setSession: ${error ? 'Error: ' + error.message : 'OK'}\n`)
-
         const session = data?.session
         if (!error && session) {
-          console.log("✅ Session established for:", session.user?.email)
-          setDebugInfo(prev => prev + `User: ${session.user?.email}\n`)
           setIsValidSession(true)
           // Limpiar el hash de la URL por seguridad
           window.history.replaceState(null, '', window.location.pathname)
           return
-        } else if (error) {
-          console.error("❌ setSession error:", error)
-          setDebugInfo(prev => prev + `Error: ${error.message}\n`)
         }
       }
 
       // Verificar si ya hay una sesión válida (el usuario ya procesó el token)
       const { data: { session } } = await supabase.auth.getSession()
-      console.log("🔍 Existing session:", !!session)
-      setDebugInfo(prev => prev + `Existing session: ${session ? session.user?.email : 'None'}\n`)
       setIsValidSession(!!session)
     }
 
@@ -81,9 +62,6 @@ export default function ResetPasswordPage() {
 
     // Escuchar eventos de auth para detectar PASSWORD_RECOVERY
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("🔍 Auth event:", event)
-      setDebugInfo(prev => prev + `Event: ${event}\n`)
-      
       if (event === 'PASSWORD_RECOVERY') {
         setIsValidSession(true)
       } else if (event === 'SIGNED_IN' && session) {
@@ -116,7 +94,6 @@ export default function ResetPasswordPage() {
     }
 
     setIsLoading(true)
-    setDebugInfo(prev => prev + `\n--- Iniciando actualización ---\n`)
 
     try {
       // Usar la misma instancia de Supabase que estableció la sesión
@@ -124,37 +101,23 @@ export default function ResetPasswordPage() {
       
       // Verificar que hay sesión antes de actualizar
       const { data: { session } } = await supabase.auth.getSession()
-      console.log("🔍 Session before update:", !!session, session?.user?.email)
-      setDebugInfo(prev => prev + `Sesión: ${session ? session.user?.email : 'NINGUNA'}\n`)
       
       if (!session) {
         throw new Error("No hay sesión válida. Por favor, usa el enlace del email nuevamente.")
       }
 
       const userId = session.user.id
-      setDebugInfo(prev => prev + `User ID: ${userId}\n`)
-      
-      console.log("🔍 Calling updateUser with new password...")
-      setDebugInfo(prev => prev + `Llamando Supabase updateUser...\n`)
       
       // Paso 1: Actualizar en Supabase Auth
-      const { data, error } = await supabase.auth.updateUser({
+      const { error } = await supabase.auth.updateUser({
         password: password,
       })
-
-      console.log("🔍 updateUser response:", JSON.stringify({ data: data?.user?.id, error }, null, 2))
       
       if (error) {
-        setDebugInfo(prev => prev + `❌ Supabase Error: ${error.message}\n`)
         throw error
       }
-
-      setDebugInfo(prev => prev + `✅ Supabase updateUser exitoso!\n`)
       
       // Paso 2: Actualizar en el backend (tabla User)
-      setDebugInfo(prev => prev + `Llamando Backend reset-password...\n`)
-      console.log("🔍 Calling backend reset-password...")
-      
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://proyecto-dp81.onrender.com'
       const backendResponse = await fetch(`${apiUrl}/auth/reset-password`, {
         method: 'POST',
@@ -168,15 +131,10 @@ export default function ResetPasswordPage() {
       })
 
       const backendData = await backendResponse.json()
-      console.log("🔍 Backend response:", backendData)
       
       if (!backendResponse.ok) {
-        setDebugInfo(prev => prev + `❌ Backend Error: ${backendData.message || 'Error desconocido'}\n`)
         throw new Error(backendData.message || 'Error al actualizar en el servidor')
       }
-
-      setDebugInfo(prev => prev + `✅ Backend actualizado exitosamente!\n`)
-      console.log("✅ Password updated in both Supabase and Backend")
       
       // NO cerrar sesión inmediatamente - mostrar éxito primero
       show("¡Contraseña actualizada exitosamente! Redirigiendo al login...", { variant: "success" })
@@ -223,16 +181,6 @@ export default function ResetPasswordPage() {
             Por favor, solicita uno nuevo.
           </p>
           
-          {/* Debug info - Quitar en producción */}
-          {debugInfo && (
-            <details className="mb-4 text-left">
-              <summary className="cursor-pointer text-xs text-gray-500">🔧 Debug Info</summary>
-              <pre className="mt-2 rounded bg-gray-100 p-2 text-xs overflow-auto max-h-40">
-                {debugInfo}
-              </pre>
-            </details>
-          )}
-          
           <div className="space-y-3">
             <Link href="/forgot-password">
               <Button className="w-full">
@@ -256,14 +204,6 @@ export default function ResetPasswordPage() {
       <p className="mb-8 text-gray-600">
         Ingresa tu nueva contraseña. Asegúrate de que sea segura y fácil de recordar.
       </p>
-
-      {/* Debug info - SIEMPRE VISIBLE para diagnóstico */}
-      <div className="mb-4 rounded bg-blue-50 border border-blue-200 p-3">
-        <p className="text-xs font-semibold text-blue-700 mb-1">🔧 Debug Info (temporal):</p>
-        <pre className="text-xs text-blue-600 overflow-auto max-h-48 whitespace-pre-wrap">
-          {debugInfo || "Cargando..."}
-        </pre>
-      </div>
 
       {error && (
         <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">

@@ -1,12 +1,18 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Loader2, Save, Eye, EyeOff } from "lucide-react"
+import { ArrowLeft, Loader2, Save, Eye, EyeOff, Building2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
-import { usersService, type UserRole, ApiClientError } from "@/lib/api"
+import { usersService, branchesService, type UserRole, ApiClientError } from "@/lib/api"
+
+interface Branch {
+  id: number
+  name: string
+  slug: string
+}
 
 export default function NuevoUsuarioPage() {
   const router = useRouter()
@@ -15,6 +21,7 @@ export default function NuevoUsuarioPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const [showPassword, setShowPassword] = useState(false)
+  const [branches, setBranches] = useState<Branch[]>([])
   
   // Form state
   const [firstName, setFirstName] = useState("")
@@ -24,6 +31,20 @@ export default function NuevoUsuarioPage() {
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [role, setRole] = useState<UserRole>("CUSTOMER")
+  const [branchId, setBranchId] = useState<number | undefined>(undefined)
+
+  // Cargar sucursales
+  useEffect(() => {
+    const loadBranches = async () => {
+      try {
+        const data = await branchesService.list()
+        setBranches(data)
+      } catch (err) {
+        console.error("Error loading branches:", err)
+      }
+    }
+    loadBranches()
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -54,6 +75,10 @@ export default function NuevoUsuarioPage() {
       setError("Las contraseñas no coinciden")
       return
     }
+    if (role === "EMPLOYEE" && !branchId) {
+      setError("Debe seleccionar una sucursal para el empleado")
+      return
+    }
 
     setIsLoading(true)
 
@@ -65,6 +90,7 @@ export default function NuevoUsuarioPage() {
         phone: phone.trim() || undefined,
         password,
         role,
+        branchId: role === "EMPLOYEE" ? branchId : undefined,
       })
 
       showToast(`Usuario "${firstName} ${lastName}" creado correctamente`, "success")
@@ -174,7 +200,12 @@ export default function NuevoUsuarioPage() {
             <select
               id="role"
               value={role}
-              onChange={(e) => setRole(e.target.value as UserRole)}
+              onChange={(e) => {
+                setRole(e.target.value as UserRole)
+                if (e.target.value !== "EMPLOYEE") {
+                  setBranchId(undefined)
+                }
+              }}
               className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white"
             >
               <option value="CUSTOMER">Cliente</option>
@@ -183,10 +214,34 @@ export default function NuevoUsuarioPage() {
             </select>
             <p className="text-xs text-gray-500 mt-1">
               {role === 'CUSTOMER' && 'Puede ver productos y realizar pedidos'}
-              {role === 'EMPLOYEE' && 'Puede gestionar pedidos e inventario'}
+              {role === 'EMPLOYEE' && 'Puede gestionar pedidos e inventario de su sucursal'}
               {role === 'ADMIN' && 'Acceso completo al sistema'}
             </p>
           </div>
+
+          {/* Branch (solo para EMPLOYEE) */}
+          {role === "EMPLOYEE" && (
+            <div>
+              <label htmlFor="branch" className="block text-sm font-medium text-gray-700 mb-2">
+                <Building2 className="inline-block h-4 w-4 mr-1" />
+                Sucursal Asignada *
+              </label>
+              <select
+                id="branch"
+                value={branchId || ""}
+                onChange={(e) => setBranchId(e.target.value ? Number(e.target.value) : undefined)}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white"
+              >
+                <option value="">Seleccionar sucursal...</option>
+                {branches.map(branch => (
+                  <option key={branch.id} value={branch.id}>{branch.name}</option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                El empleado solo podrá ver y gestionar el inventario de esta sucursal
+              </p>
+            </div>
+          )}
 
           {/* Password */}
           <div>

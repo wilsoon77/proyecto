@@ -18,6 +18,10 @@ export class UsersService {
         phone: true,
         role: true,
         isActive: true,
+        branchId: true,
+        branch: {
+          select: { id: true, name: true, slug: true },
+        },
         createdAt: true,
         updatedAt: true,
         _count: {
@@ -46,6 +50,10 @@ export class UsersService {
         phone: true,
         role: true,
         isActive: true,
+        branchId: true,
+        branch: {
+          select: { id: true, name: true, slug: true },
+        },
         createdAt: true,
         updatedAt: true,
         _count: {
@@ -76,6 +84,26 @@ export class UsersService {
       throw new BadRequestException(`Ya existe un usuario con el email ${createUserDto.email}`);
     }
 
+    // Validar que si es EMPLOYEE debe tener branchId
+    if (createUserDto.role === 'EMPLOYEE' && !createUserDto.branchId) {
+      throw new BadRequestException('Los empleados deben tener una sucursal asignada');
+    }
+
+    // Si no es EMPLOYEE, no debería tener branchId
+    if (createUserDto.role !== 'EMPLOYEE' && createUserDto.branchId) {
+      throw new BadRequestException('Solo los empleados pueden tener una sucursal asignada');
+    }
+
+    // Verificar que la sucursal existe si se especifica
+    if (createUserDto.branchId) {
+      const branch = await this.prisma.branch.findUnique({
+        where: { id: createUserDto.branchId },
+      });
+      if (!branch) {
+        throw new BadRequestException(`La sucursal con ID ${createUserDto.branchId} no existe`);
+      }
+    }
+
     // Hash de contraseña
     const passwordHash = await bcryptjs.hash(createUserDto.password, 10);
 
@@ -94,6 +122,10 @@ export class UsersService {
         phone: true,
         role: true,
         isActive: true,
+        branchId: true,
+        branch: {
+          select: { id: true, name: true, slug: true },
+        },
         createdAt: true,
         updatedAt: true,
       },
@@ -105,25 +137,51 @@ export class UsersService {
   // Solo ADMIN puede actualizar cualquier usuario
   async update(id: string, updateUserDto: UpdateUserDto) {
     // Verificar que el usuario existe
-    await this.findOne(id);
+    const existingUser = await this.findOne(id);
 
     // Si se está actualizando el email, verificar que no exista otro con ese email
     if (updateUserDto.email) {
-      const existingUser = await this.prisma.user.findFirst({
+      const userWithEmail = await this.prisma.user.findFirst({
         where: { 
           email: updateUserDto.email,
           NOT: { id },
         },
       });
 
-      if (existingUser) {
+      if (userWithEmail) {
         throw new BadRequestException(`Ya existe un usuario con el email ${updateUserDto.email}`);
       }
     }
 
+    // Determinar el rol final (el del DTO o el existente)
+    const finalRole = updateUserDto.role || existingUser.role;
+    const finalBranchId = updateUserDto.branchId !== undefined ? updateUserDto.branchId : existingUser.branchId;
+
+    // Validar branchId según el rol
+    if (finalRole === 'EMPLOYEE' && !finalBranchId) {
+      throw new BadRequestException('Los empleados deben tener una sucursal asignada');
+    }
+
+    // Verificar que la sucursal existe si se especifica
+    if (updateUserDto.branchId) {
+      const branch = await this.prisma.branch.findUnique({
+        where: { id: updateUserDto.branchId },
+      });
+      if (!branch) {
+        throw new BadRequestException(`La sucursal con ID ${updateUserDto.branchId} no existe`);
+      }
+    }
+
+    // Si cambia de EMPLOYEE a otro rol, limpiar branchId
+    const shouldClearBranch = updateUserDto.role && updateUserDto.role !== 'EMPLOYEE' && existingUser.role === 'EMPLOYEE';
+
     // Preparar datos de actualización
     const { password, ...updateData } = updateUserDto;
-    const dataToUpdate: any = updateData;
+    const dataToUpdate: any = { ...updateData };
+
+    if (shouldClearBranch) {
+      dataToUpdate.branchId = null;
+    }
 
     // Si se está actualizando la contraseña, hashearla
     if (password) {
@@ -142,6 +200,10 @@ export class UsersService {
         phone: true,
         role: true,
         isActive: true,
+        branchId: true,
+        branch: {
+          select: { id: true, name: true, slug: true },
+        },
         createdAt: true,
         updatedAt: true,
       },
@@ -186,6 +248,10 @@ export class UsersService {
         phone: true,
         role: true,
         isActive: true,
+        branchId: true,
+        branch: {
+          select: { id: true, name: true, slug: true },
+        },
         createdAt: true,
         updatedAt: true,
       },

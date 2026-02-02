@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsEmail, IsEnum, IsOptional, MinLength } from 'class-validator';
+import { IsString, IsEmail, IsEnum, IsOptional, MinLength, IsInt } from 'class-validator';
 import { PartialType } from '@nestjs/mapped-types';
 
 export class CreateUserDto {
@@ -51,6 +51,15 @@ export class CreateUserDto {
   })
   @IsEnum(['CUSTOMER', 'EMPLOYEE', 'ADMIN'])
   role!: 'CUSTOMER' | 'EMPLOYEE' | 'ADMIN';
+
+  @ApiProperty({ 
+    description: 'ID de la sucursal asignada (solo para EMPLOYEE)',
+    example: 1,
+    required: false
+  })
+  @IsInt()
+  @IsOptional()
+  branchId?: number;
 }
 
 export class UpdateUserDto extends PartialType(CreateUserDto) {
@@ -86,6 +95,12 @@ export class AdminUserDto {
 
   @ApiProperty({ description: 'Estado activo del usuario' })
   isActive!: boolean;
+
+  @ApiProperty({ description: 'ID de la sucursal asignada', required: false })
+  branchId?: number;
+
+  @ApiProperty({ description: 'Sucursal asignada', required: false })
+  branch?: { id: number; name: string; slug: string };
 
   @ApiProperty({ description: 'Fecha de creación' })
   createdAt!: Date;

@@ -192,9 +192,26 @@ export class AuthService {
   // Obtiene usuario actual (por simplicidad, leeremos el userId desde un campo temporal en contexto más adelante).
   async me(userId?: string) {
     if (!userId) throw new UnauthorizedException();
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const user = await this.prisma.user.findUnique({ 
+      where: { id: userId },
+      include: {
+        branch: {
+          select: { id: true, name: true, slug: true },
+        },
+      },
+    });
     if (!user) throw new NotFoundException('Usuario no encontrado');
-    return { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, phone: user.phone, isActive: user.isActive, role: user.role };
+    return { 
+      id: user.id, 
+      email: user.email, 
+      firstName: user.firstName, 
+      lastName: user.lastName, 
+      phone: user.phone, 
+      isActive: user.isActive, 
+      role: user.role,
+      branchId: user.branchId,
+      branch: user.branch,
+    };
   }
 
   async updateMe(userId: string | undefined, input: { firstName?: string; lastName?: string; phone?: string }) {

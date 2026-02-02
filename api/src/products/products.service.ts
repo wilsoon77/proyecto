@@ -270,32 +270,51 @@ export class ProductsService {
     const existingSku = await this.prisma.product.findUnique({ where: { sku: data.sku } });
     if (existingSku) throw new BadRequestException('SKU ya existe');
     
-    const product = await this.prisma.product.create({ 
-      data: { 
-        sku: data.sku, 
-        name: data.name, 
-        slug: data.slug, 
-        description: data.description, 
-        price: data.price, 
-        categoryId: category.id, 
-        origin: (data.origin as any) ?? undefined, 
-        isNew: data.isNew ?? false, 
-        isAvailable: data.isAvailable ?? true 
-      } 
-    });
-    
-    // Crear imagen si se proporciona URL
-    if (data.imageUrl) {
-      await this.prisma.productImage.create({
-        data: {
-          productId: product.id,
-          url: data.imageUrl,
-          position: 0,
-        }
+    // Usar transacción para crear producto + inventarios en todas las sucursales
+    return this.prisma.$transaction(async (tx) => {
+      // Paso 1: Crear el producto
+      const product = await tx.product.create({ 
+        data: { 
+          sku: data.sku, 
+          name: data.name, 
+          slug: data.slug, 
+          description: data.description, 
+          price: data.price, 
+          categoryId: category.id, 
+          origin: (data.origin as any) ?? undefined, 
+          isNew: data.isNew ?? false, 
+          isAvailable: data.isAvailable ?? true 
+        } 
       });
-    }
-    
-    return product;
+      
+      // Paso 2: Crear imagen si se proporciona URL
+      if (data.imageUrl) {
+        await tx.productImage.create({
+          data: {
+            productId: product.id,
+            url: data.imageUrl,
+            position: 0,
+          }
+        });
+      }
+      
+      // Paso 3: Buscar todas las sucursales activas
+      const branches = await tx.branch.findMany();
+      
+      // Paso 4: Crear registro de Inventory para cada sucursal con stock 0
+      if (branches.length > 0) {
+        await tx.inventory.createMany({
+          data: branches.map(branch => ({
+            productId: product.id,
+            branchId: branch.id,
+            quantity: 0,
+            reserved: 0,
+          })),
+        });
+      }
+      
+      return product;
+    });
   }
 
   async update(slug: string, data: { sku?: string; name?: string; description?: string; price?: number; discountPct?: number; categorySlug?: string; origin?: string; isNew?: boolean; isActive?: boolean; isAvailable?: boolean }) {

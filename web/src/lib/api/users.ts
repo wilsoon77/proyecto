@@ -2,6 +2,12 @@ import { api } from "./client"
 
 export type UserRole = 'CUSTOMER' | 'EMPLOYEE' | 'ADMIN'
 
+export interface UserBranch {
+  id: number
+  name: string
+  slug: string
+}
+
 export interface User {
   id: string
   email: string
@@ -10,6 +16,8 @@ export interface User {
   phone?: string
   role: UserRole
   isActive: boolean
+  branchId?: number | null
+  branch?: UserBranch | null
   createdAt: string
   updatedAt: string
   orderCount?: number
@@ -22,6 +30,7 @@ export interface CreateUserData {
   lastName: string
   phone?: string
   role: UserRole
+  branchId?: number
 }
 
 export interface UpdateUserData {
@@ -31,6 +40,7 @@ export interface UpdateUserData {
   lastName?: string
   phone?: string
   role?: UserRole
+  branchId?: number | null
 }
 
 export const usersService = {

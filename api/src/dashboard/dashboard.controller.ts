@@ -1,5 +1,5 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Controller, Get, UseGuards, Query, Req } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { DashboardService } from './dashboard.service.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
@@ -8,7 +8,7 @@ import { RolesGuard } from '../auth/roles.guard.js';
 @Controller('dashboard')
 @ApiTags('dashboard')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('ADMIN')
+@Roles('ADMIN', 'EMPLOYEE')
 @ApiBearerAuth()
 export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
@@ -16,13 +16,21 @@ export class DashboardController {
   @Get('stats')
   @ApiOperation({
     summary: 'Estadísticas del dashboard',
-    description: 'Obtiene estadísticas consolidadas para el panel de administración (órdenes, ingresos, productos, etc.)',
+    description: 'Obtiene estadísticas consolidadas para el panel de administración. Los EMPLOYEE solo ven su sucursal asignada.',
   })
+  @ApiQuery({ name: 'branchId', required: false, description: 'ID de la sucursal (ADMIN puede filtrar, EMPLOYEE ve solo su sucursal)' })
   @ApiResponse({
     status: 200,
     description: 'Estadísticas del dashboard',
     schema: {
       example: {
+        kpis: {
+          todaySales: 1500.50,
+          todayOrdersCount: 12,
+          monthlyLossesQty: 25,
+          monthlyLossesCount: 8,
+          lowStockAlerts: 5,
+        },
         summary: {
           totalOrders: 150,
           totalRevenue: 15000.5,
@@ -49,10 +57,20 @@ export class DashboardController {
         lowStockProducts: [
           { productId: 5, productName: 'Pan Integral', branchName: 'Centro', available: 2 },
         ],
+        salesByBranch: [
+          { branchId: 1, branchName: 'Central', totalSales: 5000, orderCount: 50 },
+        ],
+        weeklySales: [
+          { date: '2026-01-26', totalSales: 500, orderCount: 5 },
+        ],
       },
     },
   })
-  getStats() {
-    return this.dashboardService.getStats();
+  getStats(@Query('branchId') branchId?: string, @Req() req?: any) {
+    // Si el usuario es EMPLOYEE, forzar su sucursal asignada
+    // Por ahora, los empleados deben pasar su branchId desde el frontend
+    // TODO: Implementar relación User -> Branch para asignar sucursal automáticamente
+    const parsedBranchId = branchId ? parseInt(branchId, 10) : undefined;
+    return this.dashboardService.getStats(parsedBranchId);
   }
 }

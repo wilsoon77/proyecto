@@ -44,6 +44,9 @@ model User {
   phone         String?  @db.VarChar(32)
   role          UserRole @default(CUSTOMER)
   isActive      Boolean  @default(true)
+  // Sucursal asignada (solo para EMPLOYEE)
+  branch        Branch?  @relation(fields: [branchId], references: [id])
+  branchId      Int?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   addresses     Address[]
@@ -163,6 +166,7 @@ model Branch {
   stockMovementsFrom StockMovement[] @relation("FromBranch")
   stockMovementsTo   StockMovement[] @relation("ToBranch")
   orders     Order[]
+  employees  User[]
 }
 
 model Order {

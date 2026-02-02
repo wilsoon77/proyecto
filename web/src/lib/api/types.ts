@@ -18,6 +18,8 @@ export interface ApiUser {
   phone?: string
   role: 'CUSTOMER' | 'EMPLOYEE' | 'ADMIN'
   isActive: boolean
+  branchId?: number | null
+  branch?: { id: number; name: string; slug: string } | null
   createdAt: string
   updatedAt: string
 }

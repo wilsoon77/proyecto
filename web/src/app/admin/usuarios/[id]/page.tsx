@@ -3,10 +3,16 @@
 import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Loader2, Save, Eye, EyeOff, Trash2 } from "lucide-react"
+import { ArrowLeft, Loader2, Save, Eye, EyeOff, Trash2, Building2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
-import { usersService, type User, type UserRole, ApiClientError } from "@/lib/api"
+import { usersService, branchesService, type User, type UserRole, ApiClientError } from "@/lib/api"
+
+interface Branch {
+  id: number
+  name: string
+  slug: string
+}
 
 export default function EditarUsuarioPage() {
   const router = useRouter()
@@ -15,6 +21,7 @@ export default function EditarUsuarioPage() {
   const { showToast } = useToast()
   
   const [user, setUser] = useState<User | null>(null)
+  const [branches, setBranches] = useState<Branch[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState("")
@@ -28,22 +35,28 @@ export default function EditarUsuarioPage() {
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [role, setRole] = useState<UserRole>("CUSTOMER")
+  const [branchId, setBranchId] = useState<number | undefined>(undefined)
 
   useEffect(() => {
-    loadUser()
+    loadData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId])
 
-  const loadUser = async () => {
+  const loadData = async () => {
     setIsLoading(true)
     try {
-      const data = await usersService.getById(userId)
-      setUser(data)
-      setFirstName(data.firstName)
-      setLastName(data.lastName)
-      setEmail(data.email)
-      setPhone(data.phone || "")
-      setRole(data.role)
+      const [userData, branchesData] = await Promise.all([
+        usersService.getById(userId),
+        branchesService.list()
+      ])
+      setUser(userData)
+      setBranches(branchesData)
+      setFirstName(userData.firstName)
+      setLastName(userData.lastName)
+      setEmail(userData.email)
+      setPhone(userData.phone || "")
+      setRole(userData.role)
+      setBranchId(userData.branchId || undefined)
     } catch (error) {
       console.error("Error loading user:", error)
       showToast("Error al cargar usuario", "error")
@@ -81,6 +94,10 @@ export default function EditarUsuarioPage() {
         return
       }
     }
+    if (role === "EMPLOYEE" && !branchId) {
+      setError("Debe seleccionar una sucursal para el empleado")
+      return
+    }
 
     setIsSaving(true)
 
@@ -92,12 +109,14 @@ export default function EditarUsuarioPage() {
         phone?: string
         role: UserRole
         password?: string
+        branchId?: number | null
       } = {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         email: email.trim().toLowerCase(),
         phone: phone.trim() || undefined,
         role,
+        branchId: role === "EMPLOYEE" ? branchId : null,
       }
       
       // Solo enviar password si se cambió
@@ -275,7 +294,12 @@ export default function EditarUsuarioPage() {
             <select
               id="role"
               value={role}
-              onChange={(e) => setRole(e.target.value as UserRole)}
+              onChange={(e) => {
+                setRole(e.target.value as UserRole)
+                if (e.target.value !== "EMPLOYEE") {
+                  setBranchId(undefined)
+                }
+              }}
               className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white"
             >
               <option value="CUSTOMER">Cliente</option>
@@ -284,10 +308,34 @@ export default function EditarUsuarioPage() {
             </select>
             <p className="text-xs text-gray-500 mt-1">
               {role === 'CUSTOMER' && 'Puede ver productos y realizar pedidos'}
-              {role === 'EMPLOYEE' && 'Puede gestionar pedidos e inventario'}
+              {role === 'EMPLOYEE' && 'Puede gestionar pedidos e inventario de su sucursal'}
               {role === 'ADMIN' && 'Acceso completo al sistema'}
             </p>
           </div>
+
+          {/* Branch (solo para EMPLOYEE) */}
+          {role === "EMPLOYEE" && (
+            <div>
+              <label htmlFor="branch" className="block text-sm font-medium text-gray-700 mb-2">
+                <Building2 className="inline-block h-4 w-4 mr-1" />
+                Sucursal Asignada *
+              </label>
+              <select
+                id="branch"
+                value={branchId || ""}
+                onChange={(e) => setBranchId(e.target.value ? Number(e.target.value) : undefined)}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white"
+              >
+                <option value="">Seleccionar sucursal...</option>
+                {branches.map(branch => (
+                  <option key={branch.id} value={branch.id}>{branch.name}</option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                El empleado solo podrá ver y gestionar el inventario de esta sucursal
+              </p>
+            </div>
+          )}
 
           {/* Divider */}
           <div className="border-t border-gray-200 pt-6">

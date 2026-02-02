@@ -208,7 +208,7 @@ export default function EditarUsuarioPage() {
             onClick={async () => {
               await usersService.reactivate(userId)
               showToast("Usuario reactivado", "success")
-              loadUser()
+              loadData()
             }}
           >
             Reactivar

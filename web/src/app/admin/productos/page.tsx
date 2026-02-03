@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { 
   Plus, 
   Search, 
@@ -15,6 +14,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
+import { ProductThumbnail } from "@/components/ui/product-image"
 import { useToast } from "@/components/ui/toast"
 import { productsService, adminService } from "@/lib/api"
 import type { ApiProduct } from "@/lib/api/types"
@@ -210,19 +210,12 @@ export default function AdminProductosPage() {
                   <tr key={product.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-4">
-                        <div className="h-14 w-14 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
-                          {product.images && product.images.length > 0 ? (
-                            <Image
-                              src={product.images[0].url}
-                              alt={product.name}
-                              width={56}
-                              height={56}
-                              className="object-cover w-full h-full"
-                            />
-                          ) : (
-                            <ImageIcon className="h-6 w-6 text-gray-400" />
-                          )}
-                        </div>
+                        <ProductThumbnail
+                          src={product.images?.[0]?.url}
+                          alt={product.name}
+                          category={product.categorySlug || product.category}
+                          size={56}
+                        />
                         <div>
                           <p className="font-medium text-gray-900">{product.name}</p>
                           <p className="text-sm text-gray-500">{product.slug}</p>

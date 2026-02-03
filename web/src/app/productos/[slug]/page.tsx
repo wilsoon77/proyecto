@@ -105,7 +105,8 @@ export default function ProductDetailPage() {
         <div className="rounded-lg border bg-white p-4">
           <ImageGallery 
             images={product.images && product.images.length > 0 ? product.images : (product.imageUrl ? [product.imageUrl] : [])} 
-            alt={product.name} 
+            alt={product.name}
+            category={product.category}
           />
         </div>
 

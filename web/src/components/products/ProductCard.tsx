@@ -1,8 +1,9 @@
 "use client"
 
+import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { ShoppingCart, Heart } from "lucide-react"
+import { ShoppingCart, Heart, ImageOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { formatPrice } from "@/lib/utils"
 import { Product } from "@/types"
@@ -14,29 +15,47 @@ interface ProductCardProps {
   onToggleFavorite?: (productId: number) => void
 }
 
+// Emoji fallback basado en categoría
+function getCategoryEmoji(category: string): string {
+  const categoryMap: Record<string, string> = {
+    pan: '🥖',
+    panes: '🥖',
+    pasteles: '🎂',
+    pastel: '🎂',
+    galletas: '🍪',
+    galleta: '🍪',
+    dulces: '🍬',
+    dulce: '🍬',
+    bebidas: '☕',
+    bebida: '☕',
+  }
+  return categoryMap[category?.toLowerCase()] || '🥐'
+}
+
 export function ProductCard({ product, onAddToCart, onToggleFavorite }: ProductCardProps) {
   const isOutOfStock = product.stock === 0
   const isLowStock = product.stock > 0 && product.stock <= 5
+  const [imageError, setImageError] = useState(false)
+
+  const hasValidImage = product.imageUrl && !imageError
 
   return (
     <div className="group relative overflow-hidden rounded-lg border bg-white shadow-sm transition-all hover:shadow-lg">
       {/* Product Image */}
-  <Link href={`/productos/${product.slug}`}>
+      <Link href={`/productos/${product.slug}`}>
         <div className="relative aspect-square overflow-hidden bg-gray-100">
-          {product.imageUrl ? (
+          {hasValidImage ? (
             <Image
-              src={product.imageUrl}
+              src={product.imageUrl!}
               alt={product.name}
               fill
+              sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
               className="object-cover transition-transform duration-300 group-hover:scale-105"
+              onError={() => setImageError(true)}
             />
           ) : (
-            <div className="flex h-full items-center justify-center text-6xl">
-              {product.category === 'pan' && '🥖'}
-              {product.category === 'pasteles' && '🎂'}
-              {product.category === 'galletas' && '🍪'}
-              {product.category === 'dulces' && '🍞'}
-              {!['pan', 'pasteles', 'galletas', 'dulces'].includes(product.category) && '🥐'}
+            <div className="flex h-full items-center justify-center flex-col gap-2 text-gray-400">
+              <span className="text-6xl">{getCategoryEmoji(product.category)}</span>
             </div>
           )}
 

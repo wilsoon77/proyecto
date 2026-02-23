@@ -119,13 +119,13 @@ export function Navbar() {
                   <DropdownMenuItem asChild>
                     <Link href={ROUTES.orders}>Mis pedidos</Link>
                   </DropdownMenuItem>
-                  {user?.role === 'ADMIN' && (
+                  {(user?.role === 'ADMIN' || user?.role === 'EMPLOYEE') && (
                     <>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem asChild>
                         <Link href="/admin" className="text-amber-600 font-medium">
                           <Settings className="mr-2 h-4 w-4" />
-                          Panel Admin
+                          {user?.role === 'ADMIN' ? 'Panel Admin' : 'Panel de Trabajo'}
                         </Link>
                       </DropdownMenuItem>
                     </>

@@ -29,6 +29,7 @@
     "@nestjs/swagger": "^7.1.10",
     "@nestjs/throttler": "^6.4.0",
     "@prisma/client": "^5.19.0",
+    "@sentry/node": "^10.39.0",
     "@supabase/supabase-js": "^2.93.3",
     "bcryptjs": "^2.4.3",
     "class-transformer": "^0.5.1",

@@ -1,13 +1,26 @@
 import 'reflect-metadata';
-import { NestFactory } from '@nestjs/core';
+import { NestFactory, HttpAdapterHost } from '@nestjs/core';
 import { AppModule } from './app.module.js';
 import dotenv from 'dotenv';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { HttpErrorFilter } from './common/filters/http-exception.filter.js';
+import { SentryExceptionFilter } from './common/filters/sentry-exception.filter.js';
 import helmet from 'helmet';
+import * as Sentry from '@sentry/node';
 
 dotenv.config();
+
+// Inicializar Sentry lo más temprano posible
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV || 'development',
+    tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.2 : 1.0,
+    debug: process.env.NODE_ENV !== 'production',
+  });
+  console.log('🔍 Sentry initialized');
+}
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -36,6 +49,11 @@ async function bootstrap() {
     forbidNonWhitelisted: true,
   }));
   
+  // Filtros de excepciones: primero Sentry (si está configurado), luego HTTP
+  const { httpAdapter } = app.get(HttpAdapterHost);
+  if (process.env.SENTRY_DSN) {
+    app.useGlobalFilters(new SentryExceptionFilter(httpAdapter));
+  }
   app.useGlobalFilters(new HttpErrorFilter());
 
   const port = process.env.PORT || 4000;

@@ -52,22 +52,18 @@ export default withSentryConfig(nextConfig, {
   // Solo subir source maps en producción
   silent: !process.env.CI,
   
-  // Ocultar source maps del cliente en producción
-  hideSourceMaps: true,
-  
-  // Deshabilitar telemetría de Sentry
-  disableLogger: true,
-  
-  // Configuración de Webpack
-  widenClientFileUpload: true,
-  
-  // Transpilación automática de SDK
-  transpileClientSDK: true,
+  // Source maps - eliminar después de subir para no exponerlos
+  sourcemaps: {
+    deleteSourcemapsAfterUpload: true,
+  },
   
   // Tunneling para evitar bloqueadores de anuncios
   tunnelRoute: "/monitoring",
   
-  // Tree shaking para reducir bundle
-  disableServerWebpackPlugin: false,
-  disableClientWebpackPlugin: false,
+  // Optimizaciones de bundle
+  bundleSizeOptimizations: {
+    excludeDebugStatements: true,
+    excludeReplayIframe: true,
+    excludeReplayShadowDom: true,
+  },
 });

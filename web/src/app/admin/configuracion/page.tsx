@@ -15,7 +15,7 @@ import {
   AlertTriangle,
   Building2,
   Package,
-  DollarSign,
+  Coins,
   Truck
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -264,11 +264,11 @@ export default function ConfiguracionPage() {
                           value={settings.currency}
                           onChange={(e) => updateSetting("currency", e.target.value)}
                           className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
+                          disabled
                         >
-                          <option value="GTQ">GTQ - Quetzal</option>
-                          <option value="USD">USD - Dólar</option>
-                          <option value="MXN">MXN - Peso Mexicano</option>
+                          <option value="GTQ">GTQ - Quetzal Guatemalteco</option>
                         </select>
+                        <p className="text-xs text-gray-500 mt-1">Solo disponible en Guatemala</p>
                       </div>
                       
                       <div>
@@ -279,10 +279,9 @@ export default function ConfiguracionPage() {
                           value={settings.timezone}
                           onChange={(e) => updateSetting("timezone", e.target.value)}
                           className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
+                          disabled
                         >
                           <option value="America/Guatemala">Guatemala (CST)</option>
-                          <option value="America/Mexico_City">Ciudad de México (CST)</option>
-                          <option value="America/New_York">Nueva York (EST)</option>
                         </select>
                       </div>
                     </div>
@@ -356,7 +355,7 @@ export default function ConfiguracionPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        <DollarSign className="inline-block h-4 w-4 mr-1" />
+                        <Coins className="inline-block h-4 w-4 mr-1" />
                         Monto Mínimo de Pedido
                       </label>
                       <div className="relative">

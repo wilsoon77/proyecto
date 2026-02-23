@@ -6,10 +6,11 @@ import Link from "next/link"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/context/AuthContext"
-import { addressesService, ordersService } from "@/lib/api"
+import { addressesService, ordersService, authService } from "@/lib/api"
 import type { ApiAddress, ApiOrder } from "@/lib/api/types"
 import { ROUTES } from "@/lib/constants"
 import { formatDate, formatPrice } from "@/lib/utils"
+import { AlertTriangle, Loader2 } from "lucide-react"
 
 export default function PerfilPage() {
   const { user, isAuthenticated, isLoading: authLoading, updateProfile, logout } = useAuth()
@@ -31,6 +32,11 @@ export default function PerfilPage() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  
+  // Estado para eliminar cuenta
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState("")
+  const [deleting, setDeleting] = useState(false)
 
   // Cargar datos del usuario
   useEffect(() => {
@@ -121,6 +127,23 @@ export default function PerfilPage() {
   const handleLogout = () => {
     logout()
     router.push(ROUTES.home)
+  }
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== "ELIMINAR") return
+    
+    setDeleting(true)
+    setError(null)
+    
+    try {
+      await authService.deactivate()
+      logout()
+      router.push(ROUTES.home)
+    } catch (err) {
+      console.error('Error desactivando cuenta:', err)
+      setError(err instanceof Error ? err.message : 'Error al eliminar la cuenta')
+      setDeleting(false)
+    }
   }
 
   // Redirigir a login si no está autenticado
@@ -239,6 +262,68 @@ export default function PerfilPage() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Zona de peligro - Eliminar cuenta */}
+      <div className="mt-6 rounded-lg border border-red-200 bg-red-50 p-6">
+        <div className="flex items-start gap-3">
+          <AlertTriangle className="h-6 w-6 text-red-500 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <h2 className="text-xl font-semibold text-red-700">Eliminar cuenta</h2>
+            <p className="mt-1 text-sm text-red-600">
+              Esta acción desactivará tu cuenta. No podrás iniciar sesión hasta que contactes a soporte. 
+              Tu historial de pedidos se conservará.
+            </p>
+            
+            {!showDeleteConfirm ? (
+              <Button 
+                variant="outline" 
+                className="mt-4 border-red-300 text-red-600 hover:bg-red-100"
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                Eliminar mi cuenta
+              </Button>
+            ) : (
+              <div className="mt-4 space-y-3">
+                <p className="text-sm text-red-700 font-medium">
+                  Para confirmar, escribe ELIMINAR en el campo de abajo:
+                </p>
+                <Input
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder="Escribe ELIMINAR"
+                  className="max-w-xs border-red-300 focus:border-red-500 focus:ring-red-500"
+                />
+                <div className="flex gap-3">
+                  <Button
+                    variant="destructive"
+                    onClick={handleDeleteAccount}
+                    disabled={deleteConfirmText !== "ELIMINAR" || deleting}
+                  >
+                    {deleting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Eliminando...
+                      </>
+                    ) : (
+                      "Confirmar eliminación"
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowDeleteConfirm(false)
+                      setDeleteConfirmText("")
+                    }}
+                    disabled={deleting}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )

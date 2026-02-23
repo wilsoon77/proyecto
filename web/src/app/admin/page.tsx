@@ -6,7 +6,7 @@ import {
   Package, 
   ShoppingCart, 
   Users, 
-  DollarSign,
+  Banknote,
   Clock,
   AlertTriangle,
   ArrowUpRight,
@@ -15,7 +15,12 @@ import {
   TrendingDown,
   Store,
   MapPin,
-  LineChart as LineChartIcon
+  LineChart as LineChartIcon,
+  RefreshCw,
+  Calendar,
+  Boxes,
+  Tag,
+  FileText
 } from "lucide-react"
 import {
   BarChart,
@@ -98,9 +103,28 @@ export default function AdminDashboardPage() {
   const [selectedBranch, setSelectedBranch] = useState<string>("global")
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
   const isAdmin = user?.role === "ADMIN"
   const isEmployee = user?.role === "EMPLOYEE"
+
+  // Obtener saludo según hora del día
+  const getGreeting = () => {
+    const hour = new Date().getHours()
+    if (hour < 12) return "Buenos días"
+    if (hour < 18) return "Buenas tardes"
+    return "Buenas noches"
+  }
+
+  // Obtener fecha actual formateada
+  const getCurrentDate = () => {
+    return new Date().toLocaleDateString("es-GT", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric"
+    })
+  }
 
   // Cargar sucursales y configurar branch inicial según rol
   useEffect(() => {
@@ -132,6 +156,7 @@ export default function AdminDashboardPage() {
         const response = await api.get<DashboardResponse>(`/dashboard/stats${branchParam}`)
         setStats(response)
         setError(null)
+        setLastUpdated(new Date())
       } catch (err) {
         console.error("Error loading dashboard stats:", err)
         setError("Error al cargar las estadísticas")
@@ -142,6 +167,22 @@ export default function AdminDashboardPage() {
 
     loadStats()
   }, [selectedBranch])
+
+  const refreshStats = async () => {
+    setIsLoading(true)
+    try {
+      const branchParam = selectedBranch !== "global" ? `?branchId=${selectedBranch}` : ""
+      const response = await api.get<DashboardResponse>(`/dashboard/stats${branchParam}`)
+      setStats(response)
+      setError(null)
+      setLastUpdated(new Date())
+    } catch (err) {
+      console.error("Error loading dashboard stats:", err)
+      setError("Error al cargar las estadísticas")
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('es-GT', {
@@ -198,41 +239,64 @@ export default function AdminDashboardPage() {
   })) || []
 
   return (
-    <div className="p-8 bg-gray-50 min-h-screen">
-      {/* Header con selector de sucursal */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-500 mt-1">Resumen de operaciones</p>
-        </div>
-        
-        {/* Selector de Vista (Admin) o Badge fijo (Empleado) */}
-        <div className="flex items-center gap-3">
-          {isAdmin ? (
-            <div className="flex items-center gap-2 bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-2">
-              <Store className="h-4 w-4 text-gray-400" />
-              <span className="text-sm text-gray-500">Vista:</span>
-              <select
-                value={selectedBranch}
-                onChange={(e) => setSelectedBranch(e.target.value)}
-                className="border-0 bg-transparent font-medium text-gray-900 focus:outline-none focus:ring-0 pr-8"
-              >
-                <option value="global">🌐 Global</option>
-                {branches.map(branch => (
-                  <option key={branch.id} value={branch.id.toString()}>
-                    📍 {branch.name}
-                  </option>
-                ))}
-              </select>
+    <div className="p-6 lg:p-8 bg-gray-50 min-h-screen">
+      {/* Header con saludo y fecha */}
+      <div className="mb-8">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
+              {getGreeting()}, {user?.firstName || "Usuario"}
+            </h1>
+            <div className="flex items-center gap-3 mt-2 text-gray-500">
+              <div className="flex items-center gap-1.5">
+                <Calendar className="h-4 w-4" />
+                <span className="text-sm capitalize">{getCurrentDate()}</span>
+              </div>
+              {lastUpdated && (
+                <div className="flex items-center gap-1.5 text-sm">
+                  <span>•</span>
+                  <span>Actualizado {lastUpdated.toLocaleTimeString("es-GT", { hour: "2-digit", minute: "2-digit" })}</span>
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="flex items-center gap-2 bg-amber-100 text-amber-800 rounded-lg px-4 py-2">
-              <MapPin className="h-4 w-4" />
-              <span className="text-sm font-medium">
-                Sucursal: {user?.branch?.name || branches.find(b => b.id.toString() === selectedBranch)?.name || "Sin asignar"}
-              </span>
-            </div>
-          )}
+          </div>
+          
+          {/* Selector de Vista (Admin) o Badge fijo (Empleado) + Botón actualizar */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={refreshStats}
+              disabled={isLoading}
+              className="flex items-center gap-2 bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-2 hover:bg-gray-50 transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`h-4 w-4 text-gray-500 ${isLoading ? "animate-spin" : ""}`} />
+              <span className="text-sm text-gray-600 font-medium hidden sm:inline">Actualizar</span>
+            </button>
+            {isAdmin ? (
+              <div className="flex items-center gap-2 bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-2">
+                <Store className="h-4 w-4 text-gray-400" />
+                <span className="text-sm text-gray-500 hidden sm:inline">Vista:</span>
+                <select
+                  value={selectedBranch}
+                  onChange={(e) => setSelectedBranch(e.target.value)}
+                  className="border-0 bg-transparent font-medium text-gray-900 focus:outline-none focus:ring-0 pr-8"
+                >
+                  <option value="global">Global (Todas)</option>
+                  {branches.map(branch => (
+                    <option key={branch.id} value={branch.id.toString()}>
+                      {branch.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 bg-amber-100 text-amber-800 rounded-lg px-4 py-2">
+                <MapPin className="h-4 w-4" />
+                <span className="text-sm font-medium">
+                  {user?.branch?.name || branches.find(b => b.id.toString() === selectedBranch)?.name || "Sin asignar"}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -248,12 +312,12 @@ export default function AdminDashboardPage() {
         <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-green-100 text-sm font-medium">💰 Ventas del Día</p>
+              <p className="text-green-100 text-sm font-medium">Ventas del Día</p>
               <p className="text-3xl font-bold mt-2">{formatCurrency(stats?.kpis.todaySales || 0)}</p>
               <p className="text-green-100 text-sm mt-1">{stats?.kpis.todayOrdersCount || 0} órdenes completadas</p>
             </div>
             <div className="h-16 w-16 bg-white/20 rounded-xl flex items-center justify-center">
-              <DollarSign className="h-8 w-8" />
+              <Banknote className="h-8 w-8" />
             </div>
           </div>
         </div>
@@ -262,7 +326,7 @@ export default function AdminDashboardPage() {
         <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-6 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-red-100 text-sm font-medium">📉 Mermas del Mes</p>
+              <p className="text-red-100 text-sm font-medium">Mermas del Mes</p>
               <p className="text-3xl font-bold mt-2">{stats?.kpis.monthlyLossesQty || 0} uds</p>
               <p className="text-red-100 text-sm mt-1">{stats?.kpis.monthlyLossesCount || 0} movimientos registrados</p>
             </div>
@@ -280,7 +344,7 @@ export default function AdminDashboardPage() {
         }`}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-white/80 text-sm font-medium">⚠️ Alertas de Stock</p>
+              <p className="text-white/80 text-sm font-medium">Alertas de Stock</p>
               <p className="text-3xl font-bold mt-2">{stats?.kpis.lowStockAlerts || 0}</p>
               <p className="text-white/80 text-sm mt-1">productos con stock bajo</p>
             </div>
@@ -513,44 +577,63 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* Acciones Rápidas */}
+      {/* Acciones Rápidas - Estilo OrangeHRM */}
       <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-        <h3 className="font-semibold text-gray-900 mb-4">Acciones Rápidas</h3>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <h3 className="font-semibold text-gray-900 mb-6">Accesos Rápidos</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
           <Link
             href="/admin/inventario"
-            className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-gray-200 hover:border-green-400 hover:bg-green-50 transition-all group"
+            className="flex flex-col items-center gap-3 p-4 rounded-xl bg-green-50 hover:bg-green-100 transition-all group"
           >
-            <Package className="h-8 w-8 text-gray-400 group-hover:text-green-600" />
-            <span className="text-sm font-medium text-gray-600 group-hover:text-green-700">Inventario</span>
+            <div className="h-12 w-12 bg-green-500 rounded-xl flex items-center justify-center">
+              <Boxes className="h-6 w-6 text-white" />
+            </div>
+            <span className="text-sm font-medium text-gray-700 text-center">Inventario</span>
           </Link>
           <Link
             href="/admin/productos/nuevo"
-            className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-gray-200 hover:border-amber-400 hover:bg-amber-50 transition-all group"
+            className="flex flex-col items-center gap-3 p-4 rounded-xl bg-amber-50 hover:bg-amber-100 transition-all group"
           >
-            <Package className="h-8 w-8 text-gray-400 group-hover:text-amber-600" />
-            <span className="text-sm font-medium text-gray-600 group-hover:text-amber-700">Nuevo Producto</span>
+            <div className="h-12 w-12 bg-amber-500 rounded-xl flex items-center justify-center">
+              <Package className="h-6 w-6 text-white" />
+            </div>
+            <span className="text-sm font-medium text-gray-700 text-center">Nuevo Producto</span>
           </Link>
           <Link
             href="/admin/ordenes?status=PENDING"
-            className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-all group"
+            className="flex flex-col items-center gap-3 p-4 rounded-xl bg-blue-50 hover:bg-blue-100 transition-all group"
           >
-            <Clock className="h-8 w-8 text-gray-400 group-hover:text-blue-600" />
-            <span className="text-sm font-medium text-gray-600 group-hover:text-blue-700">Pendientes</span>
+            <div className="h-12 w-12 bg-blue-500 rounded-xl flex items-center justify-center">
+              <Clock className="h-6 w-6 text-white" />
+            </div>
+            <span className="text-sm font-medium text-gray-700 text-center">Pendientes</span>
           </Link>
           <Link
             href="/admin/ordenes"
-            className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-gray-200 hover:border-purple-400 hover:bg-purple-50 transition-all group"
+            className="flex flex-col items-center gap-3 p-4 rounded-xl bg-purple-50 hover:bg-purple-100 transition-all group"
           >
-            <ShoppingCart className="h-8 w-8 text-gray-400 group-hover:text-purple-600" />
-            <span className="text-sm font-medium text-gray-600 group-hover:text-purple-700">Órdenes</span>
+            <div className="h-12 w-12 bg-purple-500 rounded-xl flex items-center justify-center">
+              <ShoppingCart className="h-6 w-6 text-white" />
+            </div>
+            <span className="text-sm font-medium text-gray-700 text-center">Órdenes</span>
+          </Link>
+          <Link
+            href="/admin/categorias"
+            className="flex flex-col items-center gap-3 p-4 rounded-xl bg-pink-50 hover:bg-pink-100 transition-all group"
+          >
+            <div className="h-12 w-12 bg-pink-500 rounded-xl flex items-center justify-center">
+              <Tag className="h-6 w-6 text-white" />
+            </div>
+            <span className="text-sm font-medium text-gray-700 text-center">Categorías</span>
           </Link>
           <Link
             href="/admin/usuarios"
-            className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-gray-200 hover:border-indigo-400 hover:bg-indigo-50 transition-all group"
+            className="flex flex-col items-center gap-3 p-4 rounded-xl bg-indigo-50 hover:bg-indigo-100 transition-all group"
           >
-            <Users className="h-8 w-8 text-gray-400 group-hover:text-indigo-600" />
-            <span className="text-sm font-medium text-gray-600 group-hover:text-indigo-700">Usuarios</span>
+            <div className="h-12 w-12 bg-indigo-500 rounded-xl flex items-center justify-center">
+              <Users className="h-6 w-6 text-white" />
+            </div>
+            <span className="text-sm font-medium text-gray-700 text-center">Usuarios</span>
           </Link>
         </div>
       </div>

@@ -46,16 +46,27 @@ export default function NuevoProductoPage() {
   const [imageUrl, setImageUrl] = useState("")
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [uploadedFileId, setUploadedFileId] = useState<string | null>(null)
+  const [slugManuallyEdited, setSlugManuallyEdited] = useState(false)
 
   useEffect(() => {
     loadCategories()
   }, [])
 
+  // Generar slug automáticamente al escribir el nombre (si no se ha editado manualmente)
   useEffect(() => {
-    if (name && !slug) {
+    if (name && !slugManuallyEdited) {
       setSlug(generateSlug(name))
     }
-  }, [name, slug])
+  }, [name, slugManuallyEdited])
+
+  const handleNameChange = (value: string) => {
+    setName(value)
+  }
+
+  const handleSlugChange = (value: string) => {
+    setSlugManuallyEdited(true)
+    setSlug(value)
+  }
 
   const loadCategories = async () => {
     try {
@@ -272,7 +283,7 @@ export default function NuevoProductoPage() {
               id="name"
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => handleNameChange(e.target.value)}
               placeholder="Ej: Pan Francés"
               className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
             />
@@ -282,12 +293,24 @@ export default function NuevoProductoPage() {
           <div>
             <label htmlFor="slug" className="block text-sm font-medium text-gray-700 mb-2">
               Slug (URL) *
+              {slugManuallyEdited && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSlugManuallyEdited(false)
+                    setSlug(generateSlug(name))
+                  }}
+                  className="ml-2 text-xs text-amber-600 hover:text-amber-700"
+                >
+                  Regenerar
+                </button>
+              )}
             </label>
             <input
               id="slug"
               type="text"
               value={slug}
-              onChange={(e) => setSlug(e.target.value)}
+              onChange={(e) => handleSlugChange(e.target.value)}
               placeholder="ej: pan-frances"
               className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
             />
@@ -318,7 +341,7 @@ export default function NuevoProductoPage() {
                 Precio *
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">Q</span>
                 <input
                   id="price"
                   type="number"

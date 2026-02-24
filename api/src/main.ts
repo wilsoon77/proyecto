@@ -11,16 +11,16 @@ import * as Sentry from '@sentry/node';
 
 dotenv.config();
 
+// DSN de Sentry para el backend
+const SENTRY_DSN = process.env.SENTRY_DSN || 'https://9c9acc767212ed9d8eba9b2cfd10b612@o4510354522701824.ingest.us.sentry.io/4510937546227712';
+
 // Inicializar Sentry lo más temprano posible
-if (process.env.SENTRY_DSN) {
-  Sentry.init({
-    dsn: process.env.SENTRY_DSN,
-    environment: process.env.NODE_ENV || 'development',
-    tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.2 : 1.0,
-    debug: process.env.NODE_ENV !== 'production',
-  });
-  console.log('🔍 Sentry initialized');
-}
+Sentry.init({
+  dsn: SENTRY_DSN,
+  environment: process.env.NODE_ENV || 'development',
+  tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.2 : 1.0,
+  sendDefaultPii: true,
+});
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

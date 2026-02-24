@@ -53,6 +53,7 @@ model User {
   orders        Order[]
   stockMovements StockMovement[]
   refreshTokens RefreshToken[]
+  trustedDevices TrustedDevice[]
 }
 
 model Address {
@@ -215,4 +216,32 @@ model RefreshToken {
   
   @@index([userId])
   @@index([expiresAt])
+}
+
+// Dispositivos de confianza del usuario
+model TrustedDevice {
+  id          String   @id @default(cuid())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  deviceId    String   // Fingerprint del dispositivo
+  name        String?  // Nombre amigable (ej: "Chrome en Windows")
+  userAgent   String?  @db.VarChar(500)
+  lastUsedAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+  
+  @@unique([userId, deviceId])
+  @@index([userId])
+}
+
+// Intentos de login (para implementar captcha inteligente)
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  email     String   // Email intentado (puede no existir)
+  ipAddress String   @db.VarChar(45)
+  success   Boolean
+  deviceId  String?  // Fingerprint si está disponible
+  createdAt DateTime @default(now())
+  
+  @@index([email, createdAt])
+  @@index([ipAddress, createdAt])
 }

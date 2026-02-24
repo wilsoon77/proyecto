@@ -77,9 +77,10 @@ export function ProductImage({
         width={fill ? undefined : width}
         height={fill ? undefined : height}
         fill={fill}
-        sizes={sizes || (fill ? "(max-width: 768px) 50vw, 25vw" : undefined)}
+        sizes={sizes || (fill ? "(max-width: 768px) 50vw, 25vw" : `${width}px`)}
         priority={priority}
         className={`${className} ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}
+        style={!fill ? { width: 'auto', height: 'auto' } : undefined}
         onLoad={() => setIsLoading(false)}
         onError={() => {
           setHasError(true)
@@ -122,9 +123,9 @@ export function ProductThumbnail({
       <Image
         src={src}
         alt={alt}
-        width={size}
-        height={size}
-        className="object-cover w-full h-full"
+        fill
+        sizes={`${size}px`}
+        className="object-cover"
         onError={() => setHasError(true)}
       />
     </div>

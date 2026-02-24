@@ -1,5 +1,5 @@
-import { Body, Controller, Post, Get, Patch, UseGuards, Req, HttpCode, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiResponse, ApiBadRequestResponse, ApiUnauthorizedResponse, ApiOperation } from '@nestjs/swagger';
+import { Body, Controller, Post, Get, Patch, UseGuards, Req, HttpCode, HttpStatus, Query } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiResponse, ApiBadRequestResponse, ApiUnauthorizedResponse, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service.js';
 import { JwtAuthGuard } from './jwt-auth.guard.js';
@@ -10,6 +10,16 @@ import { ErrorResponseDto } from '../common/dto/error-response.dto.js';
 @ApiTags('auth')
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
+
+  @Get('check-captcha')
+  @ApiOperation({ summary: 'Verificar si se requiere captcha', description: 'Retorna si el usuario debe completar captcha basado en intentos fallidos.' })
+  @ApiQuery({ name: 'email', required: true })
+  @ApiQuery({ name: 'deviceId', required: false })
+  @ApiResponse({ status: 200, description: 'Estado del captcha', schema: { properties: { required: { type: 'boolean' } } } })
+  async checkCaptcha(@Query('email') email: string, @Query('deviceId') deviceId: string, @Req() req: any) {
+    const required = await this.auth.requiresCaptcha(email, req.ip, deviceId);
+    return { required };
+  }
 
   @Post('register')
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 registros por minuto

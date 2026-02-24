@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, Suspense, useRef } from "react"
+import { useState, Suspense, useRef, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import HCaptcha from "@hcaptcha/react-hcaptcha"
@@ -10,6 +10,8 @@ import { useToast } from "@/context/ToastContext"
 import { Button } from "@/components/ui/button"
 import Captcha, { isCaptchaEnabled } from "@/components/ui/captcha"
 import { signInWithOAuth } from "@/lib/supabase/oauth"
+import { getDeviceId } from "@/lib/device-fingerprint"
+import { authService } from "@/lib/api/auth"
 
 function LoginForm() {
   const router = useRouter()
@@ -26,6 +28,38 @@ function LoginForm() {
   const [oauthLoading, setOauthLoading] = useState<'google' | 'github' | null>(null)
   const [captchaToken, setCaptchaToken] = useState<string | null>(null)
   const captchaRef = useRef<HCaptcha>(null)
+  
+  // Nuevos estados para UX mejorada
+  const [rememberMe, setRememberMe] = useState(false)
+  const [deviceId, setDeviceId] = useState<string>("")
+  const [requiresCaptcha, setRequiresCaptcha] = useState(false)
+  const [checkingCaptcha, setCheckingCaptcha] = useState(false)
+
+  // Obtener deviceId al montar el componente
+  useEffect(() => {
+    const id = getDeviceId()
+    setDeviceId(id)
+  }, [])
+
+  // Verificar si se requiere captcha cuando cambia el email
+  const checkCaptchaRequired = async (emailToCheck: string) => {
+    if (!emailToCheck || !deviceId) return
+    
+    setCheckingCaptcha(true)
+    try {
+      const result = await authService.checkCaptcha(emailToCheck, deviceId)
+      setRequiresCaptcha(result.required)
+      // Si ya no se requiere captcha, limpiar el token
+      if (!result.required) {
+        setCaptchaToken(null)
+      }
+    } catch {
+      // Si hay error, mostrar captcha por seguridad
+      setRequiresCaptcha(true)
+    } finally {
+      setCheckingCaptcha(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -36,14 +70,21 @@ function LoginForm() {
       return
     }
 
-    // Validar CAPTCHA si está habilitado
-    if (isCaptchaEnabled() && !captchaToken) {
+    // Validar CAPTCHA solo si es requerido
+    const captchaRequired = isCaptchaEnabled() && requiresCaptcha
+    if (captchaRequired && !captchaToken) {
       setError("Por favor, completa la verificación de seguridad")
       return
     }
 
     try {
-      await login({ email, password, captchaToken: captchaToken || undefined })
+      await login({ 
+        email, 
+        password, 
+        captchaToken: captchaToken || undefined,
+        rememberMe,
+        deviceId: deviceId || undefined
+      })
       show("¡Bienvenido de vuelta!", { variant: "success" })
       router.push(returnUrl)
     } catch (err: unknown) {
@@ -53,6 +94,8 @@ function LoginForm() {
       // Resetear el captcha si hay error
       captchaRef.current?.resetCaptcha()
       setCaptchaToken(null)
+      // Después de un error, verificar si ahora se requiere captcha
+      await checkCaptchaRequired(email)
     }
   }
 
@@ -91,6 +134,7 @@ function LoginForm() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            onBlur={(e) => checkCaptchaRequired(e.target.value)}
             className="w-full rounded-md border p-3 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" 
             placeholder="tu@correo.com"
             disabled={isLoading || !!oauthLoading}
@@ -134,16 +178,38 @@ function LoginForm() {
           </div>
         </div>
 
-        <Captcha
-          ref={captchaRef}
-          onVerify={(token) => setCaptchaToken(token)}
-          onExpire={() => setCaptchaToken(null)}
-        />
+        {/* Checkbox Recordar sesión */}
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="rememberMe"
+            checked={rememberMe}
+            onChange={(e) => setRememberMe(e.target.checked)}
+            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+            disabled={isLoading || !!oauthLoading}
+          />
+          <label htmlFor="rememberMe" className="text-sm text-gray-600">
+            Recordar mi sesión por 30 días
+          </label>
+        </div>
+
+        {/* Captcha inteligente - solo se muestra si es requerido */}
+        {isCaptchaEnabled() && requiresCaptcha && (
+          <Captcha
+            ref={captchaRef}
+            onVerify={(token) => setCaptchaToken(token)}
+            onExpire={() => setCaptchaToken(null)}
+          />
+        )}
+
+        {checkingCaptcha && (
+          <p className="text-xs text-gray-500">Verificando seguridad...</p>
+        )}
 
         <Button 
           type="submit" 
           className="w-full"
-          disabled={isLoading || !!oauthLoading}
+          disabled={isLoading || !!oauthLoading || checkingCaptcha}
         >
           {isLoading ? "Ingresando..." : "Ingresar"}
         </Button>

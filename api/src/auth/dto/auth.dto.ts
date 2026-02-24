@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsOptional, IsString, MinLength, IsBoolean } from 'class-validator';
 
 export class RegisterDto {
   @ApiProperty({ example: 'juan@example.com' })
@@ -43,6 +43,16 @@ export class LoginDto {
   @IsOptional()
   @IsString()
   captchaToken?: string;
+
+  @ApiProperty({ example: true, required: false, description: 'Mantener sesión iniciada por 30 días' })
+  @IsOptional()
+  @IsBoolean()
+  rememberMe?: boolean;
+
+  @ApiProperty({ example: 'device-fingerprint-123', required: false, description: 'Identificador único del dispositivo' })
+  @IsOptional()
+  @IsString()
+  deviceId?: string;
 }
 
 export class UpdateMeDto {

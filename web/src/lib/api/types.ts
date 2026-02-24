@@ -28,6 +28,8 @@ export interface LoginDto {
   email: string
   password: string
   captchaToken?: string
+  rememberMe?: boolean
+  deviceId?: string
 }
 
 export interface RegisterDto {

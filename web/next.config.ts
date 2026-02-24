@@ -45,14 +45,14 @@ const nextConfig: NextConfig = {
 };
 
 export default withSentryConfig(nextConfig, {
-  // Subida de source maps para mejor debugging
-  org: process.env.SENTRY_ORG,
-  project: process.env.SENTRY_PROJECT,
+  // Configuración de organización y proyecto
+  org: "wilson-exe",
+  project: "javascript-nextjs",
   
-  // Solo subir source maps en producción
+  // Solo subir source maps en CI
   silent: !process.env.CI,
   
-  // Source maps - eliminar después de subir para no exponerlos
+  // Source maps - eliminar después de subir
   sourcemaps: {
     deleteSourcemapsAfterUpload: true,
   },

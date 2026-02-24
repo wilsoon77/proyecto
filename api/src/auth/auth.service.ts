@@ -86,14 +86,48 @@ export class AuthService {
     };
   }
 
-  async login(input: { email: string; password: string }, metadata?: { userAgent?: string; ip?: string }) {
+  async login(input: { email: string; password: string; rememberMe?: boolean; deviceId?: string }, metadata?: { userAgent?: string; ip?: string }) {
     const user = await this.prisma.user.findUnique({ where: { email: input.email } });
-    if (!user || !user.isActive) throw new UnauthorizedException('Credenciales inválidas');
+    
+    // Registrar intento de login
+    const loginAttempt = {
+      email: input.email,
+      ipAddress: metadata?.ip || 'unknown',
+      deviceId: input.deviceId,
+      success: false,
+    };
+
+    if (!user || !user.isActive) {
+      await this.prisma.loginAttempt.create({ data: loginAttempt });
+      throw new UnauthorizedException('Credenciales inválidas');
+    }
+    
     const ok = await bcrypt.compare(input.password, user.passwordHash);
-    if (!ok) throw new UnauthorizedException('Credenciales inválidas');
+    if (!ok) {
+      await this.prisma.loginAttempt.create({ data: loginAttempt });
+      throw new UnauthorizedException('Credenciales inválidas');
+    }
+    
+    // Login exitoso
+    await this.prisma.loginAttempt.create({ data: { ...loginAttempt, success: true } });
+    
+    // Si hay deviceId, marcar como dispositivo de confianza
+    if (input.deviceId) {
+      await this.prisma.trustedDevice.upsert({
+        where: { userId_deviceId: { userId: user.id, deviceId: input.deviceId } },
+        update: { lastUsedAt: new Date(), userAgent: metadata?.userAgent },
+        create: {
+          userId: user.id,
+          deviceId: input.deviceId,
+          userAgent: metadata?.userAgent,
+          name: this.parseDeviceName(metadata?.userAgent),
+        },
+      });
+    }
     
     const accessToken = this.sign(user.id, user.role);
-    const refreshToken = await this.createRefreshToken(user.id, metadata);
+    // Extender refresh token a 30 días si rememberMe está activado
+    const refreshToken = await this.createRefreshToken(user.id, metadata, input.rememberMe ? 30 : 7);
     
     this.logger.auditLogin(user.id, user.email, metadata?.ip, metadata?.userAgent);
     
@@ -102,6 +136,57 @@ export class AuthService {
       refreshToken,
       user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, role: user.role } 
     };
+  }
+
+  // Verificar si se requiere captcha para un email/IP
+  async requiresCaptcha(email: string, ip: string, deviceId?: string): Promise<boolean> {
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    
+    // Si el dispositivo es de confianza, no requerir captcha
+    if (deviceId) {
+      const trustedDevice = await this.prisma.trustedDevice.findFirst({
+        where: {
+          deviceId,
+          user: { email },
+        },
+      });
+      if (trustedDevice) return false;
+    }
+    
+    // Contar intentos fallidos recientes
+    const failedAttempts = await this.prisma.loginAttempt.count({
+      where: {
+        OR: [
+          { email, success: false, createdAt: { gte: fiveMinutesAgo } },
+          { ipAddress: ip, success: false, createdAt: { gte: fiveMinutesAgo } },
+        ],
+      },
+    });
+    
+    // Requerir captcha después de 3 intentos fallidos
+    return failedAttempts >= 3;
+  }
+
+  // Parsear nombre amigable del dispositivo desde User-Agent
+  private parseDeviceName(userAgent?: string): string {
+    if (!userAgent) return 'Dispositivo desconocido';
+    
+    // Detectar navegador
+    let browser = 'Navegador';
+    if (userAgent.includes('Chrome')) browser = 'Chrome';
+    else if (userAgent.includes('Firefox')) browser = 'Firefox';
+    else if (userAgent.includes('Safari')) browser = 'Safari';
+    else if (userAgent.includes('Edge')) browser = 'Edge';
+    
+    // Detectar OS
+    let os = '';
+    if (userAgent.includes('Windows')) os = 'Windows';
+    else if (userAgent.includes('Mac')) os = 'Mac';
+    else if (userAgent.includes('Linux')) os = 'Linux';
+    else if (userAgent.includes('Android')) os = 'Android';
+    else if (userAgent.includes('iPhone') || userAgent.includes('iPad')) os = 'iOS';
+    
+    return os ? `${browser} en ${os}` : browser;
   }
 
   async refresh(refreshToken: string, metadata?: { userAgent?: string; ip?: string }) {
@@ -166,11 +251,11 @@ export class AuthService {
     return { message: 'Sesión cerrada' };
   }
 
-  private async createRefreshToken(userId: string, metadata?: { userAgent?: string; ip?: string }): Promise<string> {
+  private async createRefreshToken(userId: string, metadata?: { userAgent?: string; ip?: string }, expirationDays: number = 7): Promise<string> {
     const token = randomBytes(32).toString('hex');
     const hashedToken = await bcrypt.hash(token, 10);
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 días
+    expiresAt.setDate(expiresAt.getDate() + expirationDays);
 
     await this.prisma.refreshToken.create({
       data: {

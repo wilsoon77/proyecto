@@ -7,6 +7,15 @@ import type { AuthResponse, ApiUser, LoginDto, RegisterDto, UpdateMeDto } from '
 
 export const authService = {
   /**
+   * Verificar si se requiere captcha para un email/dispositivo
+   */
+  async checkCaptcha(email: string, deviceId?: string): Promise<{ required: boolean }> {
+    const params = new URLSearchParams({ email })
+    if (deviceId) params.append('deviceId', deviceId)
+    return api.get<{ required: boolean }>(`/auth/check-captcha?${params}`, { skipAuth: true })
+  },
+
+  /**
    * Iniciar sesión
    */
   async login(data: LoginDto): Promise<AuthResponse> {

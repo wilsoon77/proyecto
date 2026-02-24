@@ -1,14 +1,14 @@
 import * as Sentry from "@sentry/nextjs";
 
 Sentry.init({
-  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
-  
-  // Tracing
-  tracesSampleRate: process.env.NODE_ENV === "production" ? 0.2 : 1.0,
-  
-  // Entorno
+  dsn: "https://5e37095bde709d45edf2f809f5547beb@o4510354522701824.ingest.us.sentry.io/4510937571328000",
+
+  // Adds request headers and IP for users
+  sendDefaultPii: true,
+
+  // Capture 100% in dev, 20% in production
+  tracesSampleRate: process.env.NODE_ENV === "development" ? 1.0 : 0.2,
+
+  // Environment
   environment: process.env.NODE_ENV || "development",
-  
-  // Solo enviar en producción o si está configurado el DSN
-  enabled: !!process.env.NEXT_PUBLIC_SENTRY_DSN,
 });

@@ -1,4 +1,5 @@
 import Link from "next/link"
+import Image from "next/image"
 import { Facebook, Instagram, Twitter, Mail, Phone, MapPin, Apple, Play } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ROUTES } from "@/lib/constants"
@@ -35,12 +36,14 @@ export function Footer() {
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
           {/* Company Info */}
           <div>
-            <div className="flex items-center gap-2">
-              <span className="text-3xl">🥖</span>
-              <div>
-                <span className="text-xl font-bold text-gray-900">PanaderIA</span>
-                <p className="text-xs text-gray-600">Smart System</p>
-              </div>
+            <div className="flex items-center">
+              <Image 
+                src="/images/logo.svg" 
+                alt="Panaderia" 
+                width={64} 
+                height={64}
+                className="rounded-lg"
+              />
             </div>
             <p className="mt-4 text-sm text-gray-600">
               Sistema inteligente de gestión para panaderías en Guatemala. 

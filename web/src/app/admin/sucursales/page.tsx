@@ -1,11 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Plus, Search, MapPin, Phone, Pencil, Trash2, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { useToast } from "@/components/ui/toast"
+import { useAuth } from "@/context/AuthContext"
 import { branchesService } from "@/lib/api"
 
 interface Branch {
@@ -18,12 +20,21 @@ interface Branch {
 }
 
 export default function SucursalesPage() {
+  const router = useRouter()
+  const { user: currentUser } = useAuth()
   const { showToast } = useToast()
   const [branches, setBranches] = useState<Branch[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [deleteId, setDeleteId] = useState<number | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+
+  // Protección de rol - solo ADMIN puede acceder
+  useEffect(() => {
+    if (currentUser && currentUser.role !== "ADMIN") {
+      router.push("/admin")
+    }
+  }, [currentUser, router])
 
   const loadBranches = async () => {
     try {

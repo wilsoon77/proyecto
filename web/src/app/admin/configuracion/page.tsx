@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { 
   Settings,
   Store,
@@ -20,6 +21,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
+import { useAuth } from "@/context/AuthContext"
 import { branchesService } from "@/lib/api"
 
 interface Branch {
@@ -72,12 +74,21 @@ const DEFAULT_SETTINGS: AppSettings = {
 }
 
 export default function ConfiguracionPage() {
+  const router = useRouter()
+  const { user: currentUser } = useAuth()
   const { showToast } = useToast()
   const [branches, setBranches] = useState<Branch[]>([])
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [activeTab, setActiveTab] = useState<"general" | "pedidos" | "notificaciones" | "sucursales">("general")
+
+  // Protección de rol - solo ADMIN puede acceder
+  useEffect(() => {
+    if (currentUser && currentUser.role !== "ADMIN") {
+      router.push("/admin")
+    }
+  }, [currentUser, router])
 
   useEffect(() => {
     loadData()

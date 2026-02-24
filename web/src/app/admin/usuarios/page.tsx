@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { 
   Users as UsersIcon, 
@@ -17,6 +18,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
+import { useAuth } from "@/context/AuthContext"
 import { usersService, type User, type UserRole } from "@/lib/api"
 
 const ROLE_LABELS: Record<UserRole, string> = {
@@ -32,6 +34,8 @@ const ROLE_COLORS: Record<UserRole, { bg: string; text: string; icon: React.Elem
 }
 
 export default function UsuariosPage() {
+  const router = useRouter()
+  const { user: currentUser } = useAuth()
   const { showToast } = useToast()
   const [users, setUsers] = useState<User[]>([])
   const [filteredUsers, setFilteredUsers] = useState<User[]>([])
@@ -40,6 +44,13 @@ export default function UsuariosPage() {
   const [roleFilter, setRoleFilter] = useState<UserRole | "ALL">("ALL")
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL")
   const [processingId, setProcessingId] = useState<string | null>(null)
+
+  // Protección de rol - solo ADMIN puede acceder
+  useEffect(() => {
+    if (currentUser && currentUser.role !== "ADMIN") {
+      router.push("/admin")
+    }
+  }, [currentUser, router])
 
   useEffect(() => {
     loadUsers()

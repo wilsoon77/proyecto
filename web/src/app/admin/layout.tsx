@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
+import Image from "next/image"
 import { useAuth } from "@/context/AuthContext"
 import { ToastProvider } from "@/components/ui/toast"
 import { 
@@ -25,14 +26,14 @@ import {
 } from "lucide-react"
 
 const adminNavItems = [
-  { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { href: "/admin/productos", label: "Productos", icon: Package },
-  { href: "/admin/categorias", label: "Categorías", icon: Tag },
-  { href: "/admin/ordenes", label: "Pedidos", icon: ShoppingCart },
-  { href: "/admin/inventario", label: "Inventario", icon: Warehouse },
-  { href: "/admin/sucursales", label: "Sucursales", icon: Building2 },
-  { href: "/admin/usuarios", label: "Usuarios", icon: Users },
-  { href: "/admin/configuracion", label: "Configuración", icon: Settings },
+  { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true, roles: ["ADMIN", "EMPLOYEE"] },
+  { href: "/admin/productos", label: "Productos", icon: Package, roles: ["ADMIN"] },
+  { href: "/admin/categorias", label: "Categorías", icon: Tag, roles: ["ADMIN"] },
+  { href: "/admin/ordenes", label: "Pedidos", icon: ShoppingCart, roles: ["ADMIN", "EMPLOYEE"] },
+  { href: "/admin/inventario", label: "Inventario", icon: Warehouse, roles: ["ADMIN", "EMPLOYEE"] },
+  { href: "/admin/sucursales", label: "Sucursales", icon: Building2, roles: ["ADMIN"] },
+  { href: "/admin/usuarios", label: "Usuarios", icon: Users, roles: ["ADMIN"] },
+  { href: "/admin/configuracion", label: "Configuración", icon: Settings, roles: ["ADMIN"] },
 ]
 
 export default function AdminLayout({
@@ -110,14 +111,22 @@ export default function AdminLayout({
         {/* Logo Header */}
         <div className={`h-16 flex items-center border-b border-gray-200 ${sidebarCollapsed ? 'justify-center px-2' : 'px-4'}`}>
           {sidebarCollapsed ? (
-            <span className="text-2xl">🥖</span>
+            <Image 
+              src="/images/logo-pan.jpeg" 
+              alt="Panaderia" 
+              width={40} 
+              height={40}
+              className="rounded-md"
+            />
           ) : (
-            <Link href="/admin" className="flex items-center gap-2">
-              <span className="text-2xl">🥖</span>
-              <div>
-                <h1 className="text-lg font-bold text-amber-600">PanaderIA</h1>
-                <p className="text-[10px] text-gray-400 -mt-1">Sistema de Gestión</p>
-              </div>
+            <Link href="/admin" className="flex items-center">
+              <Image 
+                src="/images/logo-pan.jpeg" 
+                alt="Panaderia" 
+                width={48} 
+                height={48}
+                className="rounded-md"
+              />
             </Link>
           )}
           
@@ -133,7 +142,9 @@ export default function AdminLayout({
         {/* Navigation */}
         <nav className="flex-1 py-4 overflow-y-auto">
           <ul className="space-y-1 px-3">
-            {adminNavItems.map((item) => {
+            {adminNavItems
+              .filter((item) => item.roles.includes(user?.role || ""))
+              .map((item) => {
               const isActive = isActiveRoute(item.href, item.exact)
               return (
                 <li key={item.href}>

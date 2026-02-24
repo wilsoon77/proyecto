@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { 
   Plus, 
@@ -14,10 +15,13 @@ import {
 import { Button } from "@/components/ui/button"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { useToast } from "@/components/ui/toast"
+import { useAuth } from "@/context/AuthContext"
 import { categoriesService } from "@/lib/api"
 import type { ApiCategory } from "@/lib/api/types"
 
 export default function AdminCategoriasPage() {
+  const router = useRouter()
+  const { user: currentUser } = useAuth()
   const { showToast } = useToast()
   const [categories, setCategories] = useState<ApiCategory[]>([])
   const [filteredCategories, setFilteredCategories] = useState<ApiCategory[]>([])
@@ -25,6 +29,13 @@ export default function AdminCategoriasPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [deleteTarget, setDeleteTarget] = useState<ApiCategory | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+
+  // Protección de rol - solo ADMIN puede acceder
+  useEffect(() => {
+    if (currentUser && currentUser.role !== "ADMIN") {
+      router.push("/admin")
+    }
+  }, [currentUser, router])
 
   useEffect(() => {
     loadCategories()

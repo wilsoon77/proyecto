@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { 
   Plus, 
@@ -16,11 +17,14 @@ import { Button } from "@/components/ui/button"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { ProductThumbnail } from "@/components/ui/product-image"
 import { useToast } from "@/components/ui/toast"
+import { useAuth } from "@/context/AuthContext"
 import { productsService, adminService } from "@/lib/api"
 import type { ApiProduct } from "@/lib/api/types"
 import { formatPrice } from "@/lib/utils"
 
 export default function AdminProductosPage() {
+  const router = useRouter()
+  const { user: currentUser } = useAuth()
   const { showToast } = useToast()
   const [products, setProducts] = useState<ApiProduct[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -39,6 +43,13 @@ export default function AdminProductosPage() {
     productName: ""
   })
   const [isDeleting, setIsDeleting] = useState(false)
+
+  // Protección de rol - solo ADMIN puede acceder
+  useEffect(() => {
+    if (currentUser && currentUser.role !== "ADMIN") {
+      router.push("/admin")
+    }
+  }, [currentUser, router])
 
   const loadProducts = useCallback(async (page: number = 1, search: string = "") => {
     setIsLoading(true)

@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { ShoppingCart, User, Menu, MapPin, Apple, Play, LogOut, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ROUTES } from "@/lib/constants"
@@ -45,16 +46,16 @@ export function Navbar() {
 
       {/* Main Navbar */}
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between gap-4">
+        <div className="flex h-18 items-center justify-between gap-4">
           {/* Logo */}
-          <Link href={ROUTES.home} className="flex items-center gap-2">
-            <span className="text-3xl">🥖</span>
-            <div className="flex flex-col">
-              <span className="text-xl font-bold leading-none text-gray-900">
-                PanaderIA
-              </span>
-              <span className="text-xs text-gray-500">Smart System</span>
-            </div>
+          <Link href={ROUTES.home} className="flex items-center">
+            <Image 
+              src="/images/logo-pan.jpeg" 
+              alt="Panaderia Logo" 
+              width={147} 
+              height={84}
+              className="rounded-lg"
+            />
           </Link>
 
           {/* Navigation Links - Desktop */}

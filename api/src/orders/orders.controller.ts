@@ -69,7 +69,9 @@ export class OrdersController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Cancelar orden', description: 'Libera las reservas de inventario y marca la orden como CANCELLED.' })
   async cancel(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
-    const order = await this.service.cancel(id, req.user?.userId);
+    // Obtener info de la orden antes de cancelar
+    const orderInfo = await this.service.detail(id);
+    const result = await this.service.cancel(id, req.user?.userId);
     
     // Registrar en auditoría
     const userName = await this.getUserName(req.user?.userId);
@@ -79,13 +81,13 @@ export class OrdersController {
       action: 'UPDATE',
       entity: 'Order',
       entityId: String(id),
-      entityName: order.orderNumber,
-      details: { action: 'CANCEL', previousStatus: 'PENDING', newStatus: 'CANCELLED' },
+      entityName: orderInfo?.orderNumber || `Order #${id}`,
+      details: { action: 'CANCEL', newStatus: 'CANCELLED' },
       ipAddress: req.ip,
       userAgent: req.headers?.['user-agent'],
     });
     
-    return order;
+    return result;
   }
 
   @Post(':id/pickup')
@@ -93,7 +95,9 @@ export class OrdersController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Entregar orden', description: 'Descuenta inventario con movimiento VENTA y marca DELIVERED.' })
   async pickup(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
-    const order = await this.service.pickup(id, req.user?.userId);
+    // Obtener info de la orden antes de entregar
+    const orderInfo = await this.service.detail(id);
+    const result = await this.service.pickup(id, req.user?.userId);
     
     // Registrar en auditoría
     const userName = await this.getUserName(req.user?.userId);
@@ -103,13 +107,13 @@ export class OrdersController {
       action: 'UPDATE',
       entity: 'Order',
       entityId: String(id),
-      entityName: order.orderNumber,
+      entityName: orderInfo?.orderNumber || `Order #${id}`,
       details: { action: 'PICKUP', newStatus: 'DELIVERED' },
       ipAddress: req.ip,
       userAgent: req.headers?.['user-agent'],
     });
     
-    return order;
+    return result;
   }
 
   @Get()

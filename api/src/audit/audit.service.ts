@@ -32,8 +32,9 @@ export class AuditService {
    * Registrar una acción en el historial de auditoría
    */
   async log(data: CreateAuditLogData): Promise<void> {
+    console.log('[AUDIT] Intentando registrar:', JSON.stringify(data, null, 2));
     try {
-      await this.prisma.auditLog.create({
+      const result = await this.prisma.auditLog.create({
         data: {
           userId: data.userId,
           userName: data.userName,
@@ -46,9 +47,10 @@ export class AuditService {
           userAgent: data.userAgent,
         },
       });
+      console.log('[AUDIT] Registro creado exitosamente:', result.id);
     } catch (error) {
       // No lanzar error para no interrumpir la operación principal
-      console.error('Error al registrar auditoría:', error);
+      console.error('[AUDIT] Error al registrar auditoría:', error);
     }
   }
 

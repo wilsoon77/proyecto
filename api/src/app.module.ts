@@ -24,6 +24,7 @@ import { AuditModule } from './audit/audit.module.js';
       ttl: 60000, // 1 minuto en ms
       limit: 100, // 100 peticiones por minuto
     }]),
+    AuditModule, // Debe estar primero para que esté disponible globalmente
     ProductsModule, 
     InventoryModule, 
     StockMovementsModule, 
@@ -38,7 +39,6 @@ import { AuditModule } from './audit/audit.module.js';
     DashboardModule,
     StorageModule,
     SupabaseModule,
-    AuditModule,
   ],
   controllers: [],
   providers: [

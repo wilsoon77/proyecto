@@ -16,14 +16,15 @@ import {
   ChevronLeft,
   ChevronRight,
   Menu,
-  Search,
   Bell,
   User,
   Warehouse,
   Tag,
   Building2,
-  X
+  X,
+  History
 } from "lucide-react"
+import { GlobalSearch } from "@/components/ui/global-search"
 
 const adminNavItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true, roles: ["ADMIN", "EMPLOYEE"] },
@@ -33,6 +34,7 @@ const adminNavItems = [
   { href: "/admin/inventario", label: "Inventario", icon: Warehouse, roles: ["ADMIN", "EMPLOYEE"] },
   { href: "/admin/sucursales", label: "Sucursales", icon: Building2, roles: ["ADMIN"] },
   { href: "/admin/usuarios", label: "Usuarios", icon: Users, roles: ["ADMIN"] },
+  { href: "/admin/historial", label: "Historial", icon: History, roles: ["ADMIN"] },
   { href: "/admin/configuracion", label: "Configuración", icon: Settings, roles: ["ADMIN"] },
 ]
 
@@ -241,16 +243,9 @@ export default function AdminLayout({
               <Menu className="h-6 w-6" />
             </button>
             
-            {/* Search Bar */}
+            {/* Global Search - Ctrl+K */}
             <div className="hidden sm:flex items-center">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Buscar..."
-                  className="w-64 pl-10 pr-4 py-2 bg-gray-100 border-0 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white"
-                />
-              </div>
+              <GlobalSearch />
             </div>
           </div>
 

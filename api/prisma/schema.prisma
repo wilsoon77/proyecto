@@ -54,6 +54,7 @@ model User {
   stockMovements StockMovement[]
   refreshTokens RefreshToken[]
   trustedDevices TrustedDevice[]
+  auditLogs     AuditLog[]
 }
 
 model Address {
@@ -244,4 +245,25 @@ model LoginAttempt {
   
   @@index([email, createdAt])
   @@index([ipAddress, createdAt])
+}
+
+// Registro de auditoría para historial de cambios
+model AuditLog {
+  id          String   @id @default(cuid())
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId      String?
+  userName    String   // Nombre del usuario al momento de la acción (por si se elimina)
+  action      String   // CREATE, UPDATE, DELETE, LOGIN, LOGOUT, etc.
+  entity      String   // Product, Order, User, Category, Branch, Inventory, etc.
+  entityId    String?  // ID del registro afectado
+  entityName  String?  // Nombre descriptivo (ej: "Pan Francés", "Pedido #123")
+  details     String?  @db.Text // JSON con detalles adicionales (campos modificados, valores anteriores)
+  ipAddress   String?  @db.VarChar(45)
+  userAgent   String?  @db.VarChar(500)
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([entity, createdAt])
+  @@index([action, createdAt])
+  @@index([createdAt])
 }

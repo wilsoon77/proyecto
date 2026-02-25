@@ -16,6 +16,8 @@ export { adminService } from './admin.service'
 export { usersService } from './users'
 export { inventoryService } from './inventory'
 export type { InventoryItem, StockMovement, CreateStockMovementData, StockMovementType, StockMovementsListResponse } from './inventory'
+export { auditService } from './audit'
+export type { AuditLog, AuditListFilters, AuditListResponse, AuditStats, AuditFilterOptions } from './audit'
 export type { ProductDetailResponse, CreateProductData, UpdateProductData } from './admin.service'
 export type { User, UserRole, CreateUserData, UpdateUserData } from './users'
 

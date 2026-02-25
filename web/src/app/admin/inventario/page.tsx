@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import Link from "next/link"
 import { 
   Package, 
   Filter, 
@@ -8,25 +9,14 @@ import {
   Plus, 
   ArrowUpDown,
   Search,
-  X,
-  AlertTriangle,
-  TrendingUp,
-  TrendingDown,
-  ArrowRightLeft,
-  Truck,
-  Factory,
-  AlertCircle,
-  Check
+  AlertTriangle
 } from "lucide-react"
 import { 
   inventoryService, 
-  branchesService, 
-  productsService,
-  type InventoryItem,
-  type StockMovementType,
-  type CreateStockMovementData
+  branchesService,
+  type InventoryItem
 } from "@/lib/api"
-import { useAuth } from "@/context/AuthContext"
+import { Button } from "@/components/ui/button"
 
 interface Branch {
   id: number
@@ -34,87 +24,10 @@ interface Branch {
   slug: string
 }
 
-interface Product {
-  id: number
-  name: string
-  slug: string
-}
-
-// Tipos de movimiento con sus configuraciones
-const MOVEMENT_TYPES: Record<StockMovementType, {
-  label: string
-  icon: React.ReactNode
-  color: string
-  description: string
-  requiresFromBranch: boolean
-  requiresToBranch: boolean
-}> = {
-  PRODUCCION: {
-    label: "Producción",
-    icon: <Factory className="h-4 w-4" />,
-    color: "bg-green-100 text-green-800",
-    description: "Producto fabricado/producido",
-    requiresFromBranch: false,
-    requiresToBranch: true
-  },
-  COMPRA: {
-    label: "Compra",
-    icon: <Truck className="h-4 w-4" />,
-    color: "bg-blue-100 text-blue-800",
-    description: "Compra a proveedor",
-    requiresFromBranch: false,
-    requiresToBranch: true
-  },
-  VENTA: {
-    label: "Venta",
-    icon: <TrendingDown className="h-4 w-4" />,
-    color: "bg-purple-100 text-purple-800",
-    description: "Venta a cliente (reducción de stock)",
-    requiresFromBranch: true,
-    requiresToBranch: false
-  },
-  MERMA: {
-    label: "Merma",
-    icon: <AlertCircle className="h-4 w-4" />,
-    color: "bg-orange-100 text-orange-800",
-    description: "Producto dañado/caducado",
-    requiresFromBranch: true,
-    requiresToBranch: false
-  },
-  PERDIDA_ROBO: {
-    label: "Pérdida/Robo",
-    icon: <AlertTriangle className="h-4 w-4" />,
-    color: "bg-red-100 text-red-800",
-    description: "Producto perdido o robado",
-    requiresFromBranch: true,
-    requiresToBranch: false
-  },
-  TRANSFERENCIA: {
-    label: "Transferencia",
-    icon: <ArrowRightLeft className="h-4 w-4" />,
-    color: "bg-indigo-100 text-indigo-800",
-    description: "Mover entre sucursales",
-    requiresFromBranch: true,
-    requiresToBranch: true
-  },
-  SOBRANTE: {
-    label: "Sobrante",
-    icon: <TrendingUp className="h-4 w-4" />,
-    color: "bg-teal-100 text-teal-800",
-    description: "Ajuste positivo de inventario",
-    requiresFromBranch: false,
-    requiresToBranch: true
-  }
-}
-
 export default function InventarioPage() {
-  const { user } = useAuth()
-  const isAdmin = user?.role === "ADMIN"
-
   // Estados principales
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [branches, setBranches] = useState<Branch[]>([])
-  const [products, setProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -123,31 +36,16 @@ export default function InventarioPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [showLowStock, setShowLowStock] = useState(false)
 
-  // Modal de movimiento
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [selectedInventoryItem, setSelectedInventoryItem] = useState<InventoryItem | null>(null)
-  const [movementType, setMovementType] = useState<StockMovementType>("PRODUCCION")
-  const [movementQuantity, setMovementQuantity] = useState<number>(1)
-  const [movementFromBranch, setMovementFromBranch] = useState<string>("")
-  const [movementToBranch, setMovementToBranch] = useState<string>("")
-  const [movementNote, setMovementNote] = useState("")
-  const [movementReference, setMovementReference] = useState("")
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [submitSuccess, setSubmitSuccess] = useState(false)
-  const [submitError, setSubmitError] = useState<string | null>(null)
-
   // Cargar datos iniciales
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [inventoryData, branchesData, productsData] = await Promise.all([
+        const [inventoryData, branchesData] = await Promise.all([
           inventoryService.list(),
-          branchesService.list(),
-          productsService.list({ pageSize: 100 })
+          branchesService.list()
         ])
         setInventory(inventoryData)
         setBranches(branchesData)
-        setProducts(productsData.data || productsData)
         setError(null)
       } catch (err) {
         console.error("Error loading data:", err)
@@ -193,84 +91,6 @@ export default function InventarioPage() {
     return true
   })
 
-  // Abrir modal para un item específico
-  const openMovementModal = (item?: InventoryItem) => {
-    setSelectedInventoryItem(item || null)
-    setMovementType("PRODUCCION")
-    setMovementQuantity(1)
-    setMovementFromBranch(item?.branch.slug || "")
-    setMovementToBranch(item?.branch.slug || "")
-    setMovementNote("")
-    setMovementReference("")
-    setSubmitSuccess(false)
-    setSubmitError(null)
-    setIsModalOpen(true)
-  }
-
-  // Cerrar modal
-  const closeModal = () => {
-    setIsModalOpen(false)
-    setSelectedInventoryItem(null)
-    setSubmitSuccess(false)
-    setSubmitError(null)
-  }
-
-  // Enviar movimiento
-  const handleSubmitMovement = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!selectedInventoryItem) return
-
-    const typeConfig = MOVEMENT_TYPES[movementType]
-    
-    // Validaciones
-    if (typeConfig.requiresFromBranch && !movementFromBranch) {
-      setSubmitError("Debe seleccionar la sucursal de origen")
-      return
-    }
-    if (typeConfig.requiresToBranch && !movementToBranch) {
-      setSubmitError("Debe seleccionar la sucursal de destino")
-      return
-    }
-    if (movementQuantity <= 0) {
-      setSubmitError("La cantidad debe ser mayor a 0")
-      return
-    }
-
-    setIsSubmitting(true)
-    setSubmitError(null)
-
-    try {
-      const data: CreateStockMovementData = {
-        type: movementType,
-        quantity: movementQuantity,
-        productSlug: selectedInventoryItem.product.slug,
-        note: movementNote || undefined,
-        referenceId: movementReference || undefined,
-      }
-
-      if (typeConfig.requiresFromBranch) {
-        data.fromBranchSlug = movementFromBranch
-      }
-      if (typeConfig.requiresToBranch) {
-        data.toBranchSlug = movementToBranch
-      }
-
-      await inventoryService.createMovement(data)
-      setSubmitSuccess(true)
-      
-      // Recargar inventario después de 1 segundo
-      setTimeout(async () => {
-        await refreshInventory()
-        closeModal()
-      }, 1500)
-    } catch (err: any) {
-      console.error("Error creating movement:", err)
-      setSubmitError(err.message || "Error al registrar el movimiento")
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('es-GT', {
       day: '2-digit',
@@ -308,6 +128,12 @@ export default function InventarioPage() {
             <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
             Actualizar
           </button>
+          <Link href="/admin/inventario/movimiento">
+            <Button className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Nuevo Movimiento
+            </Button>
+          </Link>
         </div>
       </div>
 
@@ -441,13 +267,13 @@ export default function InventarioPage() {
                         {formatDate(item.updatedAt)}
                       </td>
                       <td className="py-4 px-6 text-center">
-                        <button
-                          onClick={() => openMovementModal(item)}
+                        <Link
+                          href={`/admin/inventario/movimiento?producto=${item.product.slug}&sucursal=${item.branch.slug}`}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-100 transition-colors font-medium text-sm"
                         >
                           <Plus className="h-4 w-4" />
                           Movimiento
-                        </button>
+                        </Link>
                       </td>
                     </tr>
                   )
@@ -457,221 +283,6 @@ export default function InventarioPage() {
           </table>
         </div>
       </div>
-
-      {/* Modal de Movimiento de Stock */}
-      {isModalOpen && selectedInventoryItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* Overlay */}
-          <div 
-            className="absolute inset-0 bg-black/50" 
-            onClick={closeModal}
-          />
-          
-          {/* Modal content */}
-          <div className="relative bg-white rounded-2xl shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
-            {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-100">
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">Registrar Movimiento</h2>
-                <p className="text-sm text-gray-500 mt-1">
-                  {selectedInventoryItem.product.name} • {selectedInventoryItem.branch.name}
-                </p>
-              </div>
-              <button
-                onClick={closeModal}
-                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            {/* Success/Error state */}
-            {submitSuccess ? (
-              <div className="p-8 text-center">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Check className="h-8 w-8 text-green-600" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">¡Movimiento registrado!</h3>
-                <p className="text-gray-500">El inventario se actualizará en un momento...</p>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmitMovement}>
-                <div className="p-6 space-y-5">
-                  {/* Tipo de movimiento */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Tipo de movimiento
-                    </label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {(Object.entries(MOVEMENT_TYPES) as [StockMovementType, typeof MOVEMENT_TYPES[StockMovementType]][])
-                        .filter(([type]) => type !== 'VENTA') // VENTA se registra automáticamente con órdenes
-                        .map(([type, config]) => (
-                          <button
-                            key={type}
-                            type="button"
-                            onClick={() => {
-                              setMovementType(type)
-                              // Auto-llenar sucursales según el tipo
-                              if (config.requiresFromBranch && !config.requiresToBranch) {
-                                setMovementFromBranch(selectedInventoryItem.branch.slug)
-                                setMovementToBranch("")
-                              } else if (config.requiresToBranch && !config.requiresFromBranch) {
-                                setMovementToBranch(selectedInventoryItem.branch.slug)
-                                setMovementFromBranch("")
-                              } else if (type === 'TRANSFERENCIA') {
-                                setMovementFromBranch(selectedInventoryItem.branch.slug)
-                                setMovementToBranch("")
-                              }
-                            }}
-                            className={`flex items-center gap-2 p-3 rounded-lg border-2 text-left transition-all ${
-                              movementType === type 
-                                ? 'border-amber-500 bg-amber-50' 
-                                : 'border-gray-200 hover:border-gray-300'
-                            }`}
-                          >
-                            <span className={`p-1.5 rounded ${config.color}`}>
-                              {config.icon}
-                            </span>
-                            <div>
-                              <p className="font-medium text-sm text-gray-900">{config.label}</p>
-                              <p className="text-xs text-gray-500">{config.description}</p>
-                            </div>
-                          </button>
-                        ))
-                      }
-                    </div>
-                  </div>
-
-                  {/* Cantidad */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Cantidad
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={movementQuantity}
-                      onChange={(e) => setMovementQuantity(parseInt(e.target.value) || 0)}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-lg font-medium"
-                      required
-                    />
-                    <p className="text-xs text-gray-400 mt-1">
-                      Stock actual disponible: <span className="font-semibold">{selectedInventoryItem.available}</span>
-                    </p>
-                  </div>
-
-                  {/* Sucursal origen (si aplica) */}
-                  {MOVEMENT_TYPES[movementType].requiresFromBranch && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Sucursal origen
-                      </label>
-                      <select
-                        value={movementFromBranch}
-                        onChange={(e) => setMovementFromBranch(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
-                        required
-                      >
-                        <option value="">Seleccionar sucursal</option>
-                        {branches.map(branch => (
-                          <option key={branch.id} value={branch.slug}>{branch.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-
-                  {/* Sucursal destino (si aplica) */}
-                  {MOVEMENT_TYPES[movementType].requiresToBranch && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {movementType === 'TRANSFERENCIA' ? 'Sucursal destino' : 'Sucursal'}
-                      </label>
-                      <select
-                        value={movementToBranch}
-                        onChange={(e) => setMovementToBranch(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
-                        required
-                      >
-                        <option value="">Seleccionar sucursal</option>
-                        {branches
-                          .filter(b => movementType !== 'TRANSFERENCIA' || b.slug !== movementFromBranch)
-                          .map(branch => (
-                            <option key={branch.id} value={branch.slug}>{branch.name}</option>
-                          ))
-                        }
-                      </select>
-                    </div>
-                  )}
-
-                  {/* Referencia */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Referencia (opcional)
-                    </label>
-                    <input
-                      type="text"
-                      value={movementReference}
-                      onChange={(e) => setMovementReference(e.target.value)}
-                      placeholder="Ej: FAC-12345, Lote-A001"
-                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
-                    />
-                  </div>
-
-                  {/* Nota */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Nota (opcional)
-                    </label>
-                    <textarea
-                      value={movementNote}
-                      onChange={(e) => setMovementNote(e.target.value)}
-                      placeholder="Observaciones adicionales..."
-                      rows={2}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
-                    />
-                  </div>
-
-                  {/* Error */}
-                  {submitError && (
-                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-                      {submitError}
-                    </div>
-                  )}
-                </div>
-
-                {/* Footer */}
-                <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-100 bg-gray-50 rounded-b-2xl">
-                  <button
-                    type="button"
-                    onClick={closeModal}
-                    className="px-4 py-2 text-gray-700 hover:text-gray-900"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="px-6 py-2.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center gap-2"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <RefreshCw className="h-4 w-4 animate-spin" />
-                        Registrando...
-                      </>
-                    ) : (
-                      <>
-                        <Plus className="h-4 w-4" />
-                        Registrar Movimiento
-                      </>
-                    )}
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   )
 }

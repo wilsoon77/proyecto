@@ -138,8 +138,24 @@ export class ProductsController {
   @ApiResponse({ status: 200, description: 'Producto actualizado', type: ProductDto })
   @ApiBadRequestResponse({ description: 'Datos inválidos' })
   @ApiNotFoundResponse({ description: 'Producto no encontrado' })
-  updateById(@Param('id') id: string, @Body() body: UpdateProductDto) {
-    return this.productsService.updateById(Number(id), body);
+  async updateById(@Param('id') id: string, @Body() body: UpdateProductDto, @Req() req: any) {
+    const product = await this.productsService.updateById(Number(id), body);
+    
+    // Registrar en auditoría
+    const userName = await this.getUserName(req.user?.userId);
+    await this.auditService.log({
+      userId: req.user?.userId,
+      userName,
+      action: 'UPDATE',
+      entity: 'Product',
+      entityId: id,
+      entityName: product.name,
+      details: { changedFields: Object.keys(body), method: 'by-id' },
+      ipAddress: req.ip,
+      userAgent: req.headers?.['user-agent'],
+    });
+    
+    return product;
   }
 
   @Post('by-id/:id/deactivate')
@@ -149,8 +165,24 @@ export class ProductsController {
   @ApiBearerAuth()
   @ApiResponse({ status: 200, description: 'Producto desactivado' })
   @ApiNotFoundResponse({ description: 'Producto no encontrado' })
-  deactivateById(@Param('id') id: string) {
-    return this.productsService.deactivateById(Number(id));
+  async deactivateById(@Param('id') id: string, @Req() req: any) {
+    const product = await this.productsService.deactivateById(Number(id));
+    
+    // Registrar en auditoría
+    const userName = await this.getUserName(req.user?.userId);
+    await this.auditService.log({
+      userId: req.user?.userId,
+      userName,
+      action: 'UPDATE',
+      entity: 'Product',
+      entityId: id,
+      entityName: product.name,
+      details: { action: 'DEACTIVATE', method: 'by-id' },
+      ipAddress: req.ip,
+      userAgent: req.headers?.['user-agent'],
+    });
+    
+    return product;
   }
 
   @Delete('by-id/:id')
@@ -161,8 +193,26 @@ export class ProductsController {
   @ApiResponse({ status: 200, description: 'Producto eliminado' })
   @ApiNotFoundResponse({ description: 'Producto no encontrado' })
   @ApiBadRequestResponse({ description: 'No se puede eliminar: referenciado' })
-  removeById(@Param('id') id: string) {
-    return this.productsService.deleteById(Number(id));
+  async removeById(@Param('id') id: string, @Req() req: any) {
+    // Obtener info del producto antes de eliminar
+    const productInfo = await this.productsService.findById(Number(id));
+    const result = await this.productsService.deleteById(Number(id));
+    
+    // Registrar en auditoría
+    const userName = await this.getUserName(req.user?.userId);
+    await this.auditService.log({
+      userId: req.user?.userId,
+      userName,
+      action: 'DELETE',
+      entity: 'Product',
+      entityId: id,
+      entityName: productInfo?.name,
+      details: { deleted: true, method: 'by-id' },
+      ipAddress: req.ip,
+      userAgent: req.headers?.['user-agent'],
+    });
+    
+    return result;
   }
 
   // ==================== ENDPOINTS POR SLUG (compatibilidad) ====================
@@ -314,7 +364,23 @@ export class ProductsController {
   @ApiResponse({ status: 200, description: 'Producto reemplazado', type: ProductDto })
   @ApiBadRequestResponse({ description: 'Datos inválidos' })
   @ApiNotFoundResponse({ description: 'Producto no encontrado' })
-  replace(@Param('slug') slug: string, @Body() body: PutProductDto) {
-    return this.productsService.putUpdate(slug, body);
+  async replace(@Param('slug') slug: string, @Body() body: PutProductDto, @Req() req: any) {
+    const product = await this.productsService.putUpdate(slug, body);
+    
+    // Registrar en auditoría
+    const userName = await this.getUserName(req.user?.userId);
+    await this.auditService.log({
+      userId: req.user?.userId,
+      userName,
+      action: 'UPDATE',
+      entity: 'Product',
+      entityId: String(product.id),
+      entityName: product.name,
+      details: { method: 'PUT', changedFields: Object.keys(body) },
+      ipAddress: req.ip,
+      userAgent: req.headers?.['user-agent'],
+    });
+    
+    return product;
   }
 }

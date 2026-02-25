@@ -4,12 +4,38 @@ import { OrdersService } from './orders.service.js';
 import { ReserveOrderDto } from './dto.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { setPaginationHeaders } from '../common/utils/pagination.util.js';
+import { AuditService } from '../audit/audit.service.js';
+import { PrismaService } from '../prisma/prisma.service.js';
 import type { Response } from 'express';
 
 @Controller('orders')
 @ApiTags('orders')
 export class OrdersController {
-  constructor(private readonly service: OrdersService) {}
+  constructor(
+    private readonly service: OrdersService,
+    private readonly auditService: AuditService,
+    private readonly prisma: PrismaService,
+  ) {}
+
+  /**
+   * Helper para obtener nombre del usuario desde la BD
+   */
+  private async getUserName(userId: string): Promise<string> {
+    if (!userId) return 'Sistema';
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { firstName: true, lastName: true, email: true },
+      });
+      if (user) {
+        const name = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+        return name || user.email || 'Usuario';
+      }
+    } catch (e) {
+      // Ignorar errores
+    }
+    return 'Sistema';
+  }
 
   @Post('reserve')
   @UseGuards(JwtAuthGuard)
@@ -18,24 +44,72 @@ export class OrdersController {
   @ApiBody({ type: ReserveOrderDto })
   @ApiResponse({ status: 201, description: 'Orden creada y reservada', content: { 'application/json': { examples: { ejemplo: { value: { id: 123, orderNumber: 'ORD-000123', status: 'PENDING', subtotal: 100, total: 100 } } } } } })
   @ApiBadRequestResponse({ description: 'Validación o stock insuficiente', schema: { example: { statusCode: 400, error: 'Bad Request', message: 'Stock insuficiente: Concha' } } })
-  reserve(@Req() req: any, @Body() dto: ReserveOrderDto) {
-    return this.service.reserve(dto, req.user?.userId);
+  async reserve(@Req() req: any, @Body() dto: ReserveOrderDto) {
+    const order = await this.service.reserve(dto, req.user?.userId);
+    
+    // Registrar en auditoría
+    const userName = await this.getUserName(req.user?.userId);
+    await this.auditService.log({
+      userId: req.user?.userId,
+      userName,
+      action: 'CREATE',
+      entity: 'Order',
+      entityId: String(order.id),
+      entityName: order.orderNumber,
+      details: { branchSlug: dto.branchSlug, itemsCount: dto.items?.length, total: order.total },
+      ipAddress: req.ip,
+      userAgent: req.headers?.['user-agent'],
+    });
+    
+    return order;
   }
 
   @Post(':id/cancel')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Cancelar orden', description: 'Libera las reservas de inventario y marca la orden como CANCELLED.' })
-  cancel(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
-    return this.service.cancel(id, req.user?.userId);
+  async cancel(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
+    const order = await this.service.cancel(id, req.user?.userId);
+    
+    // Registrar en auditoría
+    const userName = await this.getUserName(req.user?.userId);
+    await this.auditService.log({
+      userId: req.user?.userId,
+      userName,
+      action: 'UPDATE',
+      entity: 'Order',
+      entityId: String(id),
+      entityName: order.orderNumber,
+      details: { action: 'CANCEL', previousStatus: 'PENDING', newStatus: 'CANCELLED' },
+      ipAddress: req.ip,
+      userAgent: req.headers?.['user-agent'],
+    });
+    
+    return order;
   }
 
   @Post(':id/pickup')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Entregar orden', description: 'Descuenta inventario con movimiento VENTA y marca DELIVERED.' })
-  pickup(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
-    return this.service.pickup(id, req.user?.userId);
+  async pickup(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
+    const order = await this.service.pickup(id, req.user?.userId);
+    
+    // Registrar en auditoría
+    const userName = await this.getUserName(req.user?.userId);
+    await this.auditService.log({
+      userId: req.user?.userId,
+      userName,
+      action: 'UPDATE',
+      entity: 'Order',
+      entityId: String(id),
+      entityName: order.orderNumber,
+      details: { action: 'PICKUP', newStatus: 'DELIVERED' },
+      ipAddress: req.ip,
+      userAgent: req.headers?.['user-agent'],
+    });
+    
+    return order;
   }
 
   @Get()
@@ -128,8 +202,24 @@ export class OrdersController {
   @ApiOperation({ summary: 'Confirmar orden', description: 'Cambia estado de PENDING a CONFIRMED (pago recibido).' })
   @ApiResponse({ status: 200, description: 'Orden confirmada' })
   @ApiBadRequestResponse({ description: 'Solo se pueden confirmar órdenes PENDING' })
-  confirmOrder(@Param('id', ParseIntPipe) id: number) {
-    return this.service.confirm(id);
+  async confirmOrder(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
+    const order = await this.service.confirm(id);
+    
+    // Registrar en auditoría
+    const userName = await this.getUserName(req.user?.userId);
+    await this.auditService.log({
+      userId: req.user?.userId,
+      userName,
+      action: 'UPDATE',
+      entity: 'Order',
+      entityId: String(id),
+      entityName: order.orderNumber,
+      details: { action: 'CONFIRM', previousStatus: 'PENDING', newStatus: 'CONFIRMED' },
+      ipAddress: req.ip,
+      userAgent: req.headers?.['user-agent'],
+    });
+    
+    return order;
   }
 
   @Patch(':id/status')
@@ -139,7 +229,23 @@ export class OrdersController {
   @ApiBody({ schema: { example: { status: 'CONFIRMED' }, properties: { status: { type: 'string', description: 'Nuevo estado (PENDING, CONFIRMED, PREPARING, READY, IN_DELIVERY, DELIVERED, CANCELLED)' } } } })
   @ApiResponse({ status: 200, description: 'Estado actualizado' })
   @ApiBadRequestResponse({ description: 'Estado inválido o error en la actualización' })
-  updateStatus(@Param('id', ParseIntPipe) id: number, @Body() { status }: { status: string }) {
-    return this.service.updateStatus(id, status);
+  async updateStatus(@Req() req: any, @Param('id', ParseIntPipe) id: number, @Body() { status }: { status: string }) {
+    const order = await this.service.updateStatus(id, status);
+    
+    // Registrar en auditoría
+    const userName = await this.getUserName(req.user?.userId);
+    await this.auditService.log({
+      userId: req.user?.userId,
+      userName,
+      action: 'UPDATE',
+      entity: 'Order',
+      entityId: String(id),
+      entityName: order.orderNumber,
+      details: { action: 'STATUS_CHANGE', newStatus: status },
+      ipAddress: req.ip,
+      userAgent: req.headers?.['user-agent'],
+    });
+    
+    return order;
   }
 }

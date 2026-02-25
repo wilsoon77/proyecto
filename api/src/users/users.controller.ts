@@ -8,6 +8,7 @@ import {
   Body,
   UseGuards,
   Request,
+  Req,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -24,6 +25,8 @@ import { CreateUserDto, UpdateUserDto, AdminUserDto } from './dto/user.dto.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/roles.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
+import { AuditService } from '../audit/audit.service.js';
+import { PrismaService } from '../prisma/prisma.service.js';
 
 @Controller('users')
 @ApiTags('users')
@@ -31,7 +34,31 @@ import { Roles } from '../auth/roles.decorator.js';
 @Roles('ADMIN')
 @ApiBearerAuth()
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly auditService: AuditService,
+    private readonly prisma: PrismaService,
+  ) {}
+
+  /**
+   * Helper para obtener nombre del usuario que ejecuta la acción
+   */
+  private async getUserName(userId: string): Promise<string> {
+    if (!userId) return 'Sistema';
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { firstName: true, lastName: true, email: true },
+      });
+      if (user) {
+        const name = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+        return name || user.email || 'Usuario';
+      }
+    } catch (e) {
+      // Ignorar errores
+    }
+    return 'Sistema';
+  }
 
   @Get()
   @ApiOperation({ summary: 'Listar usuarios', description: 'Obtiene todos los usuarios (solo ADMIN).' })
@@ -65,8 +92,24 @@ export class UsersController {
     type: AdminUserDto,
   })
   @ApiBadRequestResponse({ description: 'El email ya existe' })
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.create(createUserDto);
+  async create(@Body() createUserDto: CreateUserDto, @Req() req: any) {
+    const user = await this.usersService.create(createUserDto);
+    
+    // Registrar en auditoría
+    const userName = await this.getUserName(req.user?.userId);
+    await this.auditService.log({
+      userId: req.user?.userId,
+      userName,
+      action: 'CREATE',
+      entity: 'User',
+      entityId: user.id,
+      entityName: `${user.firstName} ${user.lastName}`.trim() || user.email,
+      details: { email: user.email, role: user.role },
+      ipAddress: req.ip,
+      userAgent: req.headers?.['user-agent'],
+    });
+    
+    return user;
   }
 
   @Patch(':id')
@@ -79,11 +122,28 @@ export class UsersController {
   })
   @ApiNotFoundResponse({ description: 'Usuario no encontrado' })
   @ApiBadRequestResponse({ description: 'El email ya existe' })
-  update(
+  async update(
     @Param('id') id: string,
     @Body() updateUserDto: UpdateUserDto,
+    @Req() req: any,
   ) {
-    return this.usersService.update(id, updateUserDto);
+    const user = await this.usersService.update(id, updateUserDto);
+    
+    // Registrar en auditoría
+    const userName = await this.getUserName(req.user?.userId);
+    await this.auditService.log({
+      userId: req.user?.userId,
+      userName,
+      action: 'UPDATE',
+      entity: 'User',
+      entityId: id,
+      entityName: `${user.firstName} ${user.lastName}`.trim() || user.email,
+      details: { changedFields: Object.keys(updateUserDto) },
+      ipAddress: req.ip,
+      userAgent: req.headers?.['user-agent'],
+    });
+    
+    return user;
   }
 
   @Delete(':id/deactivate')
@@ -101,8 +161,26 @@ export class UsersController {
   })
   @ApiNotFoundResponse({ description: 'Usuario no encontrado' })
   @ApiForbiddenResponse({ description: 'No puedes desactivar tu propia cuenta' })
-  deactivate(@Param('id') id: string, @Request() req: any) {
-    return this.usersService.deactivate(id, req.user.userId);
+  async deactivate(@Param('id') id: string, @Request() req: any) {
+    // Obtener info del usuario antes de desactivar
+    const userInfo = await this.usersService.findOne(id);
+    const result = await this.usersService.deactivate(id, req.user.userId);
+    
+    // Registrar en auditoría
+    const userName = await this.getUserName(req.user?.userId);
+    await this.auditService.log({
+      userId: req.user?.userId,
+      userName,
+      action: 'UPDATE',
+      entity: 'User',
+      entityId: id,
+      entityName: userInfo ? `${userInfo.firstName} ${userInfo.lastName}`.trim() || userInfo.email : id,
+      details: { action: 'DEACTIVATE' },
+      ipAddress: req.ip,
+      userAgent: req.headers?.['user-agent'],
+    });
+    
+    return result;
   }
 
   @Post(':id/reactivate')
@@ -114,7 +192,23 @@ export class UsersController {
     type: AdminUserDto,
   })
   @ApiNotFoundResponse({ description: 'Usuario no encontrado' })
-  reactivate(@Param('id') id: string) {
-    return this.usersService.reactivate(id);
+  async reactivate(@Param('id') id: string, @Req() req: any) {
+    const user = await this.usersService.reactivate(id);
+    
+    // Registrar en auditoría
+    const userName = await this.getUserName(req.user?.userId);
+    await this.auditService.log({
+      userId: req.user?.userId,
+      userName,
+      action: 'UPDATE',
+      entity: 'User',
+      entityId: id,
+      entityName: `${user.firstName} ${user.lastName}`.trim() || user.email,
+      details: { action: 'REACTIVATE' },
+      ipAddress: req.ip,
+      userAgent: req.headers?.['user-agent'],
+    });
+    
+    return user;
   }
 }

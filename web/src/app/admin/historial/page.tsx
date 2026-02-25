@@ -211,14 +211,12 @@ export default function HistorialPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <Breadcrumbs />
-      
+    <div className="p-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <History className="h-7 w-7 text-amber-600" />
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+            <History className="h-8 w-8 text-amber-600" />
             Historial de Cambios
           </h1>
           <p className="text-gray-500 mt-1">
@@ -240,7 +238,7 @@ export default function HistorialPage() {
 
       {/* Stats Cards */}
       {!isLoadingStats && stats && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <StatsCard
             title="Hoy"
             value={stats.totalToday ?? 0}
@@ -270,7 +268,7 @@ export default function HistorialPage() {
       )}
 
       {/* Search and Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
         <div className="flex flex-col sm:flex-row gap-4">
           {/* Search */}
           <div className="flex-1 relative">

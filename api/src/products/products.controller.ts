@@ -7,13 +7,17 @@ import { RolesGuard } from '../auth/roles.guard.js';
 import { CreateProductDto, ProductDto, UpdateProductDto, PutProductDto } from './dto/product.dto.js';
 import { PaginatedMetaDto } from '../common/dto/pagination.dto.js';
 import { setPaginationHeaders } from '../common/utils/pagination.util.js';
+import { AuditService } from '../audit/audit.service.js';
 import type { Response } from 'express';
 
 @Controller('products')
 @ApiTags('products')
 @ApiExtraModels(PaginatedMetaDto, ProductDto)
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(
+    private readonly productsService: ProductsService,
+    private readonly auditService: AuditService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Listar productos activos', description: 'Devuelve productos activos con buscador, filtros y paginación.' })
@@ -173,8 +177,23 @@ export class ProductsController {
     },
   })
   @ApiBadRequestResponse({ description: 'Datos inválidos', schema: { example: { statusCode: 400, error: 'Bad Request', message: 'Categoría no encontrada' } } })
-  create(@Body() body: CreateProductDto) {
-    return this.productsService.create(body);
+  async create(@Body() body: CreateProductDto, @Req() req: any) {
+    const product = await this.productsService.create(body);
+    
+    // Registrar en auditoría
+    await this.auditService.log({
+      userId: req.user?.sub,
+      userName: `${req.user?.firstName || ''} ${req.user?.lastName || ''}`.trim() || req.user?.email || 'Sistema',
+      action: 'CREATE',
+      entity: 'Product',
+      entityId: String(product.id),
+      entityName: product.name,
+      details: { sku: body.sku, price: body.price, category: body.categorySlug },
+      ipAddress: req.ip,
+      userAgent: req.headers?.['user-agent'],
+    });
+    
+    return product;
   }
 
   @Patch(':slug')
@@ -186,8 +205,23 @@ export class ProductsController {
   @ApiResponse({ status: 200, description: 'Producto actualizado', type: ProductDto })
   @ApiBadRequestResponse({ description: 'Datos inválidos' })
   @ApiNotFoundResponse({ description: 'Producto no encontrado' })
-  update(@Param('slug') slug: string, @Body() body: UpdateProductDto) {
-    return this.productsService.update(slug, body);
+  async update(@Param('slug') slug: string, @Body() body: UpdateProductDto, @Req() req: any) {
+    const product = await this.productsService.update(slug, body);
+    
+    // Registrar en auditoría
+    await this.auditService.log({
+      userId: req.user?.sub,
+      userName: `${req.user?.firstName || ''} ${req.user?.lastName || ''}`.trim() || req.user?.email || 'Sistema',
+      action: 'UPDATE',
+      entity: 'Product',
+      entityId: String(product.id),
+      entityName: product.name,
+      details: { changedFields: Object.keys(body) },
+      ipAddress: req.ip,
+      userAgent: req.headers?.['user-agent'],
+    });
+    
+    return product;
   }
 
   @Post(':slug/deactivate')
@@ -197,8 +231,23 @@ export class ProductsController {
   @ApiBearerAuth()
   @ApiResponse({ status: 200, description: 'Producto desactivado', schema: { properties: { id: { type: 'integer' }, slug: { type: 'string' }, isActive: { type: 'boolean' } } } })
   @ApiNotFoundResponse({ description: 'Producto no encontrado' })
-  deactivate(@Param('slug') slug: string) {
-    return this.productsService.deactivate(slug);
+  async deactivate(@Param('slug') slug: string, @Req() req: any) {
+    const product = await this.productsService.deactivate(slug);
+    
+    // Registrar en auditoría
+    await this.auditService.log({
+      userId: req.user?.sub,
+      userName: `${req.user?.firstName || ''} ${req.user?.lastName || ''}`.trim() || req.user?.email || 'Sistema',
+      action: 'UPDATE',
+      entity: 'Product',
+      entityId: String(product.id),
+      entityName: product.name,
+      details: { action: 'DEACTIVATE' },
+      ipAddress: req.ip,
+      userAgent: req.headers?.['user-agent'],
+    });
+    
+    return product;
   }
 
   @Delete(':slug')
@@ -209,8 +258,25 @@ export class ProductsController {
   @ApiResponse({ status: 200, description: 'Producto eliminado', schema: { properties: { deleted: { type: 'boolean' }, slug: { type: 'string' } } } })
   @ApiNotFoundResponse({ description: 'Producto no encontrado' })
   @ApiBadRequestResponse({ description: 'No se puede eliminar: referenciado' })
-  remove(@Param('slug') slug: string) {
-    return this.productsService.hardDelete(slug);
+  async remove(@Param('slug') slug: string, @Req() req: any) {
+    // Obtener info del producto antes de eliminar
+    const productInfo = await this.productsService.findOneBySlug(slug);
+    const result = await this.productsService.hardDelete(slug);
+    
+    // Registrar en auditoría
+    await this.auditService.log({
+      userId: req.user?.sub,
+      userName: `${req.user?.firstName || ''} ${req.user?.lastName || ''}`.trim() || req.user?.email || 'Sistema',
+      action: 'DELETE',
+      entity: 'Product',
+      entityId: slug,
+      entityName: productInfo?.name,
+      details: { deleted: true },
+      ipAddress: req.ip,
+      userAgent: req.headers?.['user-agent'],
+    });
+    
+    return result;
   }
 
   @Put(':slug')

@@ -51,12 +51,12 @@ export interface AuditStats {
   totalToday: number
   totalWeek: number
   totalMonth: number
-  byEntity: Array<{ entity: string; _count: number }>
-  byAction: Array<{ action: string; _count: number }>
+  byEntity: Array<{ entity: string; count: number }>
+  byAction: Array<{ action: string; count: number }>
   recentActiveUsers: Array<{
     userId: string
     userName: string
-    _count: number
+    count: number
   }>
 }
 

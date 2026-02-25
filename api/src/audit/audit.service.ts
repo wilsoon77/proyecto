@@ -139,11 +139,27 @@ export class AuditService {
   async getStats() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    weekAgo.setHours(0, 0, 0, 0);
+    
+    const monthAgo = new Date();
+    monthAgo.setDate(monthAgo.getDate() - 30);
+    monthAgo.setHours(0, 0, 0, 0);
 
-    const [totalToday, byEntity, byAction, recentUsers] = await Promise.all([
+    const [totalToday, totalWeek, totalMonth, byEntity, byAction, recentUsers] = await Promise.all([
       // Total de acciones hoy
       this.prisma.auditLog.count({
         where: { createdAt: { gte: today } },
+      }),
+      // Total de acciones esta semana
+      this.prisma.auditLog.count({
+        where: { createdAt: { gte: weekAgo } },
+      }),
+      // Total de acciones este mes
+      this.prisma.auditLog.count({
+        where: { createdAt: { gte: monthAgo } },
       }),
       // Agrupado por entidad
       this.prisma.auditLog.groupBy({
@@ -173,6 +189,8 @@ export class AuditService {
 
     return {
       totalToday,
+      totalWeek,
+      totalMonth,
       byEntity: byEntity.map((e) => ({ entity: e.entity, count: e._count.entity })),
       byAction: byAction.map((a) => ({ action: a.action, count: a._count.action })),
       recentUsers: recentUsers.map((u) => ({

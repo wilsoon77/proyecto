@@ -243,25 +243,25 @@ export default function HistorialPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsCard
             title="Hoy"
-            value={stats.totalToday}
+            value={stats.totalToday ?? 0}
             icon={Clock}
             color="amber"
           />
           <StatsCard
             title="Esta semana"
-            value={stats.totalWeek}
+            value={stats.totalWeek ?? 0}
             icon={Calendar}
             color="blue"
           />
           <StatsCard
             title="Este mes"
-            value={stats.totalMonth}
+            value={stats.totalMonth ?? 0}
             icon={Activity}
             color="green"
           />
           <StatsCard
             title="Usuarios activos"
-            value={stats.recentActiveUsers?.length || 0}
+            value={stats.recentActiveUsers?.length ?? 0}
             subtitle="Últimos 7 días"
             icon={User}
             color="purple"

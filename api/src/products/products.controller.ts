@@ -260,7 +260,7 @@ export class ProductsController {
   @ApiBadRequestResponse({ description: 'No se puede eliminar: referenciado' })
   async remove(@Param('slug') slug: string, @Req() req: any) {
     // Obtener info del producto antes de eliminar
-    const productInfo = await this.productsService.findOneBySlug(slug);
+    const productInfo = await this.productsService.findOne(slug);
     const result = await this.productsService.hardDelete(slug);
     
     // Registrar en auditoría

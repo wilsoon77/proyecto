@@ -551,8 +551,8 @@ function LogRow({ log }: { log: AuditLog }) {
       </td>
       <td className="px-4 py-3">
         {log.details && (
-          <div className="text-sm text-gray-600 truncate max-w-[200px]" title={log.details}>
-            {log.details}
+          <div className="text-sm text-gray-600 truncate max-w-[200px]" title={typeof log.details === 'object' ? JSON.stringify(log.details) : String(log.details)}>
+            {typeof log.details === 'object' ? JSON.stringify(log.details) : String(log.details)}
           </div>
         )}
       </td>
@@ -592,7 +592,9 @@ function LogCard({ log }: { log: AuditLog }) {
       </div>
       
       {log.details && (
-        <p className="text-sm text-gray-500 line-clamp-2">{log.details}</p>
+        <p className="text-sm text-gray-500 line-clamp-2">
+          {typeof log.details === 'object' ? JSON.stringify(log.details) : String(log.details)}
+        </p>
       )}
     </div>
   )

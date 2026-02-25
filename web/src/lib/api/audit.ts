@@ -14,7 +14,7 @@ export interface AuditLog {
   entity: string
   entityId: string
   entityName?: string | null
-  details?: string | null
+  details?: Record<string, unknown> | string | null
   ipAddress?: string | null
   userAgent?: string | null
   createdAt: string

@@ -110,23 +110,28 @@ export default function AdminLayout({
           transition-all duration-300 ease-in-out
         `}
       >
-        {/* Logo Header */}
-        <div className={`h-16 flex items-center border-b border-gray-200 ${sidebarCollapsed ? 'justify-center px-2' : 'px-4'}`}>
-          {sidebarCollapsed ? (
-            <Image 
-              src="/images/logo-pan.jpeg" 
-              alt="Panaderia" 
-              width={40} 
-              height={40}
-              className="rounded-md"
-            />
-          ) : (
+        {/* Logo Header with Collapse Button */}
+        <div className={`h-16 flex items-center border-b border-gray-200 ${sidebarCollapsed ? 'justify-center px-2' : 'justify-between px-4'}`}>
+          {/* Collapse Toggle Button - Desktop only */}
+          <button
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="hidden lg:flex items-center justify-center h-8 w-8 rounded-full bg-amber-500 text-white hover:bg-amber-600 transition-colors shadow-sm"
+            title={sidebarCollapsed ? "Expandir menú" : "Colapsar menú"}
+          >
+            {sidebarCollapsed ? (
+              <ChevronRight className="h-4 w-4" />
+            ) : (
+              <ChevronLeft className="h-4 w-4" />
+            )}
+          </button>
+
+          {!sidebarCollapsed && (
             <Link href="/admin" className="flex items-center">
               <Image 
                 src="/images/logo-pan.jpeg" 
                 alt="Panaderia" 
-                width={48} 
-                height={48}
+                width={40} 
+                height={40}
                 className="rounded-md"
               />
             </Link>
@@ -173,28 +178,6 @@ export default function AdminLayout({
             })}
           </ul>
         </nav>
-
-        {/* Collapse Toggle */}
-        <div className="hidden lg:block border-t border-gray-200 p-3">
-          <button
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className={`
-              flex items-center gap-2 w-full px-3 py-2 rounded-lg
-              text-gray-500 hover:bg-gray-100 hover:text-gray-700
-              transition-colors
-              ${sidebarCollapsed ? 'justify-center' : ''}
-            `}
-          >
-            {sidebarCollapsed ? (
-              <ChevronRight className="h-5 w-5" />
-            ) : (
-              <>
-                <ChevronLeft className="h-5 w-5" />
-                <span className="text-sm">Colapsar</span>
-              </>
-            )}
-          </button>
-        </div>
 
         {/* User Section */}
         <div className={`border-t border-gray-200 p-3 ${sidebarCollapsed ? 'px-2' : ''}`}>

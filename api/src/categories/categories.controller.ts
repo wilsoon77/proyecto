@@ -27,6 +27,8 @@ import { RolesGuard } from '../auth/roles.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
 import { ProductsService } from '../products/products.service.js';
 import { setPaginationHeaders } from '../common/utils/pagination.util.js';
+import { AuditService } from '../audit/audit.service.js';
+import { PrismaService } from '../prisma/prisma.service.js';
 import type { Response } from 'express';
 
 @Controller('categories')
@@ -35,7 +37,29 @@ export class CategoriesController {
   constructor(
     private readonly categoriesService: CategoriesService,
     private readonly productsService: ProductsService,
+    private readonly auditService: AuditService,
+    private readonly prisma: PrismaService,
   ) {}
+
+  /**
+   * Helper para obtener nombre del usuario desde la BD
+   */
+  private async getUserName(userId: string): Promise<string> {
+    if (!userId) return 'Sistema';
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { firstName: true, lastName: true, email: true },
+      });
+      if (user) {
+        const name = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+        return name || user.email || 'Usuario';
+      }
+    } catch (e) {
+      // Ignorar errores
+    }
+    return 'Sistema';
+  }
 
   @Get()
   @ApiOperation({ summary: 'Listar categorías', description: 'Obtiene todas las categorías con conteo de productos.' })
@@ -71,8 +95,24 @@ export class CategoriesController {
     type: CategoryDto,
   })
   @ApiBadRequestResponse({ description: 'El slug ya existe' })
-  create(@Body() createCategoryDto: CreateCategoryDto) {
-    return this.categoriesService.create(createCategoryDto);
+  async create(@Body() createCategoryDto: CreateCategoryDto, @Req() req: any) {
+    const category = await this.categoriesService.create(createCategoryDto);
+    
+    // Registrar en auditoría
+    const userName = await this.getUserName(req.user?.userId);
+    await this.auditService.log({
+      userId: req.user?.userId,
+      userName,
+      action: 'CREATE',
+      entity: 'Category',
+      entityId: String(category.id),
+      entityName: category.name,
+      details: { slug: category.slug },
+      ipAddress: req.ip,
+      userAgent: req.headers?.['user-agent'],
+    });
+    
+    return category;
   }
 
   @Patch(':slug')
@@ -87,11 +127,28 @@ export class CategoriesController {
   })
   @ApiNotFoundResponse({ description: 'Categoría no encontrada' })
   @ApiBadRequestResponse({ description: 'El slug ya existe' })
-  update(
+  async update(
     @Param('slug') slug: string,
     @Body() updateCategoryDto: UpdateCategoryDto,
+    @Req() req: any,
   ) {
-    return this.categoriesService.update(slug, updateCategoryDto);
+    const category = await this.categoriesService.update(slug, updateCategoryDto);
+    
+    // Registrar en auditoría
+    const userName = await this.getUserName(req.user?.userId);
+    await this.auditService.log({
+      userId: req.user?.userId,
+      userName,
+      action: 'UPDATE',
+      entity: 'Category',
+      entityId: String(category.id),
+      entityName: category.name,
+      details: { changedFields: Object.keys(updateCategoryDto) },
+      ipAddress: req.ip,
+      userAgent: req.headers?.['user-agent'],
+    });
+    
+    return category;
   }
 
   @Delete(':slug')
@@ -111,8 +168,26 @@ export class CategoriesController {
   })
   @ApiNotFoundResponse({ description: 'Categoría no encontrada' })
   @ApiBadRequestResponse({ description: 'La categoría tiene productos asociados' })
-  remove(@Param('slug') slug: string) {
-    return this.categoriesService.remove(slug);
+  async remove(@Param('slug') slug: string, @Req() req: any) {
+    // Obtener info de la categoría antes de eliminar
+    const categoryInfo = await this.categoriesService.findOne(slug);
+    const result = await this.categoriesService.remove(slug);
+    
+    // Registrar en auditoría
+    const userName = await this.getUserName(req.user?.userId);
+    await this.auditService.log({
+      userId: req.user?.userId,
+      userName,
+      action: 'DELETE',
+      entity: 'Category',
+      entityId: slug,
+      entityName: categoryInfo?.name,
+      details: { deleted: true },
+      ipAddress: req.ip,
+      userAgent: req.headers?.['user-agent'],
+    });
+    
+    return result;
   }
 
   @Get(':slug/products')

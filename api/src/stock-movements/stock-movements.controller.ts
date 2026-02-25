@@ -5,13 +5,39 @@ import { ApiTags, ApiBody, ApiBearerAuth, ApiQuery, ApiOperation, ApiResponse, A
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/roles.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
+import { AuditService } from '../audit/audit.service.js';
+import { PrismaService } from '../prisma/prisma.service.js';
 import type { Response } from 'express';
 import { setPaginationHeaders } from '../common/utils/pagination.util.js';
 
 @Controller('stock-movements')
 @ApiTags('stock-movements')
 export class StockMovementsController {
-  constructor(private readonly service: StockMovementsService) {}
+  constructor(
+    private readonly service: StockMovementsService,
+    private readonly auditService: AuditService,
+    private readonly prisma: PrismaService,
+  ) {}
+
+  /**
+   * Helper para obtener nombre del usuario desde la BD
+   */
+  private async getUserName(userId: string): Promise<string> {
+    if (!userId) return 'Sistema';
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { firstName: true, lastName: true, email: true },
+      });
+      if (user) {
+        const name = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+        return name || user.email || 'Usuario';
+      }
+    } catch (e) {
+      // Ignorar errores
+    }
+    return 'Sistema';
+  }
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -22,7 +48,29 @@ export class StockMovementsController {
   @ApiResponse({ status: 201, description: 'Movimiento creado', content: { 'application/json': { examples: { ejemplo: { value: { id: 1, type: 'PRODUCCION', quantity: 10 } } } } } })
   @ApiBadRequestResponse({ description: 'Validaciones de negocio', schema: { example: { statusCode: 400, error: 'Bad Request', message: 'fromBranchSlug requerido' } } })
   async create(@Req() req: any, @Body() dto: CreateStockMovementDto) {
-    return this.service.create(dto, req.user?.userId);
+    const movement = await this.service.create(dto, req.user?.userId);
+    
+    // Registrar en auditoría
+    const userName = await this.getUserName(req.user?.userId);
+    await this.auditService.log({
+      userId: req.user?.userId,
+      userName,
+      action: 'CREATE',
+      entity: 'StockMovement',
+      entityId: String(movement.id),
+      entityName: `${dto.type} - ${dto.productSlug}`,
+      details: {
+        type: dto.type,
+        productSlug: dto.productSlug,
+        quantity: dto.quantity,
+        fromBranch: dto.fromBranchSlug,
+        toBranch: dto.toBranchSlug,
+      },
+      ipAddress: req.ip,
+      userAgent: req.headers?.['user-agent'],
+    });
+    
+    return movement;
   }
 
   @Get()

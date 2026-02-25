@@ -8,6 +8,7 @@ import { CreateProductDto, ProductDto, UpdateProductDto, PutProductDto } from '.
 import { PaginatedMetaDto } from '../common/dto/pagination.dto.js';
 import { setPaginationHeaders } from '../common/utils/pagination.util.js';
 import { AuditService } from '../audit/audit.service.js';
+import { PrismaService } from '../prisma/prisma.service.js';
 import type { Response } from 'express';
 
 @Controller('products')
@@ -17,7 +18,28 @@ export class ProductsController {
   constructor(
     private readonly productsService: ProductsService,
     private readonly auditService: AuditService,
+    private readonly prisma: PrismaService,
   ) {}
+
+  /**
+   * Helper para obtener nombre del usuario desde la BD
+   */
+  private async getUserName(userId: string): Promise<string> {
+    if (!userId) return 'Sistema';
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { firstName: true, lastName: true, email: true },
+      });
+      if (user) {
+        const name = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+        return name || user.email || 'Usuario';
+      }
+    } catch (e) {
+      // Ignorar errores
+    }
+    return 'Sistema';
+  }
 
   @Get()
   @ApiOperation({ summary: 'Listar productos activos', description: 'Devuelve productos activos con buscador, filtros y paginación.' })
@@ -181,9 +203,10 @@ export class ProductsController {
     const product = await this.productsService.create(body);
     
     // Registrar en auditoría
+    const userName = await this.getUserName(req.user?.userId);
     await this.auditService.log({
-      userId: req.user?.sub,
-      userName: `${req.user?.firstName || ''} ${req.user?.lastName || ''}`.trim() || req.user?.email || 'Sistema',
+      userId: req.user?.userId,
+      userName,
       action: 'CREATE',
       entity: 'Product',
       entityId: String(product.id),
@@ -209,9 +232,10 @@ export class ProductsController {
     const product = await this.productsService.update(slug, body);
     
     // Registrar en auditoría
+    const userName = await this.getUserName(req.user?.userId);
     await this.auditService.log({
-      userId: req.user?.sub,
-      userName: `${req.user?.firstName || ''} ${req.user?.lastName || ''}`.trim() || req.user?.email || 'Sistema',
+      userId: req.user?.userId,
+      userName,
       action: 'UPDATE',
       entity: 'Product',
       entityId: String(product.id),
@@ -235,9 +259,10 @@ export class ProductsController {
     const product = await this.productsService.deactivate(slug);
     
     // Registrar en auditoría
+    const userName = await this.getUserName(req.user?.userId);
     await this.auditService.log({
-      userId: req.user?.sub,
-      userName: `${req.user?.firstName || ''} ${req.user?.lastName || ''}`.trim() || req.user?.email || 'Sistema',
+      userId: req.user?.userId,
+      userName,
       action: 'UPDATE',
       entity: 'Product',
       entityId: String(product.id),
@@ -264,9 +289,10 @@ export class ProductsController {
     const result = await this.productsService.hardDelete(slug);
     
     // Registrar en auditoría
+    const userName = await this.getUserName(req.user?.userId);
     await this.auditService.log({
-      userId: req.user?.sub,
-      userName: `${req.user?.firstName || ''} ${req.user?.lastName || ''}`.trim() || req.user?.email || 'Sistema',
+      userId: req.user?.userId,
+      userName,
       action: 'DELETE',
       entity: 'Product',
       entityId: slug,

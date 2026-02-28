@@ -225,4 +225,28 @@ export class AuditService {
       actions: actions.map((a) => a.action),
     };
   }
+
+  /**
+   * Obtener un registro de auditoría por ID
+   */
+  async findById(id: string) {
+    const log = await this.prisma.auditLog.findUnique({
+      where: { id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+    });
+    if (!log) return null;
+    return {
+      ...log,
+      details: log.details ? JSON.parse(log.details) : null,
+    };
+  }
 }

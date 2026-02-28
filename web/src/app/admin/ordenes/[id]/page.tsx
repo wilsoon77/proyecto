@@ -155,7 +155,7 @@ export default function DetalleOrdenPage() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div className="flex items-center gap-4">
           <Link href="/admin/ordenes">
             <Button variant="ghost" size="sm">
@@ -164,54 +164,73 @@ export default function DetalleOrdenPage() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Orden {order.orderNumber}</h1>
-            <p className="text-gray-500">Creada el {formatDate(order.createdAt)}</p>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Orden {order.orderNumber}</h1>
+            <p className="text-sm text-gray-500">Creada el {formatDate(order.createdAt)}</p>
           </div>
         </div>
         
         {/* Status Badge */}
-        <div className={`flex items-center gap-2 px-4 py-2 rounded-xl ${statusConfig.bgColor}`}>
+        <div className={`flex items-center gap-2 px-4 py-2 rounded-xl self-start sm:self-auto ${statusConfig.bgColor}`}>
           <StatusIcon className={`h-5 w-5 ${statusConfig.color}`} />
-          <span className={`font-medium ${statusConfig.color}`}>{statusConfig.label}</span>
+          <span className={`font-medium text-sm sm:text-base ${statusConfig.color}`}>{statusConfig.label}</span>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Products */}
+          {/* Products — Desktop Table */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100">
+            <div className="px-4 sm:px-6 py-4 border-b border-gray-100">
               <h2 className="font-semibold text-gray-900">Productos</h2>
             </div>
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Producto</th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Cant.</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Precio</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Subtotal</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {order.items.map((item) => (
-                  <tr key={item.id}>
-                    <td className="px-6 py-4">
-                      <p className="font-medium text-gray-900">{item.productName}</p>
-                    </td>
-                    <td className="px-6 py-4 text-center text-gray-600">
-                      {item.quantity}
-                    </td>
-                    <td className="px-6 py-4 text-right text-gray-600">
-                      {formatCurrency(item.unitPrice)}
-                    </td>
-                    <td className="px-6 py-4 text-right font-medium text-gray-900">
-                      {formatCurrency(item.unitPrice * item.quantity)}
-                    </td>
+
+            {/* Desktop table */}
+            <div className="hidden sm:block">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Producto</th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Cant.</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Precio</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Subtotal</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {order.items.map((item) => (
+                    <tr key={item.id}>
+                      <td className="px-6 py-4">
+                        <p className="font-medium text-gray-900">{item.productName}</p>
+                      </td>
+                      <td className="px-6 py-4 text-center text-gray-600">
+                        {item.quantity}
+                      </td>
+                      <td className="px-6 py-4 text-right text-gray-600">
+                        {formatCurrency(item.unitPrice)}
+                      </td>
+                      <td className="px-6 py-4 text-right font-medium text-gray-900">
+                        {formatCurrency(item.unitPrice * item.quantity)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile cards */}
+            <div className="sm:hidden divide-y divide-gray-100">
+              {order.items.map((item) => (
+                <div key={item.id} className="px-4 py-3 flex items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-gray-900 truncate">{item.productName}</p>
+                    <p className="text-sm text-gray-500">{item.quantity} × {formatCurrency(item.unitPrice)}</p>
+                  </div>
+                  <p className="text-sm font-semibold text-gray-900 whitespace-nowrap">
+                    {formatCurrency(item.unitPrice * item.quantity)}
+                  </p>
+                </div>
+              ))}
+            </div>
             
             {/* Totals */}
             <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">

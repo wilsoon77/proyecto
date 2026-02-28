@@ -1,5 +1,5 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiParam, ApiNotFoundResponse } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/roles.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
@@ -57,5 +57,14 @@ export class AuditController {
   @ApiOperation({ summary: 'Obtener opciones de filtros disponibles (solo ADMIN)' })
   async getFilterOptions() {
     return this.auditService.getFilterOptions();
+  }
+
+  @Get(':id')
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Obtener detalle de un registro de auditoría (solo ADMIN)' })
+  @ApiParam({ name: 'id', description: 'ID del registro de auditoría' })
+  @ApiNotFoundResponse({ description: 'Registro no encontrado' })
+  async findOne(@Param('id') id: string) {
+    return this.auditService.findById(id);
   }
 }

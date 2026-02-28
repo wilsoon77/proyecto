@@ -104,4 +104,11 @@ export const auditService = {
   async getFilterOptions(): Promise<AuditFilterOptions> {
     return api.get<AuditFilterOptions>('/audit/filters')
   },
+
+  /**
+   * Obtener un registro de auditoría por ID
+   */
+  async getById(id: string): Promise<AuditLog> {
+    return api.get<AuditLog>(`/audit/${id}`)
+  },
 }

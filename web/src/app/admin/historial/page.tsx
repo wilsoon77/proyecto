@@ -25,6 +25,7 @@ import { useToast } from "@/components/ui/toast"
 import { useAuth } from "@/context/AuthContext"
 import { auditService, type AuditLog, type AuditListFilters, type AuditStats, type AuditFilterOptions } from "@/lib/api"
 import { Breadcrumbs } from "@/components/ui/breadcrumbs"
+import { summarizeAudit } from "@/lib/audit-helpers"
 
 // Helper functions for date formatting
 function formatDate(dateStr: string): string {
@@ -512,9 +513,18 @@ function StatsCard({
 function LogRow({ log }: { log: AuditLog }) {
   const EntityIcon = ENTITY_ICONS[log.entity] || Package
   const actionColor = ACTION_COLORS[log.action] || ACTION_COLORS.UPDATE
+  const summary = summarizeAudit(
+    log.action,
+    log.entity,
+    log.entityName,
+    log.details as Record<string, unknown> | null,
+  )
 
   return (
-    <tr className="hover:bg-gray-50">
+    <tr
+      className="hover:bg-amber-50/50 cursor-pointer transition-colors"
+      onClick={() => window.location.href = `/admin/historial/${log.id}`}
+    >
       <td className="px-4 py-3 whitespace-nowrap">
         <div className="text-sm text-gray-900">
           {formatDate(log.createdAt)}
@@ -550,9 +560,19 @@ function LogRow({ log }: { log: AuditLog }) {
         </div>
       </td>
       <td className="px-4 py-3">
-        {log.details && (
-          <div className="text-sm text-gray-600 truncate max-w-[200px]" title={typeof log.details === 'object' ? JSON.stringify(log.details) : String(log.details)}>
-            {typeof log.details === 'object' ? JSON.stringify(log.details) : String(log.details)}
+        <div className="text-sm text-gray-700 truncate max-w-[280px]" title={summary.headline}>
+          {summary.headline}
+        </div>
+        {summary.changedFields && summary.changedFields.length > 0 && (
+          <div className="mt-1 flex flex-wrap gap-1">
+            {summary.changedFields.slice(0, 3).map((field, i) => (
+              <span key={i} className="inline-flex px-1.5 py-0.5 text-[10px] font-medium rounded bg-blue-50 text-blue-600">
+                {field}
+              </span>
+            ))}
+            {summary.changedFields.length > 3 && (
+              <span className="text-[10px] text-gray-400">+{summary.changedFields.length - 3} más</span>
+            )}
           </div>
         )}
       </td>
@@ -564,38 +584,54 @@ function LogRow({ log }: { log: AuditLog }) {
 function LogCard({ log }: { log: AuditLog }) {
   const EntityIcon = ENTITY_ICONS[log.entity] || Package
   const actionColor = ACTION_COLORS[log.action] || ACTION_COLORS.UPDATE
+  const summary = summarizeAudit(
+    log.action,
+    log.entity,
+    log.entityName,
+    log.details as Record<string, unknown> | null,
+  )
 
   return (
-    <div className="p-4 space-y-2">
-      <div className="flex items-center justify-between">
+    <a
+      href={`/admin/historial/${log.id}`}
+      className="block p-4 space-y-2 hover:bg-amber-50/50 active:bg-amber-100/50 transition-colors"
+    >
+      <div className="flex items-center justify-between gap-2">
         <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${actionColor.bg} ${actionColor.text}`}>
           {ACTION_LABELS[log.action] || log.action}
         </span>
-        <span className="text-xs text-gray-500">
+        <span className="text-xs text-gray-500 whitespace-nowrap">
           {formatRelativeTime(log.createdAt)}
         </span>
       </div>
       
-      <div className="flex items-center gap-2">
-        <EntityIcon className="h-4 w-4 text-gray-400" />
-        <span className="text-sm font-medium text-gray-900">
-          {ENTITY_LABELS[log.entity] || log.entity}
-        </span>
-        {log.entityName && (
-          <span className="text-sm text-gray-500">• {log.entityName}</span>
-        )}
-      </div>
-      
-      <div className="flex items-center gap-1 text-sm text-gray-600">
-        <User className="h-3 w-3" />
-        {log.userName}
-      </div>
-      
-      {log.details && (
-        <p className="text-sm text-gray-500 line-clamp-2">
-          {typeof log.details === 'object' ? JSON.stringify(log.details) : String(log.details)}
-        </p>
+      <p className="text-sm font-medium text-gray-900 leading-snug">
+        {summary.headline}
+      </p>
+
+      {summary.changedFields && summary.changedFields.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {summary.changedFields.map((field, i) => (
+            <span key={i} className="inline-flex px-1.5 py-0.5 text-[10px] font-medium rounded bg-blue-50 text-blue-600">
+              {field}
+            </span>
+          ))}
+        </div>
       )}
-    </div>
+
+      <div className="flex items-center justify-between text-xs text-gray-500">
+        <div className="flex items-center gap-1.5">
+          <EntityIcon className="h-3.5 w-3.5 text-gray-400" />
+          <span>{ENTITY_LABELS[log.entity] || log.entity}</span>
+          {log.entityName && (
+            <span className="text-gray-400">• {log.entityName}</span>
+          )}
+        </div>
+        <div className="flex items-center gap-1">
+          <User className="h-3 w-3" />
+          <span className="truncate max-w-[120px]">{log.userName}</span>
+        </div>
+      </div>
+    </a>
   )
 }

@@ -178,7 +178,7 @@ export default function EditarUsuarioPage() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-2xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div className="flex items-center gap-4">
           <Link href="/admin/usuarios">
             <Button variant="ghost" size="sm">
@@ -186,15 +186,15 @@ export default function EditarUsuarioPage() {
               Volver
             </Button>
           </Link>
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Editar Usuario</h1>
-            <p className="text-gray-500">{user.email}</p>
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Editar Usuario</h1>
+            <p className="text-sm text-gray-500 truncate">{user.email}</p>
           </div>
         </div>
         {user.isActive && (
           <Button 
             variant="outline" 
-            className="text-red-600 border-red-200 hover:bg-red-50"
+            className="text-red-600 border-red-200 hover:bg-red-50 self-start sm:self-auto"
             onClick={() => setShowDeactivateDialog(true)}
           >
             <Trash2 className="h-4 w-4 mr-2" />
@@ -233,7 +233,7 @@ export default function EditarUsuarioPage() {
           )}
 
           {/* Name Row */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
                 Nombre *

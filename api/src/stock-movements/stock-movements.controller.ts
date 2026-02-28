@@ -7,6 +7,7 @@ import { RolesGuard } from '../auth/roles.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
 import { AuditService } from '../audit/audit.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { getClientIp } from '../common/utils/audit.util.js';
 import type { Response } from 'express';
 import { setPaginationHeaders } from '../common/utils/pagination.util.js';
 
@@ -66,7 +67,7 @@ export class StockMovementsController {
         fromBranch: dto.fromBranchSlug,
         toBranch: dto.toBranchSlug,
       },
-      ipAddress: req.ip,
+      ipAddress: getClientIp(req),
       userAgent: req.headers?.['user-agent'],
     });
     

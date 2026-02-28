@@ -29,6 +29,7 @@ import { ProductsService } from '../products/products.service.js';
 import { setPaginationHeaders } from '../common/utils/pagination.util.js';
 import { AuditService } from '../audit/audit.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { getChangedFields, getClientIp } from '../common/utils/audit.util.js';
 import type { Response } from 'express';
 
 @Controller('categories')
@@ -108,7 +109,7 @@ export class CategoriesController {
       entityId: String(category.id),
       entityName: category.name,
       details: { slug: category.slug },
-      ipAddress: req.ip,
+      ipAddress: getClientIp(req),
       userAgent: req.headers?.['user-agent'],
     });
     
@@ -132,9 +133,14 @@ export class CategoriesController {
     @Body() updateCategoryDto: UpdateCategoryDto,
     @Req() req: any,
   ) {
+    // Obtener estado anterior para detectar cambios reales
+    const oldCategory = await this.categoriesService.findOne(slug);
     const category = await this.categoriesService.update(slug, updateCategoryDto);
     
-    // Registrar en auditoría
+    // Registrar en auditoría (solo campos realmente modificados)
+    const changedFields = oldCategory
+      ? getChangedFields(oldCategory as Record<string, unknown>, updateCategoryDto as unknown as Record<string, unknown>)
+      : Object.keys(updateCategoryDto);
     const userName = await this.getUserName(req.user?.userId);
     await this.auditService.log({
       userId: req.user?.userId,
@@ -143,8 +149,8 @@ export class CategoriesController {
       entity: 'Category',
       entityId: String(category.id),
       entityName: category.name,
-      details: { changedFields: Object.keys(updateCategoryDto) },
-      ipAddress: req.ip,
+      details: { changedFields },
+      ipAddress: getClientIp(req),
       userAgent: req.headers?.['user-agent'],
     });
     
@@ -183,7 +189,7 @@ export class CategoriesController {
       entityId: slug,
       entityName: categoryInfo?.name,
       details: { deleted: true },
-      ipAddress: req.ip,
+      ipAddress: getClientIp(req),
       userAgent: req.headers?.['user-agent'],
     });
     

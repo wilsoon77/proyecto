@@ -9,6 +9,7 @@ import { PaginatedMetaDto } from '../common/dto/pagination.dto.js';
 import { setPaginationHeaders } from '../common/utils/pagination.util.js';
 import { AuditService } from '../audit/audit.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { getChangedFields, getClientIp } from '../common/utils/audit.util.js';
 import type { Response } from 'express';
 
 @Controller('products')
@@ -139,9 +140,14 @@ export class ProductsController {
   @ApiBadRequestResponse({ description: 'Datos inválidos' })
   @ApiNotFoundResponse({ description: 'Producto no encontrado' })
   async updateById(@Param('id') id: string, @Body() body: UpdateProductDto, @Req() req: any) {
+    // Obtener estado anterior para detectar cambios reales
+    const oldProduct = await this.productsService.findById(Number(id));
     const product = await this.productsService.updateById(Number(id), body);
     
-    // Registrar en auditoría
+    // Registrar en auditoría (solo campos realmente modificados)
+    const changedFields = oldProduct
+      ? getChangedFields(oldProduct as Record<string, unknown>, body as unknown as Record<string, unknown>)
+      : Object.keys(body);
     const userName = await this.getUserName(req.user?.userId);
     await this.auditService.log({
       userId: req.user?.userId,
@@ -150,8 +156,8 @@ export class ProductsController {
       entity: 'Product',
       entityId: id,
       entityName: product.name,
-      details: { changedFields: Object.keys(body), method: 'by-id' },
-      ipAddress: req.ip,
+      details: { changedFields, method: 'by-id' },
+      ipAddress: getClientIp(req),
       userAgent: req.headers?.['user-agent'],
     });
     
@@ -178,7 +184,7 @@ export class ProductsController {
       entityId: id,
       entityName: product.name,
       details: { action: 'DEACTIVATE', method: 'by-id' },
-      ipAddress: req.ip,
+      ipAddress: getClientIp(req),
       userAgent: req.headers?.['user-agent'],
     });
     
@@ -208,7 +214,7 @@ export class ProductsController {
       entityId: id,
       entityName: productInfo?.name,
       details: { deleted: true, method: 'by-id' },
-      ipAddress: req.ip,
+      ipAddress: getClientIp(req),
       userAgent: req.headers?.['user-agent'],
     });
     
@@ -262,7 +268,7 @@ export class ProductsController {
       entityId: String(product.id),
       entityName: product.name,
       details: { sku: body.sku, price: body.price, category: body.categorySlug },
-      ipAddress: req.ip,
+      ipAddress: getClientIp(req),
       userAgent: req.headers?.['user-agent'],
     });
     
@@ -279,9 +285,14 @@ export class ProductsController {
   @ApiBadRequestResponse({ description: 'Datos inválidos' })
   @ApiNotFoundResponse({ description: 'Producto no encontrado' })
   async update(@Param('slug') slug: string, @Body() body: UpdateProductDto, @Req() req: any) {
+    // Obtener estado anterior para detectar cambios reales
+    const oldProduct = await this.productsService.findOne(slug);
     const product = await this.productsService.update(slug, body);
     
-    // Registrar en auditoría
+    // Registrar en auditoría (solo campos realmente modificados)
+    const changedFields = oldProduct
+      ? getChangedFields(oldProduct as Record<string, unknown>, body as unknown as Record<string, unknown>)
+      : Object.keys(body);
     const userName = await this.getUserName(req.user?.userId);
     await this.auditService.log({
       userId: req.user?.userId,
@@ -290,8 +301,8 @@ export class ProductsController {
       entity: 'Product',
       entityId: String(product.id),
       entityName: product.name,
-      details: { changedFields: Object.keys(body) },
-      ipAddress: req.ip,
+      details: { changedFields },
+      ipAddress: getClientIp(req),
       userAgent: req.headers?.['user-agent'],
     });
     
@@ -318,7 +329,7 @@ export class ProductsController {
       entityId: String(product.id),
       entityName: product.name,
       details: { action: 'DEACTIVATE' },
-      ipAddress: req.ip,
+      ipAddress: getClientIp(req),
       userAgent: req.headers?.['user-agent'],
     });
     
@@ -348,7 +359,7 @@ export class ProductsController {
       entityId: slug,
       entityName: productInfo?.name,
       details: { deleted: true },
-      ipAddress: req.ip,
+      ipAddress: getClientIp(req),
       userAgent: req.headers?.['user-agent'],
     });
     
@@ -365,9 +376,14 @@ export class ProductsController {
   @ApiBadRequestResponse({ description: 'Datos inválidos' })
   @ApiNotFoundResponse({ description: 'Producto no encontrado' })
   async replace(@Param('slug') slug: string, @Body() body: PutProductDto, @Req() req: any) {
+    // Obtener estado anterior para detectar cambios reales
+    const oldProduct = await this.productsService.findOne(slug);
     const product = await this.productsService.putUpdate(slug, body);
     
-    // Registrar en auditoría
+    // Registrar en auditoría (solo campos realmente modificados)
+    const changedFields = oldProduct
+      ? getChangedFields(oldProduct as Record<string, unknown>, body as unknown as Record<string, unknown>)
+      : Object.keys(body);
     const userName = await this.getUserName(req.user?.userId);
     await this.auditService.log({
       userId: req.user?.userId,
@@ -376,8 +392,8 @@ export class ProductsController {
       entity: 'Product',
       entityId: String(product.id),
       entityName: product.name,
-      details: { method: 'PUT', changedFields: Object.keys(body) },
-      ipAddress: req.ip,
+      details: { method: 'PUT', changedFields },
+      ipAddress: getClientIp(req),
       userAgent: req.headers?.['user-agent'],
     });
     

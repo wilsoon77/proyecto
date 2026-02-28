@@ -6,6 +6,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { setPaginationHeaders } from '../common/utils/pagination.util.js';
 import { AuditService } from '../audit/audit.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { getClientIp } from '../common/utils/audit.util.js';
 import type { Response } from 'express';
 
 @Controller('orders')
@@ -57,7 +58,7 @@ export class OrdersController {
       entityId: String(order.id),
       entityName: order.orderNumber,
       details: { branchSlug: dto.branchSlug, itemsCount: dto.items?.length, total: order.total },
-      ipAddress: req.ip,
+      ipAddress: getClientIp(req),
       userAgent: req.headers?.['user-agent'],
     });
     
@@ -83,7 +84,7 @@ export class OrdersController {
       entityId: String(id),
       entityName: orderInfo?.orderNumber || `Order #${id}`,
       details: { action: 'CANCEL', newStatus: 'CANCELLED' },
-      ipAddress: req.ip,
+      ipAddress: getClientIp(req),
       userAgent: req.headers?.['user-agent'],
     });
     
@@ -109,7 +110,7 @@ export class OrdersController {
       entityId: String(id),
       entityName: orderInfo?.orderNumber || `Order #${id}`,
       details: { action: 'PICKUP', newStatus: 'DELIVERED' },
-      ipAddress: req.ip,
+      ipAddress: getClientIp(req),
       userAgent: req.headers?.['user-agent'],
     });
     
@@ -219,7 +220,7 @@ export class OrdersController {
       entityId: String(id),
       entityName: order.orderNumber,
       details: { action: 'CONFIRM', previousStatus: 'PENDING', newStatus: 'CONFIRMED' },
-      ipAddress: req.ip,
+      ipAddress: getClientIp(req),
       userAgent: req.headers?.['user-agent'],
     });
     
@@ -246,7 +247,7 @@ export class OrdersController {
       entityId: String(id),
       entityName: order.orderNumber,
       details: { action: 'STATUS_CHANGE', newStatus: status },
-      ipAddress: req.ip,
+      ipAddress: getClientIp(req),
       userAgent: req.headers?.['user-agent'],
     });
     

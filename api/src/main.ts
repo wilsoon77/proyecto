@@ -25,6 +25,11 @@ Sentry.init({
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // Trust proxy: permite leer la IP real del cliente desde X-Forwarded-For
+  // (necesario detrás de proxies como Render, Vercel, Nginx)
+  const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.set('trust proxy', true);
+
   // Helmet: Encabezados de seguridad HTTP
   app.use(helmet());
 

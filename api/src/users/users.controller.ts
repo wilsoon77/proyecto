@@ -27,6 +27,7 @@ import { RolesGuard } from '../auth/roles.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
 import { AuditService } from '../audit/audit.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { getChangedFields, getClientIp } from '../common/utils/audit.util.js';
 
 @Controller('users')
 @ApiTags('users')
@@ -105,7 +106,7 @@ export class UsersController {
       entityId: user.id,
       entityName: `${user.firstName} ${user.lastName}`.trim() || user.email,
       details: { email: user.email, role: user.role },
-      ipAddress: req.ip,
+      ipAddress: getClientIp(req),
       userAgent: req.headers?.['user-agent'],
     });
     
@@ -127,9 +128,14 @@ export class UsersController {
     @Body() updateUserDto: UpdateUserDto,
     @Req() req: any,
   ) {
+    // Obtener estado anterior para detectar cambios reales
+    const oldUser = await this.usersService.findOne(id);
     const user = await this.usersService.update(id, updateUserDto);
     
-    // Registrar en auditoría
+    // Registrar en auditoría (solo campos realmente modificados)
+    const changedFields = oldUser
+      ? getChangedFields(oldUser as Record<string, unknown>, updateUserDto as unknown as Record<string, unknown>)
+      : Object.keys(updateUserDto);
     const userName = await this.getUserName(req.user?.userId);
     await this.auditService.log({
       userId: req.user?.userId,
@@ -138,8 +144,8 @@ export class UsersController {
       entity: 'User',
       entityId: id,
       entityName: `${user.firstName} ${user.lastName}`.trim() || user.email,
-      details: { changedFields: Object.keys(updateUserDto) },
-      ipAddress: req.ip,
+      details: { changedFields },
+      ipAddress: getClientIp(req),
       userAgent: req.headers?.['user-agent'],
     });
     
@@ -176,7 +182,7 @@ export class UsersController {
       entityId: id,
       entityName: userInfo ? `${userInfo.firstName} ${userInfo.lastName}`.trim() || userInfo.email : id,
       details: { action: 'DEACTIVATE' },
-      ipAddress: req.ip,
+      ipAddress: getClientIp(req),
       userAgent: req.headers?.['user-agent'],
     });
     
@@ -205,7 +211,7 @@ export class UsersController {
       entityId: id,
       entityName: `${user.firstName} ${user.lastName}`.trim() || user.email,
       details: { action: 'REACTIVATE' },
-      ipAddress: req.ip,
+      ipAddress: getClientIp(req),
       userAgent: req.headers?.['user-agent'],
     });
     

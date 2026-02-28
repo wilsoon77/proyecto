@@ -2,13 +2,15 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { ShoppingCart, User, Menu, MapPin, Apple, Play, LogOut, Settings, X, Phone, ChevronRight } from "lucide-react"
+import { ShoppingCart, User, Menu, MapPin, Apple, Play, LogOut, Settings, X, Phone, ChevronRight, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ROUTES } from "@/lib/constants"
 import { useState, useEffect } from "react"
 import { usePathname } from "next/navigation"
 import { useCart } from "@/context/CartContext"
 import { useAuth } from "@/context/AuthContext"
+import { branchesService } from "@/lib/api"
+import type { ApiBranch } from "@/lib/api/types"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,9 +22,30 @@ import {
 export function Navbar() {
   const { itemCount } = useCart()
   const { user, isLoggedIn, logout, isLoading } = useAuth()
-  const [selectedSucursal, setSelectedSucursal] = useState("Sucursal Central")
+  const [branches, setBranches] = useState<ApiBranch[]>([])
+  const [selectedBranch, setSelectedBranch] = useState<ApiBranch | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const pathname = usePathname()
+
+  // Cargar sucursales desde la API
+  useEffect(() => {
+    branchesService.list()
+      .then(data => {
+        setBranches(data)
+        // Restaurar la sucursal guardada en localStorage
+        const savedSlug = typeof window !== 'undefined' ? localStorage.getItem('selectedBranch') : null
+        const saved = savedSlug ? data.find(b => b.slug === savedSlug) : null
+        setSelectedBranch(saved || data[0] || null)
+      })
+      .catch(err => console.error('Error cargando sucursales:', err))
+  }, [])
+
+  const handleBranchSelect = (branch: ApiBranch) => {
+    setSelectedBranch(branch)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('selectedBranch', branch.slug)
+    }
+  }
 
   // Cerrar menú móvil al cambiar de ruta
   useEffect(() => {
@@ -48,12 +71,33 @@ export function Navbar() {
         <div className="mx-auto flex h-10 max-w-7xl items-center justify-between px-4 text-sm sm:px-6 lg:px-8">
           <div className="flex items-center gap-2 text-gray-600">
             <MapPin className="h-4 w-4" />
-            <span className="hidden sm:inline">{selectedSucursal}</span>
+            {branches.length > 1 ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger className="hidden sm:inline-flex items-center gap-1 hover:text-primary transition-colors">
+                  {selectedBranch?.name || 'Seleccionar sucursal'}
+                  <ChevronDown className="h-3 w-3" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  {branches.map(branch => (
+                    <DropdownMenuItem
+                      key={branch.id}
+                      onClick={() => handleBranchSelect(branch)}
+                      className={selectedBranch?.id === branch.id ? 'bg-amber-50 text-amber-700' : ''}
+                    >
+                      <MapPin className="h-3 w-3 mr-2" />
+                      {branch.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <span className="hidden sm:inline">{selectedBranch?.name || 'Cargando...'}</span>
+            )}
             <Link href="/sucursales" className="text-primary hover:underline">Ver sucursales</Link>
           </div>
           <div className="flex items-center gap-4 text-gray-600">
-            <span className="hidden md:inline">📞 +502 1234-5678</span>
-            <span className="hidden lg:inline">Envío gratis desde Q100</span>
+            <span className="hidden md:inline">📞 {selectedBranch?.phone || '+502 0000-0000'}</span>
+            <span className="hidden lg:inline">Reserva y recoge en sucursal</span>
             <a href="#" aria-label="App Store (próximamente)" className="hidden sm:inline-flex h-7 w-7 items-center justify-center rounded-full border bg-white hover:border-primary hover:text-primary">
               <Apple className="h-3.5 w-3.5" />
             </a>
@@ -334,7 +378,7 @@ export function Navbar() {
             {/* Phone */}
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <Phone className="h-4 w-4" />
-              <span>+502 1234-5678</span>
+              <span>{selectedBranch?.phone || '+502 0000-0000'}</span>
             </div>
 
             {/* Auth Buttons or Logout */}

@@ -10,11 +10,8 @@ import {
   CheckCircle,
   XCircle,
   Package,
-  Truck,
   ChefHat,
-  MapPin,
   Phone,
-  CreditCard,
   FileText,
   Store,
   Calendar,
@@ -48,7 +45,6 @@ const STATUS_OPTIONS: { value: OrderStatus; label: string; icon: React.ElementTy
   { value: "CONFIRMED", label: "Confirmada", icon: CheckCircle, color: "text-blue-700", bgColor: "bg-blue-100" },
   { value: "PREPARING", label: "Preparando", icon: ChefHat, color: "text-purple-700", bgColor: "bg-purple-100" },
   { value: "READY", label: "Lista para Recoger", icon: Package, color: "text-green-700", bgColor: "bg-green-100" },
-  { value: "IN_DELIVERY", label: "En Camino", icon: Truck, color: "text-indigo-700", bgColor: "bg-indigo-100" },
   { value: "DELIVERED", label: "Entregada", icon: CheckCircle, color: "text-emerald-700", bgColor: "bg-emerald-100" },
   { value: "PICKED_UP", label: "Recogida", icon: CheckCircle, color: "text-teal-700", bgColor: "bg-teal-100" },
   { value: "CANCELLED", label: "Cancelada", icon: XCircle, color: "text-red-700", bgColor: "bg-red-100" },
@@ -64,7 +60,7 @@ const STATUS_FLOW: Record<OrderStatus, OrderStatus[]> = {
   PENDING: ['CONFIRMED', 'CANCELLED'],
   CONFIRMED: ['PREPARING', 'CANCELLED'],
   PREPARING: ['READY', 'CANCELLED'],
-  READY: ['DELIVERED', 'PICKED_UP', 'IN_DELIVERY'],
+  READY: ['PICKED_UP', 'CANCELLED'],
   IN_DELIVERY: ['DELIVERED'],
   DELIVERED: [],
   PICKED_UP: [],
@@ -136,7 +132,7 @@ export default function DetalleOrdenPage() {
 
   if (isLoading) {
     return (
-      <div className="p-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 text-amber-600 animate-spin" />
         </div>
@@ -146,7 +142,7 @@ export default function DetalleOrdenPage() {
 
   if (!order) {
     return (
-      <div className="p-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         <p className="text-center text-gray-500">Orden no encontrada</p>
       </div>
     )
@@ -157,7 +153,7 @@ export default function DetalleOrdenPage() {
   const availableTransitions = STATUS_FLOW[order.status]
 
   return (
-    <div className="p-8 max-w-5xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
@@ -168,7 +164,7 @@ export default function DetalleOrdenPage() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Orden {order.orderNumber}</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Orden {order.orderNumber}</h1>
             <p className="text-gray-500">Creada el {formatDate(order.createdAt)}</p>
           </div>
         </div>
@@ -327,40 +323,13 @@ export default function DetalleOrdenPage() {
             </div>
           )}
 
-          {/* Delivery Address */}
-          {order.address && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <MapPin className="h-5 w-5 text-gray-400" />
-                <h3 className="font-medium text-gray-900">Dirección de Entrega</h3>
-              </div>
-              <div className="space-y-1 text-sm text-gray-600">
-                <p>{order.address.street}</p>
-                {order.address.zone && <p>Zona {order.address.zone}</p>}
-                <p>{order.address.city}{order.address.state ? `, ${order.address.state}` : ''}</p>
-                {order.address.reference && (
-                  <p className="text-gray-400 italic mt-2">&quot;{order.address.reference}&quot;</p>
-                )}
-              </div>
-            </div>
-          )}
-
           {/* Payment Info */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <div className="flex items-center gap-2 mb-4">
-              <CreditCard className="h-5 w-5 text-gray-400" />
-              <h3 className="font-medium text-gray-900">Pago</h3>
+              <Store className="h-5 w-5 text-gray-400" />
+              <h3 className="font-medium text-gray-900">Retiro</h3>
             </div>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Método</span>
-                <span className="text-gray-900 capitalize">{order.paymentMethod || 'No especificado'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Entrega</span>
-                <span className="text-gray-900 capitalize">{order.shippingMethod || 'Recoger en tienda'}</span>
-              </div>
-            </div>
+            <p className="text-sm text-gray-600">Pago al recoger en sucursal</p>
           </div>
 
           {/* Timeline */}

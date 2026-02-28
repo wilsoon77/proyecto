@@ -216,7 +216,7 @@ export default function PerfilPage() {
               <div className="h-16 rounded bg-gray-200" />
             </div>
           ) : addresses.length === 0 ? (
-            <p className="text-gray-600">No tienes direcciones guardadas. Se crearán automáticamente cuando hagas un pedido a domicilio.</p>
+            <p className="text-gray-600">No tienes direcciones guardadas.</p>
           ) : (
             <div className="space-y-3">
               {addresses.map(addr => (

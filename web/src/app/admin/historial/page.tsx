@@ -211,12 +211,12 @@ export default function HistorialPage() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-            <History className="h-8 w-8 text-amber-600" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-3">
+            <History className="h-7 w-7 sm:h-8 sm:w-8 text-amber-600" />
             Historial de Cambios
           </h1>
           <p className="text-gray-500 mt-1">

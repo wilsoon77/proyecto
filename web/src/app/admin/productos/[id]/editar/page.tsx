@@ -52,7 +52,6 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [uploadedFileId, setUploadedFileId] = useState<string | null>(null)
   const [originalImageUrl, setOriginalImageUrl] = useState<string | null>(null)
-  const [originalSlug, setOriginalSlug] = useState("")
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false)
 
   useEffect(() => {
@@ -219,7 +218,7 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
 
   if (isLoadingProduct) {
     return (
-      <div className="p-8 max-w-3xl mx-auto">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto">
         <div className="animate-pulse space-y-6">
           <div className="h-10 bg-gray-200 rounded w-1/3"></div>
           <div className="h-64 bg-gray-200 rounded-xl"></div>
@@ -230,7 +229,7 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
 
   if (!product) {
     return (
-      <div className="p-8 max-w-3xl mx-auto">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto">
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
           Producto no encontrado
         </div>
@@ -242,7 +241,7 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
   }
 
   return (
-    <div className="p-8 max-w-3xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-4 mb-8">
         <Link href="/admin/productos">
@@ -252,7 +251,7 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
           </Button>
         </Link>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Editar Producto</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Editar Producto</h1>
           <p className="text-gray-500">Modifica la información de {product.name}</p>
         </div>
       </div>

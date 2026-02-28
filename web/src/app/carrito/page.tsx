@@ -6,17 +6,11 @@ import { useCart } from "@/context/CartContext"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { formatPrice } from "@/lib/utils"
-import { SHIPPING, ROUTES } from "@/lib/constants"
+import { ORDER_CONFIG, ROUTES } from "@/lib/constants"
 import { Trash2, Plus, Minus } from "lucide-react"
 
 export default function CarritoPage() {
   const { items, itemCount, subtotal, updateQuantity, removeItem, clearCart } = useCart()
-
-  const shippingCost = subtotal >= SHIPPING.freeShippingThreshold || subtotal === 0
-    ? 0
-    : SHIPPING.baseFee
-
-  const total = subtotal + shippingCost
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
@@ -83,37 +77,33 @@ export default function CarritoPage() {
           <div className="space-y-4">
             <div className="rounded-lg border bg-white p-6">
               <h2 className="mb-4 text-xl font-semibold">Resumen</h2>
-              {/* Advertencia de mínimo para envío a domicilio */}
-              {subtotal > 0 && subtotal < SHIPPING.minOrderAmount && (
+              {/* Advertencia de mínimo */}
+              {subtotal > 0 && subtotal < ORDER_CONFIG.minOrderAmount && (
                 <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-                  Para envío a domicilio el pedido mínimo es de {formatPrice(SHIPPING.minOrderAmount)}. Si prefieres, puedes elegir "Recoger en tienda" en el checkout (no tiene mínimo).
+                  El pedido mínimo es de {formatPrice(ORDER_CONFIG.minOrderAmount)}. Agrega más productos para continuar.
                 </div>
               )}
               <div className="space-y-2 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Subtotal</span>
+                  <span className="text-gray-600">Subtotal ({itemCount} {itemCount === 1 ? 'producto' : 'productos'})</span>
                   <span className="font-medium">{formatPrice(subtotal)}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Envío</span>
-                  <span className="font-medium">{shippingCost === 0 ? 'Gratis' : formatPrice(shippingCost)}</span>
                 </div>
                 <div className="flex items-center justify-between border-t pt-2 text-base">
                   <span className="font-semibold">Total</span>
-                  <span className="font-bold text-primary">{formatPrice(total)}</span>
+                  <span className="font-bold text-primary">{formatPrice(subtotal)}</span>
                 </div>
               </div>
-              {subtotal > 0 ? (
+              {subtotal >= ORDER_CONFIG.minOrderAmount ? (
                 <Link href={ROUTES.checkout}>
-                  <Button className="mt-4 w-full">Continuar a Pagar</Button>
+                  <Button className="mt-4 w-full">Confirmar Pedido</Button>
                 </Link>
               ) : (
-                <Button className="mt-4 w-full" disabled>Continuar a Pagar</Button>
+                <Button className="mt-4 w-full" disabled>Confirmar Pedido</Button>
               )}
               <Button variant="ghost" className="mt-2 w-full" onClick={clearCart}>Vaciar Carrito</Button>
             </div>
             <div className="rounded-lg border bg-white p-4 text-sm text-gray-600">
-              <p>Envío base: {formatPrice(SHIPPING.baseFee)}. Envío gratis desde {formatPrice(SHIPPING.freeShippingThreshold)}.</p>
+              <p>📍 Retira en sucursal. Pedido mínimo: {formatPrice(ORDER_CONFIG.minOrderAmount)}. Pago al recoger.</p>
             </div>
           </div>
         </div>

@@ -14,9 +14,12 @@ import {
   Shield,
   ShieldCheck,
   User as UserIcon,
-  Building2
+  Building2,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { useToast } from "@/components/ui/toast"
 import { useAuth } from "@/context/AuthContext"
 import { usersService, type User, type UserRole } from "@/lib/api"
@@ -44,6 +47,11 @@ export default function UsuariosPage() {
   const [roleFilter, setRoleFilter] = useState<UserRole | "ALL">("ALL")
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL")
   const [processingId, setProcessingId] = useState<string | null>(null)
+  const [deactivateTarget, setDeactivateTarget] = useState<User | null>(null)
+
+  // Paginación
+  const ITEMS_PER_PAGE = 10
+  const [currentPage, setCurrentPage] = useState(1)
 
   // Protección de rol - solo ADMIN puede acceder
   useEffect(() => {
@@ -84,7 +92,15 @@ export default function UsuariosPage() {
     }
     
     setFilteredUsers(result)
+    setCurrentPage(1)
   }, [users, searchTerm, roleFilter, statusFilter])
+
+  // Paginación
+  const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE)
+  const paginatedUsers = filteredUsers.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  )
 
   const loadUsers = async () => {
     setIsLoading(true)
@@ -99,14 +115,15 @@ export default function UsuariosPage() {
     }
   }
 
-  const handleDeactivate = async (userId: string) => {
-    if (!confirm("¿Estás seguro de desactivar este usuario?")) return
+  const handleDeactivate = async () => {
+    if (!deactivateTarget) return
+    const targetId = deactivateTarget.id
     
-    setProcessingId(userId)
+    setProcessingId(targetId)
     try {
-      await usersService.deactivate(userId)
+      await usersService.deactivate(targetId)
       setUsers(prev => prev.map(u => 
-        u.id === userId ? { ...u, isActive: false } : u
+        u.id === targetId ? { ...u, isActive: false } : u
       ))
       showToast("Usuario desactivado", "success")
     } catch (error) {
@@ -115,6 +132,7 @@ export default function UsuariosPage() {
       showToast(message, "error")
     } finally {
       setProcessingId(null)
+      setDeactivateTarget(null)
     }
   }
 
@@ -233,7 +251,79 @@ export default function UsuariosPage() {
             <p className="text-gray-500">No se encontraron usuarios</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          {/* Mobile Cards */}
+          <div className="md:hidden divide-y divide-gray-100">
+            {paginatedUsers.map((user) => {
+              const roleStyle = ROLE_COLORS[user.role]
+              const RoleIcon = roleStyle.icon
+              return (
+                <div key={`m-${user.id}`} className={`p-4 hover:bg-gray-50 ${!user.isActive ? 'opacity-60' : ''}`}>
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                        <span className="text-amber-700 font-semibold text-sm">
+                          {user.firstName[0]}{user.lastName[0]}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{user.firstName} {user.lastName}</p>
+                        <p className="text-xs text-gray-500">{user.email}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Link href={`/admin/usuarios/${user.id}`}>
+                        <Button variant="ghost" size="sm" className="h-9 w-9 p-0 text-gray-600 hover:text-amber-600">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </Link>
+                      {user.isActive ? (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-9 w-9 p-0 text-gray-600 hover:text-red-600"
+                          onClick={() => setDeactivateTarget(user)}
+                          disabled={processingId === user.id}
+                        >
+                          {processingId === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserX className="h-4 w-4" />}
+                        </Button>
+                      ) : (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-9 w-9 p-0 text-gray-600 hover:text-green-600"
+                          onClick={() => handleReactivate(user.id)}
+                          disabled={processingId === user.id}
+                        >
+                          {processingId === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserCheck className="h-4 w-4" />}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${roleStyle.bg} ${roleStyle.text}`}>
+                      <RoleIcon className="h-3 w-3" />
+                      {ROLE_LABELS[user.role]}
+                    </span>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                      user.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                    }`}>
+                      {user.isActive ? 'Activo' : 'Inactivo'}
+                    </span>
+                    {user.branch && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700">
+                        <Building2 className="h-3 w-3" />
+                        {user.branch.name}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Desktop Table */}
+          <div className="overflow-x-auto hidden md:block">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
@@ -248,7 +338,7 @@ export default function UsuariosPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredUsers.map((user) => {
+              {paginatedUsers.map((user) => {
                 const roleStyle = ROLE_COLORS[user.role]
                 const RoleIcon = roleStyle.icon
                 return (
@@ -316,7 +406,7 @@ export default function UsuariosPage() {
                             variant="ghost" 
                             size="sm" 
                             className="text-gray-600 hover:text-red-600"
-                            onClick={() => handleDeactivate(user.id)}
+                            onClick={() => setDeactivateTarget(user)}
                             disabled={processingId === user.id}
                           >
                             {processingId === user.id ? (
@@ -348,8 +438,47 @@ export default function UsuariosPage() {
             </tbody>
           </table>
           </div>
+          </>
+        )}
+
+        {/* Pagination */}
+        {!isLoading && totalPages > 1 && (
+          <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-t border-gray-100">
+            <p className="text-sm text-gray-500">
+              Página {currentPage} de {totalPages} ({filteredUsers.length} usuarios)
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage <= 1}
+                onClick={() => setCurrentPage(prev => prev - 1)}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage >= totalPages}
+                onClick={() => setCurrentPage(prev => prev + 1)}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         )}
       </div>
+
+      <ConfirmDialog
+        isOpen={!!deactivateTarget}
+        onCancel={() => setDeactivateTarget(null)}
+        onConfirm={handleDeactivate}
+        title="Desactivar usuario"
+        message={`¿Estás seguro de desactivar a ${deactivateTarget?.firstName} ${deactivateTarget?.lastName}? El usuario no podrá acceder al sistema.`}
+        confirmText="Desactivar"
+        variant="danger"
+        isLoading={!!processingId}
+      />
     </div>
   )
 }

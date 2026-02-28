@@ -14,8 +14,7 @@ const API_STATUS_LABELS: Record<string, string> = {
   'PENDING': 'Pendiente',
   'CONFIRMED': 'Confirmado',
   'PREPARING': 'En preparación',
-  'READY': 'Listo',
-  'IN_DELIVERY': 'En camino',
+  'READY': 'Listo para recoger',
   'DELIVERED': 'Entregado',
   'CANCELLED': 'Cancelado',
   'PICKED_UP': 'Recogido',
@@ -134,10 +133,7 @@ export default function PedidosPage() {
                   <span className="font-medium">Sucursal:</span> {order.branch?.name || 'N/A'}
                 </div>
                 <div>
-                  <span className="font-medium">Entrega:</span> {order.shippingMethod === 'PICKUP' ? 'Recoger' : 'Domicilio'}
-                </div>
-                <div>
-                  <span className="font-medium">Pago:</span> {order.paymentMethod || 'N/A'}
+                  <span className="font-medium">Retiro en sucursal</span>
                 </div>
               </div>
 
@@ -211,14 +207,6 @@ export default function PedidosPage() {
               <div className="flex items-center justify-between">
                 <span className="text-gray-600">Subtotal</span>
                 <span className="font-medium">{formatPrice((localOrder as { subtotal?: number }).subtotal || 0)}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">Envío</span>
-                <span className="font-medium">
-                  {(localOrder as { deliveryFee?: number }).deliveryFee === 0 
-                    ? 'Gratis' 
-                    : formatPrice((localOrder as { deliveryFee?: number }).deliveryFee || 0)}
-                </span>
               </div>
               <div className="flex items-center justify-between border-t pt-2 text-base">
                 <span className="font-semibold">Total</span>

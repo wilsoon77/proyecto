@@ -156,10 +156,10 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="/envios"
+                  href="/sucursales"
                   className="text-gray-600 transition-colors hover:text-primary"
                 >
-                  Información de Envíos
+                  Sucursales y Retiro
                 </Link>
               </li>
               <li>

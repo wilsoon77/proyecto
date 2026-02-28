@@ -189,7 +189,7 @@ export default function NuevoProductoPage() {
   }
 
   return (
-    <div className="p-8 max-w-3xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-4 mb-8">
         <Link href="/admin/productos">
@@ -199,7 +199,7 @@ export default function NuevoProductoPage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Nuevo Producto</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Nuevo Producto</h1>
           <p className="text-gray-500">Completa la información del producto</p>
         </div>
       </div>

@@ -6,7 +6,7 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { formatPrice } from "@/lib/utils"
-import { SHIPPING, ROUTES } from "@/lib/constants"
+import { ROUTES } from "@/lib/constants"
 import { useCart } from "@/context/CartContext"
 import { productsService } from "@/lib/api"
 import { apiProductToProduct } from "@/lib/api/transformers"
@@ -54,7 +54,7 @@ export default function Home() {
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-gray-600">
             Productos de panadería guatemalteca con ingredientes de calidad.
-            Entrega a domicilio en toda Guatemala.
+            Reserva en línea y recoge en tu sucursal favorita.
           </p>
           <div className="mt-10 flex items-center justify-center gap-4">
             <Link href={ROUTES.products}>
@@ -71,26 +71,26 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Shipping Info */}
+      {/* Info Section */}
       <section className="border-y bg-white py-12">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
             <div className="text-center">
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                <span className="text-3xl">🚚</span>
+                <span className="text-3xl">📱</span>
               </div>
-              <h3 className="mb-2 text-lg font-semibold">Envío a Guatemala</h3>
+              <h3 className="mb-2 text-lg font-semibold">Reserva en Línea</h3>
               <p className="text-sm text-gray-600">
-                Entrega en todo el país desde {formatPrice(SHIPPING.baseFee)}
+                Haz tu pedido y recoge en la sucursal de tu preferencia
               </p>
             </div>
             <div className="text-center">
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                <span className="text-3xl">🎁</span>
+                <span className="text-3xl">🏪</span>
               </div>
-              <h3 className="mb-2 text-lg font-semibold">Envío Gratis</h3>
+              <h3 className="mb-2 text-lg font-semibold">Recoge en Sucursal</h3>
               <p className="text-sm text-gray-600">
-                En compras mayores a {formatPrice(SHIPPING.freeShippingThreshold)}
+                Tu pedido listo para recoger cuando lo necesites
               </p>
             </div>
             <div className="text-center">

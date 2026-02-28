@@ -4,29 +4,19 @@ import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
 import { useCart } from "@/context/CartContext"
 import { useAuth } from "@/context/AuthContext"
-import { SHIPPING, ROUTES } from "@/lib/constants"
+import { ORDER_CONFIG, ROUTES } from "@/lib/constants"
 import { formatPrice } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ordersService, branchesService, addressesService } from "@/lib/api"
-import type { ApiBranch, CreateAddressDto } from "@/lib/api/types"
-
-type ShippingMethod = "domicilio" | "recoger"
-type PaymentMethod = 'efectivo' | 'transferencia' | 'tarjeta' | 'paypal'
+import { ordersService, branchesService } from "@/lib/api"
+import type { ApiBranch } from "@/lib/api/types"
 
 export default function CheckoutPage() {
   const { items, subtotal, clearCart } = useCart()
   const { user, isAuthenticated } = useAuth()
   
-  const [method, setMethod] = useState<ShippingMethod>("domicilio")
-  const [payment, setPayment] = useState<PaymentMethod>('efectivo')
   const [fullName, setFullName] = useState("")
   const [phone, setPhone] = useState("")
-  const [department, setDepartment] = useState("")
-  const [municipality, setMunicipality] = useState("")
-  const [zone, setZone] = useState("")
-  const [address, setAddress] = useState("")
-  const [reference, setReference] = useState("")
   const [customerNotes, setCustomerNotes] = useState("")
   const [placing, setPlacing] = useState(false)
   const [placed, setPlaced] = useState(false)
@@ -34,26 +24,17 @@ export default function CheckoutPage() {
   const [hydrated, setHydrated] = useState(false)
   const [error, setError] = useState<string | null>(null)
   
-  // Para selección de sucursal (pickup)
+  // Selección de sucursal para recoger
   const [branches, setBranches] = useState<ApiBranch[]>([])
   const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null)
 
-  const shippingCost = useMemo(() => {
-    if (method === "recoger") return 0
-    if (subtotal === 0) return 0
-    return subtotal >= SHIPPING.freeShippingThreshold ? 0 : SHIPPING.baseFee
-  }, [method, subtotal])
-
-  const total = subtotal + shippingCost
-  const belowMin = subtotal > 0 && subtotal < SHIPPING.minOrderAmount && method === "domicilio"
+  const belowMin = subtotal > 0 && subtotal < ORDER_CONFIG.minOrderAmount
 
   const canPlace = useMemo(() => {
     if (items.length === 0) return false
-    if (method === "recoger") {
-      return Boolean(fullName && phone && selectedBranchId)
-    }
-    return Boolean(fullName && phone && department && municipality && address) && !belowMin
-  }, [items.length, method, fullName, phone, department, municipality, address, belowMin, selectedBranchId])
+    if (belowMin) return false
+    return Boolean(fullName && phone && selectedBranchId)
+  }, [items.length, fullName, phone, selectedBranchId, belowMin])
 
   // Cargar sucursales
   useEffect(() => {
@@ -71,51 +52,39 @@ export default function CheckoutPage() {
     loadBranches()
   }, [selectedBranchId])
 
-  // Load saved customer data on mount
+  // Pre-fill datos del usuario
   useEffect(() => {
     try {
-      // Si usuario autenticado, usar sus datos
       if (user) {
         const full = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim()
         if (full) setFullName(full)
         if (user.phone) setPhone(user.phone)
       } else {
-        // Prefill from profile if available
         const profileRaw = localStorage.getItem('profile')
         if (profileRaw) {
           const p = JSON.parse(profileRaw) as Record<string, string>
           const full = `${p.firstName ?? ''} ${p.lastName ?? ''}`.trim()
           if (full) setFullName(full)
           if (p.phone) setPhone(p.phone)
-          if (p.department) setDepartment(p.department)
-          if (p.municipality) setMunicipality(p.municipality)
-          if (p.zone) setZone(p.zone)
-          if (p.address) setAddress(p.address)
         }
       }
 
-      // Then override with last checkout data if exists
       const raw = localStorage.getItem('checkoutCustomer')
       if (raw) {
         const data = JSON.parse(raw) as Record<string, string>
         if (data.fullName && !user) setFullName(data.fullName)
         if (data.phone && !user) setPhone(data.phone)
-        if (data.department) setDepartment(data.department)
-        if (data.municipality) setMunicipality(data.municipality)
-        if (data.zone) setZone(data.zone)
-        if (data.address) setAddress(data.address)
-        if (data.reference) setReference(data.reference)
       }
     } catch {}
     setHydrated(true)
   }, [user])
 
-  // Persist customer data on change
+  // Persistir datos del cliente
   useEffect(() => {
     if (!hydrated) return
-    const data = { fullName, phone, department, municipality, zone, address, reference }
+    const data = { fullName, phone }
     try { localStorage.setItem('checkoutCustomer', JSON.stringify(data)) } catch {}
-  }, [fullName, phone, department, municipality, zone, address, reference, hydrated])
+  }, [fullName, phone, hydrated])
 
   const placeOrder = async () => {
     if (!canPlace) return
@@ -123,18 +92,14 @@ export default function CheckoutPage() {
     setError(null)
 
     try {
-      // Si el usuario está autenticado, usar la API
       if (isAuthenticated && user) {
-        // Obtener el slug de la sucursal seleccionada
         const selectedBranch = branches.find(b => b.id === selectedBranchId) || branches[0]
         if (!selectedBranch) {
           throw new Error('Debes seleccionar una sucursal')
         }
 
-        // Crear la orden con la API
         const orderData = {
           branchSlug: selectedBranch.slug,
-          paymentMethod: payment.toUpperCase(),
           items: items.map(item => ({
             productSlug: item.product.slug,
             quantity: item.quantity
@@ -142,22 +107,6 @@ export default function CheckoutPage() {
         }
 
         const order = await ordersService.reserve(orderData)
-        
-        // Guardar dirección de envío si es a domicilio (para referencia futura)
-        if (method === "domicilio") {
-          try {
-            await addressesService.create({
-              street: address,
-              city: municipality,
-              state: department,
-              zone: zone || undefined,
-              reference: reference || undefined,
-            })
-          } catch (addrErr) {
-            console.warn('No se pudo guardar la dirección:', addrErr)
-          }
-        }
-
         setOrderNumber(order.orderNumber)
         setPlaced(true)
         clearCart()
@@ -169,6 +118,8 @@ export default function CheckoutPage() {
         const seq = Math.floor(1000 + Math.random() * 9000)
         const ordNumber = `PED-${now.toISOString().slice(0,10).replace(/-/g, '')}-${seq}`
 
+        const selectedBranch = branches.find(b => b.id === selectedBranchId)
+
         const order = {
           id: now.getTime(),
           orderNumber: ordNumber,
@@ -178,14 +129,11 @@ export default function CheckoutPage() {
             quantity: item.quantity,
             price: item.product.price,
           })),
-          subtotal: subtotal,
-          deliveryFee: shippingCost,
-          discount: 0,
-          total: subtotal + shippingCost,
-          paymentMethod: payment,
-          shippingMethod: method,
+          subtotal,
+          total: subtotal,
+          branch: selectedBranch ? { name: selectedBranch.name } : null,
           createdAt: now.toISOString(),
-          customerInfo: { fullName, phone, address, department, municipality, zone, reference },
+          customerInfo: { fullName, phone },
         }
 
         try { localStorage.setItem('lastOrder', JSON.stringify(order)) } catch {}
@@ -204,7 +152,7 @@ export default function CheckoutPage() {
   if (items.length === 0 && !placed) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
-        <h1 className="mb-4 text-3xl font-bold">Checkout</h1>
+        <h1 className="mb-4 text-2xl sm:text-3xl font-bold">Confirmar Pedido</h1>
         <div className="rounded-lg border bg-white p-8 text-center">
           <p className="mb-4 text-gray-700">Tu carrito está vacío.</p>
           <Link href={ROUTES.products}><Button>Volver a productos</Button></Link>
@@ -216,15 +164,15 @@ export default function CheckoutPage() {
   if (placed) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
-        <h1 className="mb-4 text-3xl font-bold">¡Pedido realizado!</h1>
+        <h1 className="mb-4 text-2xl sm:text-3xl font-bold">¡Pedido reservado!</h1>
         <div className="rounded-lg border bg-white p-8 text-center">
           <div className="text-6xl mb-4">🎉</div>
-          <p className="mb-2 text-gray-700">Hemos recibido tu pedido. Te contactaremos por WhatsApp para confirmar.</p>
+          <p className="mb-2 text-gray-700">Tu pedido ha sido registrado. Te notificaremos cuando esté listo para recoger.</p>
           {orderNumber && (
             <p className="mb-2 text-sm text-gray-600">Número de pedido: <span className="font-medium">{orderNumber}</span></p>
           )}
-          <p className="text-gray-600">Gracias por comprar con nosotros.</p>
-          <div className="mt-6 flex justify-center gap-3">
+          <p className="text-gray-600">Gracias por tu preferencia.</p>
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Link href={ROUTES.home}><Button variant="outline">Ir al inicio</Button></Link>
             <Link href={ROUTES.products}><Button>Seguir comprando</Button></Link>
             <Link href={ROUTES.orders}><Button variant="secondary">Ver mi pedido</Button></Link>
@@ -236,10 +184,11 @@ export default function CheckoutPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-      <h1 className="mb-6 text-3xl font-bold text-gray-900">Checkout</h1>
+      <h1 className="mb-6 text-2xl sm:text-3xl font-bold text-gray-900">Confirmar Pedido</h1>
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-        {/* Formulario de envío */}
+        {/* Formulario */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Datos de contacto */}
           <div className="rounded-lg border bg-white p-6">
             <h2 className="mb-4 text-xl font-semibold">Datos de contacto</h2>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -254,82 +203,38 @@ export default function CheckoutPage() {
             </div>
           </div>
 
+          {/* Sucursal de retiro */}
           <div className="rounded-lg border bg-white p-6">
-            <h2 className="mb-4 text-xl font-semibold">Método de entrega</h2>
-            <div className="flex gap-3">
-              <Button variant={method === "domicilio" ? "default" : "outline"} onClick={()=>setMethod("domicilio")}>A domicilio</Button>
-              <Button variant={method === "recoger" ? "default" : "outline"} onClick={()=>setMethod("recoger")}>Recoger en tienda</Button>
-            </div>
-            {method === "recoger" && branches.length > 0 && (
-              <div className="mt-4">
-                <label className="mb-1 block text-sm font-medium">Selecciona sucursal</label>
-                <select 
-                  className="w-full rounded-md border px-3 py-2"
-                  value={selectedBranchId || ''}
-                  onChange={e => setSelectedBranchId(Number(e.target.value))}
-                >
-                  {branches.map(branch => (
-                    <option key={branch.id} value={branch.id}>
-                      {branch.name} - {branch.address}
-                    </option>
-                  ))}
-                </select>
+            <h2 className="mb-4 text-xl font-semibold">Sucursal de retiro</h2>
+            <p className="mb-3 text-sm text-gray-600">Selecciona la sucursal donde deseas recoger tu pedido.</p>
+            {branches.length > 0 ? (
+              <div className="space-y-3">
+                {branches.map(branch => (
+                  <label
+                    key={branch.id}
+                    className={`flex items-start gap-3 rounded-lg border p-4 cursor-pointer transition-colors ${
+                      selectedBranchId === branch.id 
+                        ? 'border-amber-500 bg-amber-50' 
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="branch"
+                      checked={selectedBranchId === branch.id}
+                      onChange={() => setSelectedBranchId(branch.id)}
+                      className="mt-1 accent-amber-600"
+                    />
+                    <div>
+                      <p className="font-medium text-gray-900">{branch.name}</p>
+                      <p className="text-sm text-gray-600">{branch.address}</p>
+                      {branch.phone && <p className="text-sm text-gray-500">📞 {branch.phone}</p>}
+                    </div>
+                  </label>
+                ))}
               </div>
-            )}
-            {method === "domicilio" && (
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-sm font-medium">Departamento</label>
-                  <Input value={department} onChange={e=>setDepartment(e.target.value)} placeholder="Ej. Guatemala" />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium">Municipio</label>
-                  <Input value={municipality} onChange={e=>setMunicipality(e.target.value)} placeholder="Ej. Guatemala" />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium">Zona</label>
-                  <Input value={zone} onChange={e=>setZone(e.target.value)} placeholder="Ej. Zona 1" />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="mb-1 block text-sm font-medium">Dirección</label>
-                  <Input value={address} onChange={e=>setAddress(e.target.value)} placeholder="Calle, No., colonia, etc." />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="mb-1 block text-sm font-medium">Referencia</label>
-                  <Input value={reference} onChange={e=>setReference(e.target.value)} placeholder="Punto de referencia para el repartidor" />
-                </div>
-              </div>
-            )}
-            {belowMin && (
-              <p className="mt-3 text-sm text-amber-600">El pedido mínimo para envío a domicilio es de {formatPrice(SHIPPING.minOrderAmount)}.</p>
-            )}
-          </div>
-
-          <div className="rounded-lg border bg-white p-6">
-            <h2 className="mb-4 text-xl font-semibold">Método de pago</h2>
-            <div className="flex flex-wrap gap-3">
-              <Button variant={payment === 'efectivo' ? 'default' : 'outline'} onClick={()=>setPayment('efectivo')}>Efectivo</Button>
-              <Button variant={payment === 'transferencia' ? 'default' : 'outline'} onClick={()=>setPayment('transferencia')}>Transferencia</Button>
-              <Button variant={payment === 'tarjeta' ? 'default' : 'outline'} onClick={()=>setPayment('tarjeta')}>Tarjeta</Button>
-              <Button variant={payment === 'paypal' ? 'default' : 'outline'} onClick={()=>setPayment('paypal')}>PayPal</Button>
-            </div>
-            {payment === 'transferencia' && (
-              <div className="mt-4 rounded-md border bg-gray-50 p-4 text-sm text-gray-700">
-                <p className="font-medium">Instrucciones de transferencia</p>
-                <p>Banco: BAC | Cuenta monetaria: 000-000000-0 | Nombre: PanaderIA</p>
-                <p>Envía el comprobante por WhatsApp al finalizar el pedido.</p>
-              </div>
-            )}
-            {payment === 'tarjeta' && (
-              <div className="mt-4 text-sm text-gray-600">
-                <p>Pago con tarjeta disponible en entrega o en tienda (placeholder UI).</p>
-              </div>
-            )}
-            {payment === 'paypal' && (
-              <div className="mt-4 rounded-md border bg-blue-50 p-4 text-sm text-blue-800">
-                <p className="font-medium">Pago con PayPal (demo)</p>
-                <p>Próximamente redirigiremos a PayPal para completar el pago.</p>
-              </div>
+            ) : (
+              <p className="text-sm text-gray-500">Cargando sucursales...</p>
             )}
           </div>
 
@@ -345,12 +250,20 @@ export default function CheckoutPage() {
             />
           </div>
 
+          {/* Monto mínimo */}
+          {belowMin && (
+            <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
+              <p className="font-medium">Pedido mínimo no alcanzado</p>
+              <p>El monto mínimo para realizar un pedido es de {formatPrice(ORDER_CONFIG.minOrderAmount)}. Tu subtotal actual es {formatPrice(subtotal)}.</p>
+            </div>
+          )}
+
           {/* Mensaje para usuarios no autenticados */}
           {!isAuthenticated && (
             <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
               <p className="font-medium">💡 ¿Ya tienes cuenta?</p>
               <p>
-                <Link href={ROUTES.login} className="underline hover:no-underline">Inicia sesión</Link> para guardar tus pedidos y ver tu historial de compras.
+                <Link href={ROUTES.login} className="underline hover:no-underline">Inicia sesión</Link> para guardar tus pedidos y ver tu historial.
               </p>
             </div>
           )}
@@ -377,26 +290,19 @@ export default function CheckoutPage() {
               ))}
             </div>
             <div className="space-y-2 text-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">Subtotal</span>
-                <span className="font-medium">{formatPrice(subtotal)}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">Envío</span>
-                <span className="font-medium">{shippingCost === 0 ? (method === 'recoger' ? 'Recoger en tienda' : 'Gratis') : formatPrice(shippingCost)}</span>
-              </div>
               <div className="flex items-center justify-between border-t pt-2 text-base">
                 <span className="font-semibold">Total</span>
-                <span className="font-bold text-primary">{formatPrice(total)}</span>
+                <span className="font-bold text-primary">{formatPrice(subtotal)}</span>
               </div>
             </div>
+            <p className="mt-2 text-xs text-gray-500">Pago al recoger en sucursal</p>
             <Button className="mt-4 w-full" onClick={placeOrder} disabled={!canPlace || placing}>
-              {placing ? 'Procesando…' : 'Realizar pedido'}
+              {placing ? 'Procesando…' : 'Reservar Pedido'}
             </Button>
             <p className="mt-2 text-center text-xs text-gray-500">Al realizar el pedido, aceptas nuestros términos y políticas.</p>
           </div>
           <div className="rounded-lg border bg-white p-4 text-sm text-gray-600">
-            <p>Envío base: {formatPrice(SHIPPING.baseFee)}. Envío gratis desde {formatPrice(SHIPPING.freeShippingThreshold)}. Pedido mínimo a domicilio: {formatPrice(SHIPPING.minOrderAmount)}.</p>
+            <p>📍 Retira en sucursal. Pedido mínimo: {formatPrice(ORDER_CONFIG.minOrderAmount)}. Pago al recoger.</p>
           </div>
         </div>
       </div>

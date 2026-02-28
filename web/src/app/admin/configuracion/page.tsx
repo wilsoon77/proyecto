@@ -16,8 +16,7 @@ import {
   AlertTriangle,
   Building2,
   Package,
-  Coins,
-  Truck
+  Coins
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
@@ -41,8 +40,6 @@ interface AppSettings {
   timezone: string
   // Pedidos
   minOrderAmount: number
-  deliveryFee: number
-  freeDeliveryMinimum: number
   maxOrderItems: number
   // Notificaciones
   emailNotifications: boolean
@@ -60,9 +57,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   storeDescription: "Los mejores panes y pasteles de la ciudad",
   currency: "GTQ",
   timezone: "America/Guatemala",
-  minOrderAmount: 25,
-  deliveryFee: 15,
-  freeDeliveryMinimum: 100,
+  minOrderAmount: 15,
   maxOrderItems: 50,
   emailNotifications: true,
   orderConfirmationEmail: true,
@@ -141,7 +136,7 @@ export default function ConfiguracionPage() {
 
   if (isLoading) {
     return (
-      <div className="p-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         <div className="animate-pulse space-y-6">
           <div className="h-8 bg-gray-200 rounded w-48"></div>
           <div className="bg-white rounded-xl h-96"></div>
@@ -420,47 +415,9 @@ export default function ConfiguracionPage() {
                   </div>
 
                   <div className="border-t border-gray-200 pt-6">
-                    <h3 className="text-md font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                      <Truck className="h-5 w-5 text-blue-600" />
-                      Configuración de Envío
-                    </h3>
-                    
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Costo de Envío
-                        </label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">Q</span>
-                          <input
-                            type="number"
-                            min="0"
-                            value={settings.deliveryFee}
-                            onChange={(e) => updateSetting("deliveryFee", Number(e.target.value))}
-                            className="w-full pl-8 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Mínimo para Envío Gratis
-                        </label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">Q</span>
-                          <input
-                            type="number"
-                            min="0"
-                            value={settings.freeDeliveryMinimum}
-                            onChange={(e) => updateSetting("freeDeliveryMinimum", Number(e.target.value))}
-                            className="w-full pl-8 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
-                          />
-                        </div>
-                        <p className="text-xs text-gray-500 mt-1">
-                          Pedidos mayores a este monto tendrán envío gratis
-                        </p>
-                      </div>
-                    </div>
+                    <p className="text-sm text-gray-500">
+                      El sistema opera con reserva y retiro en sucursal. El pago se realiza al momento de recoger.
+                    </p>
                   </div>
                 </div>
               </div>

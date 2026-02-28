@@ -10,7 +10,9 @@ import {
   Trash2,
   Tag,
   Package,
-  Loader2
+  Loader2,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
@@ -29,6 +31,10 @@ export default function AdminCategoriasPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [deleteTarget, setDeleteTarget] = useState<ApiCategory | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+
+  // Paginación
+  const ITEMS_PER_PAGE = 12
+  const [currentPage, setCurrentPage] = useState(1)
 
   // Protección de rol - solo ADMIN puede acceder
   useEffect(() => {
@@ -53,7 +59,15 @@ export default function AdminCategoriasPage() {
     } else {
       setFilteredCategories(categories)
     }
+    setCurrentPage(1)
   }, [categories, searchTerm])
+
+  // Paginación
+  const totalPages = Math.ceil(filteredCategories.length / ITEMS_PER_PAGE)
+  const paginatedCategories = filteredCategories.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  )
 
   const loadCategories = async () => {
     setIsLoading(true)
@@ -86,7 +100,7 @@ export default function AdminCategoriasPage() {
   }
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
@@ -146,7 +160,7 @@ export default function AdminCategoriasPage() {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredCategories.map((category) => (
+          {paginatedCategories.map((category) => (
             <div 
               key={category.id}
               className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow"
@@ -180,6 +194,33 @@ export default function AdminCategoriasPage() {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {!isLoading && totalPages > 1 && (
+        <div className="flex items-center justify-between mt-6 bg-white rounded-xl shadow-sm border border-gray-100 px-4 sm:px-6 py-4">
+          <p className="text-sm text-gray-500">
+            Página {currentPage} de {totalPages} ({filteredCategories.length} categorías)
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage <= 1}
+              onClick={() => setCurrentPage(prev => prev - 1)}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage >= totalPages}
+              onClick={() => setCurrentPage(prev => prev + 1)}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       )}
 

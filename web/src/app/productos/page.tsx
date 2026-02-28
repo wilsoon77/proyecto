@@ -11,6 +11,9 @@ import { productsService, categoriesService } from "@/lib/api"
 import { apiProductToProduct } from "@/lib/api/transformers"
 import type { Product } from "@/types"
 import type { ApiCategory, ProductFilters } from "@/lib/api/types"
+import { Loader2 } from "lucide-react"
+
+const PAGE_SIZE = 12
 
 function ProductosContent() {
   const { addItem } = useCart()
@@ -23,8 +26,11 @@ function ProductosContent() {
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<ApiCategory[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [totalProducts, setTotalProducts] = useState(0)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
   
   // Filtros
   const [search, setSearch] = useState("")
@@ -41,33 +47,57 @@ function ProductosContent() {
       .catch(err => console.error('Error cargando categorías:', err))
   }, [])
 
-  // Cargar productos
+  // Construir filtros comunes
+  const buildFilters = useCallback((page: number): ProductFilters => {
+    const filters: ProductFilters = { page, pageSize: PAGE_SIZE }
+    if (search.trim()) filters.search = search.trim()
+    if (category) filters.category = category
+    if (minPrice.trim()) filters.min = parseFloat(minPrice)
+    if (maxPrice.trim()) filters.max = parseFloat(maxPrice)
+    if (sort && sort !== 'relevancia') {
+      filters.sort = sort as ProductFilters['sort']
+    }
+    return filters
+  }, [search, category, minPrice, maxPrice, sort])
+
+  // Cargar productos (primera página - reemplaza)
   const fetchProducts = useCallback(async () => {
     setIsLoading(true)
     setError(null)
     
     try {
-      const filters: ProductFilters = {}
-      
-      if (search.trim()) filters.search = search.trim()
-      if (category) filters.category = category
-      if (minPrice.trim()) filters.min = parseFloat(minPrice)
-      if (maxPrice.trim()) filters.max = parseFloat(maxPrice)
-      if (sort && sort !== 'relevancia') {
-        filters.sort = sort as ProductFilters['sort']
-      }
-      
-      const response = await productsService.list(filters)
+      const response = await productsService.list(buildFilters(1))
       const transformedProducts = response.data.map(apiProductToProduct)
       setProducts(transformedProducts)
       setTotalProducts(response.meta.total)
+      setCurrentPage(response.meta.page)
+      setTotalPages(response.meta.pageCount)
     } catch (err) {
       console.error('Error cargando productos:', err)
       setError('Error al cargar productos. Por favor, intenta de nuevo.')
     } finally {
       setIsLoading(false)
     }
-  }, [search, category, minPrice, maxPrice, sort])
+  }, [buildFilters])
+
+  // Cargar más productos (append)
+  const loadMore = useCallback(async () => {
+    if (isLoadingMore || currentPage >= totalPages) return
+    
+    setIsLoadingMore(true)
+    try {
+      const nextPage = currentPage + 1
+      const response = await productsService.list(buildFilters(nextPage))
+      const transformedProducts = response.data.map(apiProductToProduct)
+      setProducts(prev => [...prev, ...transformedProducts])
+      setCurrentPage(response.meta.page)
+      setTotalPages(response.meta.pageCount)
+    } catch (err) {
+      console.error('Error cargando más productos:', err)
+    } finally {
+      setIsLoadingMore(false)
+    }
+  }, [isLoadingMore, currentPage, totalPages, buildFilters])
 
   // Inicializar desde URL
   useEffect(() => {
@@ -208,7 +238,7 @@ function ProductosContent() {
       <div className="mb-6 flex flex-wrap items-center gap-2">
         {categories.slice(0, 6).map(cat => (
           <button key={cat.id} onClick={() => setCategory(cat.slug)}>
-            <CategoryBadge category={cat.slug} />
+            <CategoryBadge category={cat.slug} label={cat.name} />
           </button>
         ))}
         {category && (
@@ -240,10 +270,48 @@ function ProductosContent() {
           ))}
         </div>
       ) : (
-        <ProductGrid
-          products={products}
-          onAddToCart={handleAddToCart}
-        />
+        <>
+          <ProductGrid
+            products={products}
+            onAddToCart={handleAddToCart}
+          />
+
+          {/* Load More / Info */}
+          {products.length > 0 && (
+            <div className="mt-8 flex flex-col items-center gap-4">
+              <p className="text-sm text-gray-500">
+                Mostrando {products.length} de {totalProducts} productos
+              </p>
+              
+              {/* Progress bar */}
+              <div className="w-full max-w-xs h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-primary rounded-full transition-all duration-300"
+                  style={{ width: `${Math.min((products.length / totalProducts) * 100, 100)}%` }}
+                />
+              </div>
+
+              {currentPage < totalPages && (
+                <Button 
+                  variant="outline" 
+                  size="lg"
+                  onClick={loadMore}
+                  disabled={isLoadingMore}
+                  className="min-w-[200px]"
+                >
+                  {isLoadingMore ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Cargando...
+                    </>
+                  ) : (
+                    `Cargar más productos`
+                  )}
+                </Button>
+              )}
+            </div>
+          )}
+        </>
       )}
     </div>
   )

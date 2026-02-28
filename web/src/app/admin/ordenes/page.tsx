@@ -12,7 +12,6 @@ import {
   CheckCircle,
   XCircle,
   Package,
-  Truck,
   ChefHat,
   Filter,
   RefreshCw
@@ -49,7 +48,6 @@ const STATUS_OPTIONS: { value: OrderStatus; label: string; icon: React.ElementTy
   { value: "CONFIRMED", label: "Confirmada", icon: CheckCircle, color: "bg-blue-100 text-blue-700" },
   { value: "PREPARING", label: "Preparando", icon: ChefHat, color: "bg-purple-100 text-purple-700" },
   { value: "READY", label: "Lista", icon: Package, color: "bg-green-100 text-green-700" },
-  { value: "IN_DELIVERY", label: "En Camino", icon: Truck, color: "bg-indigo-100 text-indigo-700" },
   { value: "DELIVERED", label: "Entregada", icon: CheckCircle, color: "bg-emerald-100 text-emerald-700" },
   { value: "PICKED_UP", label: "Recogida", icon: CheckCircle, color: "bg-teal-100 text-teal-700" },
   { value: "CANCELLED", label: "Cancelada", icon: XCircle, color: "bg-red-100 text-red-700" },

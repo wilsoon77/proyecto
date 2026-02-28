@@ -198,7 +198,7 @@ export default function AdminDashboardPage() {
 
   if (isLoading && !stats) {
     return (
-      <div className="p-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         <div className="animate-pulse space-y-6">
           <div className="h-8 bg-gray-200 rounded w-48"></div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -239,7 +239,7 @@ export default function AdminDashboardPage() {
   })) || []
 
   return (
-    <div className="p-6 lg:p-8 bg-gray-50 min-h-screen">
+    <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen">
       {/* Header con saludo y fecha */}
       <div className="mb-8">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">

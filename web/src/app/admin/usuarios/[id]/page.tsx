@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Loader2, Save, Eye, EyeOff, Trash2, Building2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { useToast } from "@/components/ui/toast"
 import { usersService, branchesService, type User, type UserRole, ApiClientError } from "@/lib/api"
 
@@ -26,6 +27,8 @@ export default function EditarUsuarioPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState("")
   const [showPassword, setShowPassword] = useState(false)
+  const [showDeactivateDialog, setShowDeactivateDialog] = useState(false)
+  const [isDeactivating, setIsDeactivating] = useState(false)
   
   // Form state
   const [firstName, setFirstName] = useState("")
@@ -140,20 +143,23 @@ export default function EditarUsuarioPage() {
   }
 
   const handleDeactivate = async () => {
-    if (!confirm("¿Estás seguro de desactivar este usuario?")) return
-    
+    setIsDeactivating(true)
     try {
       await usersService.deactivate(userId)
       showToast("Usuario desactivado", "success")
       router.push("/admin/usuarios")
-    } catch (error: any) {
-      showToast(error.message || "Error al desactivar usuario", "error")
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Error al desactivar usuario"
+      showToast(message, "error")
+    } finally {
+      setIsDeactivating(false)
+      setShowDeactivateDialog(false)
     }
   }
 
   if (isLoading) {
     return (
-      <div className="p-8 max-w-2xl mx-auto">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-2xl mx-auto">
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 text-amber-600 animate-spin" />
         </div>
@@ -163,14 +169,14 @@ export default function EditarUsuarioPage() {
 
   if (!user) {
     return (
-      <div className="p-8 max-w-2xl mx-auto">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-2xl mx-auto">
         <p className="text-center text-gray-500">Usuario no encontrado</p>
       </div>
     )
   }
 
   return (
-    <div className="p-8 max-w-2xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-2xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
@@ -181,7 +187,7 @@ export default function EditarUsuarioPage() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Editar Usuario</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Editar Usuario</h1>
             <p className="text-gray-500">{user.email}</p>
           </div>
         </div>
@@ -189,7 +195,7 @@ export default function EditarUsuarioPage() {
           <Button 
             variant="outline" 
             className="text-red-600 border-red-200 hover:bg-red-50"
-            onClick={handleDeactivate}
+            onClick={() => setShowDeactivateDialog(true)}
           >
             <Trash2 className="h-4 w-4 mr-2" />
             Desactivar
@@ -411,6 +417,17 @@ export default function EditarUsuarioPage() {
           </Button>
         </div>
       </form>
+
+      <ConfirmDialog
+        isOpen={showDeactivateDialog}
+        onCancel={() => setShowDeactivateDialog(false)}
+        onConfirm={handleDeactivate}
+        title="Desactivar usuario"
+        message={`¿Estás seguro de desactivar a ${user?.firstName} ${user?.lastName}? El usuario no podrá acceder al sistema.`}
+        confirmText="Desactivar"
+        variant="danger"
+        isLoading={isDeactivating}
+      />
     </div>
   )
 }

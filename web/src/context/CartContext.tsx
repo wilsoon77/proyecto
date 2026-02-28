@@ -61,7 +61,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return total + price * item.quantity
   }, 0)
 
-  // Calcular total (por ahora igual al subtotal, luego añadiremos envío)
+  // Total = subtotal (sistema de reserva, pago al recoger)
   const total = subtotal
 
   // Agregar producto al carrito

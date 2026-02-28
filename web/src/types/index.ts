@@ -69,7 +69,7 @@ export type OrderStatus =
   | 'confirmed'
   | 'preparing'
   | 'ready'
-  | 'in_delivery'
+  | 'picked_up'
   | 'delivered'
   | 'cancelled'
 
@@ -79,12 +79,14 @@ export interface Order {
   status: OrderStatus
   items: CartItem[]
   subtotal: number
-  deliveryFee: number
   discount: number
   total: number
-  paymentMethod?: 'efectivo' | 'transferencia' | 'tarjeta' | 'paypal'
-  shippingMethod?: 'domicilio' | 'recoger'
-  shippingAddress?: Address
+  branchSlug?: string
   createdAt: string
-  estimatedDelivery?: string
+  /** @deprecated kept for backward compat with existing localStorage orders */
+  deliveryFee?: number
+  /** @deprecated */
+  paymentMethod?: string
+  /** @deprecated */
+  shippingMethod?: string
 }

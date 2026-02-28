@@ -67,16 +67,16 @@ export default function ContactoPage() {
             <h2 className="mb-3 text-xl font-semibold">Preguntas Frecuentes</h2>
             <div className="space-y-3">
               <details className="rounded-md border p-3">
-                <summary className="cursor-pointer font-medium">¿Hacen envíos a toda la ciudad?</summary>
-                <p className="mt-2 text-sm text-gray-700">Sí, realizamos entregas en la Ciudad de Guatemala. Envío gratis desde Q100.</p>
+                <summary className="cursor-pointer font-medium">¿Cómo funciona el sistema de pedidos?</summary>
+                <p className="mt-2 text-sm text-gray-700">Agregas productos al carrito, confirmas tu pedido y lo recoges en la sucursal que elijas. Pago al recoger.</p>
               </details>
               <details className="rounded-md border p-3">
                 <summary className="cursor-pointer font-medium">¿Con cuánta anticipación pido un pastel?</summary>
                 <p className="mt-2 text-sm text-gray-700">Idealmente 24-48 horas antes para personalizaciones.</p>
               </details>
               <details className="rounded-md border p-3">
-                <summary className="cursor-pointer font-medium">¿Qué métodos de pago aceptan?</summary>
-                <p className="mt-2 text-sm text-gray-700">Efectivo, transferencia y tarjeta (en entrega o en tienda).</p>
+                <summary className="cursor-pointer font-medium">¿Cuál es el pedido mínimo?</summary>
+                <p className="mt-2 text-sm text-gray-700">El pedido mínimo es de Q15. Pago al recoger en sucursal (efectivo o tarjeta).</p>
               </details>
             </div>
           </div>

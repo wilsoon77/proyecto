@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, Suspense } from "react"
+import { useEffect, useState, Suspense, useCallback, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { 
@@ -129,6 +129,9 @@ function MovimientoForm() {
   const [products, setProducts] = useState<Product[]>([])
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [productSearch, setProductSearch] = useState("")
+  const [isSearchingProducts, setIsSearchingProducts] = useState(false)
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Formulario
   const [selectedProduct, setSelectedProduct] = useState<string>(productSlug || "")
@@ -155,7 +158,7 @@ function MovimientoForm() {
       try {
         const [branchesData, productsData, inventoryData] = await Promise.all([
           branchesService.list(),
-          productsService.list({ pageSize: 200 }),
+          productsService.list({ pageSize: 20 }),
           inventoryService.list()
         ])
         setBranches(branchesData)
@@ -169,6 +172,32 @@ function MovimientoForm() {
     }
     loadData()
   }, [])
+
+  // Búsqueda de productos con debounce
+  const searchProducts = useCallback(async (query: string) => {
+    if (!query.trim()) return
+    setIsSearchingProducts(true)
+    try {
+      const response = await productsService.list({ search: query, pageSize: 20 })
+      setProducts(prev => {
+        const existingIds = new Set(prev.map(p => p.id))
+        const newProducts = (response.data || response).filter((p: Product) => !existingIds.has(p.id))
+        return [...prev, ...newProducts]
+      })
+    } catch (err) {
+      console.error("Error searching products:", err)
+    } finally {
+      setIsSearchingProducts(false)
+    }
+  }, [])
+
+  const handleProductSearchChange = useCallback((value: string) => {
+    setProductSearch(value)
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current)
+    if (value.trim().length >= 2) {
+      searchTimeoutRef.current = setTimeout(() => searchProducts(value), 400)
+    }
+  }, [searchProducts])
 
   // Auto-seleccionar sucursales según el tipo
   useEffect(() => {
@@ -229,9 +258,10 @@ function MovimientoForm() {
       setTimeout(() => {
         router.push("/admin/inventario")
       }, 2000)
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error creating movement:", err)
-      setSubmitError(err.message || "Error al registrar el movimiento")
+      const message = err instanceof Error ? err.message : "Error al registrar el movimiento"
+      setSubmitError(message)
     } finally {
       setIsSubmitting(false)
     }
@@ -239,7 +269,7 @@ function MovimientoForm() {
 
   if (isLoading) {
     return (
-      <div className="p-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         <div className="animate-pulse space-y-6">
           <div className="h-8 bg-gray-200 rounded w-64"></div>
           <div className="bg-white rounded-xl h-[600px]"></div>
@@ -250,7 +280,7 @@ function MovimientoForm() {
 
   if (submitSuccess) {
     return (
-      <div className="p-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         <div className="max-w-2xl mx-auto">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -266,7 +296,7 @@ function MovimientoForm() {
   }
 
   return (
-    <div className="p-8 bg-gray-50 min-h-screen">
+    <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen">
       {/* Header */}
       <div className="mb-8">
         <Link 
@@ -294,6 +324,17 @@ function MovimientoForm() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Seleccionar producto *
                 </label>
+                {/* Búsqueda de producto */}
+                <input
+                  type="text"
+                  value={productSearch}
+                  onChange={(e) => handleProductSearchChange(e.target.value)}
+                  placeholder="Escribe para buscar un producto..."
+                  className="w-full px-4 py-2 mb-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm"
+                />
+                {isSearchingProducts && (
+                  <p className="text-xs text-gray-400 mb-1">Buscando productos...</p>
+                )}
                 <select
                   value={selectedProduct}
                   onChange={(e) => setSelectedProduct(e.target.value)}
@@ -301,7 +342,9 @@ function MovimientoForm() {
                   required
                 >
                   <option value="">-- Seleccionar producto --</option>
-                  {products.map(product => (
+                  {products
+                    .filter(p => !productSearch.trim() || p.name.toLowerCase().includes(productSearch.toLowerCase()))
+                    .map(product => (
                     <option key={product.id} value={product.slug}>{product.name}</option>
                   ))}
                 </select>

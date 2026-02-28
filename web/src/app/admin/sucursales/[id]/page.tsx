@@ -101,7 +101,7 @@ export default function EditarSucursalPage({ params }: { params: Promise<{ id: s
 
   if (isLoading) {
     return (
-      <div className="p-6 lg:p-8 flex items-center justify-center min-h-[50vh]">
+      <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-[50vh]">
         <Loader2 className="h-8 w-8 animate-spin text-amber-600" />
       </div>
     )
@@ -109,7 +109,7 @@ export default function EditarSucursalPage({ params }: { params: Promise<{ id: s
 
   if (error && !name) {
     return (
-      <div className="p-6 lg:p-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
           {error}
         </div>
@@ -124,7 +124,7 @@ export default function EditarSucursalPage({ params }: { params: Promise<{ id: s
   }
 
   return (
-    <div className="p-6 lg:p-8 max-w-2xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-2xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-4 mb-8">
         <Link href="/admin/sucursales">

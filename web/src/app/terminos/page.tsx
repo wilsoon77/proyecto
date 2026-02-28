@@ -16,10 +16,10 @@ export default function TerminosPage() {
         </ul>
 
         <h2>Pagos</h2>
-        <p>Aceptamos efectivo, transferencia, tarjeta y PayPal (según disponibilidad). Algunos métodos pueden requerir verificación.</p>
+        <p>El pago se realiza al momento de recoger el pedido en sucursal. Aceptamos efectivo y tarjeta.</p>
 
-        <h2>Envíos y retiros</h2>
-        <p>El pedido mínimo para envíos a domicilio es de Q25. El retiro en tienda no tiene mínimo.</p>
+        <h2>Retiro de pedidos</h2>
+        <p>Todos los pedidos se recogen en la sucursal seleccionada. El pedido mínimo es de Q15.</p>
 
         <h2>Devoluciones</h2>
         <p>Por tratarse de productos alimenticios, las devoluciones se evalúan caso por caso dentro del mismo día de compra.</p>

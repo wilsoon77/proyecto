@@ -129,15 +129,15 @@ export default function AdminProductosPage() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Productos</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Productos</h1>
           <p className="text-gray-500 mt-1">Gestiona el catálogo de productos</p>
         </div>
         <Link href="/admin/productos/nuevo">
-          <Button className="bg-amber-600 hover:bg-amber-700">
+          <Button className="bg-amber-600 hover:bg-amber-700 w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             Nuevo Producto
           </Button>
@@ -205,83 +205,136 @@ export default function AdminProductosPage() {
           </div>
         ) : (
           <>
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-100">
-                <tr>
-                  <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Producto</th>
-                  <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Categoría</th>
-                  <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Precio</th>
-                  <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Stock</th>
-                  <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Estado</th>
-                  <th className="text-right px-6 py-4 text-sm font-medium text-gray-500">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {products.map((product) => (
-                  <tr key={product.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-4">
-                        <ProductThumbnail
-                          src={product.images?.[0]?.url}
-                          alt={product.name}
-                          category={product.categorySlug || product.category}
-                          size={56}
-                        />
-                        <div>
-                          <p className="font-medium text-gray-900">{product.name}</p>
-                          <p className="text-sm text-gray-500">{product.slug}</p>
-                        </div>
+            {/* Mobile Card Layout */}
+            <div className="md:hidden divide-y divide-gray-100">
+              {products.map((product) => (
+                <div key={product.id} className="p-4 hover:bg-gray-50 transition-colors">
+                  <div className="flex items-start gap-3">
+                    <ProductThumbnail
+                      src={product.images?.[0]?.url}
+                      alt={product.name}
+                      category={product.categorySlug || product.category}
+                      size={56}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-900 truncate">{product.name}</p>
+                      <p className="text-sm text-gray-500">{product.category}</p>
+                      <div className="flex items-center gap-3 mt-2">
+                        <span className="font-medium text-gray-900">{formatPrice(product.price)}</span>
+                        <span className={`text-sm font-medium ${
+                          (product.available || 0) > 10 ? "text-green-600" : 
+                          (product.available || 0) > 0 ? "text-yellow-600" : "text-red-600"
+                        }`}>
+                          Stock: {product.available || 0}
+                        </span>
+                        {product.isNew && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            Nuevo
+                          </span>
+                        )}
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                        {product.category}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 font-medium text-gray-900">
-                      {formatPrice(product.price)}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`font-medium ${
-                        (product.available || 0) > 10 ? "text-green-600" : 
-                        (product.available || 0) > 0 ? "text-yellow-600" : "text-red-600"
-                      }`}>
-                        {product.available || 0}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      {product.isNew ? (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          Nuevo
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                          Normal
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-end gap-2">
-                        <Link href={`/admin/productos/${product.id}/editar`}>
-                          <Button variant="ghost" size="sm" title="Editar producto">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </Link>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          onClick={() => openDeleteModal(product)}
-                          title="Eliminar producto"
-                        >
-                          <Trash2 className="h-4 w-4" />
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Link href={`/admin/productos/${product.id}/editar`}>
+                        <Button variant="ghost" size="icon" className="h-10 w-10" title="Editar">
+                          <Edit className="h-4 w-4" />
                         </Button>
-                      </div>
-                    </td>
+                      </Link>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        className="h-10 w-10 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => openDeleteModal(product)}
+                        title="Eliminar"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table Layout */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-100">
+                  <tr>
+                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Producto</th>
+                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Categoría</th>
+                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Precio</th>
+                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Stock</th>
+                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Estado</th>
+                    <th className="text-right px-6 py-4 text-sm font-medium text-gray-500">Acciones</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {products.map((product) => (
+                    <tr key={product.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-4">
+                          <ProductThumbnail
+                            src={product.images?.[0]?.url}
+                            alt={product.name}
+                            category={product.categorySlug || product.category}
+                            size={56}
+                          />
+                          <div>
+                            <p className="font-medium text-gray-900">{product.name}</p>
+                            <p className="text-sm text-gray-500">{product.slug}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                          {product.category}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 font-medium text-gray-900">
+                        {formatPrice(product.price)}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`font-medium ${
+                          (product.available || 0) > 10 ? "text-green-600" : 
+                          (product.available || 0) > 0 ? "text-yellow-600" : "text-red-600"
+                        }`}>
+                          {product.available || 0}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        {product.isNew ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            Nuevo
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                            Normal
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-end gap-2">
+                          <Link href={`/admin/productos/${product.id}/editar`}>
+                            <Button variant="ghost" size="sm" title="Editar producto">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => openDeleteModal(product)}
+                            title="Eliminar producto"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
             {/* Pagination */}
             {totalPages > 1 && (

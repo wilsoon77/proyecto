@@ -151,12 +151,12 @@ export default function ConfiguracionPage() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-            <Settings className="h-8 w-8 text-amber-600" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-3">
+            <Settings className="h-7 w-7 sm:h-8 sm:w-8 text-amber-600" />
             Configuración
           </h1>
           <p className="text-gray-500 mt-1">Administra las opciones del sistema</p>
@@ -164,7 +164,7 @@ export default function ConfiguracionPage() {
         <Button 
           onClick={handleSaveSettings}
           disabled={isSaving}
-          className="bg-amber-600 hover:bg-amber-700"
+          className="bg-amber-600 hover:bg-amber-700 w-full sm:w-auto"
         >
           {isSaving ? (
             <>
@@ -180,9 +180,34 @@ export default function ConfiguracionPage() {
         </Button>
       </div>
 
-      <div className="flex gap-6">
-        {/* Sidebar de tabs */}
-        <div className="w-64 flex-shrink-0">
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Mobile horizontal tabs */}
+        <div className="lg:hidden">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-1.5">
+            <div className="flex overflow-x-auto gap-1 no-scrollbar">
+              {tabs.map(tab => {
+                const Icon = tab.icon
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0 ${
+                      activeTab === tab.id
+                        ? 'bg-amber-50 text-amber-700'
+                        : 'text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {tab.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop Sidebar tabs */}
+        <div className="hidden lg:block w-64 flex-shrink-0">
           <nav className="bg-white rounded-xl shadow-sm border border-gray-100 p-2 space-y-1">
             {tabs.map(tab => {
               const Icon = tab.icon
@@ -227,9 +252,8 @@ export default function ConfiguracionPage() {
             </div>
           </div>
         </div>
-
         {/* Contenido principal */}
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             
             {/* Tab: General */}
@@ -266,7 +290,7 @@ export default function ConfiguracionPage() {
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Moneda
@@ -363,7 +387,7 @@ export default function ConfiguracionPage() {
                 </h2>
 
                 <div className="grid gap-6">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         <Coins className="inline-block h-4 w-4 mr-1" />
@@ -401,7 +425,7 @@ export default function ConfiguracionPage() {
                       Configuración de Envío
                     </h3>
                     
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Costo de Envío

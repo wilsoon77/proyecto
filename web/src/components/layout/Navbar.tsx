@@ -2,10 +2,11 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { ShoppingCart, User, Menu, MapPin, Apple, Play, LogOut, Settings } from "lucide-react"
+import { ShoppingCart, User, Menu, MapPin, Apple, Play, LogOut, Settings, X, Phone, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ROUTES } from "@/lib/constants"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { usePathname } from "next/navigation"
 import { useCart } from "@/context/CartContext"
 import { useAuth } from "@/context/AuthContext"
 import {
@@ -20,6 +21,25 @@ export function Navbar() {
   const { itemCount } = useCart()
   const { user, isLoggedIn, logout, isLoading } = useAuth()
   const [selectedSucursal, setSelectedSucursal] = useState("Sucursal Central")
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const pathname = usePathname()
+
+  // Cerrar menú móvil al cambiar de ruta
+  useEffect(() => {
+    setMobileMenuOpen(false)
+  }, [pathname])
+
+  // Bloquear scroll del body cuando el menú móvil está abierto
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [mobileMenuOpen])
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-white">
@@ -90,7 +110,7 @@ export function Navbar() {
           <div className="flex items-center gap-2">
             {/* Cart */}
             <Link href={ROUTES.cart}>
-              <Button variant="ghost" size="icon" className="relative">
+              <Button variant="ghost" size="icon" className="relative h-11 w-11">
                 <ShoppingCart className="h-5 w-5" />
                 {itemCount > 0 && (
                   <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
@@ -104,7 +124,7 @@ export function Navbar() {
             {isLoggedIn ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="relative">
+                  <Button variant="ghost" size="icon" className="relative h-11 w-11">
                     <User className="h-5 w-5" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -140,7 +160,7 @@ export function Navbar() {
               </DropdownMenu>
             ) : (
               <Link href="/login">
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" className="h-11 w-11">
                   <User className="h-5 w-5" />
                 </Button>
               </Link>
@@ -158,15 +178,187 @@ export function Navbar() {
               </div>
             )}
 
-            {/* Mobile Menu */}
+            {/* Mobile Menu Toggle */}
             <Button
               variant="ghost"
               size="icon"
-              className="lg:hidden"
+              className="lg:hidden h-11 w-11"
               aria-label="Menú"
+              onClick={() => setMobileMenuOpen(true)}
             >
               <Menu className="h-5 w-5" />
             </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Menu Overlay */}
+      {mobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-[60] lg:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Mobile Menu Panel */}
+      <div 
+        className={`
+          fixed top-0 right-0 z-[70] h-full w-[85%] max-w-sm bg-white shadow-xl
+          transform transition-transform duration-300 ease-in-out lg:hidden
+          ${mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}
+        `}
+      >
+        {/* Mobile Menu Header */}
+        <div className="flex items-center justify-between border-b px-4 py-4">
+          <span className="text-lg font-semibold text-gray-900">Menú</span>
+          <button
+            onClick={() => setMobileMenuOpen(false)}
+            className="flex h-11 w-11 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+            aria-label="Cerrar menú"
+          >
+            <X className="h-6 w-6" />
+          </button>
+        </div>
+
+        {/* Mobile Menu Content */}
+        <div className="flex flex-col h-[calc(100%-65px)] overflow-y-auto">
+          {/* User Info (if logged in) */}
+          {isLoggedIn && user && (
+            <div className="border-b px-4 py-4 bg-gray-50">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                  <User className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">{user.firstName} {user.lastName}</p>
+                  <p className="text-xs text-gray-500">{user.email}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Navigation Links */}
+          <nav className="flex-1 px-2 py-3">
+            <ul className="space-y-1">
+              <li>
+                <Link
+                  href={ROUTES.products}
+                  className="flex items-center justify-between rounded-lg px-4 py-3 text-base font-medium text-gray-700 hover:bg-gray-100 hover:text-primary transition-colors"
+                >
+                  Productos
+                  <ChevronRight className="h-4 w-4 text-gray-400" />
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/promociones"
+                  className="flex items-center justify-between rounded-lg px-4 py-3 text-base font-medium text-gray-700 hover:bg-gray-100 hover:text-primary transition-colors"
+                >
+                  Promociones
+                  <ChevronRight className="h-4 w-4 text-gray-400" />
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/sobre-nosotros"
+                  className="flex items-center justify-between rounded-lg px-4 py-3 text-base font-medium text-gray-700 hover:bg-gray-100 hover:text-primary transition-colors"
+                >
+                  Nosotros
+                  <ChevronRight className="h-4 w-4 text-gray-400" />
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href={ROUTES.contact}
+                  className="flex items-center justify-between rounded-lg px-4 py-3 text-base font-medium text-gray-700 hover:bg-gray-100 hover:text-primary transition-colors"
+                >
+                  Contacto
+                  <ChevronRight className="h-4 w-4 text-gray-400" />
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/sucursales"
+                  className="flex items-center justify-between rounded-lg px-4 py-3 text-base font-medium text-gray-700 hover:bg-gray-100 hover:text-primary transition-colors"
+                >
+                  Sucursales
+                  <ChevronRight className="h-4 w-4 text-gray-400" />
+                </Link>
+              </li>
+            </ul>
+
+            {/* User-specific links */}
+            {isLoggedIn && (
+              <>
+                <div className="my-3 border-t border-gray-200" />
+                <ul className="space-y-1">
+                  <li>
+                    <Link
+                      href={ROUTES.profile}
+                      className="flex items-center justify-between rounded-lg px-4 py-3 text-base font-medium text-gray-700 hover:bg-gray-100 hover:text-primary transition-colors"
+                    >
+                      Mi perfil
+                      <ChevronRight className="h-4 w-4 text-gray-400" />
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href={ROUTES.orders}
+                      className="flex items-center justify-between rounded-lg px-4 py-3 text-base font-medium text-gray-700 hover:bg-gray-100 hover:text-primary transition-colors"
+                    >
+                      Mis pedidos
+                      <ChevronRight className="h-4 w-4 text-gray-400" />
+                    </Link>
+                  </li>
+                  {(user?.role === 'ADMIN' || user?.role === 'EMPLOYEE') && (
+                    <li>
+                      <Link
+                        href="/admin"
+                        className="flex items-center justify-between rounded-lg px-4 py-3 text-base font-medium text-amber-600 hover:bg-amber-50 transition-colors"
+                      >
+                        <span className="flex items-center gap-2">
+                          <Settings className="h-4 w-4" />
+                          {user?.role === 'ADMIN' ? 'Panel Admin' : 'Panel de Trabajo'}
+                        </span>
+                        <ChevronRight className="h-4 w-4 text-amber-400" />
+                      </Link>
+                    </li>
+                  )}
+                </ul>
+              </>
+            )}
+          </nav>
+
+          {/* Bottom Section */}
+          <div className="border-t px-4 py-4 space-y-3">
+            {/* Phone */}
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <Phone className="h-4 w-4" />
+              <span>+502 1234-5678</span>
+            </div>
+
+            {/* Auth Buttons or Logout */}
+            {isLoggedIn ? (
+              <button
+                onClick={() => {
+                  logout()
+                  setMobileMenuOpen(false)
+                }}
+                className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-100 transition-colors"
+              >
+                <LogOut className="h-4 w-4" />
+                Cerrar sesión
+              </button>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <Link href="/login" className="w-full">
+                  <Button variant="outline" className="w-full h-11">Ingresar</Button>
+                </Link>
+                <Link href="/registro" className="w-full">
+                  <Button className="w-full h-11">Crear cuenta</Button>
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </div>

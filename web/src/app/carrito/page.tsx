@@ -36,20 +36,24 @@ export default function CarritoPage() {
           {/* Items */}
           <div className="lg:col-span-2 space-y-4">
             {items.map(({ product, quantity }) => (
-              <div key={product.id} className="flex items-center gap-4 rounded-lg border bg-white p-4">
-                <div className="relative h-20 w-20 overflow-hidden rounded-md bg-gray-100">
-                  {product.imageUrl ? (
-                    <Image src={product.imageUrl} alt={product.name} fill className="object-cover" />
-                  ) : (
-                    <div className="flex h-full items-center justify-center text-3xl">🥖</div>
-                  )}
+              <div key={product.id} className="flex flex-col sm:flex-row sm:items-center gap-4 rounded-lg border bg-white p-4">
+                <div className="flex items-center gap-4 flex-1 min-w-0">
+                  <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-md bg-gray-100">
+                    {product.imageUrl ? (
+                      <Image src={product.imageUrl} alt={product.name} fill className="object-cover" />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-3xl">🥖</div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-gray-900 truncate">{product.name}</h3>
+                    <p className="text-sm text-gray-500">{product.category}</p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900">{product.name}</h3>
-                  <p className="text-sm text-gray-500">{product.category}</p>
-                  <div className="mt-2 flex items-center gap-3">
+                <div className="flex items-center justify-between sm:justify-end gap-3">
+                  <div className="flex items-center gap-3">
                     <div className="flex items-center rounded-md border">
-                      <Button variant="ghost" size="icon" onClick={() => updateQuantity(product.id, quantity - 1)} aria-label="Disminuir">
+                      <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => updateQuantity(product.id, quantity - 1)} aria-label="Disminuir">
                         <Minus className="h-4 w-4" />
                       </Button>
                       <Input
@@ -59,17 +63,17 @@ export default function CarritoPage() {
                         onChange={(e) => updateQuantity(product.id, Number(e.target.value))}
                         className="h-9 w-14 border-0 text-center"
                       />
-                      <Button variant="ghost" size="icon" onClick={() => updateQuantity(product.id, quantity + 1)} aria-label="Aumentar">
+                      <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => updateQuantity(product.id, quantity + 1)} aria-label="Aumentar">
                         <Plus className="h-4 w-4" />
                       </Button>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={() => removeItem(product.id)} aria-label="Eliminar">
+                    <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => removeItem(product.id)} aria-label="Eliminar">
                       <Trash2 className="h-4 w-4 text-red-500" />
                     </Button>
                   </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-lg font-bold text-primary">{formatPrice(product.discount ? product.price * (1 - product.discount / 100) : product.price)}</p>
+                  <div className="text-right">
+                    <p className="text-lg font-bold text-primary">{formatPrice(product.discount ? product.price * (1 - product.discount / 100) : product.price)}</p>
+                  </div>
                 </div>
               </div>
             ))}

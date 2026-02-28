@@ -159,12 +159,12 @@ export default function OrdenesPage() {
   })
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-            <ShoppingCart className="h-8 w-8 text-amber-600" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-3">
+            <ShoppingCart className="h-7 w-7 sm:h-8 sm:w-8 text-amber-600" />
             Gestión de Órdenes
           </h1>
           <p className="text-gray-500 mt-1">Administra los pedidos del sistema</p>
@@ -173,6 +173,7 @@ export default function OrdenesPage() {
           variant="outline" 
           onClick={loadOrders}
           disabled={isLoading}
+          className="w-full sm:w-auto"
         >
           <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
           Actualizar
@@ -272,7 +273,56 @@ export default function OrdenesPage() {
           </div>
         ) : (
           <>
-            <table className="w-full">
+            {/* Mobile Card Layout */}
+            <div className="md:hidden divide-y divide-gray-100">
+              {filteredOrders.map((order) => {
+                const statusConfig = STATUS_MAP[order.status]
+                const StatusIcon = statusConfig.icon
+                const totalItems = order.items.reduce((sum, i) => sum + i.quantity, 0)
+                
+                return (
+                  <div key={order.id} className="p-4 hover:bg-gray-50">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <p className="font-medium text-gray-900">{order.orderNumber}</p>
+                        <p className="text-xs text-gray-400">{formatDate(order.createdAt)}</p>
+                      </div>
+                      <Link href={`/admin/ordenes/${order.id}`}>
+                        <Button variant="ghost" size="icon" className="h-10 w-10 text-gray-600 hover:text-amber-600">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </Link>
+                    </div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <p className="text-sm text-gray-600">{totalItems} producto{totalItems !== 1 ? 's' : ''}</p>
+                      <span className="text-gray-300">·</span>
+                      <p className="font-semibold text-gray-900">{formatCurrency(order.total)}</p>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm text-gray-500">{order.branch?.name || "Sin asignar"}</span>
+                      {processingId === order.id ? (
+                        <Loader2 className="h-5 w-5 text-amber-600 animate-spin" />
+                      ) : (
+                        <select
+                          value={order.status}
+                          onChange={(e) => handleStatusChange(order.id, e.target.value as OrderStatus)}
+                          className={`text-xs font-medium px-3 py-1.5 rounded-full border-0 focus:ring-2 focus:ring-amber-500 ${statusConfig.color}`}
+                          disabled={order.status === 'CANCELLED' || order.status === 'DELIVERED' || order.status === 'PICKED_UP'}
+                        >
+                          {STATUS_OPTIONS.map(s => (
+                            <option key={s.value} value={s.value}>{s.label}</option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Desktop Table Layout */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Orden</th>
@@ -343,6 +393,7 @@ export default function OrdenesPage() {
                 })}
               </tbody>
             </table>
+            </div>
             
             {/* Pagination */}
             {totalPages > 1 && (

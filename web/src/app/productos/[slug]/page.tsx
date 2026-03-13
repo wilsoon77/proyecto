@@ -165,7 +165,7 @@ export default function ProductDetailPage() {
               <div className="w-12 text-center">{qty}</div>
               <button
                 className="px-3 py-2 text-lg hover:bg-gray-100"
-                onClick={() => setQty(q => q + 1)}
+                onClick={() => setQty(q => Math.min(q + 1, product.stock > 0 ? product.stock : 999))}
                 aria-label="Aumentar"
               >
                 +
@@ -180,7 +180,6 @@ export default function ProductDetailPage() {
               disabled={!canAdd} 
               onClick={() => { 
                 addItem(product, qty)
-                show(`Agregado: ${product.name} × ${qty}`, { variant: 'success' })
               }}
             >
               Agregar al carrito

@@ -19,20 +19,29 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
+// Cache de sucursales para evitar re-fetch en cada navegación (#62)
+let branchesCache: ApiBranch[] | null = null
+
 export function Navbar() {
   const { itemCount } = useCart()
   const { user, isLoggedIn, logout, isLoading } = useAuth()
-  const [branches, setBranches] = useState<ApiBranch[]>([])
+  const [branches, setBranches] = useState<ApiBranch[]>(branchesCache || [])
   const [selectedBranch, setSelectedBranch] = useState<ApiBranch | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const pathname = usePathname()
 
-  // Cargar sucursales desde la API
+  // Cargar sucursales desde la API (con cache)
   useEffect(() => {
+    if (branchesCache) {
+      const savedSlug = typeof window !== 'undefined' ? localStorage.getItem('selectedBranch') : null
+      const saved = savedSlug ? branchesCache.find(b => b.slug === savedSlug) : null
+      setSelectedBranch(saved || branchesCache[0] || null)
+      return
+    }
     branchesService.list()
       .then(data => {
+        branchesCache = data
         setBranches(data)
-        // Restaurar la sucursal guardada en localStorage
         const savedSlug = typeof window !== 'undefined' ? localStorage.getItem('selectedBranch') : null
         const saved = savedSlug ? data.find(b => b.slug === savedSlug) : null
         setSelectedBranch(saved || data[0] || null)

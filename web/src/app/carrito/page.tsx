@@ -1,16 +1,19 @@
 "use client"
 
+import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useCart } from "@/context/CartContext"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { formatPrice } from "@/lib/utils"
 import { ORDER_CONFIG, ROUTES } from "@/lib/constants"
 import { Trash2, Plus, Minus } from "lucide-react"
 
 export default function CarritoPage() {
   const { items, itemCount, subtotal, updateQuantity, removeItem, clearCart } = useCart()
+  const [showClearConfirm, setShowClearConfirm] = useState(false)
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
@@ -54,7 +57,10 @@ export default function CarritoPage() {
                         type="number"
                         min={1}
                         value={quantity}
-                        onChange={(e) => updateQuantity(product.id, Number(e.target.value))}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value, 10)
+                          if (!isNaN(val) && val >= 1) updateQuantity(product.id, val)
+                        }}
                         className="h-9 w-14 border-0 text-center"
                       />
                       <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => updateQuantity(product.id, quantity + 1)} aria-label="Aumentar">
@@ -66,7 +72,7 @@ export default function CarritoPage() {
                     </Button>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-bold text-primary">{formatPrice(product.discount ? product.price * (1 - product.discount / 100) : product.price)}</p>
+                    <p className="text-lg font-bold text-primary">{formatPrice((product.discount ? product.price * (1 - product.discount / 100) : product.price) * quantity)}</p>
                   </div>
                 </div>
               </div>
@@ -100,7 +106,16 @@ export default function CarritoPage() {
               ) : (
                 <Button className="mt-4 w-full" disabled>Confirmar Pedido</Button>
               )}
-              <Button variant="ghost" className="mt-2 w-full" onClick={clearCart}>Vaciar Carrito</Button>
+              <Button variant="ghost" className="mt-2 w-full" onClick={() => setShowClearConfirm(true)}>Vaciar Carrito</Button>
+              <ConfirmDialog
+                isOpen={showClearConfirm}
+                title="¿Vaciar carrito?"
+                message="Se eliminarán todos los productos de tu carrito. Esta acción no se puede deshacer."
+                confirmText="Sí, vaciar"
+                onConfirm={() => { clearCart(); setShowClearConfirm(false) }}
+                onCancel={() => setShowClearConfirm(false)}
+                variant="danger"
+              />
             </div>
             <div className="rounded-lg border bg-white p-4 text-sm text-gray-600">
               <p>📍 Retira en sucursal. Pedido mínimo: {formatPrice(ORDER_CONFIG.minOrderAmount)}. Pago al recoger.</p>

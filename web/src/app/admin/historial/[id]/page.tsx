@@ -19,7 +19,7 @@ import {
   Hash,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useToast } from "@/components/ui/toast"
+import { useToast } from "@/context/ToastContext"
 import { auditService, type AuditLog } from "@/lib/api"
 import { summarizeAudit, ACTION_LABELS, ENTITY_LABELS } from "@/lib/audit-helpers"
 
@@ -44,16 +44,11 @@ const ACTION_COLORS: Record<string, { bg: string; text: string }> = {
   STATUS_CHANGE: { bg: "bg-amber-100", text: "text-amber-700" },
 }
 
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleString("es-GT", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  })
-}
+import { formatDateString } from "@/lib/utils"
+
+const formatDate = (dateStr: string) => formatDateString(dateStr, {
+  day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit'
+})
 
 export default function HistorialDetallePage() {
   const params = useParams()

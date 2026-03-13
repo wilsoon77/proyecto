@@ -27,6 +27,7 @@ export default function CheckoutPage() {
   // Selección de sucursal para recoger
   const [branches, setBranches] = useState<ApiBranch[]>([])
   const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null)
+  const [branchesError, setBranchesError] = useState(false)
 
   const belowMin = subtotal > 0 && subtotal < ORDER_CONFIG.minOrderAmount
 
@@ -39,18 +40,20 @@ export default function CheckoutPage() {
   // Cargar sucursales
   useEffect(() => {
     const loadBranches = async () => {
+      setBranchesError(false)
       try {
         const branchList = await branchesService.list()
         setBranches(branchList)
-        if (branchList.length > 0 && !selectedBranchId) {
+        if (branchList.length > 0) {
           setSelectedBranchId(branchList[0].id)
         }
       } catch (err) {
         console.error('Error cargando sucursales:', err)
+        setBranchesError(true)
       }
     }
     loadBranches()
-  }, [selectedBranchId])
+  }, [])
 
   // Pre-fill datos del usuario
   useEffect(() => {
@@ -100,6 +103,7 @@ export default function CheckoutPage() {
 
         const orderData = {
           branchSlug: selectedBranch.slug,
+          customerNotes: customerNotes.trim() || undefined,
           items: items.map(item => ({
             productSlug: item.product.slug,
             quantity: item.quantity
@@ -193,12 +197,12 @@ export default function CheckoutPage() {
             <h2 className="mb-4 text-xl font-semibold">Datos de contacto</h2>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <label className="mb-1 block text-sm font-medium">Nombre completo</label>
-                <Input value={fullName} onChange={e=>setFullName(e.target.value)} placeholder="Ej. Juan Pérez" />
+                <label htmlFor="checkout-fullname" className="mb-1 block text-sm font-medium">Nombre completo</label>
+                <Input id="checkout-fullname" value={fullName} onChange={e=>setFullName(e.target.value)} placeholder="Ej. Juan Pérez" />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium">Teléfono (WhatsApp)</label>
-                <Input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="Ej. 5555-5555" />
+                <label htmlFor="checkout-phone" className="mb-1 block text-sm font-medium">Teléfono (WhatsApp)</label>
+                <Input id="checkout-phone" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="Ej. 5555-5555" />
               </div>
             </div>
           </div>
@@ -232,6 +236,12 @@ export default function CheckoutPage() {
                     </div>
                   </label>
                 ))}
+              </div>
+            ) : branchesError ? (
+              <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+                <p className="font-medium">Error al cargar sucursales</p>
+                <p>Verifica tu conexión a internet e intenta de nuevo.</p>
+                <Button variant="outline" size="sm" className="mt-2" onClick={() => window.location.reload()}>Reintentar</Button>
               </div>
             ) : (
               <p className="text-sm text-gray-500">Cargando sucursales...</p>

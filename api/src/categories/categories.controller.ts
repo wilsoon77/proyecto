@@ -28,7 +28,6 @@ import { Roles } from '../auth/roles.decorator.js';
 import { ProductsService } from '../products/products.service.js';
 import { setPaginationHeaders } from '../common/utils/pagination.util.js';
 import { AuditService } from '../audit/audit.service.js';
-import { PrismaService } from '../prisma/prisma.service.js';
 import { getChangedFields, getClientIp } from '../common/utils/audit.util.js';
 import type { Response } from 'express';
 
@@ -39,28 +38,7 @@ export class CategoriesController {
     private readonly categoriesService: CategoriesService,
     private readonly productsService: ProductsService,
     private readonly auditService: AuditService,
-    private readonly prisma: PrismaService,
   ) {}
-
-  /**
-   * Helper para obtener nombre del usuario desde la BD
-   */
-  private async getUserName(userId: string): Promise<string> {
-    if (!userId) return 'Sistema';
-    try {
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-        select: { firstName: true, lastName: true, email: true },
-      });
-      if (user) {
-        const name = `${user.firstName || ''} ${user.lastName || ''}`.trim();
-        return name || user.email || 'Usuario';
-      }
-    } catch (e) {
-      // Ignorar errores
-    }
-    return 'Sistema';
-  }
 
   @Get()
   @ApiOperation({ summary: 'Listar categorías', description: 'Obtiene todas las categorías con conteo de productos.' })
@@ -100,7 +78,7 @@ export class CategoriesController {
     const category = await this.categoriesService.create(createCategoryDto);
     
     // Registrar en auditoría
-    const userName = await this.getUserName(req.user?.userId);
+    const userName = await this.auditService.getUserName(req.user?.userId);
     await this.auditService.log({
       userId: req.user?.userId,
       userName,
@@ -141,7 +119,7 @@ export class CategoriesController {
     const changedFields = oldCategory
       ? getChangedFields(oldCategory as Record<string, unknown>, updateCategoryDto as unknown as Record<string, unknown>)
       : Object.keys(updateCategoryDto);
-    const userName = await this.getUserName(req.user?.userId);
+    const userName = await this.auditService.getUserName(req.user?.userId);
     await this.auditService.log({
       userId: req.user?.userId,
       userName,
@@ -180,7 +158,7 @@ export class CategoriesController {
     const result = await this.categoriesService.remove(slug);
     
     // Registrar en auditoría
-    const userName = await this.getUserName(req.user?.userId);
+    const userName = await this.auditService.getUserName(req.user?.userId);
     await this.auditService.log({
       userId: req.user?.userId,
       userName,

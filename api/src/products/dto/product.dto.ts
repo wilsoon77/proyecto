@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsInt, IsNumber, IsOptional, IsString, Min, MinLength } from 'class-validator';
+import { IsBoolean, IsInt, IsNumber, IsOptional, IsString, Max, Min, MinLength } from 'class-validator';
 
 export class ProductDto {
   @ApiProperty({ example: 1 }) id!: number;
@@ -19,9 +19,6 @@ export class CreateProductDto {
 
   @ApiProperty({ example: 'Concha' })
   @IsString() @MinLength(2) name!: string;
-
-  @ApiProperty({ example: 'concha' })
-  @IsString() slug!: string;
 
   @ApiProperty({ example: 'Pan dulce tradicional', required: false })
   @IsOptional() @IsString() description?: string;
@@ -52,17 +49,14 @@ export class UpdateProductDto {
   @ApiProperty({ example: 'Concha vainilla', required: false })
   @IsOptional() @IsString() name?: string;
 
-  @ApiProperty({ example: 'concha-vainilla', required: false })
-  @IsOptional() @IsString() slug?: string;
-
   @ApiProperty({ example: 'Pan dulce con vainilla', required: false })
   @IsOptional() @IsString() description?: string;
 
   @ApiProperty({ example: 11.0, required: false })
   @IsOptional() @IsNumber() price?: number;
 
-  @ApiProperty({ example: 5, required: false })
-  @IsOptional() @IsInt() discountPct?: number;
+  @ApiProperty({ example: 5, required: false, minimum: 0, maximum: 100 })
+  @IsOptional() @IsInt() @Min(0) @Max(100) discountPct?: number;
 
   @ApiProperty({ example: 'pan-dulce', required: false })
   @IsOptional() @IsString() categorySlug?: string;
@@ -96,6 +90,6 @@ export class PutProductDto {
   @IsOptional() @IsString() origin?: string;
   @ApiProperty({ example: true, required: false })
   @IsOptional() @IsBoolean() isNew?: boolean;
-  @ApiProperty({ example: 5, required: false })
-  @IsOptional() @IsInt() discountPct?: number;
+  @ApiProperty({ example: 5, required: false, minimum: 0, maximum: 100 })
+  @IsOptional() @IsInt() @Min(0) @Max(100) discountPct?: number;
 }

@@ -83,8 +83,8 @@ export default function ResetPasswordPage() {
       return
     }
 
-    if (password.length < 6) {
-      setError("La contraseña debe tener al menos 6 caracteres")
+    if (password.length < 8) {
+      setError("La contraseña debe tener al menos 8 caracteres")
       return
     }
 
@@ -106,7 +106,7 @@ export default function ResetPasswordPage() {
         throw new Error("No hay sesión válida. Por favor, usa el enlace del email nuevamente.")
       }
 
-      const userId = session.user.id
+      const recoveryAccessToken = session.access_token
       
       // Paso 1: Actualizar en Supabase Auth
       const { error } = await supabase.auth.updateUser({
@@ -119,18 +119,23 @@ export default function ResetPasswordPage() {
       
       // Paso 2: Actualizar en el backend (tabla User)
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://proyecto-dp81.onrender.com'
-      const backendResponse = await fetch(`${apiUrl}/auth/reset-password`, {
+      const backendResponse = await fetch(`${apiUrl}/auth/reset-password/recovery`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${recoveryAccessToken}`,
         },
         body: JSON.stringify({
-          supabaseUserId: userId,
           newPassword: password,
         }),
       })
 
-      const backendData = await backendResponse.json()
+      let backendData: any = null
+      try {
+        backendData = await backendResponse.json()
+      } catch {
+        backendData = null
+      }
       
       if (!backendResponse.ok) {
         throw new Error(backendData.message || 'Error al actualizar en el servidor')
@@ -224,7 +229,7 @@ export default function ResetPasswordPage() {
               className="w-full rounded-md border p-3 pr-10 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               placeholder="••••••••"
               disabled={isLoading}
-              minLength={6}
+              minLength={8}
             />
             <button
               type="button"
@@ -258,7 +263,7 @@ export default function ResetPasswordPage() {
               className="w-full rounded-md border p-3 pr-10 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               placeholder="••••••••"
               disabled={isLoading}
-              minLength={6}
+              minLength={8}
             />
             <button
               type="button"

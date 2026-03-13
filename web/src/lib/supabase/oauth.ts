@@ -1,11 +1,13 @@
 import { createClient } from './client'
 
-export type OAuthProvider = 'google' | 'github'
-
-export async function signInWithOAuth(provider: OAuthProvider) {
+/**
+ * Inicia sesión con un proveedor OAuth (Google, GitHub).
+ * Redirige al usuario al flujo de autenticación del proveedor.
+ */
+export async function signInWithOAuth(provider: 'google' | 'github') {
   const supabase = createClient()
-  
-  const { data, error } = await supabase.auth.signInWithOAuth({
+
+  const { error } = await supabase.auth.signInWithOAuth({
     provider,
     options: {
       redirectTo: `${window.location.origin}/auth/callback`,
@@ -13,28 +15,6 @@ export async function signInWithOAuth(provider: OAuthProvider) {
   })
 
   if (error) {
-    throw new Error(error.message)
-  }
-
-  return data
-}
-
-export async function getSession() {
-  const supabase = createClient()
-  const { data: { session }, error } = await supabase.auth.getSession()
-  
-  if (error) {
-    throw new Error(error.message)
-  }
-  
-  return session
-}
-
-export async function signOut() {
-  const supabase = createClient()
-  const { error } = await supabase.auth.signOut()
-  
-  if (error) {
-    throw new Error(error.message)
+    throw new Error(`Error al iniciar sesión con ${provider}: ${error.message}`)
   }
 }

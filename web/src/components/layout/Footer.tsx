@@ -148,26 +148,10 @@ export function Footer() {
             <ul className="space-y-3 text-sm">
               <li>
                 <Link
-                  href="/ayuda"
-                  className="text-gray-600 transition-colors hover:text-primary"
-                >
-                  Centro de Ayuda
-                </Link>
-              </li>
-              <li>
-                <Link
                   href="/sucursales"
                   className="text-gray-600 transition-colors hover:text-primary"
                 >
                   Sucursales y Retiro
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/devoluciones"
-                  className="text-gray-600 transition-colors hover:text-primary"
-                >
-                  Devoluciones
                 </Link>
               </li>
               <li>
@@ -180,10 +164,10 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="/faq"
+                  href={ROUTES.contact}
                   className="text-gray-600 transition-colors hover:text-primary"
                 >
-                  Preguntas Frecuentes
+                  Contacto
                 </Link>
               </li>
             </ul>

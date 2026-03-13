@@ -1,11 +1,12 @@
-import { Body, Controller, Param, ParseIntPipe, Post, Get, Query, UseGuards, Req, Res, Patch } from '@nestjs/common';
+import { Body, Controller, Param, ParseIntPipe, Post, Get, Query, UseGuards, Req, Res, Patch, ForbiddenException } from '@nestjs/common';
 import { ApiTags, ApiBody, ApiQuery, ApiBearerAuth, ApiOperation, ApiResponse, ApiBadRequestResponse } from '@nestjs/swagger';
 import { OrdersService } from './orders.service.js';
 import { ReserveOrderDto } from './dto.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
+import { RolesGuard } from '../auth/roles.guard.js';
+import { Roles } from '../auth/roles.decorator.js';
 import { setPaginationHeaders } from '../common/utils/pagination.util.js';
 import { AuditService } from '../audit/audit.service.js';
-import { PrismaService } from '../prisma/prisma.service.js';
 import { getClientIp } from '../common/utils/audit.util.js';
 import type { Response } from 'express';
 
@@ -15,28 +16,7 @@ export class OrdersController {
   constructor(
     private readonly service: OrdersService,
     private readonly auditService: AuditService,
-    private readonly prisma: PrismaService,
   ) {}
-
-  /**
-   * Helper para obtener nombre del usuario desde la BD
-   */
-  private async getUserName(userId: string): Promise<string> {
-    if (!userId) return 'Sistema';
-    try {
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-        select: { firstName: true, lastName: true, email: true },
-      });
-      if (user) {
-        const name = `${user.firstName || ''} ${user.lastName || ''}`.trim();
-        return name || user.email || 'Usuario';
-      }
-    } catch (e) {
-      // Ignorar errores
-    }
-    return 'Sistema';
-  }
 
   @Post('reserve')
   @UseGuards(JwtAuthGuard)
@@ -49,7 +29,7 @@ export class OrdersController {
     const order = await this.service.reserve(dto, req.user?.userId);
     
     // Registrar en auditoría
-    const userName = await this.getUserName(req.user?.userId);
+    const userName = await this.auditService.getUserName(req.user?.userId);
     await this.auditService.log({
       userId: req.user?.userId,
       userName,
@@ -66,16 +46,20 @@ export class OrdersController {
   }
 
   @Post(':id/cancel')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Cancelar orden', description: 'Libera las reservas de inventario y marca la orden como CANCELLED.' })
+  @ApiOperation({ summary: 'Cancelar orden', description: 'Libera las reservas de inventario y marca la orden como CANCELLED. El cliente puede cancelar su propia orden; ADMIN puede cancelar cualquiera.' })
   async cancel(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
-    // Obtener info de la orden antes de cancelar
     const orderInfo = await this.service.detail(id);
+    // Verificar que el usuario sea el dueño de la orden o sea ADMIN/EMPLOYEE
+    const role = req.user?.role;
+    if (role !== 'ADMIN' && role !== 'EMPLOYEE' && orderInfo?.userId !== req.user?.userId) {
+      throw new ForbiddenException('No tienes permiso para cancelar esta orden');
+    }
     const result = await this.service.cancel(id, req.user?.userId);
     
     // Registrar en auditoría
-    const userName = await this.getUserName(req.user?.userId);
+    const userName = await this.auditService.getUserName(req.user?.userId);
     await this.auditService.log({
       userId: req.user?.userId,
       userName,
@@ -92,16 +76,17 @@ export class OrdersController {
   }
 
   @Post(':id/pickup')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'EMPLOYEE')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Entregar orden', description: 'Descuenta inventario con movimiento VENTA y marca DELIVERED.' })
+  @ApiOperation({ summary: 'Entregar orden', description: 'Descuenta inventario con movimiento VENTA y marca DELIVERED. Requiere rol ADMIN o EMPLOYEE.' })
   async pickup(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
     // Obtener info de la orden antes de entregar
     const orderInfo = await this.service.detail(id);
     const result = await this.service.pickup(id, req.user?.userId);
     
     // Registrar en auditoría
-    const userName = await this.getUserName(req.user?.userId);
+    const userName = await this.auditService.getUserName(req.user?.userId);
     await this.auditService.log({
       userId: req.user?.userId,
       userName,
@@ -118,9 +103,10 @@ export class OrdersController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'EMPLOYEE')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Listar órdenes', description: 'Listado paginado con filtros por sucursal y estado.' })
+  @ApiOperation({ summary: 'Listar órdenes', description: 'Listado paginado con filtros por sucursal y estado. Requiere rol ADMIN o EMPLOYEE.' })
   @ApiQuery({ name: 'branchSlug', required: false })
   @ApiQuery({ name: 'status', required: false })
   @ApiQuery({ name: 'page', required: false })
@@ -202,16 +188,17 @@ export class OrdersController {
   }
 
   @Post(':id/confirm')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'EMPLOYEE')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Confirmar orden', description: 'Cambia estado de PENDING a CONFIRMED (pago recibido).' })
+  @ApiOperation({ summary: 'Confirmar orden', description: 'Cambia estado de PENDING a CONFIRMED (pago recibido). Requiere rol ADMIN o EMPLOYEE.' })
   @ApiResponse({ status: 200, description: 'Orden confirmada' })
   @ApiBadRequestResponse({ description: 'Solo se pueden confirmar órdenes PENDING' })
   async confirmOrder(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
     const order = await this.service.confirm(id);
     
     // Registrar en auditoría
-    const userName = await this.getUserName(req.user?.userId);
+    const userName = await this.auditService.getUserName(req.user?.userId);
     await this.auditService.log({
       userId: req.user?.userId,
       userName,
@@ -228,9 +215,10 @@ export class OrdersController {
   }
 
   @Patch(':id/status')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'EMPLOYEE')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Cambiar estado de orden', description: 'Actualiza el estado de una orden. Válido para ADMIN y EMPLOYEE.' })
+  @ApiOperation({ summary: 'Cambiar estado de orden', description: 'Actualiza el estado de una orden. Requiere rol ADMIN o EMPLOYEE.' })
   @ApiBody({ schema: { example: { status: 'CONFIRMED' }, properties: { status: { type: 'string', description: 'Nuevo estado (PENDING, CONFIRMED, PREPARING, READY, IN_DELIVERY, DELIVERED, CANCELLED)' } } } })
   @ApiResponse({ status: 200, description: 'Estado actualizado' })
   @ApiBadRequestResponse({ description: 'Estado inválido o error en la actualización' })
@@ -238,7 +226,7 @@ export class OrdersController {
     const order = await this.service.updateStatus(id, status);
     
     // Registrar en auditoría
-    const userName = await this.getUserName(req.user?.userId);
+    const userName = await this.auditService.getUserName(req.user?.userId);
     await this.auditService.log({
       userId: req.user?.userId,
       userName,

@@ -64,27 +64,38 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // Total = subtotal (sistema de reserva, pago al recoger)
   const total = subtotal
 
-  // Agregar producto al carrito
+  // Agregar producto al carrito (con validación de stock)
   const addItem = useCallback((product: Product, quantity: number = 1) => {
+    if (quantity <= 0 || isNaN(quantity)) return
+
     setItems((prevItems) => {
       const existingItem = prevItems.find((item) => item.product.id === product.id)
+      const currentQty = existingItem ? existingItem.quantity : 0
+      const maxStock = product.stock > 0 ? product.stock : Infinity
+
+      // Verificar que no exceda el stock disponible
+      if (currentQty + quantity > maxStock) {
+        const canAdd = maxStock - currentQty
+        if (canAdd <= 0) {
+          try { show(`No hay más stock disponible de ${product.name}`, { variant: 'error' }) } catch {}
+          return prevItems
+        }
+        quantity = canAdd
+        try { show(`Solo se agregaron ${canAdd} unidades (stock limitado)`, { variant: 'info' }) } catch {}
+      }
 
       if (existingItem) {
-        // Si ya existe, aumentar cantidad
-        const updated = prevItems.map((item) =>
+        return prevItems.map((item) =>
           item.product.id === product.id
             ? { ...item, quantity: item.quantity + quantity }
             : item
         )
-        return updated
       } else {
-        // Si no existe, agregarlo
-        const updated = [...prevItems, { product, quantity }]
-        return updated
+        return [...prevItems, { product, quantity }]
       }
     })
     try { show(`Agregado: ${product.name} × ${quantity}`, { variant: 'success' }) } catch {}
-  }, [])
+  }, [show])
 
   // Remover producto del carrito
   const removeItem = useCallback((productId: number) => {
@@ -95,8 +106,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [items, show])
 
-  // Actualizar cantidad de un producto
+  // Actualizar cantidad de un producto (con validación de stock y NaN)
   const updateQuantity = useCallback((productId: number, quantity: number) => {
+    // Sanitizar: NaN o negativo → ignorar
+    if (isNaN(quantity) || quantity < 0) return
+
     if (quantity <= 0) {
       removeItem(productId)
       return
@@ -105,9 +119,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
     let prodName: string | undefined
     setItems((prevItems) => {
       const found = prevItems.find(i => i.product.id === productId)
-      if (found) prodName = found.product.name
+      if (!found) return prevItems
+      prodName = found.product.name
+      const maxStock = found.product.stock > 0 ? found.product.stock : Infinity
+      const clampedQty = Math.min(quantity, maxStock)
+      if (clampedQty < quantity) {
+        try { show(`Stock máximo: ${maxStock} unidades`, { variant: 'info' }) } catch {}
+      }
       return prevItems.map((item) =>
-        item.product.id === productId ? { ...item, quantity } : item
+        item.product.id === productId ? { ...item, quantity: clampedQty } : item
       )
     })
     // Debounce toast to avoid spamming on rapid clicks
@@ -164,3 +184,4 @@ export function useCart() {
   }
   return context
 }
+

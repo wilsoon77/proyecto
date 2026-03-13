@@ -26,7 +26,6 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/roles.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
 import { AuditService } from '../audit/audit.service.js';
-import { PrismaService } from '../prisma/prisma.service.js';
 import { getChangedFields, getClientIp } from '../common/utils/audit.util.js';
 
 @Controller('users')
@@ -38,28 +37,7 @@ export class UsersController {
   constructor(
     private readonly usersService: UsersService,
     private readonly auditService: AuditService,
-    private readonly prisma: PrismaService,
   ) {}
-
-  /**
-   * Helper para obtener nombre del usuario que ejecuta la acción
-   */
-  private async getUserName(userId: string): Promise<string> {
-    if (!userId) return 'Sistema';
-    try {
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-        select: { firstName: true, lastName: true, email: true },
-      });
-      if (user) {
-        const name = `${user.firstName || ''} ${user.lastName || ''}`.trim();
-        return name || user.email || 'Usuario';
-      }
-    } catch (e) {
-      // Ignorar errores
-    }
-    return 'Sistema';
-  }
 
   @Get()
   @ApiOperation({ summary: 'Listar usuarios', description: 'Obtiene todos los usuarios (solo ADMIN).' })
@@ -97,7 +75,7 @@ export class UsersController {
     const user = await this.usersService.create(createUserDto);
     
     // Registrar en auditoría
-    const userName = await this.getUserName(req.user?.userId);
+    const userName = await this.auditService.getUserName(req.user?.userId);
     await this.auditService.log({
       userId: req.user?.userId,
       userName,
@@ -136,7 +114,7 @@ export class UsersController {
     const changedFields = oldUser
       ? getChangedFields(oldUser as Record<string, unknown>, updateUserDto as unknown as Record<string, unknown>)
       : Object.keys(updateUserDto);
-    const userName = await this.getUserName(req.user?.userId);
+    const userName = await this.auditService.getUserName(req.user?.userId);
     await this.auditService.log({
       userId: req.user?.userId,
       userName,
@@ -173,7 +151,7 @@ export class UsersController {
     const result = await this.usersService.deactivate(id, req.user.userId);
     
     // Registrar en auditoría
-    const userName = await this.getUserName(req.user?.userId);
+    const userName = await this.auditService.getUserName(req.user?.userId);
     await this.auditService.log({
       userId: req.user?.userId,
       userName,
@@ -202,7 +180,7 @@ export class UsersController {
     const user = await this.usersService.reactivate(id);
     
     // Registrar en auditoría
-    const userName = await this.getUserName(req.user?.userId);
+    const userName = await this.auditService.getUserName(req.user?.userId);
     await this.auditService.log({
       userId: req.user?.userId,
       userName,

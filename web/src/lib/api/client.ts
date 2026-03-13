@@ -25,13 +25,24 @@ export function syncTokensFromCookies(): boolean {
   if (typeof window === 'undefined') return false
   
   const cookieToken = getCookie('auth_token')
+  const cookieRefreshToken = getCookie('auth_refresh_token') || getCookie('refresh_token')
+
   if (cookieToken) {
     localStorage.setItem(TOKEN_KEY, cookieToken)
-    // Limpiar la cookie después de copiar a localStorage
-    document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
-    return true
   }
-  return false
+  if (cookieRefreshToken) {
+    localStorage.setItem(REFRESH_TOKEN_KEY, cookieRefreshToken)
+  }
+
+  const synced = !!cookieToken || !!cookieRefreshToken
+  if (synced) {
+    // Limpiar cookies temporales después de copiarlas a localStorage
+    document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
+    document.cookie = 'auth_refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
+    document.cookie = 'refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
+  }
+
+  return synced
 }
 
 export function getToken(): string | null {

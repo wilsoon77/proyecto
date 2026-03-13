@@ -15,7 +15,7 @@ import {
   ArrowRight,
   Loader2
 } from "lucide-react"
-import { productsService, usersService, branchesService, categoriesService } from "@/lib/api"
+import { productsService, branchesService, categoriesService } from "@/lib/api"
 
 interface SearchResult {
   id: string
@@ -100,16 +100,9 @@ export function GlobalSearch() {
           page.subtitle?.toLowerCase().includes(q)
       )
 
-      // Buscar en productos, usuarios, etc. en paralelo
-      const [productsRes, usersRes, branchesRes, categoriesRes] = await Promise.allSettled([
+      // Buscar en productos, sucursales, categorías en paralelo (sin cargar todos los usuarios)
+      const [productsRes, branchesRes, categoriesRes] = await Promise.allSettled([
         productsService.list({ search: searchQuery, pageSize: 5 }),
-        usersService.list().then(users => 
-          users.filter((u: any) => 
-            u.firstName?.toLowerCase().includes(q) || 
-            u.lastName?.toLowerCase().includes(q) ||
-            u.email?.toLowerCase().includes(q)
-          ).slice(0, 5)
-        ),
         branchesService.list().then(branches =>
           branches.filter((b: any) => b.name?.toLowerCase().includes(q)).slice(0, 3)
         ),
@@ -131,20 +124,6 @@ export function GlobalSearch() {
             type: "product",
             href: `/admin/productos/${p.id}`,
             icon: TYPE_ICONS.product,
-          })
-        })
-      }
-
-      // Usuarios
-      if (usersRes.status === "fulfilled") {
-        usersRes.value.forEach((u: any) => {
-          allResults.push({
-            id: `user-${u.id}`,
-            title: `${u.firstName} ${u.lastName}`,
-            subtitle: u.email,
-            type: "user",
-            href: `/admin/usuarios/${u.id}`,
-            icon: TYPE_ICONS.user,
           })
         })
       }

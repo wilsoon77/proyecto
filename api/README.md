@@ -4,8 +4,6 @@ Backend para el sistema de gestión de panaderías.
 
 ## 📚 Documentación API
 
-**Documentación pública:** [https://bump.sh/wilson-exe/doc/panaderia-api](https://bump.sh/wilson-exe/doc/panaderia-api)
-
 **Swagger local:** http://localhost:4000/docs (cuando el servidor esté corriendo)
 
 ## Stack
@@ -55,16 +53,15 @@ npm run dev
 - Auth (register/login, JWT)
 - Orders (creación, estado)
 - Branches (sucursales)
-- Swagger/OpenAPI (`/docs`) para exportar a Bump.sh
+- Swagger/OpenAPI (`/docs`) para documentación y pruebas
 - Jobs asíncronos (BullMQ) para notificaciones
 
 ## Integración con el frontend
 Cuando el endpoint `/products` esté conectado a Postgres:
 - Sustituir `MOCK_PRODUCTS` por fetch al API desde Next.js (`fetch(process.env.API_URL + '/products')`).
 
-## Bump.sh y Requestly
-- Bump.sh: publicaremos el `openapi.json` generado por Swagger (script futuro `npm run openapi:export`).
-- Requestly: se puede crear reglas para redirigir peticiones del front a staging o mocks de test.
+## Requestly
+- Se puede crear reglas para redirigir peticiones del front a staging o mocks de test.
 
 ## Scripts
 | Script | Descripción |
@@ -75,6 +72,29 @@ Cuando el endpoint `/products` esté conectado a Postgres:
 | `prisma:migrate` | Crea/aplica migraciones en dev. |
 | `prisma:deploy` | Aplica migraciones en producción. |
 | `seed` | Ejecuta el script de seed inicial. |
+
+## Scalar Cloud (OpenAPI automático)
+
+Se agregó el workflow de GitHub Actions [\.github/workflows/scalar-openapi.yml](../.github/workflows/scalar-openapi.yml) para:
+
+- Validar `openapi.json` en Pull Requests.
+- Publicar automáticamente el OpenAPI en Scalar al hacer push a `main`.
+
+### Requisitos para activarlo
+
+1. Crear cuenta en Scalar y obtener un API Key desde el dashboard.
+2. Configurar en GitHub (Settings > Secrets and variables > Actions):
+	- Secret: `SCALAR_API_KEY`
+	- Variable: `SCALAR_NAMESPACE`
+3. Confirmar el slug publicado (actualmente fijo como `panaderia-api` en el workflow).
+4. El workflow usa Node 24 porque `@scalar/cli` requiere Node >= 24.
+
+### Flujo del pipeline
+
+1. Instala dependencias del backend.
+2. Genera `openapi.json` con `npm run openapi:gen:dist`.
+3. Valida el documento con `@scalar/cli`.
+4. Publica a Scalar Registry en `main`.
 
 ## Notas de seguridad
 - Reemplazar secretos por valores seguros antes de deploy.

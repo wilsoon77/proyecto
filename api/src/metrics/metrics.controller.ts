@@ -1,5 +1,8 @@
-import { Controller, Get, Header } from '@nestjs/common';
+import { Controller, Get, Header, UseGuards } from '@nestjs/common';
 import { ApiExcludeEndpoint, ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
+import { RolesGuard } from '../auth/roles.guard.js';
+import { Roles } from '../auth/roles.decorator.js';
 import client from 'prom-client';
 
 // Register default metrics once at module load
@@ -9,8 +12,10 @@ client.collectDefaultMetrics();
 @ApiTags('metrics')
 export class MetricsController {
   @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   @Header('Content-Type', client.register.contentType)
-  @ApiExcludeEndpoint() // omit from swagger UI by default; can be noisy
+  @ApiExcludeEndpoint()
   async metrics(): Promise<string> {
     return await client.register.metrics();
   }

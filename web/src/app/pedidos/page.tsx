@@ -3,21 +3,24 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useAuth } from "@/context/AuthContext"
+import { useToast } from "@/context/ToastContext"
 import { ordersService } from "@/lib/api"
 import type { ApiOrder } from "@/lib/api/types"
 import { Button } from "@/components/ui/button"
-import { ROUTES, ORDER_STATUS_LABELS } from "@/lib/constants"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
+import { ROUTES } from "@/lib/constants"
+import { getOrderStatusLabel } from "@/lib/constants"
 import { formatDate, formatPrice } from "@/lib/utils"
 
-// Mapeo de status de API a labels
-const API_STATUS_LABELS: Record<string, string> = {
-  'PENDING': 'Pendiente',
-  'CONFIRMED': 'Confirmado',
-  'PREPARING': 'En preparación',
-  'READY': 'Listo para recoger',
-  'DELIVERED': 'Entregado',
-  'CANCELLED': 'Cancelado',
-  'PICKED_UP': 'Recogido',
+// Iconos de estado para accesibilidad (#69)
+const STATUS_ICONS: Record<string, string> = {
+  'PENDING': '⏳',
+  'CONFIRMED': '✓',
+  'PREPARING': '🔧',
+  'READY': '📦',
+  'DELIVERED': '✅',
+  'CANCELLED': '✗',
+  'PICKED_UP': '🏠',
 }
 
 export default function PedidosPage() {
@@ -27,6 +30,8 @@ export default function PedidosPage() {
   const [localOrder, setLocalOrder] = useState<Record<string, unknown> | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [cancelingId, setCancelingId] = useState<number | null>(null)
+  const { show } = useToast()
 
   useEffect(() => {
     const loadOrders = async () => {
@@ -116,14 +121,15 @@ export default function PedidosPage() {
                   <p className="text-lg font-semibold">{order.orderNumber}</p>
                 </div>
                 <div>
-                  <span className={`inline-flex rounded-full px-3 py-1 text-sm font-medium ${
+                  <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium ${
                     order.status === 'DELIVERED' || order.status === 'PICKED_UP' 
                       ? 'bg-green-100 text-green-800' 
                       : order.status === 'CANCELLED' 
                         ? 'bg-red-100 text-red-800' 
                         : 'bg-amber-100 text-amber-800'
                   }`}>
-                    {API_STATUS_LABELS[order.status] || order.status}
+                    <span aria-hidden="true">{STATUS_ICONS[order.status] || ''}</span>
+                    {getOrderStatusLabel(order.status)}
                   </span>
                 </div>
               </div>
@@ -159,19 +165,32 @@ export default function PedidosPage() {
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={async () => {
+                    onClick={() => setCancelingId(order.id)}
+                  >
+                    Cancelar pedido
+                  </Button>
+                  <ConfirmDialog
+                    isOpen={cancelingId === order.id}
+                    title="¿Cancelar pedido?"
+                    message={`¿Estás seguro de cancelar el pedido ${order.orderNumber}? Esta acción no se puede deshacer.`}
+                    confirmText="Sí, cancelar"
+                    onConfirm={async () => {
                       try {
                         await ordersService.cancel(order.id)
                         setOrders(prev => prev.map(o => 
                           o.id === order.id ? { ...o, status: 'CANCELLED' } : o
                         ))
+                        show('Pedido cancelado correctamente', { variant: 'success' })
                       } catch (err) {
                         console.error('Error cancelando orden:', err)
+                        show('Error al cancelar el pedido', { variant: 'error' })
+                      } finally {
+                        setCancelingId(null)
                       }
                     }}
-                  >
-                    Cancelar pedido
-                  </Button>
+                    onCancel={() => setCancelingId(null)}
+                    variant="danger"
+                  />
                 </div>
               )}
             </div>
@@ -196,8 +215,9 @@ export default function PedidosPage() {
                 <p className="font-medium">{formatDate(new Date((localOrder as { createdAt?: string }).createdAt || ''))}</p>
               </div>
             </div>
-            <div className="mt-4 inline-flex rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700">
-              {API_STATUS_LABELS[(localOrder as { status?: string }).status || 'PENDING'] || ORDER_STATUS_LABELS.pending || 'Pendiente'}
+            <div className="mt-4 inline-flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700">
+              <span aria-hidden="true">{STATUS_ICONS[(localOrder as { status?: string }).status || 'PENDING'] || '⏳'}</span>
+              {getOrderStatusLabel((localOrder as { status?: string }).status || 'PENDING')}
             </div>
           </div>
 

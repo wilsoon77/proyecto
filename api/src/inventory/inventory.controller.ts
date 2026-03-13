@@ -1,13 +1,20 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { ApiTags, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiQuery, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
+import { RolesGuard } from '../auth/roles.guard.js';
+import { Roles } from '../auth/roles.decorator.js';
 
 @Controller('inventory')
 @ApiTags('inventory')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('ADMIN', 'EMPLOYEE')
+@ApiBearerAuth()
 export class InventoryController {
   constructor(private readonly prisma: PrismaService) {}
 
   @Get()
+  @ApiOperation({ summary: 'Consultar inventario', description: 'Niveles de stock por producto y sucursal. Requiere rol ADMIN o EMPLOYEE.' })
   @ApiQuery({ name: 'product', required: false, description: 'slug del producto' })
   @ApiQuery({ name: 'branch', required: false, description: 'slug de la sucursal' })
   async list(@Query('product') productSlug?: string, @Query('branch') branchSlug?: string) {

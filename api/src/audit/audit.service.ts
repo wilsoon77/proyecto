@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 export interface CreateAuditLogData {
@@ -29,12 +29,31 @@ export class AuditService {
   constructor(private prisma: PrismaService) {}
 
   /**
+   * Obtener nombre del usuario desde la BD (compartido por todos los controllers)
+   */
+  async getUserName(userId?: string): Promise<string> {
+    if (!userId) return 'Sistema';
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { firstName: true, lastName: true, email: true },
+      });
+      if (user) {
+        const name = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+        return name || user.email || 'Usuario';
+      }
+    } catch {
+      // Ignorar errores de BD
+    }
+    return 'Sistema';
+  }
+
+  /**
    * Registrar una acción en el historial de auditoría
    */
   async log(data: CreateAuditLogData): Promise<void> {
-    console.log('[AUDIT] Intentando registrar:', JSON.stringify(data, null, 2));
     try {
-      const result = await this.prisma.auditLog.create({
+      await this.prisma.auditLog.create({
         data: {
           userId: data.userId,
           userName: data.userName,
@@ -47,7 +66,6 @@ export class AuditService {
           userAgent: data.userAgent,
         },
       });
-      console.log('[AUDIT] Registro creado exitosamente:', result.id);
     } catch (error) {
       // No lanzar error para no interrumpir la operación principal
       console.error('[AUDIT] Error al registrar auditoría:', error);
@@ -126,11 +144,11 @@ export class AuditService {
         ...log,
         details: log.details ? JSON.parse(log.details) : null,
       })),
-      pagination: {
+      meta: {
+        total,
+        pageCount: Math.ceil(total / pageSize),
         page,
         pageSize,
-        total,
-        totalPages: Math.ceil(total / pageSize),
       },
     };
   }
@@ -243,7 +261,7 @@ export class AuditService {
         },
       },
     });
-    if (!log) return null;
+    if (!log) throw new NotFoundException('Registro de auditoría no encontrado');
     return {
       ...log,
       details: log.details ? JSON.parse(log.details) : null,

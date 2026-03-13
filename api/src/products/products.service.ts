@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { generateSlug } from '../common/utils/slug.util.js';
 
 export interface ProductDTO {
   id: number;
@@ -167,7 +168,7 @@ export class ProductsService {
     };
   }
 
-  async updateById(id: number, data: { sku?: string; name?: string; slug?: string; description?: string; price?: number; discountPct?: number; categorySlug?: string; origin?: string; isNew?: boolean; isActive?: boolean; isAvailable?: boolean; imageUrl?: string }) {
+  async updateById(id: number, data: { sku?: string; name?: string; description?: string; price?: number; discountPct?: number; categorySlug?: string; origin?: string; isNew?: boolean; isActive?: boolean; isAvailable?: boolean; imageUrl?: string }) {
     const prod = await this.prisma.product.findUnique({ where: { id } });
     if (!prod) throw new NotFoundException('Producto no encontrado');
     
@@ -177,10 +178,16 @@ export class ProductsService {
       if (existingSku) throw new BadRequestException('SKU ya existe');
     }
     
-    // Validar slug único si cambia
-    if (data.slug && data.slug !== prod.slug) {
-      const existingSlug = await this.prisma.product.findUnique({ where: { slug: data.slug } });
-      if (existingSlug) throw new BadRequestException('Slug ya existe');
+    // Auto-regenerate slug if name changes
+    let newSlug: string | undefined;
+    if (data.name && data.name !== prod.name) {
+      let base = generateSlug(data.name);
+      if (!base) base = prod.slug;
+      newSlug = base;
+      let suffix = 1;
+      while (await this.prisma.product.findFirst({ where: { slug: newSlug, NOT: { id: prod.id } } })) {
+        newSlug = `${base}-${suffix++}`;
+      }
     }
     
     let categoryId = prod.categoryId;
@@ -195,7 +202,7 @@ export class ProductsService {
       data: { 
         sku: data.sku, 
         name: data.name,
-        slug: data.slug,
+        slug: newSlug,
         description: data.description, 
         price: data.price, 
         discountPct: data.discountPct, 
@@ -245,7 +252,14 @@ export class ProductsService {
     const prod = await this.prisma.product.findUnique({ where: { id }, include: { orderItems: true } });
     if (!prod) throw new NotFoundException('Producto no encontrado');
     if (prod.orderItems.length) throw new BadRequestException('No se puede eliminar: producto referenciado en órdenes');
-    await this.prisma.product.delete({ where: { id } });
+
+    // Eliminar registros dependientes y producto en una transacción
+    await this.prisma.$transaction([
+      this.prisma.stockMovement.deleteMany({ where: { productId: id } }),
+      this.prisma.inventory.deleteMany({ where: { productId: id } }),
+      this.prisma.productImage.deleteMany({ where: { productId: id } }),
+      this.prisma.product.delete({ where: { id } }),
+    ]);
     return { deleted: true, id };
   }
 
@@ -262,13 +276,21 @@ export class ProductsService {
     return invAll.reduce((sum, i) => sum + (i.quantity - i.reserved), 0);
   }
 
-  async create(data: { sku: string; name: string; slug: string; description?: string; price: number; categorySlug: string; origin?: string; isNew?: boolean; isAvailable?: boolean; imageUrl?: string }) {
+  async create(data: { sku: string; name: string; description?: string; price: number; categorySlug: string; origin?: string; isNew?: boolean; isAvailable?: boolean; imageUrl?: string }) {
     const category = await this.prisma.category.findUnique({ where: { slug: data.categorySlug } });
     if (!category) throw new BadRequestException('Categoría no encontrada');
-    const existing = await this.prisma.product.findUnique({ where: { slug: data.slug } });
-    if (existing) throw new BadRequestException('Slug ya existe');
+    
     const existingSku = await this.prisma.product.findUnique({ where: { sku: data.sku } });
     if (existingSku) throw new BadRequestException('SKU ya existe');
+
+    // Auto-generate unique slug from name
+    let baseSlug = generateSlug(data.name);
+    if (!baseSlug) baseSlug = data.sku.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+    let slug = baseSlug;
+    let suffix = 1;
+    while (await this.prisma.product.findUnique({ where: { slug } })) {
+      slug = `${baseSlug}-${suffix++}`;
+    }
     
     // Usar transacción para crear producto + inventarios en todas las sucursales
     return this.prisma.$transaction(async (tx) => {
@@ -277,7 +299,7 @@ export class ProductsService {
         data: { 
           sku: data.sku, 
           name: data.name, 
-          slug: data.slug, 
+          slug, 
           description: data.description, 
           price: data.price, 
           categoryId: category.id, 
@@ -324,13 +346,24 @@ export class ProductsService {
       const existingSku = await this.prisma.product.findUnique({ where: { sku: data.sku } });
       if (existingSku) throw new BadRequestException('SKU ya existe');
     }
+    // Auto-regenerate slug if name changes
+    let newSlug: string | undefined;
+    if (data.name && data.name !== prod.name) {
+      let base = generateSlug(data.name);
+      if (!base) base = prod.slug;
+      newSlug = base;
+      let suffix = 1;
+      while (await this.prisma.product.findFirst({ where: { slug: newSlug, NOT: { id: prod.id } } })) {
+        newSlug = `${base}-${suffix++}`;
+      }
+    }
     let categoryId = prod.categoryId;
     if (data.categorySlug) {
       const category = await this.prisma.category.findUnique({ where: { slug: data.categorySlug } });
       if (!category) throw new BadRequestException('Categoría no encontrada');
       categoryId = category.id;
     }
-    const updated = await this.prisma.product.update({ where: { id: prod.id }, data: { sku: data.sku, name: data.name, description: data.description, price: data.price, discountPct: data.discountPct, categoryId, origin: (data.origin as any) ?? undefined, isNew: data.isNew, isActive: data.isActive, isAvailable: data.isAvailable } });
+    const updated = await this.prisma.product.update({ where: { id: prod.id }, data: { sku: data.sku, name: data.name, slug: newSlug, description: data.description, price: data.price, discountPct: data.discountPct, categoryId, origin: (data.origin as any) ?? undefined, isNew: data.isNew, isActive: data.isActive, isAvailable: data.isAvailable } });
     return updated;
   }
 
@@ -344,7 +377,14 @@ export class ProductsService {
     const prod = await this.prisma.product.findUnique({ where: { slug }, include: { orderItems: true } });
     if (!prod) throw new NotFoundException('Producto no encontrado');
     if (prod.orderItems.length) throw new BadRequestException('No se puede eliminar: producto referenciado en órdenes');
-    await this.prisma.product.delete({ where: { id: prod.id } });
+
+    // Eliminar registros dependientes y producto en una transacción
+    await this.prisma.$transaction([
+      this.prisma.stockMovement.deleteMany({ where: { productId: prod.id } }),
+      this.prisma.inventory.deleteMany({ where: { productId: prod.id } }),
+      this.prisma.productImage.deleteMany({ where: { productId: prod.id } }),
+      this.prisma.product.delete({ where: { id: prod.id } }),
+    ]);
     return { deleted: true, slug };
   }
 

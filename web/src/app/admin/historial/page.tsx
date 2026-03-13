@@ -21,23 +21,13 @@ import {
   Activity
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useToast } from "@/components/ui/toast"
+import { useToast } from "@/context/ToastContext"
 import { useAuth } from "@/context/AuthContext"
 import { auditService, type AuditLog, type AuditListFilters, type AuditStats, type AuditFilterOptions } from "@/lib/api"
 import { Breadcrumbs } from "@/components/ui/breadcrumbs"
 import { summarizeAudit } from "@/lib/audit-helpers"
 
-// Helper functions for date formatting
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr)
-  return date.toLocaleDateString("es-GT", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  })
-}
+import { formatDateShort as formatDate } from "@/lib/utils"
 
 function formatRelativeTime(dateStr: string): string {
   const date = new Date(dateStr)
@@ -124,6 +114,7 @@ export default function HistorialPage() {
     page: 1,
     pageSize: 20,
     totalPages: 0,
+    pageCount: 0,
   })
 
   // Protección de rol - solo ADMIN puede acceder
@@ -159,7 +150,14 @@ export default function HistorialPage() {
       setIsLoading(true)
       const response = await auditService.list(filters)
       setLogs(response.data)
-      setPagination(response.pagination)
+      const meta = response.pagination
+      setPagination({
+        total: meta.total,
+        page: meta.page,
+        pageSize: meta.pageSize,
+        totalPages: meta.totalPages,
+        pageCount: meta.totalPages,
+      })
     } catch (error) {
       console.error("Error loading audit logs:", error)
       showToast("Error al cargar el historial", "error")

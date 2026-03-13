@@ -8,7 +8,7 @@ export class RegisterDto {
 
   @ApiProperty({ example: 'S3gura123' })
   @IsString()
-  @MinLength(6)
+  @MinLength(8)
   password!: string;
 
   @ApiProperty({ example: 'Juan' })
@@ -134,12 +134,8 @@ export class OAuthCallbackDto {
 }
 
 export class ResetPasswordDto {
-  @ApiProperty({ example: '7e10e811-dc6b-42b1-bea8-1753b1857921', description: 'ID del usuario en Supabase Auth (del token de recuperación)' })
+  @ApiProperty({ example: 'NuevaContraseña123', description: 'Nueva contraseña (mínimo 8 caracteres)' })
   @IsString()
-  supabaseUserId!: string;
-
-  @ApiProperty({ example: 'NuevaContraseña123', description: 'Nueva contraseña (mínimo 6 caracteres)' })
-  @IsString()
-  @MinLength(6)
+  @MinLength(8)
   newPassword!: string;
 }

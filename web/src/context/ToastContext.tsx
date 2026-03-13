@@ -7,20 +7,26 @@ type ToastVariant = 'success' | 'error' | 'info'
 
 type ToastContextType = {
   show: (message: string, options?: { variant?: ToastVariant; duration?: number }) => void
+  /** Alias compatible con las páginas admin: showToast(msg, variant) */
+  showToast: (message: string, variant?: ToastVariant) => void
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined)
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
-  const api = useMemo<ToastContextType>(() => ({
-    show: (message, options) => {
+  const api = useMemo<ToastContextType>(() => {
+    const show = (message: string, options?: { variant?: ToastVariant; duration?: number }) => {
       const duration = options?.duration ?? 2500
       const variant = options?.variant ?? 'success'
       if (variant === 'success') toast.success(message, { duration })
       else if (variant === 'error') toast.error(message, { duration })
       else toast(message, { duration })
-    },
-  }), [])
+    }
+    return {
+      show,
+      showToast: (message: string, variant?: ToastVariant) => show(message, { variant: variant ?? 'success' }),
+    }
+  }, [])
 
   return (
     <ToastContext.Provider value={api}>
@@ -35,3 +41,4 @@ export function useToast() {
   if (!ctx) throw new Error('useToast debe usarse dentro de ToastProvider')
   return ctx
 }
+

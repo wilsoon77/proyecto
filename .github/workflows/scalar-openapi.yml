@@ -1,0 +1,110 @@
+name: Scalar OpenAPI
+
+on:
+  pull_request:
+    paths:
+      - "api/src/**"
+      - "api/scripts/**"
+      - "api/package.json"
+      - "api/package-lock.json"
+      - "api/tsconfig.json"
+      - ".github/workflows/scalar-openapi.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "api/src/**"
+      - "api/scripts/**"
+      - "api/package.json"
+      - "api/package-lock.json"
+      - "api/tsconfig.json"
+      - ".github/workflows/scalar-openapi.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scalar-openapi-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-openapi:
+    name: Validate OpenAPI
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate OpenAPI
+        run: npm run openapi:gen:dist
+
+      - name: Validate with Scalar CLI
+        run: npx -y @scalar/cli@latest document validate openapi.json
+
+  publish-to-scalar:
+    name: Publish to Scalar
+    needs: validate-openapi
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate OpenAPI
+        run: npm run openapi:gen:dist
+
+      - name: Validate with Scalar CLI
+        run: npx -y @scalar/cli@latest document validate openapi.json
+
+      - name: Check Scalar config
+        env:
+          SCALAR_API_KEY: ${{ secrets.SCALAR_API_KEY }}
+          SCALAR_NAMESPACE: ${{ vars.SCALAR_NAMESPACE }}
+        run: |
+          if [ -z "$SCALAR_API_KEY" ]; then
+            echo "Missing secret: SCALAR_API_KEY"
+            exit 1
+          fi
+          if [ -z "$SCALAR_NAMESPACE" ]; then
+            echo "Missing variable: SCALAR_NAMESPACE"
+            exit 1
+          fi
+
+      - name: Publish OpenAPI to Scalar Registry
+        env:
+          SCALAR_API_KEY: ${{ secrets.SCALAR_API_KEY }}
+          SCALAR_NAMESPACE: ${{ vars.SCALAR_NAMESPACE }}
+        run: |
+          npx -y @scalar/cli@latest auth login --token "$SCALAR_API_KEY"
+          npx -y @scalar/cli@latest registry publish openapi.json \
+            --namespace "$SCALAR_NAMESPACE" \
+            --slug "panaderia-api"

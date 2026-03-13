@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Get, Patch, UseGuards, Req, HttpCode, HttpStatus, Query } from '@nestjs/common';
+import { Body, Controller, Post, Get, Patch, UseGuards, Req, HttpCode, HttpStatus, Query, UnauthorizedException } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiResponse, ApiBadRequestResponse, ApiUnauthorizedResponse, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service.js';
@@ -99,15 +99,41 @@ export class AuthController {
   }
 
   @Post('reset-password')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 intentos por minuto
   @ApiOperation({ 
-    summary: 'Resetear contraseña', 
-    description: 'Actualiza la contraseña del usuario después de verificación con Supabase Auth. El supabaseUserId viene del token de recuperación.' 
+    summary: 'Cambiar contraseña autenticado', 
+    description: 'Actualiza la contraseña del usuario autenticado con JWT de la aplicación.' 
   })
-  @ApiResponse({ status: 200, description: 'Contraseña actualizada', schema: { properties: { success: { type: 'boolean' } } } })
+  @ApiResponse({ status: 200, description: 'Contraseña cambiada', schema: { properties: { success: { type: 'boolean' } } } })
+  @ApiBadRequestResponse({ description: 'Error al cambiar contraseña', type: ErrorResponseDto })
+  resetPassword(@Req() req: any, @Body() body: ResetPasswordDto) {
+    return this.auth.updatePassword(req.user?.userId, body.newPassword);
+  }
+
+  @Post('reset-password/recovery')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 intentos por minuto
+  @ApiOperation({
+    summary: 'Resetear contraseña por recuperación',
+    description: 'Sincroniza la nueva contraseña en la base local usando el token temporal de recuperación de Supabase (Bearer).',
+  })
+  @ApiResponse({ status: 200, description: 'Contraseña reseteada', schema: { properties: { success: { type: 'boolean' } } } })
+  @ApiUnauthorizedResponse({ description: 'Token de recuperación inválido o expirado', type: ErrorResponseDto })
   @ApiBadRequestResponse({ description: 'Error al resetear contraseña', type: ErrorResponseDto })
-  resetPassword(@Body() body: ResetPasswordDto) {
-    return this.auth.resetPasswordWithSupabaseToken(body.supabaseUserId, body.newPassword);
+  resetPasswordFromRecovery(@Req() req: any, @Body() body: ResetPasswordDto) {
+    const authorization = String(req.headers?.authorization || '');
+    if (!authorization.toLowerCase().startsWith('bearer ')) {
+      throw new UnauthorizedException('Token de recuperación requerido');
+    }
+
+    const recoveryAccessToken = authorization.slice(7).trim();
+    if (!recoveryAccessToken) {
+      throw new UnauthorizedException('Token de recuperación requerido');
+    }
+
+    return this.auth.resetPasswordWithSupabaseToken(recoveryAccessToken, body.newPassword);
   }
 }

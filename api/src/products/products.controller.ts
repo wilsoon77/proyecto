@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query, Post, Body, Patch, Put, Delete, UseGuards, Req, Res } from '@nestjs/common';
+import { Controller, Get, Param, Query, Post, Body, Patch, Put, Delete, UseGuards, Req, Res, NotFoundException } from '@nestjs/common';
 import { ApiTags, ApiQuery, ApiBearerAuth, ApiBody, ApiResponse, ApiBadRequestResponse, ApiNotFoundResponse, ApiOperation, ApiExtraModels, getSchemaPath } from '@nestjs/swagger';
 import { ProductsService } from './products.service.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
@@ -8,7 +8,6 @@ import { CreateProductDto, ProductDto, UpdateProductDto, PutProductDto } from '.
 import { PaginatedMetaDto } from '../common/dto/pagination.dto.js';
 import { setPaginationHeaders } from '../common/utils/pagination.util.js';
 import { AuditService } from '../audit/audit.service.js';
-import { PrismaService } from '../prisma/prisma.service.js';
 import { getChangedFields, getClientIp } from '../common/utils/audit.util.js';
 import type { Response } from 'express';
 
@@ -19,28 +18,7 @@ export class ProductsController {
   constructor(
     private readonly productsService: ProductsService,
     private readonly auditService: AuditService,
-    private readonly prisma: PrismaService,
   ) {}
-
-  /**
-   * Helper para obtener nombre del usuario desde la BD
-   */
-  private async getUserName(userId: string): Promise<string> {
-    if (!userId) return 'Sistema';
-    try {
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-        select: { firstName: true, lastName: true, email: true },
-      });
-      if (user) {
-        const name = `${user.firstName || ''} ${user.lastName || ''}`.trim();
-        return name || user.email || 'Usuario';
-      }
-    } catch (e) {
-      // Ignorar errores
-    }
-    return 'Sistema';
-  }
 
   @Get()
   @ApiOperation({ summary: 'Listar productos activos', description: 'Devuelve productos activos con buscador, filtros y paginación.' })
@@ -121,12 +99,15 @@ export class ProductsController {
   // ==================== ENDPOINTS POR ID (para admin) ====================
 
   @Get('by-id/:id')
-  @ApiOperation({ summary: 'Obtener producto por ID', description: 'Obtiene información completa de un producto por su ID numérico.' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Obtener producto por ID', description: 'Obtiene información completa de un producto por su ID numérico. Requiere rol ADMIN.' })
   @ApiResponse({ status: 200, description: 'Producto encontrado', type: ProductDto })
   @ApiNotFoundResponse({ description: 'Producto no encontrado' })
   async findOneById(@Param('id') id: string) {
     const prod = await this.productsService.findById(Number(id));
-    if (!prod) return { message: 'Producto no encontrado' };
+    if (!prod) throw new NotFoundException('Producto no encontrado');
     return prod;
   }
 
@@ -148,7 +129,7 @@ export class ProductsController {
     const changedFields = oldProduct
       ? getChangedFields(oldProduct as Record<string, unknown>, body as unknown as Record<string, unknown>)
       : Object.keys(body);
-    const userName = await this.getUserName(req.user?.userId);
+    const userName = await this.auditService.getUserName(req.user?.userId);
     await this.auditService.log({
       userId: req.user?.userId,
       userName,
@@ -175,7 +156,7 @@ export class ProductsController {
     const product = await this.productsService.deactivateById(Number(id));
     
     // Registrar en auditoría
-    const userName = await this.getUserName(req.user?.userId);
+    const userName = await this.auditService.getUserName(req.user?.userId);
     await this.auditService.log({
       userId: req.user?.userId,
       userName,
@@ -205,7 +186,7 @@ export class ProductsController {
     const result = await this.productsService.deleteById(Number(id));
     
     // Registrar en auditoría
-    const userName = await this.getUserName(req.user?.userId);
+    const userName = await this.auditService.getUserName(req.user?.userId);
     await this.auditService.log({
       userId: req.user?.userId,
       userName,
@@ -229,7 +210,7 @@ export class ProductsController {
   @ApiNotFoundResponse({ description: 'Producto no encontrado' })
   async findOne(@Param('slug') slug: string) {
     const prod = await this.productsService.findOne(slug);
-    if (!prod) return { message: 'Producto no encontrado' };
+    if (!prod) throw new NotFoundException('Producto no encontrado');
     return prod;
   }
 
@@ -259,7 +240,7 @@ export class ProductsController {
     const product = await this.productsService.create(body);
     
     // Registrar en auditoría
-    const userName = await this.getUserName(req.user?.userId);
+    const userName = await this.auditService.getUserName(req.user?.userId);
     await this.auditService.log({
       userId: req.user?.userId,
       userName,
@@ -293,7 +274,7 @@ export class ProductsController {
     const changedFields = oldProduct
       ? getChangedFields(oldProduct as Record<string, unknown>, body as unknown as Record<string, unknown>)
       : Object.keys(body);
-    const userName = await this.getUserName(req.user?.userId);
+    const userName = await this.auditService.getUserName(req.user?.userId);
     await this.auditService.log({
       userId: req.user?.userId,
       userName,
@@ -320,7 +301,7 @@ export class ProductsController {
     const product = await this.productsService.deactivate(slug);
     
     // Registrar en auditoría
-    const userName = await this.getUserName(req.user?.userId);
+    const userName = await this.auditService.getUserName(req.user?.userId);
     await this.auditService.log({
       userId: req.user?.userId,
       userName,
@@ -350,7 +331,7 @@ export class ProductsController {
     const result = await this.productsService.hardDelete(slug);
     
     // Registrar en auditoría
-    const userName = await this.getUserName(req.user?.userId);
+    const userName = await this.auditService.getUserName(req.user?.userId);
     await this.auditService.log({
       userId: req.user?.userId,
       userName,
@@ -384,7 +365,7 @@ export class ProductsController {
     const changedFields = oldProduct
       ? getChangedFields(oldProduct as Record<string, unknown>, body as unknown as Record<string, unknown>)
       : Object.keys(body);
-    const userName = await this.getUserName(req.user?.userId);
+    const userName = await this.auditService.getUserName(req.user?.userId);
     await this.auditService.log({
       userId: req.user?.userId,
       userName,

@@ -26,6 +26,7 @@ import {
   branchesService,
   type InventoryItem
 } from "@/lib/api"
+import { formatDateString } from "@/lib/utils"
 
 interface Branch {
   id: number
@@ -146,14 +147,9 @@ export default function InventarioPage() {
     currentPage * ITEMS_PER_PAGE
   )
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('es-GT', {
-      day: '2-digit',
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
+  const formatDate = (dateStr: string) => formatDateString(dateStr, {
+    day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+  })
 
   // Productos con alertas (stock bajo o agotado)
   const alertProducts = useMemo(() => inventory

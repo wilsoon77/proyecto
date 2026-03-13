@@ -23,6 +23,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { useToast } from "@/components/ui/toast"
 import { useAuth } from "@/context/AuthContext"
 import { usersService, type User, type UserRole } from "@/lib/api"
+import { formatDateString } from "@/lib/utils"
 
 const ROLE_LABELS: Record<UserRole, string> = {
   CUSTOMER: "Cliente",
@@ -152,13 +153,9 @@ export default function UsuariosPage() {
     }
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-GT', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    })
-  }
+  const formatDate = (dateString: string) => formatDateString(dateString, {
+    day: '2-digit', month: 'short', year: 'numeric'
+  })
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">

@@ -27,10 +27,8 @@ describe('Health and Metrics (e2e)', () => {
     expect(res.body).toHaveProperty('uptime');
   });
 
-  it('/metrics (GET) should return prometheus metrics text', async () => {
+  it('/metrics (GET) should require authentication', async () => {
     const res = await request(app.getHttpServer()).get('/metrics');
-    expect(res.status).toBe(200);
-    expect(res.headers['content-type']).toContain('text/plain');
-    expect(res.text).toContain('process_cpu_user_seconds_total');
+    expect(res.status).toBe(401);
   });
 });

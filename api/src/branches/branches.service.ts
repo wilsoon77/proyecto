@@ -87,14 +87,25 @@ export class BranchesService {
     // Verificar que la sucursal existe
     const branch = await this.findOne(id);
 
-    // Verificar que no tenga inventarios asociados
-    const inventoryCount = await this.prisma.inventory.count({
-      where: { branchId: id },
-    });
+    // Verificar todas las relaciones que bloquean la eliminación
+    const [inventoryCount, orderCount, employeeCount, movFromCount, movToCount] = await Promise.all([
+      this.prisma.inventory.count({ where: { branchId: id } }),
+      this.prisma.order.count({ where: { branchId: id } }),
+      this.prisma.user.count({ where: { branchId: id } }),
+      this.prisma.stockMovement.count({ where: { fromBranchId: id } }),
+      this.prisma.stockMovement.count({ where: { toBranchId: id } }),
+    ]);
 
-    if (inventoryCount > 0) {
+    const reasons: string[] = [];
+    if (inventoryCount > 0) reasons.push(`${inventoryCount} producto(s) en inventario`);
+    if (orderCount > 0) reasons.push(`${orderCount} orden(es) asociada(s)`);
+    if (employeeCount > 0) reasons.push(`${employeeCount} empleado(s) asignado(s)`);
+    const movCount = movFromCount + movToCount;
+    if (movCount > 0) reasons.push(`${movCount} movimiento(s) de stock`);
+
+    if (reasons.length > 0) {
       throw new BadRequestException(
-        `No se puede eliminar la sucursal "${branch.name}" porque tiene ${inventoryCount} productos en inventario`
+        `No se puede eliminar la sucursal "${branch.name}": tiene ${reasons.join(', ')}`
       );
     }
 

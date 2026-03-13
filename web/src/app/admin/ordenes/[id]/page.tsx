@@ -20,6 +20,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { ordersService, type OrderStatus } from "@/lib/api"
+import { formatCurrency, formatDateString } from "@/lib/utils"
 
 interface OrderDetail {
   id: number
@@ -113,22 +114,9 @@ export default function DetalleOrdenPage() {
     }
   }
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('es-GT', {
-      style: 'currency',
-      currency: 'GTQ',
-    }).format(value)
-  }
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('es-GT', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
+  const formatDate = (dateString: string) => formatDateString(dateString, {
+    day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
+  })
 
   if (isLoading) {
     return (

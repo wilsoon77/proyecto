@@ -15,14 +15,6 @@ export const ORDER_CONFIG = {
   minOrderAmount: 15.00, // Pedido mínimo Q15
 } as const
 
-/** @deprecated Usa ORDER_CONFIG. Mantenido por compatibilidad temporal. */
-export const SHIPPING = {
-  country: 'Guatemala',
-  baseFee: 0,
-  freeShippingThreshold: 0,
-  minOrderAmount: ORDER_CONFIG.minOrderAmount,
-} as const
-
 // Configuración regional
 export const LOCALE = {
   language: 'es-GT',
@@ -64,7 +56,7 @@ export const ORDER_STATUS = {
   CANCELLED: 'cancelled',
 } as const
 
-export const ORDER_STATUS_LABELS = {
+export const ORDER_STATUS_LABELS: Record<string, string> = {
   [ORDER_STATUS.PENDING]: 'Pendiente',
   [ORDER_STATUS.CONFIRMED]: 'Confirmado',
   [ORDER_STATUS.PREPARING]: 'En Preparación',
@@ -73,3 +65,12 @@ export const ORDER_STATUS_LABELS = {
   [ORDER_STATUS.DELIVERED]: 'Entregado',
   [ORDER_STATUS.CANCELLED]: 'Cancelado',
 } as const
+
+/**
+ * Devuelve la etiqueta en español de un status de pedido,
+ * sin importar si el status viene en UPPERCASE (API) o lowercase (frontend).
+ */
+export function getOrderStatusLabel(status: string): string {
+  const key = status.toLowerCase()
+  return ORDER_STATUS_LABELS[key] || status
+}

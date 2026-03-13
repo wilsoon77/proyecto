@@ -190,16 +190,22 @@ export class AuthService {
   }
 
   async refresh(refreshToken: string, metadata?: { userAgent?: string; ip?: string }) {
-    // Buscar todos los refresh tokens activos del usuario
+    // Token format: "{userId}.{random}" — extract userId to scope the DB query
+    const dotIndex = refreshToken.indexOf('.');
+    if (dotIndex === -1) throw new UnauthorizedException('Refresh token inválido');
+    const tokenUserId = refreshToken.substring(0, dotIndex);
+    const tokenRandom = refreshToken.substring(dotIndex + 1);
+    if (!tokenUserId || !tokenRandom) throw new UnauthorizedException('Refresh token inválido');
+
+    // Query only tokens for this specific user — O(user's devices) instead of O(all users)
     const tokens = await this.prisma.refreshToken.findMany({
-      where: { revokedAt: null, expiresAt: { gt: new Date() } },
+      where: { userId: tokenUserId, revokedAt: null, expiresAt: { gt: new Date() } },
       include: { user: true },
     });
 
-    // Verificar si el token coincide con alguno hasheado
     let validToken: any = null;
     for (const token of tokens) {
-      const isValid = await bcrypt.compare(refreshToken, token.hashedToken);
+      const isValid = await bcrypt.compare(tokenRandom, token.hashedToken);
       if (isValid) {
         validToken = token;
         break;
@@ -224,13 +230,15 @@ export class AuthService {
 
   async logout(userId: string, refreshToken?: string) {
     if (refreshToken) {
-      // Revocar solo el token específico
+      // Revocar solo el token específico — scope by userId (same O(n) optimization)
+      const dotIndex = refreshToken.indexOf('.');
+      const tokenRandom = dotIndex !== -1 ? refreshToken.substring(dotIndex + 1) : refreshToken;
       const tokens = await this.prisma.refreshToken.findMany({
         where: { userId, revokedAt: null },
       });
       
       for (const token of tokens) {
-        const isValid = await bcrypt.compare(refreshToken, token.hashedToken);
+        const isValid = await bcrypt.compare(tokenRandom, token.hashedToken);
         if (isValid) {
           await this.prisma.refreshToken.update({
             where: { id: token.id },
@@ -252,8 +260,10 @@ export class AuthService {
   }
 
   private async createRefreshToken(userId: string, metadata?: { userAgent?: string; ip?: string }, expirationDays: number = 7): Promise<string> {
-    const token = randomBytes(32).toString('hex');
-    const hashedToken = await bcrypt.hash(token, 10);
+    const random = randomBytes(32).toString('hex');
+    // Embed userId in the token so we can scope DB queries without a schema change
+    const token = `${userId}.${random}`;
+    const hashedToken = await bcrypt.hash(random, 10);
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + expirationDays);
 
@@ -336,16 +346,29 @@ export class AuthService {
   }
 
   /**
-   * Reset de contraseña usando un token de Supabase.
-   * Este método es llamado desde el frontend después de que Supabase Auth validó el token.
+   * Sincroniza la contraseña local usando el token temporal de recuperación de Supabase.
+   * El frontend primero actualiza Supabase Auth y luego llama este método para mantener
+   * sincronizada la contraseña en la tabla User local.
    */
-  async resetPasswordWithSupabaseToken(supabaseUserId: string, newPassword: string) {
-    // Buscar usuario por ID de Supabase
-    const user = await this.prisma.user.findUnique({ where: { id: supabaseUserId } });
-    
-    if (!user) {
-      throw new NotFoundException('Usuario no encontrado');
+  async resetPasswordWithSupabaseToken(recoveryAccessToken: string, newPassword: string) {
+    if (!this.supabase.isConfigured()) {
+      throw new BadRequestException('Recuperación de contraseña no configurada');
     }
+
+    const { data, error } = await this.supabase.client.auth.getUser(recoveryAccessToken);
+    if (error || !data.user) {
+      throw new UnauthorizedException('Token de recuperación inválido o expirado');
+    }
+
+    const supabaseUserId = data.user.id;
+    const supabaseEmail = data.user.email ?? undefined;
+
+    // Buscar por ID de Supabase; fallback por email para casos legacy ya existentes.
+    let user = await this.prisma.user.findUnique({ where: { id: supabaseUserId } });
+    if (!user && supabaseEmail) {
+      user = await this.prisma.user.findUnique({ where: { email: supabaseEmail } });
+    }
+    if (!user) throw new NotFoundException('Usuario no encontrado');
 
     if (!user.isActive) {
       throw new UnauthorizedException('Usuario desactivado');
@@ -353,12 +376,14 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(newPassword, 10);
     
-    await this.prisma.user.update({
-      where: { id: supabaseUserId },
-      data: { passwordHash },
-    });
+    await this.prisma.user.update({ where: { id: user.id }, data: { passwordHash } });
 
-    this.logger.info('Contraseña reseteada via Supabase', { userId: user.id, email: user.email, action: 'PASSWORD_RESET' });
+    this.logger.info('Contraseña reseteada via token de recuperación', {
+      userId: user.id,
+      email: user.email,
+      action: 'PASSWORD_RESET',
+      viaRecoveryToken: true,
+    });
     
     return { success: true };
   }

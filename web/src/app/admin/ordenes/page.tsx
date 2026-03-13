@@ -19,6 +19,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { ordersService, branchesService, type OrderStatus } from "@/lib/api"
+import { formatCurrency, formatDateString } from "@/lib/utils"
 
 interface Order {
   id: number
@@ -129,22 +130,9 @@ export default function OrdenesPage() {
     }
   }
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('es-GT', {
-      style: 'currency',
-      currency: 'GTQ',
-    }).format(value)
-  }
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('es-GT', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
+  const formatDate = (dateString: string) => formatDateString(dateString, {
+    day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+  })
 
   // Filtro de búsqueda local
   const filteredOrders = orders.filter(order => {

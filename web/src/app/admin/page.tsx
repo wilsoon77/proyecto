@@ -38,6 +38,7 @@ import {
 } from "recharts"
 import { api, branchesService } from "@/lib/api"
 import { useAuth } from "@/context/AuthContext"
+import { formatCurrency, formatDateChart } from "@/lib/utils"
 
 // Interfaces actualizadas según nuevo backend
 interface DashboardResponse {
@@ -184,17 +185,7 @@ export default function AdminDashboardPage() {
     }
   }
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('es-GT', {
-      style: 'currency',
-      currency: 'GTQ',
-    }).format(value)
-  }
 
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr)
-    return date.toLocaleDateString('es-GT', { weekday: 'short', day: 'numeric' })
-  }
 
   if (isLoading && !stats) {
     return (
@@ -227,7 +218,7 @@ export default function AdminDashboardPage() {
   })) || []
 
   const weeklySalesData = stats?.weeklySales?.map(d => ({
-    date: formatDate(d.date),
+    date: formatDateChart(d.date),
     ventas: d.totalSales,
     ordenes: d.orderCount
   })) || []

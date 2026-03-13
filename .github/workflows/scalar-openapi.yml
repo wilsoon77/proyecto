@@ -117,4 +117,5 @@ jobs:
           npx -y @scalar/cli@latest auth login --token "$SCALAR_API_KEY"
           npx -y @scalar/cli@latest registry publish openapi.json \
             --namespace "$SCALAR_NAMESPACE" \
-            --slug "panaderia-api"
+            --slug "panaderia-api" \
+            --force

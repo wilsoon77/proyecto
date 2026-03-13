@@ -115,8 +115,9 @@ jobs:
 
       - name: Compute Scalar version
         run: |
-          BASE_VERSION=$(node -p "require('./package.json').version || '0.1.0'")
-          SCALAR_VERSION="${BASE_VERSION}-${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}"
+          # Use a strictly increasing numeric semver to satisfy Scalar ordering.
+          # Format: <epoch_seconds>.<run_number>.<run_attempt>
+          SCALAR_VERSION="$(date +%s).${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}"
           echo "SCALAR_VERSION=$SCALAR_VERSION" >> "$GITHUB_ENV"
           echo "Publishing version: $SCALAR_VERSION"
 

@@ -95,7 +95,7 @@ Se agregó el workflow de GitHub Actions [\.github/workflows/scalar-openapi.yml]
 1. Instala dependencias del backend.
 2. Genera `openapi.json` con `npm run openapi:gen:dist`.
 3. Valida el documento con `@scalar/cli`.
-4. Calcula una versión automática para Scalar con formato `<package.json version>-<run_number>.<run_attempt>`.
+4. Calcula una versión automática para Scalar con formato `<epoch_seconds>.<run_number>.<run_attempt>` (siempre creciente).
 5. Publica a Scalar Registry en `main` usando esa versión (historial limpio sin sobreescritura).
 
 ## Notas de seguridad

@@ -56,6 +56,8 @@ jobs:
         run: npm ci
 
       - name: Generate OpenAPI
+        env:
+          OPENAPI_SERVER_URL: ${{ vars.OPENAPI_SERVER_URL }}
         run: npm run openapi:gen:dist
 
       - name: Validate with Scalar CLI
@@ -90,6 +92,8 @@ jobs:
         run: npm ci
 
       - name: Generate OpenAPI
+        env:
+          OPENAPI_SERVER_URL: ${{ vars.OPENAPI_SERVER_URL }}
         run: npm run openapi:gen:dist
 
       - name: Validate with Scalar CLI
@@ -109,13 +113,21 @@ jobs:
             exit 1
           fi
 
+      - name: Compute Scalar version
+        run: |
+          BASE_VERSION=$(node -p "require('./package.json').version || '0.1.0'")
+          SCALAR_VERSION="${BASE_VERSION}-${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}"
+          echo "SCALAR_VERSION=$SCALAR_VERSION" >> "$GITHUB_ENV"
+          echo "Publishing version: $SCALAR_VERSION"
+
       - name: Publish OpenAPI to Scalar Registry
         env:
           SCALAR_API_KEY: ${{ secrets.SCALAR_API_KEY }}
           SCALAR_NAMESPACE: ${{ vars.SCALAR_NAMESPACE }}
+          SCALAR_VERSION: ${{ env.SCALAR_VERSION }}
         run: |
           npx -y @scalar/cli@latest auth login --token "$SCALAR_API_KEY"
           npx -y @scalar/cli@latest registry publish openapi.json \
             --namespace "$SCALAR_NAMESPACE" \
             --slug "panaderia-api" \
-            --force
+            --version "$SCALAR_VERSION"

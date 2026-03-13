@@ -86,6 +86,7 @@ Se agregó el workflow de GitHub Actions [\.github/workflows/scalar-openapi.yml]
 2. Configurar en GitHub (Settings > Secrets and variables > Actions):
 	- Secret: `SCALAR_API_KEY`
 	- Variable: `SCALAR_NAMESPACE`
+ 	- Variable opcional: `OPENAPI_SERVER_URL` (ejemplo: `https://proyecto-dp81.onrender.com`) para que `Test Request` en Scalar apunte a tu backend real.
 3. Confirmar el slug publicado (actualmente fijo como `panaderia-api` en el workflow).
 4. El workflow usa Node 24 porque `@scalar/cli` requiere Node >= 24.
 
@@ -94,7 +95,8 @@ Se agregó el workflow de GitHub Actions [\.github/workflows/scalar-openapi.yml]
 1. Instala dependencias del backend.
 2. Genera `openapi.json` con `npm run openapi:gen:dist`.
 3. Valida el documento con `@scalar/cli`.
-4. Publica a Scalar Registry en `main`.
+4. Calcula una versión automática para Scalar con formato `<package.json version>-<run_number>.<run_attempt>`.
+5. Publica a Scalar Registry en `main` usando esa versión (historial limpio sin sobreescritura).
 
 ## Notas de seguridad
 - Reemplazar secretos por valores seguros antes de deploy.

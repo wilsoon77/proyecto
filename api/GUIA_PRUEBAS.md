@@ -1,4 +1,4 @@
-# 🎯 Guía Rápida de Pruebas - API PanaderIA
+# 🎯 Guía Rápida de Pruebas - API Panaderia Svetlana
 
 ## 📋 Preparación Inicial
 

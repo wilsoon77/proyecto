@@ -6,7 +6,7 @@ export default function PrivacidadPage() {
 
       <div className="prose prose-gray max-w-none">
         <p>
-          En PanaderIA respetamos tu privacidad. Esta política describe qué datos recopilamos, cómo los usamos y
+          En Panaderia Svetlana respetamos tu privacidad. Esta política describe qué datos recopilamos, cómo los usamos y
           tus derechos como usuario en Guatemala.
         </p>
 

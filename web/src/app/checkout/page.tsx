@@ -295,7 +295,7 @@ export default function CheckoutPage() {
               {items.map(({ product, quantity }) => (
                 <div key={product.id} className="flex items-center justify-between">
                   <div className="truncate pr-2">{product.name} × {quantity}</div>
-                  <div className="font-medium">{formatPrice((product.discount ? product.price * (1 - product.discount/100) : product.price) * quantity)}</div>
+                  <div className="font-medium">{formatPrice(product.price * quantity)}</div>
                 </div>
               ))}
             </div>

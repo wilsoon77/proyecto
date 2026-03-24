@@ -6,7 +6,7 @@ export default function TerminosPage() {
 
       <div className="prose prose-gray max-w-none">
         <h2>Uso de la plataforma</h2>
-        <p>Al usar PanaderIA aceptas estos términos. Nos reservamos el derecho de actualizar este documento.</p>
+        <p>Al usar Panaderia Svetlana aceptas estos términos. Nos reservamos el derecho de actualizar este documento.</p>
 
         <h2>Pedidos</h2>
         <ul>

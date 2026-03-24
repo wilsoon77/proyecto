@@ -53,6 +53,11 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
   const [uploadedFileId, setUploadedFileId] = useState<string | null>(null)
   const [originalImageUrl, setOriginalImageUrl] = useState<string | null>(null)
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false)
+  const [comboQuantity, setComboQuantity] = useState("")
+  const [comboPrice, setComboPrice] = useState("")
+  const [unitsPerTray, setUnitsPerTray] = useState("")
+  const [isActive, setIsActive] = useState(true)
+  const [isAvailable, setIsAvailable] = useState(true)
 
   useEffect(() => {
     loadData()
@@ -88,8 +93,13 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
       setName(data.name)
       setSlug(data.slug)
       setDescription(data.description || "")
-      setPrice(data.price.toString())
+      setPrice(data.basePrice.toString())
       setIsNew(data.isNew || false)
+      setIsActive(data.isActive !== false)
+      setIsAvailable(data.isAvailable !== false)
+      setComboQuantity(data.comboQuantity?.toString() || "")
+      setComboPrice(data.comboPrice?.toString() || "")
+      setUnitsPerTray(data.unitsPerTray?.toString() || "")
       
       // Usar categoryId directamente
       setCategoryId(data.categoryId.toString())
@@ -197,9 +207,14 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
         name: name.trim(),
         slug: slug.trim(),
         description: description.trim() || undefined,
-        price: parseFloat(price),
+        basePrice: parseFloat(price),
         categorySlug: selectedCategory?.slug || '',
         isNew,
+        isActive,
+        isAvailable,
+        comboQuantity: comboQuantity ? parseInt(comboQuantity) : undefined,
+        comboPrice: comboPrice ? parseFloat(comboPrice) : undefined,
+        unitsPerTray: unitsPerTray ? parseInt(unitsPerTray) : undefined,
         imageUrl: imageUrl || undefined,
       })
 
@@ -442,6 +457,77 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
             <label htmlFor="isNew" className="text-sm font-medium text-gray-700">
               Marcar como producto nuevo
             </label>
+          </div>
+
+          {/* Visibility toggles */}
+          <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+            <h3 className="text-sm font-semibold text-gray-700">Visibilidad</h3>
+            <div className="flex items-center gap-3">
+              <input
+                id="isActive"
+                type="checkbox"
+                checked={isActive}
+                onChange={(e) => setIsActive(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+              />
+              <label htmlFor="isActive" className="text-sm text-gray-700">
+                Producto visible en catálogo
+              </label>
+            </div>
+            <div className="flex items-center gap-3">
+              <input
+                id="isAvailable"
+                type="checkbox"
+                checked={isAvailable}
+                onChange={(e) => setIsAvailable(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+              />
+              <label htmlFor="isAvailable" className="text-sm text-gray-700">
+                Disponible para venta (desmarcar para productos de temporada)
+              </label>
+            </div>
+          </div>
+
+          {/* Combo Pricing */}
+          <div className="bg-amber-50 rounded-lg p-4 space-y-4">
+            <h3 className="text-sm font-semibold text-amber-800">Precio por Volumen (Combo)</h3>
+            <p className="text-xs text-amber-600">Ej: "3 por Q1.25" — Si el cliente lleva la cantidad indicada, aplica el precio combo.</p>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Cantidad combo</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={comboQuantity}
+                  onChange={(e) => setComboQuantity(e.target.value)}
+                  placeholder="Ej: 3"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Precio combo (Q)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={comboPrice}
+                  onChange={(e) => setComboPrice(e.target.value)}
+                  placeholder="Ej: 1.25"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Unidades/Lata</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={unitsPerTray}
+                  onChange={(e) => setUnitsPerTray(e.target.value)}
+                  placeholder="Ej: 36"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+            </div>
           </div>
         </div>
 

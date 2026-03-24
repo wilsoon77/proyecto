@@ -140,10 +140,6 @@ export default function Home() {
         ) : (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {featuredProducts.slice(0, 8).map(product => {
-              const finalPrice = product.discount && product.discount > 0
-                ? product.price * (1 - product.discount / 100)
-                : product.price
-
               return (
                 <div key={product.id} className="group overflow-hidden rounded-lg border bg-white shadow-sm transition-shadow hover:shadow-md">
                   <Link href={`${ROUTES.products}/${product.slug}`}>
@@ -161,11 +157,11 @@ export default function Home() {
                           🥖
                         </div>
                       )}
-                      {product.discount && product.discount > 0 && (
-                        <span className="absolute top-2 right-2 rounded-full bg-red-500 px-2 py-1 text-xs font-bold text-white">
-                          -{product.discount}%
+                      {product.comboQuantity && product.comboPrice ? (
+                        <span className="absolute top-2 right-2 rounded-full bg-amber-500 px-2 py-1 text-xs font-bold text-white">
+                          {product.comboQuantity}x Q{Number(product.comboPrice).toFixed(2)}
                         </span>
-                      )}
+                      ) : null}
                     </div>
                   </Link>
                   <div className="p-4">
@@ -176,13 +172,13 @@ export default function Home() {
                     <div className="mt-3 flex items-center justify-between">
                       <div>
                         <span className="text-lg font-bold text-primary">
-                          {formatPrice(finalPrice)}
+                          {formatPrice(product.price)}
                         </span>
-                        {product.discount && product.discount > 0 && (
-                          <span className="ml-2 text-sm text-gray-400 line-through">
-                            {formatPrice(product.price)}
+                        {product.comboQuantity && product.comboPrice ? (
+                          <span className="ml-2 text-xs text-amber-600 font-medium">
+                            {product.comboQuantity}x Q{Number(product.comboPrice).toFixed(2)}
                           </span>
-                        )}
+                        ) : null}
                       </div>
                       <Button 
                         size="sm" 

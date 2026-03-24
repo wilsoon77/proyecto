@@ -16,16 +16,19 @@ export function apiProductToProduct(apiProduct: ApiProduct): Product {
     name: apiProduct.name,
     slug: apiProduct.slug,
     description: apiProduct.description || '',
-    price: Number(apiProduct.price),
-    discount: apiProduct.discountPct || undefined,
+    price: Number(apiProduct.basePrice),
     mainImage,
     imageUrl: mainImage,
     images: apiProduct.images?.map(img => img.url) || [],
     category: apiProduct.categorySlug || apiProduct.category,
     stock: apiProduct.available ?? 0,
     isAvailable: apiProduct.isAvailable,
-    isFeatured: apiProduct.isNew || (apiProduct.discountPct ? apiProduct.discountPct > 0 : false),
+    isFeatured: apiProduct.isNew || (apiProduct.comboQuantity != null && apiProduct.comboQuantity > 0),
     isNew: apiProduct.isNew,
+    origin: apiProduct.origin,
+    comboQuantity: apiProduct.comboQuantity,
+    comboPrice: apiProduct.comboPrice ? Number(apiProduct.comboPrice) : undefined,
+    unitsPerTray: apiProduct.unitsPerTray,
   }
 }
 

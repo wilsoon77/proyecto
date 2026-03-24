@@ -55,9 +55,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   // Calcular subtotal
   const subtotal = items.reduce((total, item) => {
-    const price = item.product.discount
-      ? item.product.price * (1 - item.product.discount / 100)
-      : item.product.price
+    const price = item.product.price
     return total + price * item.quantity
   }, 0)
 

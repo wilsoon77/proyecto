@@ -11,7 +11,9 @@ import {
   ChevronLeft,
   ChevronRight,
   ImageIcon,
-  X
+  X,
+  Eye,
+  EyeOff
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
@@ -46,10 +48,21 @@ export default function AdminProductosPage() {
 
   // Protección de rol - solo ADMIN puede acceder
   useEffect(() => {
-    if (currentUser && currentUser.role !== "ADMIN") {
+    if (currentUser && !['ADMIN', 'MANAGER'].includes(currentUser.role)) {
       router.push("/admin")
     }
   }, [currentUser, router])
+
+  const handleToggleActive = async (product: ApiProduct) => {
+    try {
+      await adminService.updateProduct(product.id, { isActive: !product.isActive })
+      showToast(`Producto "${product.name}" ${product.isActive ? 'ocultado' : 'activado'}`, 'success')
+      loadProducts(currentPage, searchQuery)
+    } catch (error) {
+      console.error('Error toggling product:', error)
+      showToast('Error al cambiar visibilidad', 'error')
+    }
+  }
 
   const loadProducts = useCallback(async (page: number = 1, search: string = "") => {
     setIsLoading(true)
@@ -220,7 +233,7 @@ export default function AdminProductosPage() {
                       <p className="font-medium text-gray-900 truncate">{product.name}</p>
                       <p className="text-sm text-gray-500">{product.category}</p>
                       <div className="flex items-center gap-3 mt-2">
-                        <span className="font-medium text-gray-900">{formatPrice(product.price)}</span>
+                        <span className="font-medium text-gray-900">{formatPrice(product.basePrice)}</span>
                         <span className={`text-sm font-medium ${
                           (product.available || 0) > 10 ? "text-green-600" : 
                           (product.available || 0) > 0 ? "text-yellow-600" : "text-red-600"
@@ -291,7 +304,10 @@ export default function AdminProductosPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 font-medium text-gray-900">
-                        {formatPrice(product.price)}
+                        {formatPrice(product.basePrice)}
+                        {product.comboQuantity && product.comboPrice ? (
+                          <span className="block text-xs text-amber-600">{product.comboQuantity}x Q{Number(product.comboPrice).toFixed(2)}</span>
+                        ) : null}
                       </td>
                       <td className="px-6 py-4">
                         <span className={`font-medium ${
@@ -302,13 +318,21 @@ export default function AdminProductosPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        {product.isNew ? (
+                        {!product.isActive ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            Oculto
+                          </span>
+                        ) : !product.isAvailable ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                            No disponible
+                          </span>
+                        ) : product.isNew ? (
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                             Nuevo
                           </span>
                         ) : (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                            Normal
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700">
+                            Activo
                           </span>
                         )}
                       </td>
@@ -319,6 +343,15 @@ export default function AdminProductosPage() {
                               <Edit className="h-4 w-4" />
                             </Button>
                           </Link>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={product.isActive ? 'text-gray-500 hover:text-gray-700' : 'text-amber-600 hover:text-amber-700'}
+                            onClick={() => handleToggleActive(product)}
+                            title={product.isActive ? 'Ocultar producto' : 'Mostrar producto'}
+                          >
+                            {product.isActive ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </Button>
                           <Button 
                             variant="ghost" 
                             size="sm"

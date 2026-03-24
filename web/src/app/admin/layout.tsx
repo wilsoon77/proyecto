@@ -22,16 +22,20 @@ import {
   Tag,
   Building2,
   X,
-  History
+  History,
+  Flame
 } from "lucide-react"
 import { GlobalSearch } from "@/components/ui/global-search"
 
+const OPERATIONAL_ROLES = ['ADMIN', 'MANAGER', 'BAKER', 'CASHIER']
+
 const adminNavItems = [
-  { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true, roles: ["ADMIN", "EMPLOYEE"] },
-  { href: "/admin/productos", label: "Productos", icon: Package, roles: ["ADMIN"] },
+  { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true, roles: ["ADMIN", "MANAGER", "BAKER", "CASHIER"] },
+  { href: "/admin/productos", label: "Productos", icon: Package, roles: ["ADMIN", "MANAGER"] },
   { href: "/admin/categorias", label: "Categorías", icon: Tag, roles: ["ADMIN"] },
-  { href: "/admin/ordenes", label: "Pedidos", icon: ShoppingCart, roles: ["ADMIN", "EMPLOYEE"] },
-  { href: "/admin/inventario", label: "Inventario", icon: Warehouse, roles: ["ADMIN", "EMPLOYEE"] },
+  { href: "/admin/ordenes", label: "Pedidos", icon: ShoppingCart, roles: ["ADMIN", "MANAGER", "CASHIER"] },
+  { href: "/admin/produccion", label: "Producción", icon: Flame, roles: ["ADMIN", "MANAGER", "BAKER"] },
+  { href: "/admin/inventario", label: "Inventario", icon: Warehouse, roles: ["ADMIN", "MANAGER"] },
   { href: "/admin/sucursales", label: "Sucursales", icon: Building2, roles: ["ADMIN"] },
   { href: "/admin/usuarios", label: "Usuarios", icon: Users, roles: ["ADMIN"] },
   { href: "/admin/historial", label: "Historial", icon: History, roles: ["ADMIN"] },
@@ -53,7 +57,7 @@ export default function AdminLayout({
     if (!isLoading) {
       if (!isAuthenticated) {
         router.push("/login?returnUrl=/admin")
-      } else if (user?.role !== "ADMIN" && user?.role !== "EMPLOYEE") {
+      } else if (!OPERATIONAL_ROLES.includes(user?.role || '')) {
         router.push("/")
       }
     }
@@ -82,7 +86,7 @@ export default function AdminLayout({
   }
 
   // Unauthorized
-  if (!isAuthenticated || (user?.role !== "ADMIN" && user?.role !== "EMPLOYEE")) {
+  if (!isAuthenticated || !OPERATIONAL_ROLES.includes(user?.role || '')) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-50">
         <p className="text-gray-500">Verificando permisos...</p>
@@ -129,7 +133,7 @@ export default function AdminLayout({
             <Link href="/admin" className="flex items-center">
               <Image 
                 src="/images/logo-pan.jpeg" 
-                alt="Panaderia" 
+                alt="Panaderia Svetlana" 
                 width={40} 
                 height={40}
                 className="rounded-md"

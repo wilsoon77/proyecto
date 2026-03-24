@@ -39,7 +39,7 @@ export function Footer() {
             <div className="flex items-center">
               <Image 
                 src="/images/logo.svg" 
-                alt="Panaderia" 
+                alt="Panaderia Svetlana" 
                 width={64} 
                 height={64}
                 className="rounded-lg"
@@ -221,7 +221,7 @@ export function Footer() {
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <div className="flex flex-col items-center justify-between gap-4 text-sm text-gray-600 sm:flex-row">
             <p>
-              &copy; {new Date().getFullYear()} PanaderIA Smart System. 
+              &copy; {new Date().getFullYear()} Panaderia Svetlana Smart System. 
               Todos los derechos reservados.
             </p>
             <div className="flex gap-6">

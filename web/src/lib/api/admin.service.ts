@@ -6,7 +6,10 @@ export interface CreateProductData {
   name: string
   slug: string
   description?: string
-  price: number
+  basePrice: number
+  comboQuantity?: number
+  comboPrice?: number
+  unitsPerTray?: number
   categorySlug: string
   isNew?: boolean
   origin?: 'PRODUCIDO' | 'COMPRADO'
@@ -18,7 +21,10 @@ export interface UpdateProductData {
   name?: string
   slug?: string
   description?: string
-  price?: number
+  basePrice?: number
+  comboQuantity?: number
+  comboPrice?: number
+  unitsPerTray?: number
   categorySlug?: string
   isNew?: boolean
   isActive?: boolean
@@ -34,7 +40,7 @@ export interface ProductDetailResponse {
   name: string
   slug: string
   description?: string
-  price: number
+  basePrice: number
   category: string
   categorySlug: string
   categoryId: number
@@ -42,7 +48,9 @@ export interface ProductDetailResponse {
   isNew: boolean
   isActive: boolean
   isAvailable: boolean
-  discountPct?: number
+  comboQuantity?: number
+  comboPrice?: number
+  unitsPerTray?: number
   images: Array<{ id: number; url: string; position: number }>
   available: number
   createdAt: string

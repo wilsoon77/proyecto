@@ -64,11 +64,11 @@ export function ProductCard({ product, onAddToCart, onToggleFavorite }: ProductC
             {product.isNew && (
               <Badge className="bg-green-500 text-white">Nuevo</Badge>
             )}
-            {product.discount && product.discount > 0 && (
-              <Badge className="bg-red-500 text-white">
-                -{product.discount}%
+            {product.comboQuantity && product.comboPrice ? (
+              <Badge className="bg-amber-500 text-white">
+                {product.comboQuantity}x Q{Number(product.comboPrice).toFixed(2)}
               </Badge>
-            )}
+            ) : null}
             {isOutOfStock && (
               <Badge variant="destructive">Agotado</Badge>
             )}
@@ -132,20 +132,14 @@ export function ProductCard({ product, onAddToCart, onToggleFavorite }: ProductC
 
         {/* Price */}
         <div className="mb-3 flex items-baseline gap-2">
-          {product.discount && product.discount > 0 ? (
-            <>
-              <span className="text-lg font-bold text-primary">
-                {formatPrice(product.price * (1 - product.discount / 100))}
-              </span>
-              <span className="text-sm text-gray-400 line-through">
-                {formatPrice(product.price)}
-              </span>
-            </>
-          ) : (
-            <span className="text-lg font-bold text-primary">
-              {formatPrice(product.price)}
+          <span className="text-lg font-bold text-primary">
+            {formatPrice(product.price)}
+          </span>
+          {product.comboQuantity && product.comboPrice ? (
+            <span className="text-xs text-amber-600 font-medium">
+              {product.comboQuantity}x Q{Number(product.comboPrice).toFixed(2)}
             </span>
-          )}
+          ) : null}
         </div>
 
         {/* Add to Cart Button */}

@@ -97,7 +97,7 @@ export default function EditarUsuarioPage() {
         return
       }
     }
-    if (role === "EMPLOYEE" && !branchId) {
+    if (['MANAGER', 'BAKER', 'CASHIER'].includes(role) && !branchId) {
       setError("Debe seleccionar una sucursal para el empleado")
       return
     }
@@ -119,7 +119,7 @@ export default function EditarUsuarioPage() {
         email: email.trim().toLowerCase(),
         phone: phone.trim() || undefined,
         role,
-        branchId: role === "EMPLOYEE" ? branchId : null,
+        branchId: ['MANAGER', 'BAKER', 'CASHIER'].includes(role) ? branchId : null,
       }
       
       // Solo enviar password si se cambió
@@ -302,25 +302,29 @@ export default function EditarUsuarioPage() {
               value={role}
               onChange={(e) => {
                 setRole(e.target.value as UserRole)
-                if (e.target.value !== "EMPLOYEE") {
+                if (!['MANAGER', 'BAKER', 'CASHIER'].includes(e.target.value)) {
                   setBranchId(undefined)
                 }
               }}
               className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white"
             >
               <option value="CUSTOMER">Cliente</option>
-              <option value="EMPLOYEE">Empleado</option>
+              <option value="MANAGER">Gerente</option>
+              <option value="BAKER">Panadero</option>
+              <option value="CASHIER">Cajero</option>
               <option value="ADMIN">Administrador</option>
             </select>
             <p className="text-xs text-gray-500 mt-1">
               {role === 'CUSTOMER' && 'Puede ver productos y realizar pedidos'}
-              {role === 'EMPLOYEE' && 'Puede gestionar pedidos e inventario de su sucursal'}
+              {role === 'MANAGER' && 'Acceso total a operaciones de su sucursal'}
+              {role === 'BAKER' && 'Solo ve producción y materia prima'}
+              {role === 'CASHIER' && 'Solo ve el Punto de Venta'}
               {role === 'ADMIN' && 'Acceso completo al sistema'}
             </p>
           </div>
 
-          {/* Branch (solo para EMPLOYEE) */}
-          {role === "EMPLOYEE" && (
+          {/* Branch (solo para roles operativos) */}
+          {['MANAGER', 'BAKER', 'CASHIER'].includes(role) && (
             <div>
               <label htmlFor="branch" className="block text-sm font-medium text-gray-700 mb-2">
                 <Building2 className="inline-block h-4 w-4 mr-1" />

@@ -88,10 +88,6 @@ export default function ProductDetailPage() {
     return notFound()
   }
 
-  const finalPrice = product.discount && product.discount > 0
-    ? product.price * (1 - product.discount / 100)
-    : product.price
-
   const canAdd = product.isAvailable && qty > 0
 
   return (
@@ -129,15 +125,12 @@ export default function ProductDetailPage() {
 
           {/* Precios */}
           <div className="mb-6 flex items-center gap-3">
-            <span className="text-3xl font-bold text-primary">{formatPrice(finalPrice)}</span>
-            {product.discount && product.discount > 0 && (
-              <>
-                <span className="text-gray-400 line-through">{formatPrice(product.price)}</span>
-                <span className="rounded-full bg-red-100 px-2 py-1 text-sm font-medium text-red-700">
-                  -{product.discount}%
-                </span>
-              </>
-            )}
+            <span className="text-3xl font-bold text-primary">{formatPrice(product.price)}</span>
+            {product.comboQuantity && product.comboPrice ? (
+              <span className="rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-700">
+                ¡Lleva {product.comboQuantity} por Q{Number(product.comboPrice).toFixed(2)}!
+              </span>
+            ) : null}
           </div>
 
           {/* Disponibilidad */}

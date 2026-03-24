@@ -82,7 +82,7 @@ export default function RegistroPage() {
   return (
     <div className="mx-auto max-w-md px-4 py-16">
       <h1 className="mb-2 text-3xl font-bold">Crear Cuenta</h1>
-      <p className="mb-8 text-gray-600">Únete a PanaderIA y disfruta de pan fresco.</p>
+      <p className="mb-8 text-gray-600">Únete a Panaderia Svetlana y disfruta de pan fresco.</p>
       
       {error && (
         <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">

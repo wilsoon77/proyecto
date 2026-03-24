@@ -124,7 +124,7 @@ export function Navbar() {
           <Link href={ROUTES.home} className="flex items-center">
             <Image 
               src="/images/logo-pan.jpeg" 
-              alt="Panaderia Logo" 
+              alt="Panaderia Svetlana Logo" 
               width={147} 
               height={84}
               className="rounded-lg"
@@ -193,7 +193,7 @@ export function Navbar() {
                   <DropdownMenuItem asChild>
                     <Link href={ROUTES.orders}>Mis pedidos</Link>
                   </DropdownMenuItem>
-                  {(user?.role === 'ADMIN' || user?.role === 'EMPLOYEE') && (
+                  {(['ADMIN', 'MANAGER', 'BAKER', 'CASHIER'].includes(user?.role || '')) && (
                     <>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem asChild>
@@ -363,7 +363,7 @@ export function Navbar() {
                       <ChevronRight className="h-4 w-4 text-gray-400" />
                     </Link>
                   </li>
-                  {(user?.role === 'ADMIN' || user?.role === 'EMPLOYEE') && (
+                  {(['ADMIN', 'MANAGER', 'BAKER', 'CASHIER'].includes(user?.role || '')) && (
                     <li>
                       <Link
                         href="/admin"

@@ -107,7 +107,7 @@ export default function AdminDashboardPage() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
   const isAdmin = user?.role === "ADMIN"
-  const isEmployee = user?.role === "EMPLOYEE"
+  const isOperational = ['MANAGER', 'BAKER', 'CASHIER'].includes(user?.role || '')
 
   // Obtener saludo según hora del día
   const getGreeting = () => {
@@ -135,9 +135,9 @@ export default function AdminDashboardPage() {
         setBranches(data)
         
         // Si es empleado, usar su sucursal asignada
-        if (isEmployee && user?.branchId) {
+        if (isOperational && user?.branchId) {
           setSelectedBranch(user.branchId.toString())
-        } else if (isEmployee && data.length > 0) {
+        } else if (isOperational && data.length > 0) {
           // Fallback: primera sucursal si no tiene asignada
           setSelectedBranch(data[0].id.toString())
         }
@@ -146,7 +146,7 @@ export default function AdminDashboardPage() {
       }
     }
     loadBranches()
-  }, [isEmployee, user?.branchId])
+  }, [isOperational, user?.branchId])
 
   // Cargar estadísticas cuando cambia la sucursal seleccionada
   useEffect(() => {

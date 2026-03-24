@@ -7,9 +7,7 @@ export interface Product {
   name: string
   slug: string
   description: string
-  price: number
-  compareAtPrice?: number
-  discount?: number // Porcentaje de descuento
+  price: number // Precio base unitario (mapeado desde basePrice de la API)
   mainImage: string
   imageUrl?: string // URL principal de la imagen
   images?: string[]
@@ -18,6 +16,10 @@ export interface Product {
   isAvailable: boolean
   isFeatured: boolean
   isNew?: boolean // Producto nuevo
+  origin?: string // PRODUCIDO | COMPRADO
+  comboQuantity?: number // Ej: 3 (para "3x Q1.25")
+  comboPrice?: number // Ej: 1.25
+  unitsPerTray?: number // Unidades por lata (solo PRODUCIDO)
   rating?: number
   reviewCount?: number
   tags?: string[]

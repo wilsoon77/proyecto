@@ -16,7 +16,7 @@ export interface ApiUser {
   firstName: string
   lastName: string
   phone?: string
-  role: 'CUSTOMER' | 'EMPLOYEE' | 'ADMIN'
+  role: 'CUSTOMER' | 'ADMIN' | 'MANAGER' | 'BAKER' | 'CASHIER'
   isActive: boolean
   branchId?: number | null
   branch?: { id: number; name: string; slug: string } | null
@@ -54,14 +54,16 @@ export interface ApiProduct {
   name: string
   slug: string
   description?: string
-  price: number
-  discountPct?: number
+  basePrice: number
   isNew: boolean
   category: string
   categorySlug: string
   origin: 'PRODUCIDO' | 'COMPRADO'
   isActive: boolean
   isAvailable: boolean
+  comboQuantity?: number
+  comboPrice?: number
+  unitsPerTray?: number
   images: ApiProductImage[]
   available?: number // Stock disponible (si se incluye branch)
   createdAt: string
@@ -79,8 +81,10 @@ export interface CreateProductDto {
   name: string
   slug: string
   description?: string
-  price: number
-  discountPct?: number
+  basePrice: number
+  comboQuantity?: number
+  comboPrice?: number
+  unitsPerTray?: number
   isNew?: boolean
   categoryId: number
   origin?: 'PRODUCIDO' | 'COMPRADO'
@@ -89,8 +93,10 @@ export interface CreateProductDto {
 export interface UpdateProductDto {
   name?: string
   description?: string
-  price?: number
-  discountPct?: number
+  basePrice?: number
+  comboQuantity?: number
+  comboPrice?: number
+  unitsPerTray?: number
   isNew?: boolean
   categoryId?: number
   origin?: 'PRODUCIDO' | 'COMPRADO'

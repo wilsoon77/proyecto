@@ -72,7 +72,7 @@ export default function CarritoPage() {
                     </Button>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-bold text-primary">{formatPrice((product.discount ? product.price * (1 - product.discount / 100) : product.price) * quantity)}</p>
+                    <p className="text-lg font-bold text-primary">{formatPrice(product.price * quantity)}</p>
                   </div>
                 </div>
               </div>

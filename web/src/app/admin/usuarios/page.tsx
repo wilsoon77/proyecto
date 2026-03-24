@@ -26,15 +26,19 @@ import { usersService, type User, type UserRole } from "@/lib/api"
 import { formatDateString } from "@/lib/utils"
 
 const ROLE_LABELS: Record<UserRole, string> = {
+  ADMIN: "Admin",
+  MANAGER: "Gerente",
+  BAKER: "Panadero",
+  CASHIER: "Cajero",
   CUSTOMER: "Cliente",
-  EMPLOYEE: "Empleado",
-  ADMIN: "Administrador",
 }
 
 const ROLE_COLORS: Record<UserRole, { bg: string; text: string; icon: React.ElementType }> = {
-  CUSTOMER: { bg: "bg-gray-100", text: "text-gray-700", icon: UserIcon },
-  EMPLOYEE: { bg: "bg-blue-100", text: "text-blue-700", icon: Shield },
-  ADMIN: { bg: "bg-purple-100", text: "text-purple-700", icon: ShieldCheck },
+  ADMIN: { bg: "bg-purple-100", text: "text-purple-700", icon: Shield },
+  MANAGER: { bg: "bg-blue-100", text: "text-blue-700", icon: Shield },
+  BAKER: { bg: "bg-amber-100", text: "text-amber-700", icon: Shield },
+  CASHIER: { bg: "bg-green-100", text: "text-green-700", icon: Shield },
+  CUSTOMER: { bg: "bg-gray-100", text: "text-gray-700", icon: Shield },
 }
 
 export default function UsuariosPage() {
@@ -199,7 +203,9 @@ export default function UsuariosPage() {
           >
             <option value="ALL">Todos los roles</option>
             <option value="CUSTOMER">Clientes</option>
-            <option value="EMPLOYEE">Empleados</option>
+            <option value="MANAGER">Gerentes</option>
+            <option value="BAKER">Panaderos</option>
+            <option value="CASHIER">Cajeros</option>
             <option value="ADMIN">Administradores</option>
           </select>
           
@@ -228,7 +234,7 @@ export default function UsuariosPage() {
         </div>
         <div className="bg-white rounded-lg p-4 border border-gray-100">
           <p className="text-sm text-gray-500">Empleados</p>
-          <p className="text-2xl font-bold text-blue-600">{users.filter(u => u.role === 'EMPLOYEE').length}</p>
+          <p className="text-2xl font-bold text-blue-600">{users.filter(u => ['MANAGER', 'BAKER', 'CASHIER'].includes(u.role)).length}</p>
         </div>
         <div className="bg-white rounded-lg p-4 border border-gray-100">
           <p className="text-sm text-gray-500">Admins</p>

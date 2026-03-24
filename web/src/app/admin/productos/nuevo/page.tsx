@@ -47,6 +47,9 @@ export default function NuevoProductoPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [uploadedFileId, setUploadedFileId] = useState<string | null>(null)
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false)
+  const [comboQuantity, setComboQuantity] = useState("")
+  const [comboPrice, setComboPrice] = useState("")
+  const [unitsPerTray, setUnitsPerTray] = useState("")
 
   useEffect(() => {
     loadCategories()
@@ -169,7 +172,7 @@ export default function NuevoProductoPage() {
         name: name.trim(),
         slug: slug.trim(),
         description: description.trim() || undefined,
-        price: parseFloat(price),
+        basePrice: parseFloat(price),
         categorySlug: selectedCategory?.slug || '',
         isNew,
         imageUrl: imageUrl || undefined,
@@ -385,6 +388,48 @@ export default function NuevoProductoPage() {
             <label htmlFor="isNew" className="text-sm font-medium text-gray-700">
               Marcar como producto nuevo
             </label>
+          </div>
+
+          {/* Combo Pricing */}
+          <div className="bg-amber-50 rounded-lg p-4 space-y-4">
+            <h3 className="text-sm font-semibold text-amber-800">Precio por Volumen (Combo)</h3>
+            <p className="text-xs text-amber-600">Opcional. Ej: "3 por Q1.25"</p>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Cantidad combo</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={comboQuantity}
+                  onChange={(e) => setComboQuantity(e.target.value)}
+                  placeholder="Ej: 3"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Precio combo (Q)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={comboPrice}
+                  onChange={(e) => setComboPrice(e.target.value)}
+                  placeholder="Ej: 1.25"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Unidades/Lata</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={unitsPerTray}
+                  onChange={(e) => setUnitsPerTray(e.target.value)}
+                  placeholder="Ej: 36"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+            </div>
           </div>
         </div>
 

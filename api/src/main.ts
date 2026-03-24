@@ -70,7 +70,7 @@ async function bootstrap() {
   
   if (swaggerEnabled) {
     const config = new DocumentBuilder()
-      .setTitle('PanaderIA API')
+      .setTitle('Panaderia Svetlana API')
       .setDescription('API para gestión de productos, inventario y pedidos de la panadería')
       .setVersion('0.1.0')
       .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' })

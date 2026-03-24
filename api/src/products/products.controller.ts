@@ -33,7 +33,7 @@ export class ProductsController {
       },
       example: {
         data: [
-          { id: 1, name: 'Concha', slug: 'concha', description: 'Pan dulce tradicional', price: 10.5, category: 'Pan dulce', isNew: true, discount: 10, available: 24 },
+          { id: 1, name: 'Concha', slug: 'concha', description: 'Pan dulce tradicional', basePrice: 0.50, category: 'Pan dulce', isNew: true, comboQuantity: 3, comboPrice: 1.25, available: 24 },
         ],
         meta: { total: 1, pageCount: 1, page: 1, pageSize: 10 },
       },
@@ -229,7 +229,7 @@ export class ProductsController {
         examples: {
           ejemplo: {
             summary: 'Creación exitosa',
-            value: { id: 12, name: 'Oreja', slug: 'oreja', description: 'Hojaldre azucarado', price: 8.5, category: 'Pan dulce', isNew: false, discount: null, available: 0 },
+            value: { id: 12, name: 'Oreja', slug: 'oreja', description: 'Hojaldre azucarado', basePrice: 0.50, category: 'Pan dulce', isNew: false, available: 0 },
           },
         },
       },
@@ -248,7 +248,7 @@ export class ProductsController {
       entity: 'Product',
       entityId: String(product.id),
       entityName: product.name,
-      details: { sku: body.sku, price: body.price, category: body.categorySlug },
+      details: { sku: body.sku, basePrice: body.basePrice, category: body.categorySlug },
       ipAddress: getClientIp(req),
       userAgent: req.headers?.['user-agent'],
     });

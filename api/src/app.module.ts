@@ -16,6 +16,9 @@ import { DashboardModule } from './dashboard/dashboard.module.js';
 import { StorageModule } from './storage/storage.module.js';
 import { SupabaseModule } from './supabase/supabase.module.js';
 import { AuditModule } from './audit/audit.module.js';
+import { RecipesModule } from './recipes/recipes.module.js';
+import { ProductionModule } from './production/production.module.js';
+import { RawMaterialsModule } from './raw-materials/raw-materials.module.js';
 
 @Module({
   imports: [
@@ -39,6 +42,9 @@ import { AuditModule } from './audit/audit.module.js';
     DashboardModule,
     StorageModule,
     SupabaseModule,
+    RecipesModule,
+    ProductionModule,
+    RawMaterialsModule,
   ],
   controllers: [],
   providers: [

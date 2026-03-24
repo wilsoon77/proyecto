@@ -20,9 +20,9 @@ export class StockMovementsController {
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN', 'EMPLOYEE')
+  @Roles('ADMIN', 'MANAGER')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Registrar movimiento', description: 'Crea un movimiento de inventario (solo ADMIN o EMPLOYEE).' })
+  @ApiOperation({ summary: 'Registrar movimiento', description: 'Crea un movimiento de inventario (solo ADMIN o MANAGER).' })
   @ApiBody({ type: CreateStockMovementDto })
   @ApiResponse({ status: 201, description: 'Movimiento creado', content: { 'application/json': { examples: { ejemplo: { value: { id: 1, type: 'PRODUCCION', quantity: 10 } } } } } })
   @ApiBadRequestResponse({ description: 'Validaciones de negocio', schema: { example: { statusCode: 400, error: 'Bad Request', message: 'fromBranchSlug requerido' } } })
@@ -54,9 +54,9 @@ export class StockMovementsController {
 
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN', 'EMPLOYEE')
+  @Roles('ADMIN', 'MANAGER')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Listar movimientos', description: 'Listado paginado de movimientos (solo ADMIN o EMPLOYEE).' })
+  @ApiOperation({ summary: 'Listar movimientos', description: 'Listado paginado de movimientos (solo ADMIN o MANAGER).' })
   @ApiQuery({ name: 'productSlug', required: false })
   @ApiQuery({ name: 'branchSlug', required: false })
   @ApiQuery({ name: 'type', required: false })

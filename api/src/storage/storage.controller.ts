@@ -28,7 +28,7 @@ export class StorageController {
   constructor(private readonly storageService: StorageService) {}
 
   @Post('upload')
-  @Roles('ADMIN', 'EMPLOYEE')
+  @Roles('ADMIN', 'MANAGER')
   @UseInterceptors(FileInterceptor('file'))
   async uploadImage(@UploadedFile() file: MulterFile) {
     if (!file) {

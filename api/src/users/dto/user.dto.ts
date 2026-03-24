@@ -46,14 +46,14 @@ export class CreateUserDto {
 
   @ApiProperty({ 
     description: 'Rol del usuario',
-    enum: ['CUSTOMER', 'EMPLOYEE', 'ADMIN'],
+    enum: ['CUSTOMER', 'ADMIN', 'MANAGER', 'BAKER', 'CASHIER'],
     default: 'CUSTOMER'
   })
-  @IsEnum(['CUSTOMER', 'EMPLOYEE', 'ADMIN'])
-  role!: 'CUSTOMER' | 'EMPLOYEE' | 'ADMIN';
+  @IsEnum(['CUSTOMER', 'ADMIN', 'MANAGER', 'BAKER', 'CASHIER'])
+  role!: 'CUSTOMER' | 'ADMIN' | 'MANAGER' | 'BAKER' | 'CASHIER';
 
   @ApiProperty({ 
-    description: 'ID de la sucursal asignada (solo para EMPLOYEE)',
+    description: 'ID de la sucursal asignada (solo para MANAGER, BAKER, CASHIER)',
     example: 1,
     required: false
   })
@@ -90,7 +90,7 @@ export class AdminUserDto {
   @ApiProperty({ description: 'Teléfono del usuario', required: false })
   phone?: string;
 
-  @ApiProperty({ description: 'Rol del usuario', enum: ['CUSTOMER', 'EMPLOYEE', 'ADMIN'] })
+  @ApiProperty({ description: 'Rol del usuario', enum: ['CUSTOMER', 'ADMIN', 'MANAGER', 'BAKER', 'CASHIER'] })
   role!: string;
 
   @ApiProperty({ description: 'Estado activo del usuario' })

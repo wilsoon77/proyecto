@@ -80,9 +80,9 @@ export class OrdersService {
           update: { reserved: { increment: item.quantity } },
           create: { productId: p.id, branchId: branch.id, quantity: 0, reserved: item.quantity },
         });
-        const price = Number(p.price);
+        const price = Number(p.basePrice);
         subtotal += price * item.quantity;
-        await tx.orderItem.create({ data: { orderId: created.id, productId: p.id, productName: p.name, quantity: item.quantity, unitPrice: p.price } });
+        await tx.orderItem.create({ data: { orderId: created.id, productId: p.id, productName: p.name, quantity: item.quantity, unitPrice: p.basePrice } });
       }
       const updated = await tx.order.update({ where: { id: created.id }, data: { orderNumber: formatOrderNumber(created.id), subtotal, total: subtotal } });
       return updated;

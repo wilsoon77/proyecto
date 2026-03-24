@@ -91,7 +91,7 @@ export class UserDto {
   phone?: string | null;
   @ApiProperty({ example: true })
   isActive!: boolean;
-  @ApiProperty({ example: 'CUSTOMER', enum: ['CUSTOMER','EMPLOYEE','ADMIN'] })
+  @ApiProperty({ example: 'CUSTOMER', enum: ['CUSTOMER','ADMIN','MANAGER','BAKER','CASHIER'] })
   role!: string;
 }
 

@@ -7,10 +7,13 @@ export interface ProductDTO {
   name: string;
   slug: string;
   description?: string;
-  price: number;
+  basePrice: number;
   category: string;
+  origin?: string;
   isNew?: boolean;
-  discount?: number;
+  comboQuantity?: number;
+  comboPrice?: number;
+  unitsPerTray?: number;
   available?: number; // stock disponible (quantity - reserved)
 }
 
@@ -33,18 +36,18 @@ export class ProductsService {
       ];
     }
     if (query.min !== undefined || query.max !== undefined) {
-      where.price = {};
-      if (query.min !== undefined) where.price.gte = query.min;
-      if (query.max !== undefined) where.price.lte = query.max;
+      where.basePrice = {};
+      if (query.min !== undefined) where.basePrice.gte = query.min;
+      if (query.max !== undefined) where.basePrice.lte = query.max;
     }
 
     let orderBy: any = undefined;
     switch (query.sort) {
       case 'precio-asc':
-        orderBy = { price: 'asc' };
+        orderBy = { basePrice: 'asc' };
         break;
       case 'precio-desc':
-        orderBy = { price: 'desc' };
+        orderBy = { basePrice: 'desc' };
         break;
       case 'nuevo':
         orderBy = { createdAt: 'desc' };
@@ -94,10 +97,13 @@ export class ProductsService {
         name: p.name,
         slug: p.slug,
         description: p.description ?? undefined,
-        price: Number(p.price),
+        basePrice: Number(p.basePrice),
         category: p.category.name,
+        origin: p.origin,
         isNew: p.isNew ?? undefined,
-        discount: p.discountPct ?? undefined,
+        comboQuantity: p.comboQuantity ?? undefined,
+        comboPrice: p.comboPrice ? Number(p.comboPrice) : undefined,
+        unitsPerTray: p.unitsPerTray ?? undefined,
         available,
         images: p.images.map(img => ({ id: img.id, url: img.url, position: img.position })),
       };
@@ -127,11 +133,14 @@ export class ProductsService {
       name: p.name,
       slug: p.slug,
       description: p.description ?? undefined,
-      price: Number(p.price),
+      basePrice: Number(p.basePrice),
       category: p.category.name,
       categorySlug: p.category.slug,
+      origin: p.origin,
       isNew: p.isNew ?? undefined,
-      discount: p.discountPct ?? undefined,
+      comboQuantity: p.comboQuantity ?? undefined,
+      comboPrice: p.comboPrice ? Number(p.comboPrice) : undefined,
+      unitsPerTray: p.unitsPerTray ?? undefined,
       available,
     };
   }
@@ -152,7 +161,7 @@ export class ProductsService {
       name: p.name,
       slug: p.slug,
       description: p.description ?? undefined,
-      price: Number(p.price),
+      basePrice: Number(p.basePrice),
       category: p.category.name,
       categorySlug: p.category.slug,
       categoryId: p.categoryId,
@@ -160,7 +169,9 @@ export class ProductsService {
       isNew: p.isNew ?? false,
       isActive: p.isActive,
       isAvailable: p.isAvailable,
-      discountPct: p.discountPct ?? undefined,
+      comboQuantity: p.comboQuantity ?? undefined,
+      comboPrice: p.comboPrice ? Number(p.comboPrice) : undefined,
+      unitsPerTray: p.unitsPerTray ?? undefined,
       images: p.images.map(img => ({ id: img.id, url: img.url, position: img.position })),
       available,
       createdAt: p.createdAt,
@@ -168,7 +179,7 @@ export class ProductsService {
     };
   }
 
-  async updateById(id: number, data: { sku?: string; name?: string; description?: string; price?: number; discountPct?: number; categorySlug?: string; origin?: string; isNew?: boolean; isActive?: boolean; isAvailable?: boolean; imageUrl?: string }) {
+  async updateById(id: number, data: { sku?: string; name?: string; description?: string; basePrice?: number; comboQuantity?: number; comboPrice?: number; unitsPerTray?: number; categorySlug?: string; origin?: string; isNew?: boolean; isActive?: boolean; isAvailable?: boolean; imageUrl?: string }) {
     const prod = await this.prisma.product.findUnique({ where: { id } });
     if (!prod) throw new NotFoundException('Producto no encontrado');
     
@@ -204,8 +215,10 @@ export class ProductsService {
         name: data.name,
         slug: newSlug,
         description: data.description, 
-        price: data.price, 
-        discountPct: data.discountPct, 
+        basePrice: data.basePrice, 
+        comboQuantity: data.comboQuantity, 
+        comboPrice: data.comboPrice, 
+        unitsPerTray: data.unitsPerTray, 
         categoryId, 
         origin: (data.origin as any) ?? undefined, 
         isNew: data.isNew, 
@@ -234,7 +247,7 @@ export class ProductsService {
       name: updated.name,
       slug: updated.slug,
       description: updated.description ?? undefined,
-      price: Number(updated.price),
+      basePrice: Number(updated.basePrice),
       category: updated.category.name,
       categorySlug: updated.category.slug,
       isNew: updated.isNew,
@@ -276,7 +289,7 @@ export class ProductsService {
     return invAll.reduce((sum, i) => sum + (i.quantity - i.reserved), 0);
   }
 
-  async create(data: { sku: string; name: string; description?: string; price: number; categorySlug: string; origin?: string; isNew?: boolean; isAvailable?: boolean; imageUrl?: string }) {
+  async create(data: { sku: string; name: string; description?: string; basePrice: number; comboQuantity?: number; comboPrice?: number; unitsPerTray?: number; categorySlug: string; origin?: string; isNew?: boolean; isAvailable?: boolean; imageUrl?: string }) {
     const category = await this.prisma.category.findUnique({ where: { slug: data.categorySlug } });
     if (!category) throw new BadRequestException('Categoría no encontrada');
     
@@ -301,7 +314,10 @@ export class ProductsService {
           name: data.name, 
           slug, 
           description: data.description, 
-          price: data.price, 
+          basePrice: data.basePrice, 
+          comboQuantity: data.comboQuantity, 
+          comboPrice: data.comboPrice, 
+          unitsPerTray: data.unitsPerTray, 
           categoryId: category.id, 
           origin: (data.origin as any) ?? undefined, 
           isNew: data.isNew ?? false, 
@@ -339,7 +355,7 @@ export class ProductsService {
     });
   }
 
-  async update(slug: string, data: { sku?: string; name?: string; description?: string; price?: number; discountPct?: number; categorySlug?: string; origin?: string; isNew?: boolean; isActive?: boolean; isAvailable?: boolean }) {
+  async update(slug: string, data: { sku?: string; name?: string; description?: string; basePrice?: number; comboQuantity?: number; comboPrice?: number; unitsPerTray?: number; categorySlug?: string; origin?: string; isNew?: boolean; isActive?: boolean; isAvailable?: boolean }) {
     const prod = await this.prisma.product.findUnique({ where: { slug } });
     if (!prod) throw new NotFoundException('Producto no encontrado');
     if (data.sku && data.sku !== prod.sku) {
@@ -363,7 +379,7 @@ export class ProductsService {
       if (!category) throw new BadRequestException('Categoría no encontrada');
       categoryId = category.id;
     }
-    const updated = await this.prisma.product.update({ where: { id: prod.id }, data: { sku: data.sku, name: data.name, slug: newSlug, description: data.description, price: data.price, discountPct: data.discountPct, categoryId, origin: (data.origin as any) ?? undefined, isNew: data.isNew, isActive: data.isActive, isAvailable: data.isAvailable } });
+    const updated = await this.prisma.product.update({ where: { id: prod.id }, data: { sku: data.sku, name: data.name, slug: newSlug, description: data.description, basePrice: data.basePrice, comboQuantity: data.comboQuantity, comboPrice: data.comboPrice, unitsPerTray: data.unitsPerTray, categoryId, origin: (data.origin as any) ?? undefined, isNew: data.isNew, isActive: data.isActive, isAvailable: data.isAvailable } });
     return updated;
   }
 
@@ -388,7 +404,7 @@ export class ProductsService {
     return { deleted: true, slug };
   }
 
-  async putUpdate(slug: string, data: { name: string; description?: string; price: number; categorySlug: string; origin?: string; isNew?: boolean; discountPct?: number }) {
+  async putUpdate(slug: string, data: { name: string; description?: string; basePrice: number; comboQuantity?: number; comboPrice?: number; unitsPerTray?: number; categorySlug: string; origin?: string; isNew?: boolean }) {
     const prod = await this.prisma.product.findUnique({ where: { slug } });
     if (!prod) throw new NotFoundException('Producto no encontrado');
     const category = await this.prisma.category.findUnique({ where: { slug: data.categorySlug } });
@@ -396,30 +412,31 @@ export class ProductsService {
     const updated = await this.prisma.product.update({ where: { id: prod.id }, data: {
       name: data.name,
       description: data.description,
-      price: data.price,
+      basePrice: data.basePrice,
+      comboQuantity: data.comboQuantity,
+      comboPrice: data.comboPrice,
+      unitsPerTray: data.unitsPerTray,
       categoryId: category.id,
       origin: (data.origin as any) ?? prod.origin,
       isNew: data.isNew ?? false,
-      discountPct: data.discountPct,
     }});
     return updated;
   }
 
   async findFeatured(limit: number = 10) {
-    // Productos destacados: nuevos o con descuento, activos y disponibles
+    // Productos destacados: nuevos o con combo, activos y disponibles
     const products = await this.prisma.product.findMany({
       where: {
         isActive: true,
         isAvailable: true,
         OR: [
           { isNew: true },
-          { discountPct: { gt: 0 } },
+          { comboQuantity: { not: null } },
         ],
       },
       include: { category: true },
       orderBy: [
         { isNew: 'desc' },
-        { discountPct: 'desc' },
         { createdAt: 'desc' },
       ],
       take: limit,
@@ -445,10 +462,11 @@ export class ProductsService {
         name: p.name,
         slug: p.slug,
         description: p.description ?? undefined,
-        price: Number(p.price),
+        basePrice: Number(p.basePrice),
         category: p.category.name,
         isNew: p.isNew ?? undefined,
-        discount: p.discountPct ?? undefined,
+        comboQuantity: p.comboQuantity ?? undefined,
+        comboPrice: p.comboPrice ? Number(p.comboPrice) : undefined,
         available,
       };
     });
@@ -466,10 +484,10 @@ export class ProductsService {
     let orderBy: any = undefined;
     switch (query.sort) {
       case 'precio-asc':
-        orderBy = { price: 'asc' };
+        orderBy = { basePrice: 'asc' };
         break;
       case 'precio-desc':
-        orderBy = { price: 'desc' };
+        orderBy = { basePrice: 'desc' };
         break;
       case 'nuevo':
         orderBy = { createdAt: 'desc' };
@@ -512,10 +530,11 @@ export class ProductsService {
         name: p.name,
         slug: p.slug,
         description: p.description ?? undefined,
-        price: Number(p.price),
+        basePrice: Number(p.basePrice),
         category: p.category.name,
         isNew: p.isNew ?? undefined,
-        discount: p.discountPct ?? undefined,
+        comboQuantity: p.comboQuantity ?? undefined,
+        comboPrice: p.comboPrice ? Number(p.comboPrice) : undefined,
         available,
       };
     });

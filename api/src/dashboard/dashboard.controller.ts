@@ -8,7 +8,7 @@ import { RolesGuard } from '../auth/roles.guard.js';
 @Controller('dashboard')
 @ApiTags('dashboard')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('ADMIN', 'EMPLOYEE')
+@Roles('ADMIN', 'MANAGER')
 @ApiBearerAuth()
 export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
@@ -16,9 +16,9 @@ export class DashboardController {
   @Get('stats')
   @ApiOperation({
     summary: 'Estadísticas del dashboard',
-    description: 'Obtiene estadísticas consolidadas para el panel de administración. Los EMPLOYEE solo ven su sucursal asignada.',
+    description: 'Obtiene estadísticas consolidadas para el panel de administración. Los MANAGER solo ven su sucursal asignada.',
   })
-  @ApiQuery({ name: 'branchId', required: false, description: 'ID de la sucursal (ADMIN puede filtrar, EMPLOYEE ve solo su sucursal)' })
+  @ApiQuery({ name: 'branchId', required: false, description: 'ID de la sucursal (ADMIN puede filtrar, MANAGER ve solo su sucursal)' })
   @ApiResponse({
     status: 200,
     description: 'Estadísticas del dashboard',
@@ -67,7 +67,7 @@ export class DashboardController {
     },
   })
   getStats(@Query('branchId') branchId?: string, @Req() req?: any) {
-    // Si el usuario es EMPLOYEE, forzar su sucursal asignada
+    // Si el usuario es MANAGER, forzar su sucursal asignada
     // Por ahora, los empleados deben pasar su branchId desde el frontend
     // TODO: Implementar relación User -> Branch para asignar sucursal automáticamente
     const parsedBranchId = branchId ? parseInt(branchId, 10) : undefined;

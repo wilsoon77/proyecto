@@ -84,14 +84,17 @@ export class UsersService {
       throw new BadRequestException(`Ya existe un usuario con el email ${createUserDto.email}`);
     }
 
-    // Validar que si es EMPLOYEE debe tener branchId
-    if (createUserDto.role === 'EMPLOYEE' && !createUserDto.branchId) {
-      throw new BadRequestException('Los empleados deben tener una sucursal asignada');
+    // Roles operativos que requieren sucursal
+    const branchRoles = ['MANAGER', 'BAKER', 'CASHIER'];
+
+    // Validar que roles operativos deben tener branchId
+    if (branchRoles.includes(createUserDto.role) && !createUserDto.branchId) {
+      throw new BadRequestException('Los roles operativos (MANAGER, BAKER, CASHIER) deben tener una sucursal asignada');
     }
 
-    // Si no es EMPLOYEE, no debería tener branchId
-    if (createUserDto.role !== 'EMPLOYEE' && createUserDto.branchId) {
-      throw new BadRequestException('Solo los empleados pueden tener una sucursal asignada');
+    // Si no es rol operativo, no debería tener branchId
+    if (!branchRoles.includes(createUserDto.role) && createUserDto.branchId) {
+      throw new BadRequestException('Solo los roles operativos pueden tener una sucursal asignada');
     }
 
     // Verificar que la sucursal existe si se especifica
@@ -157,9 +160,12 @@ export class UsersService {
     const finalRole = updateUserDto.role || existingUser.role;
     const finalBranchId = updateUserDto.branchId !== undefined ? updateUserDto.branchId : existingUser.branchId;
 
+    // Roles operativos que requieren sucursal
+    const branchRoles = ['MANAGER', 'BAKER', 'CASHIER'];
+
     // Validar branchId según el rol
-    if (finalRole === 'EMPLOYEE' && !finalBranchId) {
-      throw new BadRequestException('Los empleados deben tener una sucursal asignada');
+    if (branchRoles.includes(finalRole) && !finalBranchId) {
+      throw new BadRequestException('Los roles operativos (MANAGER, BAKER, CASHIER) deben tener una sucursal asignada');
     }
 
     // Verificar que la sucursal existe si se especifica
@@ -172,8 +178,8 @@ export class UsersService {
       }
     }
 
-    // Si cambia de EMPLOYEE a otro rol, limpiar branchId
-    const shouldClearBranch = updateUserDto.role && updateUserDto.role !== 'EMPLOYEE' && existingUser.role === 'EMPLOYEE';
+    // Si cambia de rol operativo a no-operativo, limpiar branchId
+    const shouldClearBranch = updateUserDto.role && !branchRoles.includes(updateUserDto.role) && branchRoles.includes(existingUser.role);
 
     // Preparar datos de actualización
     const { password, ...updateData } = updateUserDto;

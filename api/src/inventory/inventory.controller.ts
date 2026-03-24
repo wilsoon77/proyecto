@@ -8,13 +8,13 @@ import { Roles } from '../auth/roles.decorator.js';
 @Controller('inventory')
 @ApiTags('inventory')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('ADMIN', 'EMPLOYEE')
+@Roles('ADMIN', 'MANAGER')
 @ApiBearerAuth()
 export class InventoryController {
   constructor(private readonly prisma: PrismaService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Consultar inventario', description: 'Niveles de stock por producto y sucursal. Requiere rol ADMIN o EMPLOYEE.' })
+  @ApiOperation({ summary: 'Consultar inventario', description: 'Niveles de stock por producto y sucursal. Requiere rol ADMIN o MANAGER.' })
   @ApiQuery({ name: 'product', required: false, description: 'slug del producto' })
   @ApiQuery({ name: 'branch', required: false, description: 'slug de la sucursal' })
   async list(@Query('product') productSlug?: string, @Query('branch') branchSlug?: string) {

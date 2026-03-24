@@ -17,7 +17,7 @@ const openApiLocalServerUrl = process.env.OPENAPI_LOCAL_SERVER_URL || 'http://lo
 async function run() {
   const app = await NestFactory.create(AppModule, { logger: false });
   const config = new DocumentBuilder()
-    .setTitle('PanaderIA API')
+    .setTitle('Panaderia Svetlana API')
     .setDescription('Especificación OpenAPI para la panadería')
     .setVersion('0.1.0')
     .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' })

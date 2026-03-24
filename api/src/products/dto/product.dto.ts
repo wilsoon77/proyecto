@@ -6,10 +6,13 @@ export class ProductDto {
   @ApiProperty({ example: 'Concha' }) name!: string;
   @ApiProperty({ example: 'concha' }) slug!: string;
   @ApiProperty({ example: 'Pan dulce tradicional', nullable: true }) description?: string;
-  @ApiProperty({ example: 10.5 }) price!: number;
+  @ApiProperty({ example: 0.50 }) basePrice!: number;
   @ApiProperty({ example: 'Pan dulce' }) category!: string;
+  @ApiProperty({ example: 'PRODUCIDO', enum: ['PRODUCIDO','COMPRADO'], nullable: true }) origin?: string;
   @ApiProperty({ example: true, nullable: true }) isNew?: boolean;
-  @ApiProperty({ example: 10, nullable: true }) discount?: number;
+  @ApiProperty({ example: 3, nullable: true, description: 'Cantidad del combo (ej: 3 para "3x1.25")' }) comboQuantity?: number;
+  @ApiProperty({ example: 1.25, nullable: true, description: 'Precio del combo' }) comboPrice?: number;
+  @ApiProperty({ example: 36, nullable: true, description: 'Unidades por lata (solo PRODUCIDO)' }) unitsPerTray?: number;
   @ApiProperty({ example: 24 }) available?: number;
 }
 
@@ -23,8 +26,17 @@ export class CreateProductDto {
   @ApiProperty({ example: 'Pan dulce tradicional', required: false })
   @IsOptional() @IsString() description?: string;
 
-  @ApiProperty({ example: 10.5 })
-  @IsNumber() @Min(0) price!: number;
+  @ApiProperty({ example: 0.50, description: 'Precio unitario base' })
+  @IsNumber() @Min(0) basePrice!: number;
+
+  @ApiProperty({ example: 3, required: false, description: 'Cantidad del combo (ej: 3 para "3x1.25")' })
+  @IsOptional() @IsInt() @Min(2) comboQuantity?: number;
+
+  @ApiProperty({ example: 1.25, required: false, description: 'Precio del combo' })
+  @IsOptional() @IsNumber() @Min(0) comboPrice?: number;
+
+  @ApiProperty({ example: 36, required: false, description: 'Unidades por lata (solo para PRODUCIDO)' })
+  @IsOptional() @IsInt() @Min(1) unitsPerTray?: number;
 
   @ApiProperty({ example: 'pan-dulce' })
   @IsString() categorySlug!: string;
@@ -52,11 +64,17 @@ export class UpdateProductDto {
   @ApiProperty({ example: 'Pan dulce con vainilla', required: false })
   @IsOptional() @IsString() description?: string;
 
-  @ApiProperty({ example: 11.0, required: false })
-  @IsOptional() @IsNumber() price?: number;
+  @ApiProperty({ example: 0.50, required: false, description: 'Precio unitario base' })
+  @IsOptional() @IsNumber() @Min(0) basePrice?: number;
 
-  @ApiProperty({ example: 5, required: false, minimum: 0, maximum: 100 })
-  @IsOptional() @IsInt() @Min(0) @Max(100) discountPct?: number;
+  @ApiProperty({ example: 3, required: false, description: 'Cantidad del combo' })
+  @IsOptional() @IsInt() @Min(2) comboQuantity?: number;
+
+  @ApiProperty({ example: 1.25, required: false, description: 'Precio del combo' })
+  @IsOptional() @IsNumber() @Min(0) comboPrice?: number;
+
+  @ApiProperty({ example: 36, required: false, description: 'Unidades por lata' })
+  @IsOptional() @IsInt() @Min(1) unitsPerTray?: number;
 
   @ApiProperty({ example: 'pan-dulce', required: false })
   @IsOptional() @IsString() categorySlug?: string;
@@ -82,14 +100,18 @@ export class PutProductDto {
   @IsString() @MinLength(2) name!: string;
   @ApiProperty({ example: 'Pan dulce tradicional', required: false })
   @IsOptional() @IsString() description?: string;
-  @ApiProperty({ example: 10.5 })
-  @IsNumber() @Min(0) price!: number;
+  @ApiProperty({ example: 0.50, description: 'Precio unitario base' })
+  @IsNumber() @Min(0) basePrice!: number;
   @ApiProperty({ example: 'pan-dulce' })
   @IsString() categorySlug!: string;
   @ApiProperty({ example: 'PRODUCIDO', enum: ['PRODUCIDO','COMPRADO'], required: false })
   @IsOptional() @IsString() origin?: string;
   @ApiProperty({ example: true, required: false })
   @IsOptional() @IsBoolean() isNew?: boolean;
-  @ApiProperty({ example: 5, required: false, minimum: 0, maximum: 100 })
-  @IsOptional() @IsInt() @Min(0) @Max(100) discountPct?: number;
+  @ApiProperty({ example: 3, required: false, description: 'Cantidad del combo' })
+  @IsOptional() @IsInt() @Min(2) comboQuantity?: number;
+  @ApiProperty({ example: 1.25, required: false, description: 'Precio del combo' })
+  @IsOptional() @IsNumber() @Min(0) comboPrice?: number;
+  @ApiProperty({ example: 36, required: false, description: 'Unidades por lata' })
+  @IsOptional() @IsInt() @Min(1) unitsPerTray?: number;
 }

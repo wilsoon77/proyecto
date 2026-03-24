@@ -1,107 +1,167 @@
-# PanaderIA API (NestJS + Prisma)
+# Panaderia Svetlana API (NestJS + Prisma)
 
-Backend para el sistema de gestión de panaderías.
+Backend para el sistema ERP/POS de panaderías multi-sucursal.
 
 ## 📚 Documentación API
 
 **Swagger local:** http://localhost:4000/docs (cuando el servidor esté corriendo)
 
 ## Stack
-- NestJS (Framework HTTP / modular)
-- Prisma (ORM para PostgreSQL)
+- NestJS 10 (Framework HTTP / modular)
+- Prisma 5 (ORM para PostgreSQL)
 - PostgreSQL (Supabase en la nube)
 - TypeScript estricto
 - Validación con class-validator / class-transformer
+- Almacenamiento de imágenes: Appwrite (node-appwrite)
+- Logging: nestjs-pino + pino-pretty
+- Métricas: prom-client (Prometheus)
+- Seguridad: Helmet, CORS, ThrottlerModule (Rate Limiting), JWT Access+Refresh tokens, bcrypt
+
+## Módulos Implementados (19)
+
+| Módulo | Descripción |
+|--------|-------------|
+| `AuthModule` | Registro, login, refresh tokens, logout, perfil |
+| `ProductsModule` | CRUD de productos con filtros, paginación, búsqueda |
+| `CategoriesModule` | CRUD de categorías |
+| `BranchesModule` | CRUD de sucursales |
+| `UsersModule` | Gestión de usuarios (ADMIN) |
+| `AddressesModule` | Direcciones de envío |
+| `OrdersModule` | Reserva, cancelación, pickup, listado de pedidos |
+| `InventoryModule` | Inventario de producto terminado por sucursal |
+| `StockMovementsModule` | Movimientos de inventario (producción, ventas, merma, etc.) |
+| `DashboardModule` | Estadísticas agregadas para dashboard admin |
+| `RecipesModule` | CRUD de recetas (amasijos) |
+| `ProductionModule` | Registro de producción (logs de horneos) |
+| `RawMaterialsModule` | Gestión de materia prima |
+| `StorageModule` | Upload/gestión de imágenes (Appwrite) |
+| `SupabaseModule` | Integración con Supabase Auth |
+| `AuditModule` | Registro de auditoría de acciones |
+| `HealthModule` | Health check (`/health`) |
+| `MetricsModule` | Métricas Prometheus (`/metrics`) |
+| `PrismaModule` | Servicio Prisma compartido |
+
+## Endpoints (44+)
+
+### Auth (7)
+- `POST /auth/register` — Registro con hCaptcha
+- `POST /auth/login` — Login con JWT
+- `POST /auth/refresh` — Renovar tokens
+- `POST /auth/logout` — Cerrar sesión
+- `GET /auth/me` — Perfil del usuario
+- `PATCH /auth/me` — Actualizar perfil
+- `POST /auth/deactivate` — Desactivar cuenta
+
+### Products (7)
+- `GET /products` — Listado con filtros, búsqueda, paginación
+- `GET /products/:slug` — Detalle por slug
+- `GET /products/featured` — Productos destacados
+- `POST /products` — Crear (ADMIN/MANAGER)
+- `PATCH /products/:slug` — Actualizar (ADMIN/MANAGER)
+- `PUT /products/:slug` — Reemplazar (ADMIN/MANAGER)
+- `DELETE /products/:slug` — Eliminar (ADMIN)
+
+### Categories (5)
+- `GET /categories` — Listado
+- `GET /categories/:slug` — Detalle
+- `POST /categories` — Crear (ADMIN/MANAGER)
+- `PATCH /categories/:slug` — Actualizar (ADMIN/MANAGER)
+- `DELETE /categories/:slug` — Eliminar (ADMIN)
+
+### Branches (5)
+- `GET /branches` — Listado de sucursales
+- `GET /branches/:id` — Detalle
+- `POST /branches` — Crear (ADMIN)
+- `PATCH /branches/:id` — Actualizar (ADMIN)
+- `DELETE /branches/:id` — Eliminar (ADMIN)
+
+### Users (6)
+- `GET /users` — Listado (ADMIN)
+- `GET /users/:id` — Detalle (ADMIN)
+- `POST /users` — Crear (ADMIN)
+- `PATCH /users/:id` — Actualizar (ADMIN)
+- `DELETE /users/:id/deactivate` — Desactivar (ADMIN)
+- `POST /users/:id/reactivate` — Reactivar (ADMIN)
+
+### Addresses (5)
+- `GET /addresses` — Mis direcciones (o todas para ADMIN)
+- `GET /addresses/:id` — Detalle
+- `POST /addresses` — Crear
+- `PATCH /addresses/:id` — Actualizar
+- `DELETE /addresses/:id` — Eliminar
+
+### Orders (5)
+- `POST /orders/reserve` — Reservar pedido
+- `POST /orders/:id/cancel` — Cancelar
+- `POST /orders/:id/pickup` — Marcar recogido
+- `GET /orders` — Listado con filtros
+- `GET /orders/:id` — Detalle
+
+### Inventory & Stock (3)
+- `GET /inventory` — Inventario con filtros por sucursal
+- `POST /stock-movements` — Registrar movimiento
+- `GET /stock-movements` — Historial de movimientos
+
+### Dashboard (1)
+- `GET /dashboard/stats` — Estadísticas (ADMIN/MANAGER)
+
+### Health & Metrics (2)
+- `GET /health` — Health check
+- `GET /metrics` — Métricas Prometheus (ADMIN)
+
+### Recipes, Production, Raw Materials
+- Endpoints CRUD para recetas, producción y materia prima
 
 ## Requisitos previos
 - Node.js >= 18
-- Cuenta en Supabase (o Neon) con una base Postgres creada
-- GitHub Actions (CI) opcional
+- Cuenta en Supabase con base PostgreSQL creada
 
 ## Configuración inicial
-1. Copiar `.env.example` a `.env` y reemplazar valores:
-```
-DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DB?schema=public"
-JWT_ACCESS_SECRET="tu_access_secret"
-JWT_REFRESH_SECRET="tu_refresh_secret"
-PORT=4000
-CORS_ORIGINS="http://localhost:3000"
-```
-2. Instalar dependencias:
-```bash
-npm install
-```
-3. Generar cliente Prisma y migrar:
-```bash
-npm run prisma:generate
-npm run prisma:migrate -- --name init
-```
-4. Sembrar datos iniciales:
-```bash
-npm run seed
-```
-5. Ejecutar servidor dev:
-```bash
-npm run dev
-```
-
-## Endpoints iniciales
-- `GET /products` (query: search, category, min, max, sort)
-- `GET /products/:slug`
-
-## Próximos módulos
-- Auth (register/login, JWT)
-- Orders (creación, estado)
-- Branches (sucursales)
-- Swagger/OpenAPI (`/docs`) para documentación y pruebas
-- Jobs asíncronos (BullMQ) para notificaciones
-
-## Integración con el frontend
-Cuando el endpoint `/products` esté conectado a Postgres:
-- Sustituir `MOCK_PRODUCTS` por fetch al API desde Next.js (`fetch(process.env.API_URL + '/products')`).
-
-## Requestly
-- Se puede crear reglas para redirigir peticiones del front a staging o mocks de test.
+1. Copiar `.env.example` a `.env` y completar valores
+2. Instalar dependencias: `npm install`
+3. Generar cliente Prisma: `npm run prisma:generate`
+4. Aplicar migraciones: `npm run prisma:migrate -- --name init`
+5. Sembrar datos iniciales: `npm run seed`
+6. Ejecutar servidor: `npm run dev`
 
 ## Scripts
+
 | Script | Descripción |
 |--------|-------------|
-| `dev` | Ejecuta Nest en modo desarrollo (ts-node loader). |
-| `build` | Compila TypeScript a `dist`. |
-| `start` | Inicia servidor desde `dist`. |
-| `prisma:migrate` | Crea/aplica migraciones en dev. |
-| `prisma:deploy` | Aplica migraciones en producción. |
-| `seed` | Ejecuta el script de seed inicial. |
+| `dev` | Ejecuta Nest en modo desarrollo (ts-node loader) |
+| `build` | Compila TypeScript a `dist` |
+| `start` | Inicia servidor desde `dist` |
+| `prisma:migrate` | Crea/aplica migraciones en dev |
+| `prisma:deploy` | Aplica migraciones en producción |
+| `prisma:generate` | Genera el cliente Prisma |
+| `seed` | Ejecuta el script de seed inicial |
+| `openapi:gen:dist` | Genera `openapi.json` sin conectar a DB |
+| `test` / `test:e2e` | Ejecuta tests con Jest |
+
+## Seguridad Implementada ✅
+- **Helmet** — Headers de seguridad HTTP
+- **CORS** — Orígenes configurables via `CORS_ORIGINS`
+- **Rate Limiting** — 100 req/min global (ThrottlerModule)
+- **JWT** — Access tokens (15min) + Refresh tokens (7 días) con rotación
+- **bcrypt** — Hash de contraseñas
+- **hCaptcha** — Protección de registro/login
+- **forbidNonWhitelisted** — Validación estricta de DTOs
+- **Swagger deshabilitado en producción**
+- **Audit Log** — Registro de acciones con IP y User-Agent
 
 ## Scalar Cloud (OpenAPI automático)
 
-Se agregó el workflow de GitHub Actions [\.github/workflows/scalar-openapi.yml](../.github/workflows/scalar-openapi.yml) para:
+Se usa GitHub Actions para validar y publicar `openapi.json` en Scalar. Ver `.github/workflows/` para detalles.
 
-- Validar `openapi.json` en Pull Requests.
-- Publicar automáticamente el OpenAPI en Scalar al hacer push a `main`.
+## Roles del Sistema
 
-### Requisitos para activarlo
-
-1. Crear cuenta en Scalar y obtener un API Key desde el dashboard.
-2. Configurar en GitHub (Settings > Secrets and variables > Actions):
-	- Secret: `SCALAR_API_KEY`
-	- Variable: `SCALAR_NAMESPACE`
- 	- Variable opcional: `OPENAPI_SERVER_URL` (ejemplo: `https://proyecto-dp81.onrender.com`) para que `Test Request` en Scalar apunte a tu backend real.
-3. Confirmar el slug publicado (actualmente fijo como `panaderia-api` en el workflow).
-4. El workflow usa Node 24 porque `@scalar/cli` requiere Node >= 24.
-
-### Flujo del pipeline
-
-1. Instala dependencias del backend.
-2. Genera `openapi.json` con `npm run openapi:gen:dist`.
-3. Valida el documento con `@scalar/cli`.
-4. Calcula una versión automática para Scalar con formato `<epoch_seconds>.<run_number>.<run_attempt>` (siempre creciente).
-5. Publica a Scalar Registry en `main` usando esa versión (historial limpio sin sobreescritura).
-
-## Notas de seguridad
-- Reemplazar secretos por valores seguros antes de deploy.
-- Activar rate limiting y Helmet en siguientes pasos.
-- Usar roles y guards para proteger rutas sensibles.
+| Rol | Descripción |
+|-----|-------------|
+| `ADMIN` | Acceso total al sistema |
+| `MANAGER` | Dueños/familia — ventas, inventario, producción |
+| `BAKER` | Panadero — producción y materia prima |
+| `CASHIER` | Cajero — solo punto de venta |
+| `CUSTOMER` | Cliente — catálogo, pedidos, perfil |
 
 ---
-Este README evolucionará conforme añadamos Auth, Orders y Swagger.
+Última actualización: Marzo 2026

@@ -1,214 +1,112 @@
-## ENDPOINTS LISTOS PARA PROBAR ✅
+# ENDPOINTS IMPLEMENTADOS ✅
 
-Todos los endpoints están implementados, documentados en Swagger y listos para usar.
+> **Actualizado: Marzo 2026**
+> Todos los endpoints listados aquí están implementados, documentados en Swagger y listos para usar.
+> **Swagger UI:** `http://localhost:4000/docs`
 
 ---
 
-### **1. GET /products/featured** ✅
-**Descripción:** Productos destacados (nuevos o con descuento)
-**URL:** `http://localhost:3000/products/featured`
-**Parámetros Query:** 
-- `limit` (opcional): número de productos (1-50, default: 10)
+## Resumen de Endpoints (44+)
 
-**Ejemplo cURL:**
-```bash
-curl -X GET "http://localhost:3000/products/featured?limit=5"
-```
+| Módulo | Endpoints | Autenticación |
+|--------|-----------|---------------|
+| Auth | 7 | Parcial (login/register públicos) |
+| Products | 7 | Lectura pública, escritura ADMIN/MANAGER |
+| Categories | 5 | Lectura pública, escritura ADMIN/MANAGER |
+| Branches | 5 | Lectura pública, escritura ADMIN |
+| Users | 6 | ADMIN |
+| Addresses | 5 | Autenticado |
+| Orders | 5 | Autenticado |
+| Inventory | 1 | Autenticado |
+| Stock Movements | 2 | Autenticado |
+| Dashboard | 1 | ADMIN/MANAGER |
+| Health & Metrics | 2 | Público / ADMIN |
+| Recipes | CRUD | ADMIN/MANAGER |
+| Production | CRUD | ADMIN/MANAGER/BAKER |
+| Raw Materials | CRUD | ADMIN/MANAGER |
 
-**Respuesta esperada:**
+---
+
+## Detalle de Endpoints Clave
+
+### GET /products/featured ✅
+**URL:** `http://localhost:4000/products/featured`
+**Parámetros:** `limit` (1-50, default: 10)
+
+**Respuesta:**
 ```json
 [
   {
     "id": 1,
-    "name": "Concha",
-    "slug": "concha",
-    "price": 10.5,
-    "discountPct": 10,
+    "name": "Pan Francés",
+    "slug": "pan-frances",
+    "basePrice": 0.50,
+    "comboQuantity": 3,
+    "comboPrice": 1.25,
     "isNew": true,
-    "category": { "id": 1, "name": "Pan Dulce" }
+    "origin": "PRODUCIDO",
+    "category": "Panes",
+    "images": [{ "id": 1, "url": "...", "position": 0 }]
   }
 ]
 ```
 
 ---
 
-### **2. GET /orders/my-orders** ✅
-**Descripción:** Mis órdenes (usuario autenticado)
-**URL:** `http://localhost:3000/orders/my-orders`
-**Autenticación:** Requerida (Bearer Token)
-**Parámetros Query:**
-- `status` (opcional): filtrar por estado
-- `page` (opcional): número de página (default: 1)
-- `pageSize` (opcional): items por página (default: 10)
+### GET /orders (con my-orders) ✅
+**URL:** `http://localhost:4000/orders`
+**Autenticación:** Bearer Token
+**Parámetros:** `status`, `page`, `pageSize`
 
-**Ejemplo cURL:**
-```bash
-curl -X GET "http://localhost:3000/orders/my-orders?page=1&pageSize=10" \
-  -H "Authorization: Bearer YOUR_TOKEN_HERE"
-```
-
-**Respuesta esperada:**
-```json
-{
-  "data": [
-    {
-      "id": 123,
-      "orderNumber": "ORD-000123",
-      "status": "PENDING",
-      "total": 500,
-      "createdAt": "2026-01-26T10:00:00Z",
-      "items": [...]
-    }
-  ],
-  "meta": {
-    "total": 5,
-    "pageCount": 1,
-    "page": 1,
-    "pageSize": 10
-  }
-}
-```
+Clientes ven automáticamente solo sus pedidos. ADMIN/MANAGER ven todos.
 
 ---
 
-### **3. PATCH /orders/:id/status** ✅
-**Descripción:** Cambiar estado de una orden (ADMIN/EMPLOYEE)
-**URL:** `http://localhost:3000/orders/123/status`
-**Autenticación:** Requerida (Bearer Token - ADMIN/EMPLOYEE)
-**Método:** PATCH
-**Body requerido:**
-```json
-{
-  "status": "CONFIRMED"
-}
-```
+### PATCH /orders/:id/status ✅
+**URL:** `http://localhost:4000/orders/123/status`
+**Autenticación:** Bearer Token (ADMIN/MANAGER)
+**Body:** `{ "status": "CONFIRMED" }`
 
-**Estados válidos:**
-- PENDING
-- CONFIRMED
-- PREPARING
-- READY
-- IN_DELIVERY
-- DELIVERED
-- CANCELLED
-- PICKED_UP
-
-**Ejemplo cURL:**
-```bash
-curl -X PATCH "http://localhost:3000/orders/123/status" \
-  -H "Authorization: Bearer YOUR_TOKEN_HERE" \
-  -H "Content-Type: application/json" \
-  -d '{"status": "CONFIRMED"}'
-```
-
-**Respuesta esperada:**
-```json
-{
-  "id": 123,
-  "orderNumber": "ORD-000123",
-  "status": "CONFIRMED",
-  "total": 500,
-  "updatedAt": "2026-01-26T10:15:00Z"
-}
-```
+**Estados válidos:** PENDING, CONFIRMED, PREPARING, READY, IN_DELIVERY, DELIVERED, CANCELLED, PICKED_UP
 
 ---
 
-### **4. GET /dashboard/stats** ✅
-**Descripción:** Estadísticas del dashboard (ADMIN ONLY)
-**URL:** `http://localhost:3000/dashboard/stats`
-**Autenticación:** Requerida (Bearer Token - ADMIN)
-**Método:** GET
-
-**Ejemplo cURL:**
-```bash
-curl -X GET "http://localhost:3000/dashboard/stats" \
-  -H "Authorization: Bearer YOUR_ADMIN_TOKEN_HERE"
-```
-
-**Respuesta esperada:**
-```json
-{
-  "summary": {
-    "totalOrders": 150,
-    "totalRevenue": 15000.50,
-    "avgOrderValue": 100.30,
-    "pendingOrders": 5,
-    "activeProducts": 45,
-    "totalCategories": 8,
-    "totalBranches": 3
-  },
-  "last30Days": {
-    "ordersCount": 45,
-    "revenue": 4500.00,
-    "avgOrderValue": 100.00
-  },
-  "ordersByStatus": [
-    { "status": "DELIVERED", "count": 100 },
-    { "status": "PENDING", "count": 5 },
-    { "status": "CONFIRMED", "count": 10 },
-    { "status": "CANCELLED", "count": 2 }
-  ],
-  "topProducts": [
-    { "productId": 1, "name": "Concha", "slug": "concha", "totalSold": 50 },
-    { "productId": 2, "name": "Bolillo", "slug": "bolillo", "totalSold": 40 }
-  ],
-  "lowStockProducts": [
-    { "productId": 5, "productName": "Pan Integral", "branchName": "Centro", "available": 2 }
-  ]
-}
-```
+### GET /dashboard/stats ✅
+**URL:** `http://localhost:4000/dashboard/stats`
+**Autenticación:** Bearer Token (ADMIN/MANAGER)
 
 ---
 
-## SWAGGER DOCUMENTATION ✅
-
-Todos los endpoints aparecerán automáticamente en Swagger UI cuando inicies el servidor:
-
-**URL:** `http://localhost:3000/api`
-
-**Ubicación en Swagger:**
-- **products:** GET /products/featured ✅
-- **orders:** GET /orders/my-orders ✅
-- **orders:** PATCH /orders/:id/status ✅ (NUEVO)
-- **dashboard:** GET /dashboard/stats ✅ (NUEVO)
-
----
-
-## PASOS PARA PROBAR:
+## Pasos para Probar
 
 1. **Inicia el servidor:**
-   ```bash
+   ```powershell
    cd api
-   npm run start:dev
+   npm run dev
    ```
 
-2. **Abre Swagger UI:**
-   ```
-   http://localhost:3000/api
-   ```
+2. **Abre Swagger UI:** `http://localhost:4000/docs`
 
 3. **Prueba sin autenticación:**
-   - GET /products/featured ✅
+   - `GET /products`, `GET /products/featured`, `GET /categories`, `GET /branches`
 
-4. **Autentícate primero:**
-   - POST /auth/login (obtén token)
-   - Copia el token en el botón "Authorize" de Swagger
+4. **Autentícate:**
+   - `POST /auth/login` → obtén token
+   - Click "Authorize" en Swagger → pega el token
 
 5. **Prueba endpoints autenticados:**
-   - GET /orders/my-orders ✅
-   - PATCH /orders/:id/status ✅
-   - GET /dashboard/stats ✅ (solo si tienes rol ADMIN)
+   - `GET /orders`, `GET /dashboard/stats`, etc.
 
 ---
 
-## RESUMEN ESTADO ✅
+## Roles disponibles
 
-| Endpoint | Status | Swagger | Errores | Listo |
-|----------|--------|---------|---------|-------|
-| GET /products/featured | ✅ Implementado | ✅ Documentado | ❌ Ninguno | ✅ SÍ |
-| GET /orders/my-orders | ✅ Implementado | ✅ Documentado | ❌ Ninguno | ✅ SÍ |
-| PATCH /orders/:id/status | ✅ Nuevo | ✅ Documentado | ❌ Ninguno | ✅ SÍ |
-| GET /dashboard/stats | ✅ Nuevo | ✅ Documentado | ❌ Ninguno | ✅ SÍ |
+| Rol | Acceso |
+|-----|--------|
+| `ADMIN` | Acceso total |
+| `MANAGER` | Ventas, inventario, producción, usuarios |
+| `BAKER` | Producción y materia prima |
+| `CASHIER` | Punto de venta |
+| `CUSTOMER` | Catálogo, pedidos, perfil |
 
-**🎉 LISTOS PARA PROBAR**
+**🎉 Backend completamente funcional**

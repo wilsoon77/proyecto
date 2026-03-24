@@ -2,7 +2,7 @@
 
 ## 📋 RESUMEN EJECUTIVO
 
-**Nombre del Proyecto:** PanaderIA Smart System  
+**Nombre del Proyecto:** Panaderia Svetlana Smart System  
 **Tipo:** Aplicación Web y Móvil Full-Stack con IA  
 **Objetivo:** Sistema integral de gestión para panaderías con automatización inteligente
 

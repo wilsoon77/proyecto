@@ -64,8 +64,8 @@ POST http://localhost:4000/auth/login
 Content-Type: application/json
 
 {
-  "email": "admin@panaderia.com",
-  "password": "admin123"
+  "email": "admin@example.com",
+  "password": "<SEED_ADMIN_PASSWORD>"
 }
 ```
 
@@ -136,7 +136,7 @@ Content-Type: application/json
 # Realizar 11 peticiones de login rápidamente
 for ($i = 1; $i -le 11; $i++) {
   POST http://localhost:4000/auth/login
-  Body: {"email":"admin@panaderia.com","password":"admin123"}
+  Body: {"email":"admin@example.com","password":"<SEED_ADMIN_PASSWORD>"}
 }
 ```
 

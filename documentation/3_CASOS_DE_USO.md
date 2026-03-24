@@ -1,4 +1,4 @@
-# 📝 CASOS DE USO - PanaderIA Smart System
+# 📝 CASOS DE USO - Panaderia Svetlana Smart System
 
 ## 📋 ÍNDICE DE CASOS DE USO
 

@@ -1,66 +1,31 @@
-# 🗄️ DISEÑO DE BASE DE DATOS - PanaderIA Smart System
+# 🗄️ DISEÑO DE BASE DE DATOS - Panaderia Svetlana Smart System
 
-## 📊 MODELO ENTIDAD-RELACIÓN (ERD)
+> ⚠️ **ACTUALIZACIÓN IMPORTANTE (Marzo 2026):** El diseño original fue refactorizado y migrado a Prisma. El sistema ahora soporta producción por amasijos, combos de precios y unidades estandarizadas de materia prima. La fuente absoluta de la verdad técnica se encuentra en el archivo `api/prisma/schema.prisma`. En este documento persisten definiciones originales, pero aquí se detalla el rediseño clave.
 
-### Diagrama Conceptual
+## 🚀 JUSTIFICACIÓN DEL REDISEÑO OPERATIVO
+1. **Caos en unidades de medida:** Se agregó `BaseUnit` a un nuevo modelo `RawMaterial` (se reemplazó la tabla de ingredientes genérica). Toda materia prima se transacciona internamente en unidades base (LB, ML, UNIT) y se convierte al comprar en quintales o galones.
+2. **Producción Atómica:** Se creó el ciclo `Recipe` -> `RecipeIngredient` -> `ProductionLog`. La panadería no produce por unidad, produce por "Amasijo" y cuenta en "Latas". Cuando un manager registra que se hornearon X latas, el backend: resta stock de `RawMaterial` y suma pan terminado a `Inventory` multiplicando por `unitsPerTray`.
+3. **Precios Combos:** La tabla de productos reemplazó los campos erróneos de "descuento porcentual" para incorporar explícitamente `basePrice`, `comboQuantity` y `comboPrice` (ej. 3 panes x 1.25).
+4. **Roles Realistas:** El acceso se maneja por sucursal para `MANAGER`, `BAKER` y `CASHIER`, delegando full access al `ADMIN`/`SUPERADMIN`.
 
-```
-┌─────────────┐         ┌──────────────┐         ┌─────────────┐
-│   USUARIO   │────────▶│   DIRECCIÓN  │         │    ROL      │
-│             │    1:N  │              │         │             │
-└──────┬──────┘         └──────────────┘         └──────┬──────┘
-       │                                                 │
-       │ N:M                                            │ 1:N
-       │                                                 │
-       ▼                                                 ▼
-┌─────────────┐         ┌──────────────┐         ┌─────────────┐
-│USUARIO_ROL  │         │    PEDIDO    │◀────────│  EMPLEADO   │
-│(Tabla Inter)│         │              │    1:N  │             │
-└─────────────┘         └──────┬───────┘         └─────────────┘
-                               │
-                               │ 1:N
-                               ▼
-                        ┌──────────────┐         ┌─────────────┐
-                        │DETALLE_PEDIDO│────────▶│  PRODUCTO   │
-                        │              │    N:1  │             │
-                        └──────────────┘         └──────┬──────┘
-                                                        │
-                        ┌──────────────┐                │ N:1
-                        │  CATEGORÍA   │◀───────────────┘
-                        │              │
-                        └──────────────┘         ┌─────────────┐
-                                                 │ INGREDIENTE │
-┌─────────────┐         ┌──────────────┐        │             │
-│    PAGO     │────────▶│    PEDIDO    │        └──────┬──────┘
-│             │    1:1  │              │               │
-└─────────────┘         └──────────────┘               │ N:M
-                                                        │
-                        ┌──────────────┐               │
-                        │PRODUCTO_ING. │◀──────────────┘
-                        │(Tabla Inter) │
-                        └──────────────┘
+## 📊 DIAGRAMA CONCEPTUAL ACTUALIZADO (Núcleo Operativo)
 
-┌─────────────┐         ┌──────────────┐         ┌─────────────┐
-│  RESEÑA     │────────▶│   PRODUCTO   │         │  PROMOCIÓN  │
-│             │    N:1  │              │         │             │
-└─────────────┘         └──────────────┘         └─────────────┘
-
-┌─────────────┐         ┌──────────────┐         ┌─────────────┐
-│   CARRITO   │────────▶│   USUARIO    │         │   TURNO     │
-│             │    1:1  │              │         │             │
-└──────┬──────┘         └──────────────┘         └──────┬──────┘
-       │                                                 │
-       │ 1:N                                            │ N:M
-       ▼                                                 │
-┌─────────────┐                                  ┌──────▼──────┐
-│ITEM_CARRITO │                                  │EMPLEADO_TUR.│
-│             │                                  │(Tabla Inter)│
-└─────────────┘                                  └─────────────┘
-
-┌─────────────┐         ┌──────────────┐
-│   LOG       │         │  NOTIFICACIÓN│
-│             │         │              │
-└─────────────┘         └──────────────┘
+```text
+┌───────────┐      ┌────────────────┐      ┌────────────┐     ┌──────────────┐
+│  USUARIO  │ 1──N │ PRODUCTION_LOG │ N──1 │   RECIPE   │ N──1│   PRODUCTO   │
+└───────────┘      └───────┬────────┘      └───────┬────┘     └───────┬──────┘
+                           │ 1                     │ 1                │ 1
+                           │                       │                  │
+                           ▼ N                     ▼ N                ▼ N
+                   ┌────────────────┐      ┌────────────┐     ┌──────────────┐
+                   │ STOCK_MOVEMENT │      │RECIPE_INGR.│     │   INVENTORY  │
+                   └────────────────┘      └───────┬────┘     └──────────────┘
+                                                   │ N
+                                                   │                 
+                                                   ▼ 1               
+                   ┌────────────────┐      ┌────────────┐           
+                   │ RAW_MAT_INVENT.│ N──1 │RAW_MATERIAL│           
+                   └────────────────┘      └────────────┘
 ```
 
 ---

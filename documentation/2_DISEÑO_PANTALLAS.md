@@ -1,4 +1,4 @@
-# 📱 DISEÑO DE PANTALLAS - PanaderIA Smart System
+# 📱 DISEÑO DE PANTALLAS - Panaderia Svetlana Smart System
 
 ## 🎨 SISTEMA DE DISEÑO
 
@@ -435,7 +435,7 @@ Caption: 0.75rem (12px) - Regular
 
 ```
 ┌─────────────────────────────────────────────────┐
-│  PanaderIA Admin | Juan Admin | 🔔 [3] | Salir │
+│  Panaderia Svetlana Admin | Juan Admin | 🔔 [3] | Salir │
 └─────────────────────────────────────────────────┘
 
 ┌────────────┬────────────────────────────────────┐
@@ -601,7 +601,7 @@ Bottom Tab Navigator
 
 ```
 ┌─────────────────────────┐
-│  ☰  PanaderIA    🔔 🛒 │
+│  ☰  Panaderia Svetlana    🔔 🛒 │
 ├─────────────────────────┤
 │                         │
 │  Hola, Juan! 👋         │

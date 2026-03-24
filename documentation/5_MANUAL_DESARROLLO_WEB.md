@@ -1,4 +1,4 @@
-# 📱 Manual de Desarrollo Web - PanaderIA
+# 📱 Manual de Desarrollo Web - Panaderia Svetlana
 
 ## 📋 Índice
 1. [Estado Actual del Proyecto](#estado-actual)
@@ -14,70 +14,97 @@
 
 ## 🎯 Estado Actual del Proyecto {#estado-actual}
 
-### ✅ Completado (Fase 1 - Configuración Inicial)
+### ✅ Completado (Múltiples Fases)
 
-#### 1. Proyecto Next.js Inicializado
-- ✅ Next.js 16.0.1 con App Router
+#### 1. Proyecto Next.js Completo
+- ✅ Next.js 16.1.6 con App Router
+- ✅ React 19.2.0
 - ✅ TypeScript configurado
-- ✅ Tailwind CSS v3 instalado y funcionando
-- ✅ ESLint configurado
+- ✅ Tailwind CSS v3.4.18 instalado y funcionando
+- ✅ ESLint 9 configurado (eslint.config.mjs)
 - ✅ Estructura de carpetas `src/` implementada
 - ✅ Sistema de alias `@/*` configurado
+- ✅ Sentry integrado para monitoreo de errores
+- ✅ hCaptcha para protección de formularios
 
-#### 2. Dependencias Instaladas
+#### 2. Dependencias Actuales
 ```json
 {
   "dependencies": {
-    "next": "16.0.1",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "@radix-ui/react-slot": "^1.1.1",
+    "next": "^16.1.6",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "@hcaptcha/react-hcaptcha": "^2.0.2",
+    "@radix-ui/react-dropdown-menu": "^2.1.16",
+    "@radix-ui/react-slot": "^1.2.4",
+    "@sentry/nextjs": "^10.39.0",
+    "@supabase/ssr": "^0.8.0",
+    "@supabase/supabase-js": "^2.93.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "tailwind-merge": "^2.5.5",
-    "lucide-react": "^0.469.0"
+    "lucide-react": "^0.553.0",
+    "recharts": "^3.7.0",
+    "sonner": "^2.0.7",
+    "tailwind-merge": "^3.4.0",
+    "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
     "typescript": "^5",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "tailwindcss": "^3.4.17",
-    "postcss": "^8",
-    "autoprefixer": "^10.0.1",
-    "eslint": "^8",
+    "tailwindcss": "^3.4.18",
+    "postcss": "^8.5.6",
+    "autoprefixer": "^10.4.22",
+    "eslint": "^9",
     "eslint-config-next": "16.0.1"
   }
 }
 ```
 
-#### 3. Página Principal (Landing Page)
-- ✅ Hero Section con branding de panadería
-- ✅ Sección de beneficios (envío, frescura)
-- ✅ Grid de 4 productos destacados
-- ✅ Navbar simple con navegación
-- ✅ Footer con información de contacto
-- ✅ Diseño responsive (mobile-first)
+#### 3. Páginas Implementadas (22+)
+- ✅ Landing page completa (Hero, beneficios, productos destacados)
+- ✅ Catálogo de productos con filtros y búsqueda
+- ✅ Carrito de compras
+- ✅ Checkout
+- ✅ Login y Registro (con hCaptcha)
+- ✅ Recuperación de contraseña
+- ✅ Perfil de usuario
+- ✅ Historial de pedidos
+- ✅ Sucursales
+- ✅ Contacto, Sobre nosotros, Promociones
+- ✅ Páginas legales (cookies, privacidad, términos)
+- ✅ Panel Admin completo (dashboard, productos, categorías, usuarios, órdenes, inventario, producción, sucursales, configuración, historial de auditoría)
 
 ---
 
 ## 🛠️ Tecnologías Implementadas {#tecnologías-implementadas}
 
 ### Frontend Framework
-- **Next.js 16.0.1**: Framework React con App Router
-- **React 19**: Biblioteca UI (sin React Compiler)
+- **Next.js 16.1.6**: Framework React con App Router
+- **React 19.2**: Biblioteca UI
 - **TypeScript 5**: Tipado estático
 
 ### Estilos y UI
-- **Tailwind CSS v3**: Framework de utilidades CSS
-- **shadcn/ui**: Sistema de componentes (Button implementado)
-- **Radix UI**: Primitivos accesibles para componentes
+- **Tailwind CSS v3.4**: Framework de utilidades CSS
+- **shadcn/ui**: Sistema de componentes (11 componentes implementados)
+- **Radix UI**: Primitivos accesibles (dropdown-menu, slot)
+- **Recharts**: Gráficos interactivos en dashboard admin
+- **Sonner**: Notificaciones toast
+
+### Seguridad y Monitoreo
+- **@sentry/nextjs**: Monitoreo de errores en producción
+- **@hcaptcha/react-hcaptcha**: Protección de formularios
+
+### Integración Backend
+- **@supabase/ssr + @supabase/supabase-js**: Cliente Supabase
+- **Cliente HTTP personalizado**: En `src/lib/api/client.ts` con interceptores, refresh automático de tokens
 
 ### Utilidades
 - **clsx**: Composición condicional de clases CSS
 - **tailwind-merge**: Merge inteligente de clases Tailwind
 - **class-variance-authority**: Variantes de componentes
-- **lucide-react**: Iconos (preparado, no usado aún)
+- **lucide-react**: Iconografía moderna (usado activamente)
 
 ---
 
@@ -86,57 +113,94 @@
 ```
 web/
 ├── src/
-│   ├── app/                    # App Router de Next.js
-│   │   ├── layout.tsx         # Layout principal
-│   │   ├── page.tsx           # ✅ Landing page (COMPLETADA)
-│   │   └── globals.css        # ✅ Estilos globales Tailwind
+│   ├── app/                    # App Router de Next.js (22+ rutas)
+│   │   ├── layout.tsx         # ✅ Layout raíz
+│   │   ├── page.tsx           # ✅ Landing page
+│   │   ├── globals.css        # ✅ Estilos globales Tailwind
+│   │   ├── login/             # ✅ Inicio de sesión
+│   │   ├── registro/          # ✅ Registro
+│   │   ├── productos/         # ✅ Catálogo
+│   │   ├── carrito/           # ✅ Carrito
+│   │   ├── checkout/          # ✅ Checkout
+│   │   ├── pedidos/           # ✅ Historial
+│   │   ├── perfil/            # ✅ Perfil
+│   │   ├── sucursales/        # ✅ Sucursales
+│   │   └── admin/             # ✅ Panel admin (9 sub-rutas)
 │   │
 │   ├── components/
-│   │   └── ui/
-│   │       └── button.tsx     # ✅ Componente Button shadcn/ui
+│   │   ├── ui/                # ✅ 11 componentes (badge, breadcrumbs, button, captcha, card, confirm-dialog, dropdown-menu, global-search, input, product-image, toast)
+│   │   ├── auth/              # ✅ Componentes de autenticación
+│   │   ├── filters/           # ✅ Filtros de productos
+│   │   ├── layout/            # ✅ Navbar, Footer, LayoutWrapper
+│   │   └── products/          # ✅ Componentes de productos
+│   │
+│   ├── context/               # ✅ Context API
+│   │   ├── AuthContext.tsx    # ✅ Autenticación global
+│   │   ├── CartContext.tsx    # ✅ Carrito de compras
+│   │   └── ToastContext.tsx   # ✅ Notificaciones
+│   │
+│   ├── hooks/                 # ✅ 5 hooks personalizados
+│   │   ├── use-branches.ts
+│   │   ├── use-categories.ts
+│   │   ├── use-orders.ts
+│   │   └── use-products.ts
 │   │
 │   ├── lib/
+│   │   ├── api/               # ✅ 15 archivos de servicios API
+│   │   │   ├── client.ts      # Cliente HTTP con interceptores
+│   │   │   ├── auth.ts        # Servicio de autenticación
+│   │   │   ├── products.ts    # Servicio de productos
+│   │   │   ├── transformers.ts # Transformadores API → Frontend
+│   │   │   ├── types.ts       # Tipos de respuesta API
+│   │   │   └── ...            # +10 servicios más
 │   │   ├── utils.ts           # ✅ Utilidades (formatPrice, formatDate)
-│   │   └── constants.ts       # ✅ Constantes globales (GTQ, rutas, envío)
+│   │   ├── constants.ts       # ✅ Constantes (GTQ, rutas, envío)
+│   │   ├── mock.ts            # ✅ Datos mock
+│   │   ├── audit-helpers.ts   # ✅ Helpers de auditoría
+│   │   ├── device-fingerprint.ts # ✅ Fingerprint
+│   │   └── supabase/          # ✅ Cliente Supabase
 │   │
 │   ├── types/
 │   │   └── index.ts           # ✅ Interfaces TypeScript
 │   │
-│   └── hooks/                 # Hooks personalizados (vacío)
+│   └── instrumentation.ts    # ✅ Configuración Sentry
 │
 ├── public/                    # Archivos estáticos
 ├── tailwind.config.ts         # ✅ Configuración Tailwind con tema
-├── postcss.config.js          # ✅ Configuración PostCSS
+├── components.json            # ✅ Configuración shadcn/ui
+├── next.config.ts             # ✅ Configuración Next.js
+├── eslint.config.mjs          # ✅ Configuración ESLint 9
+├── vercel.json                # ✅ Configuración Vercel
+├── sentry.*.config.ts         # ✅ Configuración Sentry
 ├── tsconfig.json              # Configuración TypeScript
-├── next.config.ts             # Configuración Next.js
-├── package.json               # Dependencias del proyecto
-└── .eslintrc.json            # Configuración ESLint
+└── package.json               # Dependencias del proyecto
 ```
 
 ---
 
 ## 🧩 Componentes Creados {#componentes-creados}
 
-### 1. Button Component (`src/components/ui/button.tsx`)
+### Componentes UI (11)
+| Componente | Archivo | Descripción |
+|------------|---------|-------------|
+| Button | `ui/button.tsx` | Botón con 6 variantes y 4 tamaños |
+| Badge | `ui/badge.tsx` | Etiquetas visuales |
+| Breadcrumbs | `ui/breadcrumbs.tsx` | Navegación por migas |
+| Captcha | `ui/captcha.tsx` | Integración hCaptcha |
+| Card | `ui/card.tsx` | Contenedor tarjeta |
+| ConfirmDialog | `ui/confirm-dialog.tsx` | Modal de confirmación |
+| DropdownMenu | `ui/dropdown-menu.tsx` | Menú desplegable (Radix) |
+| GlobalSearch | `ui/global-search.tsx` | Búsqueda global |
+| Input | `ui/input.tsx` | Campo de texto |
+| ProductImage | `ui/product-image.tsx` | Imagen de producto optimizada |
+| Toast | `ui/toast.tsx` | Notificaciones (Sonner) |
 
-Componente base de shadcn/ui con 6 variantes:
-
-```typescript
-<Button variant="default">Botón Normal</Button>
-<Button variant="destructive">Eliminar</Button>
-<Button variant="outline">Contorno</Button>
-<Button variant="secondary">Secundario</Button>
-<Button variant="ghost">Fantasma</Button>
-<Button variant="link">Enlace</Button>
-
-// Tamaños disponibles
-<Button size="default">Normal</Button>
-<Button size="sm">Pequeño</Button>
-<Button size="lg">Grande</Button>
-<Button size="icon">Solo Icono</Button>
-```
-
-**Ubicación**: `src/components/ui/button.tsx`
+### Componentes de Layout (3)
+| Componente | Archivo | Descripción |
+|------------|---------|-------------|
+| Navbar | `layout/Navbar.tsx` | Barra de navegación principal |
+| Footer | `layout/Footer.tsx` | Pie de página |
+| LayoutWrapper | `layout/LayoutWrapper.tsx` | Wrapper de layout |
 
 ---
 
@@ -213,51 +277,25 @@ npm start
 npm run lint
 ```
 
-### Variables de Entorno (Pendiente)
+### Variables de Entorno
 
 Crear archivo `.env.local` en `/web/`:
 
 ```env
-# API Backend (cuando se implemente)
+# API Backend
 NEXT_PUBLIC_API_URL=http://localhost:4000
-
-# Base de Datos (para Prisma)
-DATABASE_URL=postgresql://user:password@localhost:5432/panaderia
-
-# Autenticación (JWT)
-NEXTAUTH_SECRET=your-secret-key-here
-NEXTAUTH_URL=http://localhost:3000
-
-# MongoDB (Analytics)
-MONGODB_URI=mongodb://localhost:27017/panaderia-analytics
 ```
 
-### Estructura de Archivos por Crear
+> **Nota:** El frontend no conecta directamente a la base de datos. Toda la comunicación es vía la API de NestJS. No se usa NextAuth ni MongoDB.
 
-```
-src/
-├── app/
-│   ├── productos/          # Página de productos
-│   ├── carrito/           # Carrito de compras
-│   ├── checkout/          # Proceso de pago
-│   ├── perfil/            # Perfil de usuario
-│   ├── admin/             # Panel administrativo
-│   └── api/               # API Routes de Next.js
-│
-├── components/
-│   ├── ui/                # Componentes base (shadcn/ui)
-│   ├── layout/            # Navbar, Footer, Sidebar
-│   ├── products/          # ProductCard, ProductGrid
-│   ├── cart/              # CartItem, CartSummary
-│   └── forms/             # Formularios reutilizables
-│
-├── lib/
-│   ├── api/               # Funciones de API
-│   ├── hooks/             # Hooks personalizados
-│   └── validations/       # Schemas de validación (Zod)
-│
-└── context/               # Context API (carrito, usuario)
-```
+### Estructura Implementada
+
+Ver la estructura completa en `web/README.md`. Los directorios principales que ya existen:
+- `app/` — 22+ rutas (productos, carrito, checkout, perfil, admin con 9 sub-módulos, etc.)
+- `components/` — 5 carpetas (ui, auth, filters, layout, products)
+- `context/` — 3 contexts (Auth, Cart, Toast)
+- `hooks/` — 5 hooks personalizados
+- `lib/api/` — 15 servicios de API
 
 ---
 
@@ -268,135 +306,83 @@ src/
 - [x] Configuración de Tailwind CSS v3
 - [x] Instalación de shadcn/ui y dependencias
 - [x] Creación de utilidades para Guatemala (GTQ)
-- [x] Componente Button base
-- [x] Landing Page básica
+- [x] 11 componentes UI base
+- [x] Landing Page completa
 - [x] Configuración de constantes y tipos
+- [x] Sentry integrado
+- [x] hCaptcha configurado
 
 ---
 
-### 🔄 Fase 2: Componentes UI Core (SIGUIENTE)
+### ✅ Fase 2: Componentes UI Core (COMPLETADA)
 
-**Estimado: 2-3 días**
+#### 2.1 Layout Components ✅
+- [x] `Navbar` completo (logo, navegación, buscador, carrito, menú usuario)
+- [x] `Footer` con enlaces rápidos y políticas
+- [x] `LayoutWrapper` para consistencia
+- [x] Layout admin con sidebar
 
-#### 2.1 Layout Components
-- [ ] `Navbar` completo con:
-  - Logo y navegación
-  - Buscador de productos
-  - Carrito con contador
-  - Menú de usuario
-  - Selector de sucursal
-- [ ] `Footer` mejorado con:
-  - Enlaces rápidos
-  - Redes sociales
-  - Newsletter
-  - Políticas y términos
-- [ ] `Sidebar` para admin/dashboard
+#### 2.2 Product Components ✅
+- [x] Componentes de productos en `components/products/`
+- [x] Filtros en `components/filters/`
+- [x] `ProductImage` optimizado
 
-#### 2.2 Product Components
-- [ ] `ProductCard` - Tarjeta de producto
-- [ ] `ProductGrid` - Grid responsive de productos
-- [ ] `ProductDetail` - Vista detallada de producto
-- [ ] `ProductFilters` - Filtros y búsqueda
-- [ ] `CategoryBadge` - Badge de categoría
-
-#### 2.3 UI Components (shadcn/ui)
-- [ ] `Input` - Campos de texto
-- [ ] `Select` - Selector dropdown
-- [ ] `Card` - Contenedor de tarjeta
-- [ ] `Badge` - Etiquetas
-- [ ] `Dialog` - Modal
-- [ ] `DropdownMenu` - Menú desplegable
-- [ ] `Form` - Sistema de formularios
-- [ ] `Toast` - Notificaciones
+#### 2.3 UI Components (shadcn/ui) ✅
+- [x] `Input`, `Card`, `Badge`, `DropdownMenu`, `Toast`, `Button`, `Captcha`, `Breadcrumbs`, `ConfirmDialog`, `GlobalSearch`
 
 ---
 
-### 📦 Fase 3: Páginas Principales (3-4 días)
+### ✅ Fase 3: Páginas Principales (COMPLETADA)
 
-#### 3.1 Catálogo de Productos
-- [ ] `/productos` - Página de productos
-  - Grid de productos con paginación
-  - Filtros por categoría, precio
-  - Búsqueda en tiempo real
-  - Ordenamiento (precio, popularidad, nuevo)
-- [ ] `/productos/[id]` - Detalle de producto
-  - Galería de imágenes
-  - Descripción completa
-  - Selector de cantidad
-  - Productos relacionados
-  - Reviews y calificaciones
+#### 3.1 Catálogo de Productos ✅
+- [x] `/productos` - Catálogo con filtros, búsqueda, paginación
+- [x] Detalle de producto
 
-#### 3.2 Carrito y Checkout
-- [ ] `/carrito` - Carrito de compras
-  - Lista de productos
-  - Actualizar cantidades
-  - Eliminar items
-  - Resumen de costos
-  - Código de descuento
-- [ ] `/checkout` - Proceso de compra
-  - Formulario de envío
-  - Selección de método de pago
-  - Resumen de pedido
-  - Confirmación
+#### 3.2 Carrito y Checkout ✅
+- [x] `/carrito` - Carrito con Context API
+- [x] `/checkout` - Proceso de compra
 
-#### 3.3 Autenticación
-- [ ] `/login` - Inicio de sesión
-- [ ] `/registro` - Registro de usuario
-- [ ] `/recuperar-contraseña` - Recuperación
-- [ ] Integración con NextAuth.js
-- [ ] OAuth (Google, Facebook - opcional)
+#### 3.3 Autenticación ✅
+- [x] `/login` - Inicio de sesión con JWT
+- [x] `/registro` - Registro con hCaptcha
+- [x] `/forgot-password` - Recuperación
+- [x] `/reset-password` - Restablecimiento
+- [x] Autenticación JWT propia (no NextAuth)
 
 ---
 
-### 👤 Fase 4: Área de Usuario (2-3 días)
+### ✅ Fase 4: Área de Usuario (COMPLETADA)
 
-- [ ] `/perfil` - Perfil de usuario
-  - Información personal
-  - Direcciones guardadas
-  - Métodos de pago
-- [ ] `/pedidos` - Historial de pedidos
-  - Lista de pedidos
-  - Detalle de cada pedido
-  - Estado de envío
-  - Reordenar
-- [ ] `/favoritos` - Productos favoritos
-- [ ] Notificaciones y preferencias
+- [x] `/perfil` - Perfil de usuario
+- [x] `/pedidos` - Historial de pedidos
+- [ ] Favoritos (pendiente)
+- [ ] Notificaciones en tiempo real (pendiente)
 
 ---
 
-### 🔧 Fase 5: Panel Administrativo (5-7 días)
+### ✅ Fase 5: Panel Administrativo (COMPLETADA)
 
-#### 5.1 Dashboard
-- [ ] `/admin` - Dashboard principal
-  - Estadísticas de ventas
-  - Gráficas de rendimiento
-  - Productos más vendidos
-  - Pedidos recientes
-  - Alertas de inventario
+#### 5.1 Dashboard ✅
+- [x] `/admin` - Dashboard con estadísticas, gráficos (Recharts), pedidos recientes
 
-#### 5.2 Gestión de Productos
-- [ ] `/admin/productos` - Lista de productos
-- [ ] `/admin/productos/nuevo` - Crear producto
-- [ ] `/admin/productos/[id]` - Editar producto
-- [ ] `/admin/categorias` - Gestión de categorías
-- [ ] `/admin/inventario` - Control de stock
+#### 5.2 Gestión de Productos ✅
+- [x] `/admin/productos` - CRUD completo
+- [x] `/admin/categorias` - Gestión de categorías
+- [x] `/admin/inventario` - Control de stock
 
-#### 5.3 Gestión de Pedidos
-- [ ] `/admin/pedidos` - Lista de pedidos
-- [ ] `/admin/pedidos/[id]` - Detalle de pedido
-- [ ] Actualización de estados
-- [ ] Asignación de repartidores
+#### 5.3 Gestión de Pedidos ✅
+- [x] `/admin/ordenes` - Lista y gestión de pedidos
 
-#### 5.4 Gestión de Usuarios
-- [ ] `/admin/clientes` - Lista de clientes
-- [ ] `/admin/empleados` - Gestión de empleados
-- [ ] Roles y permisos
+#### 5.4 Gestión de Usuarios ✅
+- [x] `/admin/usuarios` - CRUD con roles (MANAGER, BAKER, CASHIER)
 
-#### 5.5 Gestión Multi-Sucursal
-- [ ] `/admin/sucursales` - Lista de sucursales
-- [ ] `/admin/sucursales/[id]` - Detalle de sucursal
-- [ ] Transferencias entre sucursales
-- [ ] Reportes por sucursal
+#### 5.5 Gestión Multi-Sucursal ✅
+- [x] `/admin/sucursales` - Gestión de sucursales
+
+#### 5.6 Producción y Auditoría ✅
+- [x] `/admin/produccion` - Registro de producción
+- [x] `/admin/historial` - Historial de auditoría
+- [x] `/admin/configuracion` - Configuración
 
 #### 5.6 Reportes y Analytics
 - [ ] `/admin/reportes` - Centro de reportes
@@ -408,26 +394,21 @@ src/
 
 ---
 
-### 🔌 Fase 6: Integración Backend (4-5 días)
+### ✅ Fase 6: Integración Backend (COMPLETADA)
 
-#### 6.1 Setup de API
-- [ ] Configurar cliente HTTP (Axios/Fetch)
-- [ ] Interceptores para auth
-- [ ] Manejo de errores global
-- [ ] Loading states
+#### 6.1 Setup de API ✅
+- [x] Cliente HTTP personalizado (`lib/api/client.ts`) con Fetch API
+- [x] Interceptores para refresh automático de tokens
+- [x] Manejo de errores global
 
-#### 6.2 Context y Estado Global
-- [ ] Context de Autenticación
-- [ ] Context de Carrito
-- [ ] Context de Sucursal
-- [ ] Zustand/Redux (opcional)
+#### 6.2 Context y Estado Global ✅
+- [x] AuthContext (autenticación JWT)
+- [x] CartContext (carrito con localStorage)
+- [x] ToastContext (notificaciones)
 
-#### 6.3 Conexión con Backend
-- [ ] Endpoints de productos
-- [ ] Endpoints de pedidos
-- [ ] Endpoints de autenticación
-- [ ] Endpoints de usuario
-- [ ] WebSockets para notificaciones en tiempo real
+#### 6.3 Conexión con Backend ✅
+- [x] 15 servicios de API (auth, products, categories, branches, orders, addresses, users, inventory, production, audit, admin, transformers, types)
+- [ ] WebSockets para tiempo real (pendiente)
 
 ---
 
@@ -463,20 +444,20 @@ src/
 
 ---
 
-## ⏱️ Estimación Total de Desarrollo Web
+## ⏱️ Estado de Desarrollo Web
 
-| Fase | Tiempo Estimado | Estado |
-|------|----------------|--------|
-| 1. Configuración Inicial | 1 día | ✅ COMPLETADA |
-| 2. Componentes UI Core | 2-3 días | ⏳ Pendiente |
-| 3. Páginas Principales | 3-4 días | ⏳ Pendiente |
-| 4. Área de Usuario | 2-3 días | ⏳ Pendiente |
-| 5. Panel Administrativo | 5-7 días | ⏳ Pendiente |
-| 6. Integración Backend | 4-5 días | ⏳ Pendiente |
-| 7. Optimización y PWA | 2-3 días | ⏳ Pendiente |
-| 8. Testing | 3-4 días | ⏳ Pendiente |
-| 9. Deploy | 1-2 días | ⏳ Pendiente |
-| **TOTAL** | **23-35 días** | **4% Completado** |
+| Fase | Estado |
+|------|--------|
+| 1. Configuración Inicial | ✅ COMPLETADA |
+| 2. Componentes UI Core | ✅ COMPLETADA (11 componentes) |
+| 3. Páginas Principales | ✅ COMPLETADA (22+ páginas) |
+| 4. Área de Usuario | ✅ COMPLETADA (perfil, pedidos) |
+| 5. Panel Administrativo | ✅ COMPLETADA (9 sub-módulos) |
+| 6. Integración Backend | ✅ COMPLETADA (15 servicios API) |
+| 7. Optimización y PWA | 🔄 Parcial (Sentry, imágenes optimizadas) |
+| 8. Testing | ⏳ Pendiente |
+| 9. Deploy | 🔄 Parcial (Vercel configurado) |
+| **Progreso Total** | **~75% Completado** |
 
 ---
 
@@ -521,13 +502,13 @@ Cannot apply unknown utility class 'border-border'
 
 ---
 
-## 🎯 Próximos Pasos Inmediatos
+## 🎯 Próximos Pasos
 
-1. **Crear componentes de layout** (Navbar, Footer)
-2. **Implementar más componentes shadcn/ui** (Input, Card, Dialog)
-3. **Crear página de productos** con grid y filtros
-4. **Setup de Context API** para carrito y auth
-5. **Preparar integración con backend** (API routes o cliente HTTP)
+1. **Módulo de Producción para BAKER** — Pantalla táctil para registrar horneos
+2. **Testing E2E** — Playwright o Cypress
+3. **Optimización SEO** — Metadata, sitemap, robots.txt
+4. **PWA** — Service worker, manifest
+5. **WebSockets** — Notificaciones en tiempo real
 
 ---
 
@@ -551,5 +532,5 @@ Cannot apply unknown utility class 'border-border'
 ---
 
 **Fecha de Creación**: 11 de noviembre de 2025  
-**Última Actualización**: 11 de noviembre de 2025  
-**Versión**: 1.0.0
+**Última Actualización**: 23 de marzo de 2026  
+**Versión**: 2.0.0

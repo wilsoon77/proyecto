@@ -1,4 +1,4 @@
-# 📁 ESTRUCTURA DEL PROYECTO - PanaderIA Smart System
+# 📁 ESTRUCTURA DEL PROYECTO - Panaderia Svetlana Smart System
 
 ## 🗂️ ARQUITECTURA GENERAL
 

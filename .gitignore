@@ -25,6 +25,12 @@ api/jest-temp/
 # Prisma
 api/prisma/*.db
 api/prisma/migrations/**/steps.json
+api/prisma/seed.ts
+
+# Test files with credentials
+api/test/manual-tests.ps1
+api/PRUEBAS_API.http
+api/GUIA_PRUEBAS.md
 
 # Frontend (web)
 web/node_modules/

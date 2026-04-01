@@ -29,3 +29,23 @@ export class ReserveOrderDto {
   @IsString()
   paymentMethod?: string;
 }
+
+export class POSOrderDto {
+  @ApiProperty({ example: 'zona-1' })
+  @IsString()
+  branchSlug!: string;
+
+  @ApiProperty({ type: [ReserveItem], example: [{ productSlug: 'concha', quantity: 2 }] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ReserveItem)
+  items!: ReserveItem[];
+
+  @ApiProperty({ example: 'EFECTIVO' })
+  @IsString()
+  paymentMethod!: string;
+
+  @ApiProperty({ example: 50.00, required: false })
+  @IsOptional()
+  amountTendered?: number; // Para el vuelto
+}

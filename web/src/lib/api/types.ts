@@ -194,6 +194,13 @@ export interface ReserveOrderDto {
   items: { productSlug: string; quantity: number }[]
 }
 
+export interface POSOrderDto {
+  branchSlug: string
+  paymentMethod: string
+  amountTendered?: number
+  items: { productSlug: string; quantity: number }[]
+}
+
 // ==================== INVENTARIO ====================
 export interface ApiInventory {
   id: number

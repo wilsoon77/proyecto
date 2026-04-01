@@ -1,44 +1,37 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
-import { categoriesService } from "@/lib/api"
-import type { ApiCategory } from "@/lib/api/types"
+import { useQuery } from '@tanstack/react-query'
+import { categoriesService } from '@/lib/api'
+import type { ApiCategory } from '@/lib/api/types'
+
+export const categoryKeys = {
+  all: ['categories'] as const,
+  lists: () => [...categoryKeys.all, 'list'] as const,
+  details: () => [...categoryKeys.all, 'detail'] as const,
+  detail: (slug: string) => [...categoryKeys.details(), slug] as const,
+}
 
 interface UseCategoriesReturn {
   categories: ApiCategory[]
   isLoading: boolean
+  isFetching: boolean
   error: Error | null
-  refetch: () => Promise<void>
+  refetch: () => void
 }
 
-export function useCategories(): UseCategoriesReturn {
-  const [categories, setCategories] = useState<ApiCategory[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
-
-  const fetchCategories = useCallback(async () => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      const data = await categoriesService.list()
-      setCategories(data)
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Error cargando categorías'))
-      console.error('Error fetching categories:', err)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    fetchCategories()
-  }, [fetchCategories])
+export function useCategories(options = {}): UseCategoriesReturn {
+  const queryInfo = useQuery({
+    queryKey: categoryKeys.lists(),
+    queryFn: () => categoriesService.list(),
+    ...options,
+  })
 
   return {
-    categories,
-    isLoading,
-    error,
-    refetch: fetchCategories,
+    categories: queryInfo.data || [],
+    isLoading: queryInfo.isLoading,
+    isFetching: queryInfo.isFetching,
+    error: queryInfo.error as Error | null,
+    refetch: queryInfo.refetch,
   }
 }
 
@@ -46,39 +39,24 @@ export function useCategories(): UseCategoriesReturn {
 interface UseCategoryReturn {
   category: ApiCategory | null
   isLoading: boolean
+  isFetching: boolean
   error: Error | null
-  refetch: () => Promise<void>
+  refetch: () => void
 }
 
-export function useCategory(slug: string): UseCategoryReturn {
-  const [category, setCategory] = useState<ApiCategory | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
-
-  const fetchCategory = useCallback(async () => {
-    if (!slug) return
-    
-    setIsLoading(true)
-    setError(null)
-    try {
-      const data = await categoriesService.getBySlug(slug)
-      setCategory(data)
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Error cargando categoría'))
-      console.error('Error fetching category:', err)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [slug])
-
-  useEffect(() => {
-    fetchCategory()
-  }, [fetchCategory])
+export function useCategory(slug: string, options = {}): UseCategoryReturn {
+  const queryInfo = useQuery({
+    queryKey: categoryKeys.detail(slug),
+    queryFn: () => categoriesService.getBySlug(slug),
+    enabled: !!slug,
+    ...options,
+  })
 
   return {
-    category,
-    isLoading,
-    error,
-    refetch: fetchCategory,
+    category: queryInfo.data || null,
+    isLoading: queryInfo.isLoading,
+    isFetching: queryInfo.isFetching,
+    error: queryInfo.error as Error | null,
+    refetch: queryInfo.refetch,
   }
 }

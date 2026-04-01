@@ -1,44 +1,37 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
-import { branchesService } from "@/lib/api"
-import type { ApiBranch } from "@/lib/api/types"
+import { useQuery } from '@tanstack/react-query'
+import { branchesService } from '@/lib/api'
+import type { ApiBranch } from '@/lib/api/types'
+
+export const branchKeys = {
+  all: ['branches'] as const,
+  lists: () => [...branchKeys.all, 'list'] as const,
+  details: () => [...branchKeys.all, 'detail'] as const,
+  detail: (id: number) => [...branchKeys.details(), id] as const,
+}
 
 interface UseBranchesReturn {
   branches: ApiBranch[]
   isLoading: boolean
+  isFetching: boolean
   error: Error | null
-  refetch: () => Promise<void>
+  refetch: () => void
 }
 
-export function useBranches(): UseBranchesReturn {
-  const [branches, setBranches] = useState<ApiBranch[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
-
-  const fetchBranches = useCallback(async () => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      const data = await branchesService.list()
-      setBranches(data)
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Error cargando sucursales'))
-      console.error('Error fetching branches:', err)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    fetchBranches()
-  }, [fetchBranches])
+export function useBranches(options = {}): UseBranchesReturn {
+  const queryInfo = useQuery({
+    queryKey: branchKeys.lists(),
+    queryFn: () => branchesService.list(),
+    ...options,
+  })
 
   return {
-    branches,
-    isLoading,
-    error,
-    refetch: fetchBranches,
+    branches: queryInfo.data || [],
+    isLoading: queryInfo.isLoading,
+    isFetching: queryInfo.isFetching,
+    error: queryInfo.error as Error | null,
+    refetch: queryInfo.refetch,
   }
 }
 
@@ -46,39 +39,24 @@ export function useBranches(): UseBranchesReturn {
 interface UseBranchReturn {
   branch: ApiBranch | null
   isLoading: boolean
+  isFetching: boolean
   error: Error | null
-  refetch: () => Promise<void>
+  refetch: () => void
 }
 
-export function useBranch(id: number): UseBranchReturn {
-  const [branch, setBranch] = useState<ApiBranch | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
-
-  const fetchBranch = useCallback(async () => {
-    if (!id) return
-    
-    setIsLoading(true)
-    setError(null)
-    try {
-      const data = await branchesService.getById(id)
-      setBranch(data)
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Error cargando sucursal'))
-      console.error('Error fetching branch:', err)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [id])
-
-  useEffect(() => {
-    fetchBranch()
-  }, [fetchBranch])
+export function useBranch(id: number, options = {}): UseBranchReturn {
+  const queryInfo = useQuery({
+    queryKey: branchKeys.detail(id),
+    queryFn: () => branchesService.getById(id),
+    enabled: !!id,
+    ...options,
+  })
 
   return {
-    branch,
-    isLoading,
-    error,
-    refetch: fetchBranch,
+    branch: queryInfo.data || null,
+    isLoading: queryInfo.isLoading,
+    isFetching: queryInfo.isFetching,
+    error: queryInfo.error as Error | null,
+    refetch: queryInfo.refetch,
   }
 }

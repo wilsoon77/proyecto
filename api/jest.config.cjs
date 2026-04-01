@@ -9,6 +9,6 @@ module.exports = {
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
   },
-  roots: ['<rootDir>/test'],
+  roots: ['<rootDir>/src', '<rootDir>/test'],
   testMatch: ['**/?(*.)+(e2e-spec|spec).[tj]s'],
 };

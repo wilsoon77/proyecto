@@ -1,23 +1,38 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateProductionLogDto } from './dto/production.dto.js';
+import { Prisma } from '@prisma/client';
 
+/**
+ * ProductionService — Motor de producción del sistema PanaderIA.
+ * 
+ * Aplica: prisma-transactions-acid (ACID, isolation, retry)
+ * Aplica: nestjs-service-layer (SRP, sin HTTP concerns)
+ * 
+ * La lógica de producción garantiza atomicidad:
+ *   1. Validar receta y stock
+ *   2. RESTAR materia prima de RawMaterialInventory
+ *   3. SUMAR producto terminado a Inventory
+ *   4. Crear ProductionLog + StockMovement
+ * 
+ * Si cualquier paso falla, TODO se revierte (rollback).
+ */
 @Injectable()
 export class ProductionService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Registrar un horneado (producción).
+   * Registrar un horneado (producción) de forma atómica.
    * 
-   * Transacción atómica:
-   * 1. Validar receta y producto
-   * 2. Restar materia prima de RawMaterialInventory
-   * 3. Sumar producto terminado a Inventory
-   * 4. Crear StockMovement de tipo PRODUCCION
-   * 5. Crear ProductionLog
+   * Usa transacción interactiva con:
+   * - Serializable isolation: previene race conditions si dos usuarios
+   *   registran producción simultáneamente con la misma materia prima.
+   * - Timeout configurado: 10s máximo para evitar locks prolongados.
+   * - Retry automático: reintenta en caso de conflicto de serialización (P2034).
    */
   async registerProduction(dto: CreateProductionLogDto, userId: string) {
-    // 1. Obtener receta con ingredientes y producto
+    // 1. Obtener receta con ingredientes y producto ANTES de la transacción
+    //    (prisma-transactions-acid: fetch external data before starting transaction)
     const recipe = await this.prisma.recipe.findUnique({
       where: { id: dto.recipeId },
       include: {
@@ -34,92 +49,104 @@ export class ProductionService {
       throw new BadRequestException(`El producto "${recipe.product.name}" no tiene configurado unitsPerTray`);
     }
 
-    // Determinar sucursal
+    // Determinar sucursal ANTES de la transacción
     const branchId = dto.branchId || (await this.getUserBranch(userId));
     if (!branchId) throw new BadRequestException('No se pudo determinar la sucursal. Asigna una sucursal al usuario o envía branchId.');
 
     const traysProduced = dto.traysProduced;
     const unitsProduced = traysProduced * recipe.product.unitsPerTray;
 
-    // 2-5. Transacción atómica
-    const result = await this.prisma.$transaction(async (tx) => {
-      // 2. Restar materia prima del inventario de la sucursal
-      for (const ingredient of recipe.ingredients) {
-        const inv = await tx.rawMaterialInventory.findUnique({
+    // 2-5. Transacción atómica con retry para conflictos de serialización
+    const result = await this.executeWithRetry(() =>
+      this.prisma.$transaction(async (tx) => {
+        // 2. Restar materia prima del inventario de la sucursal
+        for (const ingredient of recipe.ingredients) {
+          // Leer el inventario actual dentro de la transacción
+          // Con Serializable, esto bloquea la fila para prevenir lecturas fantasma
+          const inv = await tx.rawMaterialInventory.findUnique({
+            where: {
+              rawMaterialId_branchId: {
+                rawMaterialId: ingredient.rawMaterialId,
+                branchId,
+              },
+            },
+          });
+
+          if (!inv) {
+            throw new BadRequestException(
+              `No hay inventario de "${ingredient.rawMaterial.name}" en esta sucursal`,
+            );
+          }
+
+          const currentQty = Number(inv.quantity);
+          const requiredQty = Number(ingredient.quantity);
+          const newQty = currentQty - requiredQty;
+
+          if (newQty < 0) {
+            throw new BadRequestException(
+              `Materia prima insuficiente: "${ingredient.rawMaterial.name}". ` +
+              `Necesitas ${requiredQty} ${ingredient.rawMaterial.baseUnit}, ` +
+              `solo hay ${currentQty} ${ingredient.rawMaterial.baseUnit}.`,
+            );
+          }
+
+          // Usar tx (no prisma) — prisma-transactions-acid rule
+          await tx.rawMaterialInventory.update({
+            where: { id: inv.id },
+            data: { quantity: newQty },
+          });
+        }
+
+        // 3. Sumar producto terminado al inventario de la sucursal
+        await tx.inventory.upsert({
           where: {
-            rawMaterialId_branchId: {
-              rawMaterialId: ingredient.rawMaterialId,
+            productId_branchId: {
+              productId: recipe.productId,
               branchId,
             },
           },
-        });
-
-        if (!inv) {
-          throw new BadRequestException(
-            `No hay inventario de "${ingredient.rawMaterial.name}" en esta sucursal`,
-          );
-        }
-
-        const newQty = Number(inv.quantity) - Number(ingredient.quantity);
-        if (newQty < 0) {
-          throw new BadRequestException(
-            `Materia prima insuficiente: "${ingredient.rawMaterial.name}". ` +
-            `Necesitas ${ingredient.quantity} ${ingredient.rawMaterial.baseUnit}, ` +
-            `solo hay ${inv.quantity} ${ingredient.rawMaterial.baseUnit}.`,
-          );
-        }
-
-        await tx.rawMaterialInventory.update({
-          where: { id: inv.id },
-          data: { quantity: newQty },
-        });
-      }
-
-      // 3. Sumar producto terminado al inventario de la sucursal
-      await tx.inventory.upsert({
-        where: {
-          productId_branchId: {
+          update: {
+            quantity: { increment: unitsProduced },
+          },
+          create: {
             productId: recipe.productId,
             branchId,
+            quantity: unitsProduced,
           },
-        },
-        update: {
-          quantity: { increment: unitsProduced },
-        },
-        create: {
-          productId: recipe.productId,
-          branchId,
-          quantity: unitsProduced,
-        },
-      });
+        });
 
-      // 4. Crear ProductionLog
-      const log = await tx.productionLog.create({
-        data: {
-          recipeId: recipe.id,
-          branchId,
-          userId,
-          traysProduced,
-          unitsProduced,
-          note: dto.note,
-        },
-      });
+        // 4. Crear ProductionLog
+        const log = await tx.productionLog.create({
+          data: {
+            recipeId: recipe.id,
+            branchId,
+            userId,
+            traysProduced,
+            unitsProduced,
+            note: dto.note,
+          },
+        });
 
-      // 5. Crear StockMovement de tipo PRODUCCION
-      await tx.stockMovement.create({
-        data: {
-          productId: recipe.productId,
-          toBranchId: branchId,
-          type: 'PRODUCCION',
-          quantity: unitsProduced,
-          productionLogId: log.id,
-          userId,
-          note: `Amasijo: ${recipe.name} — ${traysProduced} latas`,
-        },
-      });
+        // 5. Crear StockMovement de tipo PRODUCCION
+        await tx.stockMovement.create({
+          data: {
+            productId: recipe.productId,
+            toBranchId: branchId,
+            type: 'PRODUCCION',
+            quantity: unitsProduced,
+            productionLogId: log.id,
+            userId,
+            note: `Amasijo: ${recipe.name} — ${traysProduced} latas`,
+          },
+        });
 
-      return log;
-    });
+        return log;
+      }, {
+        timeout: 10000,    // 10 segundos máximo para la transacción
+        maxWait: 5000,     // 5 segundos para obtener conexión del pool
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+      }),
+    );
 
     return {
       id: result.id,
@@ -132,7 +159,7 @@ export class ProductionService {
   }
 
   /**
-   * Obtener producción de HOY para una sucursal/usuario
+   * Obtener producción de HOY para una sucursal
    */
   async getTodayProduction(branchId?: number, userId?: string) {
     const startOfDay = new Date();
@@ -185,6 +212,35 @@ export class ProductionService {
       orderBy: { createdAt: 'desc' },
       take: 100,
     });
+  }
+
+  /**
+   * Retry wrapper para transacciones serializables.
+   * Reintenta automáticamente en caso de P2034 (conflicto de serialización).
+   * 
+   * Aplica: prisma-transactions-acid (retry on serialization failure)
+   */
+  private async executeWithRetry<T>(fn: () => Promise<T>, maxRetries: number = 3): Promise<T> {
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        return await fn();
+      } catch (error: any) {
+        // P2034 = Transaction conflict / serialization failure
+        const isSerializationError = error?.code === 'P2034';
+        const isLastAttempt = attempt === maxRetries - 1;
+
+        if (isSerializationError && !isLastAttempt) {
+          // Backoff exponencial: 100ms, 200ms, 400ms...
+          const delay = 100 * Math.pow(2, attempt);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        }
+
+        throw error;
+      }
+    }
+
+    throw new Error('Max transaction retries exceeded');
   }
 
   private async getUserBranch(userId: string): Promise<number | null> {

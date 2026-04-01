@@ -196,6 +196,11 @@ model Product {
   stockMovements StockMovement[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
+
+  // supabase-postgres-best-practices: indexes para queries frecuentes
+  @@index([categoryId])          // Filtro por categoría (catálogo, POS)
+  @@index([origin])              // Filtro PRODUCIDO vs COMPRADO
+  @@index([isActive, isAvailable]) // Productos activos y disponibles (POS)
 }
 
 model ProductImage {
@@ -396,6 +401,12 @@ model Order {
   items          OrderItem[]
   address        Address?     @relation(fields: [addressId], references: [id])
   addressId      Int?
+
+  // supabase-postgres-best-practices: indexes para queries frecuentes
+  @@index([userId])            // Historial de pedidos del usuario
+  @@index([status])            // Filtro por estado (dashboard)
+  @@index([branchId])          // Pedidos por sucursal
+  @@index([createdAt])         // Ordenamiento cronológico
 }
 
 model OrderItem {
@@ -407,6 +418,9 @@ model OrderItem {
   productName String
   quantity    Int
   unitPrice   Decimal  @db.Decimal(10,2)
+
+  @@index([orderId])    // JOIN con Order
+  @@index([productId])  // Reportes por producto
 }
 
 // ─────────────────────────────────────────────

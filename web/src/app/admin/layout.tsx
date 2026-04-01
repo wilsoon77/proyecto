@@ -23,7 +23,8 @@ import {
   Building2,
   X,
   History,
-  Flame
+  Flame,
+  Store
 } from "lucide-react"
 import { GlobalSearch } from "@/components/ui/global-search"
 
@@ -31,6 +32,7 @@ const OPERATIONAL_ROLES = ['ADMIN', 'MANAGER', 'BAKER', 'CASHIER']
 
 const adminNavItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true, roles: ["ADMIN", "MANAGER", "BAKER", "CASHIER"] },
+  { href: "/admin/pos", label: "Caja (POS)", icon: Store, roles: ["ADMIN", "MANAGER", "CASHIER"] },
   { href: "/admin/productos", label: "Productos", icon: Package, roles: ["ADMIN", "MANAGER"] },
   { href: "/admin/categorias", label: "Categorías", icon: Tag, roles: ["ADMIN"] },
   { href: "/admin/ordenes", label: "Pedidos", icon: ShoppingCart, roles: ["ADMIN", "MANAGER", "CASHIER"] },

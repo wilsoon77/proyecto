@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { ReserveOrderDto } from './dto.js';
+import { POSOrderDto, ReserveOrderDto } from './dto.js';
 import { StockMovementType } from '@prisma/client';
 import { LoggerService } from '../common/logger/logger.service.js';
 
@@ -89,6 +89,122 @@ export class OrdersService {
     });
 
     // Auditoría
+    this.logger.auditOrderCreated(order.id, userId, Number(order.total));
+
+    return order;
+  }
+
+  async directSale(dto: POSOrderDto, userId?: string) {
+    const branch = await this.prisma.branch.findUnique({ where: { slug: dto.branchSlug } });
+    if (!branch) throw new NotFoundException('Sucursal no encontrada');
+    if (!dto.items?.length) throw new BadRequestException('Sin items');
+
+    const products = await this.prisma.product.findMany({ where: { slug: { in: dto.items.map(i => i.productSlug) } } });
+    const map = new Map(products.map(p => [p.slug, p]));
+
+    for (const item of dto.items) {
+      if (!map.get(item.productSlug)) throw new BadRequestException(`Producto no encontrado: ${item.productSlug}`);
+    }
+
+    const order = await this.prisma.$transaction(async (tx) => {
+      // Check availability (physical stock)
+      for (const item of dto.items) {
+        const p = map.get(item.productSlug)!;
+        const inv = await tx.inventory.findUnique({
+          where: { productId_branchId: { productId: p.id, branchId: branch.id } },
+        });
+        const currentStock = inv?.quantity ?? 0;
+        if (currentStock < item.quantity) {
+          throw new BadRequestException(`Stock físico insuficiente: ${p.name}`);
+        }
+      }
+
+      const created = await tx.order.create({
+        data: ({
+          orderNumber: 'temp',
+          branchId: branch.id,
+          subtotal: 0,
+          deliveryFee: 0,
+          discount: 0,
+          total: 0,
+          paymentMethod: dto.paymentMethod,
+          status: 'DELIVERED', // Instant delivery
+          userId: userId,
+          items: { create: [] },
+        } as any),
+      });
+
+      let subtotal = 0;
+      let totalDiscount = 0;
+
+      for (const item of dto.items) {
+        const p = map.get(item.productSlug)!;
+
+        // Calculate combos
+        const basePrice = Number(p.basePrice);
+        let itemTotal = basePrice * item.quantity;
+        let discountForThisItem = 0;
+
+        if (p.comboQuantity && p.comboPrice && p.comboQuantity > 0) {
+          const comboQty = Number(p.comboQuantity);
+          const comboPrice = Number(p.comboPrice);
+          const nCombos = Math.floor(item.quantity / comboQty);
+          const remainder = item.quantity % comboQty;
+
+          const priceWithCombo = nCombos * comboPrice + remainder * basePrice;
+          discountForThisItem = itemTotal - priceWithCombo;
+        }
+
+        subtotal += (basePrice * item.quantity);
+        totalDiscount += discountForThisItem;
+
+        // Deduct physical inventory directly
+        await tx.inventory.update({
+          where: { productId_branchId: { productId: p.id, branchId: branch.id } },
+          data: { quantity: { decrement: item.quantity } },
+        });
+
+        // Add order item
+        await tx.orderItem.create({
+          data: {
+             orderId: created.id,
+             productId: p.id,
+             productName: p.name,
+             quantity: item.quantity,
+             unitPrice: p.basePrice 
+          }
+        });
+
+        // Create stock movement
+        await tx.stockMovement.create({
+          data: {
+             productId: p.id,
+             fromBranchId: branch.id,
+             type: StockMovementType.VENTA,
+             quantity: item.quantity,
+             userId 
+          }
+        });
+      }
+
+      const total = subtotal - totalDiscount;
+
+      const updated = await tx.order.update({
+        where: { id: created.id },
+        data: {
+          orderNumber: formatOrderNumber(created.id),
+          subtotal,
+          discount: totalDiscount,
+          total
+        }
+      });
+      return updated;
+    }, {
+      isolationLevel: 'Serializable',
+      maxWait: 5000,
+      timeout: 10000,
+    });
+
     this.logger.auditOrderCreated(order.id, userId, Number(order.total));
 
     return order;

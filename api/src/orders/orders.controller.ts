@@ -1,7 +1,7 @@
 import { Body, Controller, Param, ParseIntPipe, Post, Get, Query, UseGuards, Req, Res, Patch, ForbiddenException } from '@nestjs/common';
 import { ApiTags, ApiBody, ApiQuery, ApiBearerAuth, ApiOperation, ApiResponse, ApiBadRequestResponse } from '@nestjs/swagger';
 import { OrdersService } from './orders.service.js';
-import { ReserveOrderDto } from './dto.js';
+import { POSOrderDto, ReserveOrderDto } from './dto.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/roles.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
@@ -42,6 +42,33 @@ export class OrdersController {
       userAgent: req.headers?.['user-agent'],
     });
     
+    return order;
+  }
+
+  @Post('pos')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'MANAGER', 'CASHIER')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Venta directa en POS', description: 'Crea una orden entregada instantáneamente y descuenta stock.' })
+  @ApiBody({ type: POSOrderDto })
+  @ApiResponse({ status: 201, description: 'Venta registrada exitosamente' })
+  @ApiBadRequestResponse({ description: 'Stock insuficiente' })
+  async posSale(@Req() req: any, @Body() dto: POSOrderDto) {
+    const order = await this.service.directSale(dto, req.user?.userId);
+
+    const userName = await this.auditService.getUserName(req.user?.userId);
+    await this.auditService.log({
+      userId: req.user?.userId,
+      userName,
+      action: 'CREATE',
+      entity: 'Order',
+      entityId: String(order.id),
+      entityName: order.orderNumber,
+      details: { action: 'POS_SALE', branchSlug: dto.branchSlug, itemsCount: dto.items?.length, total: order.total },
+      ipAddress: getClientIp(req),
+      userAgent: req.headers?.['user-agent'],
+    });
+
     return order;
   }
 

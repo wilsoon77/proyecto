@@ -1,62 +1,42 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
-import { productsService } from "@/lib/api"
-import type { ApiProduct, PaginatedResponse, ProductFilters } from "@/lib/api/types"
+import { useQuery } from '@tanstack/react-query'
+import { productsService } from '@/lib/api'
+import type { ApiProduct, PaginatedResponse, ProductFilters } from '@/lib/api/types'
 
-interface UseProductsOptions {
-  initialFilters?: ProductFilters
-  autoFetch?: boolean
+// Keys para react-query (facilita invalidación y caching)
+export const productKeys = {
+  all: ['products'] as const,
+  lists: () => [...productKeys.all, 'list'] as const,
+  list: (filters: ProductFilters) => [...productKeys.lists(), filters] as const,
+  details: () => [...productKeys.all, 'detail'] as const,
+  detail: (slug: string) => [...productKeys.details(), slug] as const,
+  featured: (limit: number) => [...productKeys.all, 'featured', limit] as const,
 }
 
 interface UseProductsReturn {
   products: ApiProduct[]
   meta: PaginatedResponse<ApiProduct>['meta'] | null
   isLoading: boolean
+  isFetching: boolean
   error: Error | null
-  filters: ProductFilters
-  setFilters: (filters: ProductFilters) => void
-  refetch: () => Promise<void>
+  refetch: () => void
 }
 
-export function useProducts(options: UseProductsOptions = {}): UseProductsReturn {
-  const { initialFilters = {}, autoFetch = true } = options
-
-  const [products, setProducts] = useState<ApiProduct[]>([])
-  const [meta, setMeta] = useState<PaginatedResponse<ApiProduct>['meta'] | null>(null)
-  const [isLoading, setIsLoading] = useState(autoFetch)
-  const [error, setError] = useState<Error | null>(null)
-  const [filters, setFilters] = useState<ProductFilters>(initialFilters)
-
-  const fetchProducts = useCallback(async () => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      const response = await productsService.list(filters)
-      setProducts(response.data)
-      setMeta(response.meta)
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Error cargando productos'))
-      console.error('Error fetching products:', err)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [filters])
-
-  useEffect(() => {
-    if (autoFetch) {
-      fetchProducts()
-    }
-  }, [fetchProducts, autoFetch])
+export function useProducts(filters: ProductFilters = {}, options = {}): UseProductsReturn {
+  const queryInfo = useQuery({
+    queryKey: productKeys.list(filters),
+    queryFn: () => productsService.list(filters),
+    ...options,
+  })
 
   return {
-    products,
-    meta,
-    isLoading,
-    error,
-    filters,
-    setFilters,
-    refetch: fetchProducts,
+    products: queryInfo.data?.data || [],
+    meta: queryInfo.data?.meta || null,
+    isLoading: queryInfo.isLoading,
+    isFetching: queryInfo.isFetching,
+    error: queryInfo.error as Error | null,
+    refetch: queryInfo.refetch,
   }
 }
 
@@ -64,40 +44,25 @@ export function useProducts(options: UseProductsOptions = {}): UseProductsReturn
 interface UseProductReturn {
   product: ApiProduct | null
   isLoading: boolean
+  isFetching: boolean
   error: Error | null
-  refetch: () => Promise<void>
+  refetch: () => void
 }
 
-export function useProduct(slug: string): UseProductReturn {
-  const [product, setProduct] = useState<ApiProduct | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
-
-  const fetchProduct = useCallback(async () => {
-    if (!slug) return
-    
-    setIsLoading(true)
-    setError(null)
-    try {
-      const data = await productsService.getBySlug(slug)
-      setProduct(data)
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Error cargando producto'))
-      console.error('Error fetching product:', err)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [slug])
-
-  useEffect(() => {
-    fetchProduct()
-  }, [fetchProduct])
+export function useProduct(slug: string, options = {}): UseProductReturn {
+  const queryInfo = useQuery({
+    queryKey: productKeys.detail(slug),
+    queryFn: () => productsService.getBySlug(slug),
+    enabled: !!slug, // Solo se ejecuta si hay slug
+    ...options,
+  })
 
   return {
-    product,
-    isLoading,
-    error,
-    refetch: fetchProduct,
+    product: queryInfo.data || null,
+    isLoading: queryInfo.isLoading,
+    isFetching: queryInfo.isFetching,
+    error: queryInfo.error as Error | null,
+    refetch: queryInfo.refetch,
   }
 }
 
@@ -105,37 +70,23 @@ export function useProduct(slug: string): UseProductReturn {
 interface UseFeaturedProductsReturn {
   products: ApiProduct[]
   isLoading: boolean
+  isFetching: boolean
   error: Error | null
-  refetch: () => Promise<void>
+  refetch: () => void
 }
 
-export function useFeaturedProducts(limit: number = 10): UseFeaturedProductsReturn {
-  const [products, setProducts] = useState<ApiProduct[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
-
-  const fetchFeatured = useCallback(async () => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      const data = await productsService.featured(limit)
-      setProducts(data)
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Error cargando productos destacados'))
-      console.error('Error fetching featured products:', err)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [limit])
-
-  useEffect(() => {
-    fetchFeatured()
-  }, [fetchFeatured])
+export function useFeaturedProducts(limit: number = 10, options = {}): UseFeaturedProductsReturn {
+  const queryInfo = useQuery({
+    queryKey: productKeys.featured(limit),
+    queryFn: () => productsService.featured(limit),
+    ...options,
+  })
 
   return {
-    products,
-    isLoading,
-    error,
-    refetch: fetchFeatured,
+    products: queryInfo.data || [],
+    isLoading: queryInfo.isLoading,
+    isFetching: queryInfo.isFetching,
+    error: queryInfo.error as Error | null,
+    refetch: queryInfo.refetch,
   }
 }

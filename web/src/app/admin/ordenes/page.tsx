@@ -47,10 +47,8 @@ interface Branch {
 const STATUS_OPTIONS: { value: OrderStatus; label: string; icon: React.ElementType; color: string }[] = [
   { value: "PENDING", label: "Pendiente", icon: Clock, color: "bg-yellow-100 text-yellow-700" },
   { value: "CONFIRMED", label: "Confirmada", icon: CheckCircle, color: "bg-blue-100 text-blue-700" },
-  { value: "PREPARING", label: "Preparando", icon: ChefHat, color: "bg-purple-100 text-purple-700" },
-  { value: "READY", label: "Lista", icon: Package, color: "bg-green-100 text-green-700" },
+  { value: "READY", label: "Lista para recoger", icon: Package, color: "bg-green-100 text-green-700" },
   { value: "DELIVERED", label: "Entregada", icon: CheckCircle, color: "bg-emerald-100 text-emerald-700" },
-  { value: "PICKED_UP", label: "Recogida", icon: CheckCircle, color: "bg-teal-100 text-teal-700" },
   { value: "CANCELLED", label: "Cancelada", icon: XCircle, color: "bg-red-100 text-red-700" },
 ]
 
@@ -221,7 +219,7 @@ export default function OrdenesPage() {
 
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        {['PENDING', 'CONFIRMED', 'PREPARING', 'READY'].map(status => {
+        {['PENDING', 'CONFIRMED', 'READY', 'DELIVERED'].map(status => {
           const config = STATUS_MAP[status as OrderStatus]
           const StatusIcon = config.icon
           return (
@@ -293,7 +291,7 @@ export default function OrdenesPage() {
                           value={order.status}
                           onChange={(e) => handleStatusChange(order.id, e.target.value as OrderStatus)}
                           className={`text-xs font-medium px-3 py-1.5 rounded-full border-0 focus:ring-2 focus:ring-amber-500 ${statusConfig.color}`}
-                          disabled={order.status === 'CANCELLED' || order.status === 'DELIVERED' || order.status === 'PICKED_UP'}
+                          disabled={order.status === 'CANCELLED' || order.status === 'DELIVERED'}
                         >
                           {STATUS_OPTIONS.map(s => (
                             <option key={s.value} value={s.value}>{s.label}</option>
@@ -356,7 +354,7 @@ export default function OrdenesPage() {
                             value={order.status}
                             onChange={(e) => handleStatusChange(order.id, e.target.value as OrderStatus)}
                             className={`text-xs font-medium px-2 py-1 rounded-full border-0 focus:ring-2 focus:ring-amber-500 ${statusConfig.color}`}
-                            disabled={order.status === 'CANCELLED' || order.status === 'DELIVERED' || order.status === 'PICKED_UP'}
+                            disabled={order.status === 'CANCELLED' || order.status === 'DELIVERED'}
                           >
                             {STATUS_OPTIONS.map(s => (
                               <option key={s.value} value={s.value}>{s.label}</option>

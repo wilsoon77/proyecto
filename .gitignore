@@ -10,7 +10,7 @@ Thumbs.db
 .vscode/
 .idea/
 .agent/
-context.md
+.context/
 
 # Nested git (avoid accidental submodule linkage)
 api/.git/

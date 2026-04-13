@@ -2,19 +2,30 @@
 
 import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
+import { useRouter } from "next/navigation"
 import { useCart } from "@/context/CartContext"
 import { useAuth } from "@/context/AuthContext"
 import { ORDER_CONFIG, ROUTES } from "@/lib/constants"
 import { formatPrice } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ordersService, branchesService } from "@/lib/api"
+import { ordersService, branchesService, authService } from "@/lib/api"
 import type { ApiBranch } from "@/lib/api/types"
+import { useToast } from "@/context/ToastContext"
 
 export default function CheckoutPage() {
   const { items, subtotal, clearCart } = useCart()
-  const { user, isAuthenticated } = useAuth()
+  const { user, isAuthenticated, isLoading } = useAuth()
+  const { show } = useToast()
   
+  const router = useRouter()
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.push('/ingresar?redirect=/checkout')
+    }
+  }, [isLoading, isAuthenticated, router])
+
   const [fullName, setFullName] = useState("")
   const [phone, setPhone] = useState("")
   const [customerNotes, setCustomerNotes] = useState("")
@@ -23,11 +34,12 @@ export default function CheckoutPage() {
   const [orderNumber, setOrderNumber] = useState<string | null>(null)
   const [hydrated, setHydrated] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  
+
   // Selección de sucursal para recoger
   const [branches, setBranches] = useState<ApiBranch[]>([])
   const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null)
   const [branchesError, setBranchesError] = useState(false)
+  const [savePhoneToProfile, setSavePhoneToProfile] = useState(true)
 
   const belowMin = subtotal > 0 && subtotal < ORDER_CONFIG.minOrderAmount
 
@@ -44,7 +56,13 @@ export default function CheckoutPage() {
       try {
         const branchList = await branchesService.list()
         setBranches(branchList)
-        if (branchList.length > 0) {
+
+        const preferredBranchSlug = localStorage.getItem('selectedBranch')
+        if (preferredBranchSlug) {
+          const match = branchList.find(b => b.slug === preferredBranchSlug)
+          if (match) setSelectedBranchId(match.id)
+          else if (branchList.length > 0) setSelectedBranchId(branchList[0].id)
+        } else if (branchList.length > 0) {
           setSelectedBranchId(branchList[0].id)
         }
       } catch (err) {
@@ -78,7 +96,7 @@ export default function CheckoutPage() {
         if (data.fullName && !user) setFullName(data.fullName)
         if (data.phone && !user) setPhone(data.phone)
       }
-    } catch {}
+    } catch { }
     setHydrated(true)
   }, [user])
 
@@ -86,7 +104,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (!hydrated) return
     const data = { fullName, phone }
-    try { localStorage.setItem('checkoutCustomer', JSON.stringify(data)) } catch {}
+    try { localStorage.setItem('checkoutCustomer', JSON.stringify(data)) } catch { }
   }, [fullName, phone, hydrated])
 
   const placeOrder = async () => {
@@ -95,62 +113,61 @@ export default function CheckoutPage() {
     setError(null)
 
     try {
-      if (isAuthenticated && user) {
-        const selectedBranch = branches.find(b => b.id === selectedBranchId) || branches[0]
-        if (!selectedBranch) {
-          throw new Error('Debes seleccionar una sucursal')
-        }
-
-        const orderData = {
-          branchSlug: selectedBranch.slug,
-          customerNotes: customerNotes.trim() || undefined,
-          items: items.map(item => ({
-            productSlug: item.product.slug,
-            quantity: item.quantity
-          }))
-        }
-
-        const order = await ordersService.reserve(orderData)
-        setOrderNumber(order.orderNumber)
-        setPlaced(true)
-        clearCart()
-      } else {
-        // Usuario no autenticado: simular orden (guardar en localStorage)
-        await new Promise(r => setTimeout(r, 800))
-
-        const now = new Date()
-        const seq = Math.floor(1000 + Math.random() * 9000)
-        const ordNumber = `PED-${now.toISOString().slice(0,10).replace(/-/g, '')}-${seq}`
-
-        const selectedBranch = branches.find(b => b.id === selectedBranchId)
-
-        const order = {
-          id: now.getTime(),
-          orderNumber: ordNumber,
-          status: 'PENDING',
-          items: items.map(item => ({
-            product: item.product,
-            quantity: item.quantity,
-            price: item.product.price,
-          })),
-          subtotal,
-          total: subtotal,
-          branch: selectedBranch ? { name: selectedBranch.name } : null,
-          createdAt: now.toISOString(),
-          customerInfo: { fullName, phone },
-        }
-
-        try { localStorage.setItem('lastOrder', JSON.stringify(order)) } catch {}
-        setOrderNumber(ordNumber)
-        setPlaced(true)
-        clearCart()
+      const selectedBranch = branches.find(b => b.id === selectedBranchId) || branches[0]
+      if (!selectedBranch) {
+        throw new Error('Debes seleccionar una sucursal')
       }
-    } catch (err) {
+
+      const orderData = {
+        branchSlug: selectedBranch.slug,
+        customerNotes: customerNotes.trim() || undefined,
+        items: items.map(item => ({
+          productSlug: item.product.slug,
+          quantity: item.quantity
+        }))
+      }
+
+      const order = await ordersService.reserve(orderData)
+      
+      // Guardar teléfono en el perfil si así lo decidió el usuario
+      if (savePhoneToProfile && phone && user && !user.phone) {
+        try {
+          await authService.updateMe({ phone: phone.trim() })
+        } catch (e) {
+          console.warn('No se pudo guardar el teléfono en el perfil', e)
+        }
+      }
+
+      setOrderNumber(order.orderNumber)
+      setPlaced(true)
+      clearCart()
+    } catch (err: any) {
       console.error('Error al crear orden:', err)
-      setError(err instanceof Error ? err.message : 'Error al procesar el pedido. Intenta de nuevo.')
+      const errorMsg = err.response?.data?.message || err.message || 'Error al procesar el pedido. Intenta de nuevo.'
+      const finalMsg = Array.isArray(errorMsg) ? errorMsg[0] : errorMsg
+
+      if (finalMsg.toLowerCase().includes('stock')) {
+        show('El stock de alguno de tus productos cambió o se agotó. Hemos limpiado tu carrito por seguridad.', { variant: 'error' })
+        clearCart()
+        setTimeout(() => {
+          window.location.href = '/productos'
+        }, 5000)
+      } else {
+        setError(finalMsg)
+        show(finalMsg, { variant: 'error' })
+      }
     } finally {
       setPlacing(false)
     }
+  }
+
+  // Pantalla de carga mientras verificamos la sesión
+  if (isLoading) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-20 text-center">
+        <p className="text-gray-500">Verificando sesión...</p>
+      </div>
+    )
   }
 
   if (items.length === 0 && !placed) {
@@ -198,43 +215,43 @@ export default function CheckoutPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <label htmlFor="checkout-fullname" className="mb-1 block text-sm font-medium">Nombre completo</label>
-                <Input id="checkout-fullname" value={fullName} onChange={e=>setFullName(e.target.value)} placeholder="Ej. Juan Pérez" />
+                <Input id="checkout-fullname" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Ej. Juan Pérez" />
               </div>
               <div>
                 <label htmlFor="checkout-phone" className="mb-1 block text-sm font-medium">Teléfono (WhatsApp)</label>
-                <Input id="checkout-phone" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="Ej. 5555-5555" />
+                <Input id="checkout-phone" value={phone} onChange={e => setPhone(e.target.value)} placeholder="Ej. 5555-5555" />
+                {isAuthenticated && !user?.phone && phone && (
+                  <label className="mt-2 flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={savePhoneToProfile} 
+                      onChange={(e) => setSavePhoneToProfile(e.target.checked)} 
+                      className="accent-amber-600 w-4 h-4" 
+                    />
+                    Guardar este número en mi cuenta
+                  </label>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Sucursal de retiro */}
+          {/* Sucursal de retiro (Solo visualización) */}
           <div className="rounded-lg border bg-white p-6">
             <h2 className="mb-4 text-xl font-semibold">Sucursal de retiro</h2>
-            <p className="mb-3 text-sm text-gray-600">Selecciona la sucursal donde deseas recoger tu pedido.</p>
+            <p className="mb-3 text-sm text-gray-600">Tu pedido se procesará exclusivamente para retiro en esta sucursal.</p>
             {branches.length > 0 ? (
               <div className="space-y-3">
-                {branches.map(branch => (
-                  <label
+                {branches.filter(b => b.id === selectedBranchId).map(branch => (
+                  <div
                     key={branch.id}
-                    className={`flex items-start gap-3 rounded-lg border p-4 cursor-pointer transition-colors ${
-                      selectedBranchId === branch.id 
-                        ? 'border-amber-500 bg-amber-50' 
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
+                    className="flex items-start gap-3 rounded-lg border border-amber-500 bg-amber-50 p-4"
                   >
-                    <input
-                      type="radio"
-                      name="branch"
-                      checked={selectedBranchId === branch.id}
-                      onChange={() => setSelectedBranchId(branch.id)}
-                      className="mt-1 accent-amber-600"
-                    />
                     <div>
-                      <p className="font-medium text-gray-900">{branch.name}</p>
-                      <p className="text-sm text-gray-600">{branch.address}</p>
-                      {branch.phone && <p className="text-sm text-gray-500">📞 {branch.phone}</p>}
+                      <p className="font-medium text-amber-900">{branch.name}</p>
+                      <p className="text-sm text-amber-800/80">{branch.address}</p>
+                      {branch.phone && <p className="text-sm text-amber-700 mt-1">📞 {branch.phone}</p>}
                     </div>
-                  </label>
+                  </div>
                 ))}
               </div>
             ) : branchesError ? (
@@ -306,7 +323,19 @@ export default function CheckoutPage() {
               </div>
             </div>
             <p className="mt-2 text-xs text-gray-500">Pago al recoger en sucursal</p>
-            <Button className="mt-4 w-full" onClick={placeOrder} disabled={!canPlace || placing}>
+            <Button 
+              className="mt-4 w-full" 
+              onClick={() => {
+                if (!canPlace) {
+                  show('Por favor, completa Nombre, Teléfono y Sucursal para ordenar.', { variant: 'error' })
+                  // Hacemos un poco de scroll hacia arriba por si no los ven
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                  return
+                }
+                placeOrder()
+              }} 
+              disabled={placing}
+            >
               {placing ? 'Procesando…' : 'Reservar Pedido'}
             </Button>
             <p className="mt-2 text-center text-xs text-gray-500">Al realizar el pedido, aceptas nuestros términos y políticas.</p>

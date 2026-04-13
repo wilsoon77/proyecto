@@ -99,8 +99,11 @@ export class ProductsService {
         description: p.description ?? undefined,
         basePrice: Number(p.basePrice),
         category: p.category.name,
+        categorySlug: p.category.slug,
         origin: p.origin,
         isNew: p.isNew ?? undefined,
+        isActive: p.isActive,
+        isAvailable: p.isAvailable,
         comboQuantity: p.comboQuantity ?? undefined,
         comboPrice: p.comboPrice ? Number(p.comboPrice) : undefined,
         unitsPerTray: p.unitsPerTray ?? undefined,
@@ -120,13 +123,20 @@ export class ProductsService {
     };
   }
 
-  async findOne(slug: string) {
+  async findOne(slug: string, branch?: string) {
     const p = await this.prisma.product.findUnique({
       where: { slug },
-      include: { category: true },
+      include: { category: true, images: true },
     });
     if (!p || !p.isActive) return null;
-    const inv = await this.prisma.inventory.findMany({ where: { productId: p.id } });
+    
+    let whereInv: any = { productId: p.id };
+    if (branch) {
+      const b = await this.prisma.branch.findUnique({ where: { slug: branch } });
+      if (b) whereInv.branchId = b.id;
+    }
+    
+    const inv = await this.prisma.inventory.findMany({ where: whereInv });
     const available = inv.reduce((sum, i) => sum + (i.quantity - i.reserved), 0);
     return {
       id: p.id,
@@ -138,22 +148,36 @@ export class ProductsService {
       categorySlug: p.category.slug,
       origin: p.origin,
       isNew: p.isNew ?? undefined,
+      isActive: p.isActive,
+      isAvailable: p.isAvailable,
       comboQuantity: p.comboQuantity ?? undefined,
       comboPrice: p.comboPrice ? Number(p.comboPrice) : undefined,
       unitsPerTray: p.unitsPerTray ?? undefined,
       available,
+      images: p.images.map((img: any) => ({
+        id: img.id,
+        url: img.url,
+        position: img.position,
+      })),
     };
   }
 
   // ==================== MÉTODOS POR ID ====================
   
-  async findById(id: number) {
+  async findById(id: number, branch?: string) {
     const p = await this.prisma.product.findUnique({
       where: { id },
       include: { category: true, images: true },
     });
     if (!p) return null;
-    const inv = await this.prisma.inventory.findMany({ where: { productId: p.id } });
+    
+    let whereInv: any = { productId: p.id };
+    if (branch) {
+      const b = await this.prisma.branch.findUnique({ where: { slug: branch } });
+      if (b) whereInv.branchId = b.id;
+    }
+    
+    const inv = await this.prisma.inventory.findMany({ where: whereInv });
     const available = inv.reduce((sum, i) => sum + (i.quantity - i.reserved), 0);
     return {
       id: p.id,
@@ -423,7 +447,7 @@ export class ProductsService {
     return updated;
   }
 
-  async findFeatured(limit: number = 10) {
+  async findFeatured(limit: number = 10, branch?: string) {
     // Productos destacados: nuevos o con combo, activos y disponibles
     const products = await this.prisma.product.findMany({
       where: {
@@ -434,7 +458,7 @@ export class ProductsService {
           { comboQuantity: { not: null } },
         ],
       },
-      include: { category: true },
+      include: { category: true, images: true },
       orderBy: [
         { isNew: 'desc' },
         { createdAt: 'desc' },
@@ -445,8 +469,15 @@ export class ProductsService {
     // Cargar inventarios agregados
     let inventoriesByProduct: Record<number, { quantity: number; reserved: number }[]> = {};
     if (products.length) {
+      let invWhere: any = { productId: { in: products.map(p => p.id) } };
+      
+      if (branch) {
+        const b = await this.prisma.branch.findUnique({ where: { slug: branch } });
+        if (b) invWhere.branchId = b.id;
+      }
+      
       const invAll = await this.prisma.inventory.findMany({ 
-        where: { productId: { in: products.map(p => p.id) } } 
+        where: invWhere
       });
       inventoriesByProduct = invAll.reduce((acc, i) => {
         (acc[i.productId] ||= []).push({ quantity: i.quantity, reserved: i.reserved });
@@ -464,10 +495,14 @@ export class ProductsService {
         description: p.description ?? undefined,
         basePrice: Number(p.basePrice),
         category: p.category.name,
+        categorySlug: p.category.slug,
         isNew: p.isNew ?? undefined,
+        isActive: p.isActive,
+        isAvailable: p.isAvailable,
         comboQuantity: p.comboQuantity ?? undefined,
         comboPrice: p.comboPrice ? Number(p.comboPrice) : undefined,
         available,
+        images: p.images.map(img => ({ id: img.id, url: img.url, position: img.position })),
       };
     });
   }

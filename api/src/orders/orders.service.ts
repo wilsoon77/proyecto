@@ -66,6 +66,7 @@ export class OrdersService {
           discount: 0,
           total: 0,
           paymentMethod: dto.paymentMethod,
+          customerNotes: dto.customerNotes,
           status: 'PENDING',
           userId: userId,
           items: { create: [] },
@@ -276,7 +277,7 @@ export class OrdersService {
     const pageSize = Math.max(1, Math.min(100, filters.pageSize ?? 10));
     const [total, data] = await this.prisma.$transaction([
       this.prisma.order.count({ where }),
-      this.prisma.order.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (page - 1) * pageSize, take: pageSize, include: { items: true } }),
+      this.prisma.order.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (page - 1) * pageSize, take: pageSize, include: { items: true, branch: true } }),
     ]);
     return {
       data: data.map(normalizeOrder),

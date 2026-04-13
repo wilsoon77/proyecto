@@ -38,13 +38,15 @@ export default function ProductDetailPage() {
       setIsLoading(true)
       setError(null)
       try {
-        const apiProduct = await productsService.getBySlug(slug)
+        const branch = typeof window !== 'undefined' ? localStorage.getItem('selectedBranch') : null
+        const apiProduct = await productsService.getBySlug(slug, branch || undefined)
         const transformedProduct = apiProductToProduct(apiProduct)
         setProduct(transformedProduct)
 
         // Cargar productos relacionados de la misma categoría
         const response = await productsService.list({ 
           category: apiProduct.categorySlug || apiProduct.category,
+          branch: branch || undefined,
           pageSize: 5 
         })
         const related = response.data
@@ -88,7 +90,8 @@ export default function ProductDetailPage() {
     return notFound()
   }
 
-  const canAdd = product.isAvailable && qty > 0
+  const hasStock = product.stock > 0
+  const canAdd = product.isAvailable && hasStock && qty > 0
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
@@ -135,12 +138,14 @@ export default function ProductDetailPage() {
 
           {/* Disponibilidad */}
           <div className="mb-4">
-            {product.isAvailable ? (
+            {!hasStock ? (
+              <span className="text-sm font-semibold text-red-600">✗ Agotado</span>
+            ) : product.isAvailable ? (
               <span className="text-sm text-green-600">✓ Disponible</span>
             ) : (
               <span className="text-sm text-red-600">✗ No disponible</span>
             )}
-            {product.stock > 0 && (
+            {hasStock && (
               <span className="ml-2 text-sm text-gray-500">({product.stock} en stock)</span>
             )}
           </div>
@@ -149,16 +154,18 @@ export default function ProductDetailPage() {
           <div className="mb-6 flex items-center gap-3">
             <div className="flex items-center rounded-md border">
               <button
-                className="px-3 py-2 text-lg hover:bg-gray-100"
+                className="px-3 py-2 text-lg hover:bg-gray-100 disabled:opacity-50"
                 onClick={() => setQty(q => Math.max(1, q - 1))}
+                disabled={!canAdd}
                 aria-label="Disminuir"
               >
                 −
               </button>
-              <div className="w-12 text-center">{qty}</div>
+              <div className="w-12 text-center">{hasStock ? qty : 0}</div>
               <button
-                className="px-3 py-2 text-lg hover:bg-gray-100"
-                onClick={() => setQty(q => Math.min(q + 1, product.stock > 0 ? product.stock : 999))}
+                className="px-3 py-2 text-lg hover:bg-gray-100 disabled:opacity-50"
+                onClick={() => setQty(q => Math.min(q + 1, product.stock))}
+                disabled={!canAdd || qty >= product.stock}
                 aria-label="Aumentar"
               >
                 +

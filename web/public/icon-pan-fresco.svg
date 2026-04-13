@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="120" height="120">
+    <defs>
+        <style>
+            /* Animación del vapor subiendo */
+            .fresco-steam {
+                opacity: 0;
+                animation: steamRise 2.5s ease-in-out infinite;
+            }
+            .delay-1 { animation-delay: 0s; }
+            .delay-2 { animation-delay: 1.2s; }
+            .delay-3 { animation-delay: 0.6s; }
+
+            @keyframes steamRise {
+                0% { transform: translateY(10px) scale(0.8); opacity: 0; }
+                30% { opacity: 0.8; }
+                80% { opacity: 0.8; }
+                100% { transform: translateY(-25px) scale(1.1); opacity: 0; }
+            }
+        </style>
+    </defs>
+
+    <!-- Fondo circular -->
+    <circle cx="100" cy="100" r="90" fill="#F0F0F0" />
+    <circle cx="100" cy="100" r="80" fill="none" stroke="#D1D1D1" stroke-width="2" stroke-dasharray="6 6" />
+
+    <!-- Vapor Animado -->
+    <path class="fresco-steam delay-1" d="M 80,80 Q 70,65 80,50 T 80,20" fill="none" stroke="#D6C5B3" stroke-width="4" stroke-linecap="round"/>
+    <path class="fresco-steam delay-2" d="M 120,70 Q 130,55 120,40 T 120,10" fill="none" stroke="#D6C5B3" stroke-width="4" stroke-linecap="round"/>
+    <path class="fresco-steam delay-3" d="M 100,60 Q 90,45 100,30 T 100,5" fill="none" stroke="#D6C5B3" stroke-width="4" stroke-linecap="round"/>
+
+    <!-- Tabla de Madera (Base) -->
+    <ellipse cx="100" cy="155" rx="60" ry="15" fill="#DE8E3B" stroke="#422612" stroke-width="5"/>
+    <rect x="155" y="148" width="25" height="12" rx="6" fill="#DE8E3B" stroke="#422612" stroke-width="5"/> <!-- Mango -->
+
+    <!-- Pan 1: Pan de Molde / Hogaza trasera -->
+    <path d="M 60,150 L 55,100 C 55,70 115,70 115,100 L 115,150 Z" fill="#D67621" stroke="#422612" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M 70,100 Q 85,110 100,100" fill="none" stroke="#422612" stroke-width="4" stroke-linecap="round"/>
+
+    <!-- Pan 2: Croissant -->
+    <path d="M 125,150 C 150,140 150,110 130,115 C 120,118 100,130 90,145 Z" fill="#EFA045" stroke="#422612" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M 105,135 Q 115,120 125,125" fill="none" stroke="#422612" stroke-width="3" stroke-linecap="round"/>
+
+    <!-- Pan 3: Baguette Frontal (Cruza todo) -->
+    <g transform="rotate(-15, 80, 140)">
+        <rect x="40" y="130" width="90" height="25" rx="12.5" fill="#F4B84A" stroke="#422612" stroke-width="5"/>
+        <!-- Cortes de la baguette -->
+        <line x1="55" y1="135" x2="65" y2="150" stroke="#422612" stroke-width="4" stroke-linecap="round"/>
+        <line x1="75" y1="135" x2="85" y2="150" stroke="#422612" stroke-width="4" stroke-linecap="round"/>
+        <line x1="95" y1="135" x2="105" y2="150" stroke="#422612" stroke-width="4" stroke-linecap="round"/>
+    </g>
+</svg>

@@ -51,7 +51,7 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ 
     whitelist: true, 
     transform: true,
-    forbidNonWhitelisted: true,
+    forbidNonWhitelisted: false,
   }));
   
   // Filtros de excepciones: primero Sentry (si está configurado), luego HTTP

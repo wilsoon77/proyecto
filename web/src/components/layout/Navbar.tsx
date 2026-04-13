@@ -52,7 +52,14 @@ export function Navbar() {
   const handleBranchSelect = (branch: ApiBranch) => {
     setSelectedBranch(branch)
     if (typeof window !== 'undefined') {
-      localStorage.setItem('selectedBranch', branch.slug)
+      const currentBranch = localStorage.getItem('selectedBranch')
+      if (currentBranch !== branch.slug) {
+        // Al cambiar de sucursal, es una buena práctica vaciar el carrito 
+        // para evitar comprar productos que no existen en la nueva sucursal.
+        localStorage.removeItem('cart')
+        localStorage.setItem('selectedBranch', branch.slug)
+        window.location.reload() // Recargar para actualizar el catálogo
+      }
     }
   }
 

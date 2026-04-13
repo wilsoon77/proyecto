@@ -57,6 +57,8 @@ function ProductosContent() {
     if (sort && sort !== 'relevancia') {
       filters.sort = sort as ProductFilters['sort']
     }
+    const branch = typeof window !== 'undefined' ? localStorage.getItem('selectedBranch') : null
+    if (branch) filters.branch = branch
     return filters
   }, [search, category, minPrice, maxPrice, sort])
 

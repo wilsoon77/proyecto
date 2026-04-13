@@ -148,15 +148,15 @@ export default function HistorialPage() {
   const loadLogs = async () => {
     try {
       setIsLoading(true)
-      const response = await auditService.list(filters)
+      const response: any = await auditService.list(filters)
       setLogs(response.data)
-      const meta = response.pagination
+      const meta = response.meta || response.pagination || {}
       setPagination({
-        total: meta.total,
-        page: meta.page,
-        pageSize: meta.pageSize,
-        totalPages: meta.totalPages,
-        pageCount: meta.totalPages,
+        total: meta.total || 0,
+        page: meta.page || 1,
+        pageSize: meta.pageSize || 20,
+        totalPages: meta.pageCount || meta.totalPages || 0,
+        pageCount: meta.pageCount || meta.totalPages || 0,
       })
     } catch (error) {
       console.error("Error loading audit logs:", error)

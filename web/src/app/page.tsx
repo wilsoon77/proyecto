@@ -11,6 +11,7 @@ import { useCart } from "@/context/CartContext"
 import { productsService } from "@/lib/api"
 import { apiProductToProduct } from "@/lib/api/transformers"
 import type { Product } from "@/types"
+import { ProductCard } from "@/components/products/ProductCard"
 
 export default function Home() {
   const router = useRouter()
@@ -30,8 +31,9 @@ export default function Home() {
   useEffect(() => {
     const loadProducts = async () => {
       try {
-        const response = await productsService.list({ pageSize: 8 })
-        const products = response.data.map(apiProductToProduct)
+        const branch = typeof window !== 'undefined' ? localStorage.getItem('selectedBranch') : null
+        const response = await productsService.featured(8, branch || undefined)
+        const products = response.map(apiProductToProduct)
         setFeaturedProducts(products)
       } catch (err) {
         console.error('Error cargando productos destacados:', err)
@@ -77,7 +79,7 @@ export default function Home() {
           <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
             <div className="text-center">
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                <span className="text-3xl">📱</span>
+                <img src="/icon-reserva-linea.svg" alt="reserva" />
               </div>
               <h3 className="mb-2 text-lg font-semibold">Reserva en Línea</h3>
               <p className="text-sm text-gray-600">
@@ -86,7 +88,7 @@ export default function Home() {
             </div>
             <div className="text-center">
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                <span className="text-3xl">🏪</span>
+                <img src="/icon-recoge-sucursal.svg" alt="reserva" />
               </div>
               <h3 className="mb-2 text-lg font-semibold">Recoge en Sucursal</h3>
               <p className="text-sm text-gray-600">
@@ -95,7 +97,7 @@ export default function Home() {
             </div>
             <div className="text-center">
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                <span className="text-3xl">🥖</span>
+                <img src="/icon-pan-fresco.svg" alt="reserva" />
               </div>
               <h3 className="mb-2 text-lg font-semibold">Pan Fresco</h3>
               <p className="text-sm text-gray-600">
@@ -139,59 +141,16 @@ export default function Home() {
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {featuredProducts.slice(0, 8).map(product => {
-              return (
-                <div key={product.id} className="group overflow-hidden rounded-lg border bg-white shadow-sm transition-shadow hover:shadow-md">
-                  <Link href={`${ROUTES.products}/${product.slug}`}>
-                    <div className="aspect-square bg-gray-100 relative overflow-hidden">
-                      {product.imageUrl ? (
-                        <Image
-                          src={product.imageUrl}
-                          alt={product.name}
-                          fill
-                          className="object-cover transition-transform group-hover:scale-105"
-                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-6xl">
-                          🥖
-                        </div>
-                      )}
-                      {product.comboQuantity && product.comboPrice ? (
-                        <span className="absolute top-2 right-2 rounded-full bg-amber-500 px-2 py-1 text-xs font-bold text-white">
-                          {product.comboQuantity}x Q{Number(product.comboPrice).toFixed(2)}
-                        </span>
-                      ) : null}
-                    </div>
-                  </Link>
-                  <div className="p-4">
-                    <Link href={`${ROUTES.products}/${product.slug}`}>
-                      <h3 className="font-semibold text-gray-900 hover:text-primary">{product.name}</h3>
-                    </Link>
-                    <p className="mt-1 text-sm text-gray-500 line-clamp-1">{product.category}</p>
-                    <div className="mt-3 flex items-center justify-between">
-                      <div>
-                        <span className="text-lg font-bold text-primary">
-                          {formatPrice(product.price)}
-                        </span>
-                        {product.comboQuantity && product.comboPrice ? (
-                          <span className="ml-2 text-xs text-amber-600 font-medium">
-                            {product.comboQuantity}x Q{Number(product.comboPrice).toFixed(2)}
-                          </span>
-                        ) : null}
-                      </div>
-                      <Button 
-                        size="sm" 
-                        disabled={!product.isAvailable}
-                        onClick={() => addItem(product, 1)}
-                      >
-                        Agregar
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
+            {featuredProducts.slice(0, 8).map(product => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                onAddToCart={(id) => {
+                  const p = featuredProducts.find(x => x.id === id)
+                  if (p) addItem(p, 1)
+                }}
+              />
+            ))}
           </div>
         )}
 

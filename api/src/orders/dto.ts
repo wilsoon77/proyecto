@@ -28,6 +28,11 @@ export class ReserveOrderDto {
   @IsOptional()
   @IsString()
   paymentMethod?: string;
+
+  @ApiProperty({ example: 'Por favor no poner mucha azúcar', required: false })
+  @IsOptional()
+  @IsString()
+  customerNotes?: string;
 }
 
 export class POSOrderDto {

@@ -9,6 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { StorageService } from './storage.service.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/roles.guard.js';
@@ -22,6 +23,8 @@ interface MulterFile {
   size: number;
 }
 
+@ApiTags('storage')
+@ApiBearerAuth()
 @Controller('storage')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class StorageController {

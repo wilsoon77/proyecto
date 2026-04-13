@@ -17,11 +17,11 @@ export class DashboardService {
 
     // ========== KPIs NUEVOS ==========
     
-    // Ventas del día (órdenes DELIVERED o PICKED_UP del día)
+    // Ventas del día (órdenes pagadas del día)
     const todaySalesData = await this.prisma.order.aggregate({
       where: { 
         ...orderBranchFilter,
-        status: { in: ['DELIVERED', 'PICKED_UP'] },
+        status: { in: ['CONFIRMED', 'PREPARING', 'READY', 'IN_DELIVERY', 'DELIVERED', 'PICKED_UP'] },
         updatedAt: { gte: startOfToday },
       },
       _sum: { total: true },
@@ -43,13 +43,17 @@ export class DashboardService {
     const monthlyLossesQty = monthlyLossesData._sum.quantity ?? 0;
     const monthlyLossesCount = monthlyLossesData._count ?? 0;
 
-    // Alertas de stock bajo (quantity < 5 y > 0)
-    const lowStockAlerts = await this.prisma.inventory.count({
-      where: {
-        ...branchFilter,
-        quantity: { lt: 5, gt: 0 },
-      },
-    });
+    // Alertas de stock bajo (disponible < 5 y cantidad física > 0)
+    const lowStockResult = branchId
+      ? await this.prisma.$queryRaw<Array<{ count: number }>>`
+          SELECT COUNT(*)::int as count FROM "Inventory"
+          WHERE ("quantity" - "reserved") < 5 AND "quantity" > 0 AND "branchId" = ${branchId}
+        `
+      : await this.prisma.$queryRaw<Array<{ count: number }>>`
+          SELECT COUNT(*)::int as count FROM "Inventory"
+          WHERE ("quantity" - "reserved") < 5 AND "quantity" > 0
+        `;
+    const lowStockAlerts = Number(lowStockResult[0]?.count || 0);
 
     // ========== ESTADÍSTICAS GENERALES ==========
 
@@ -58,9 +62,9 @@ export class DashboardService {
       where: orderBranchFilter,
     });
 
-    // Ingresos totales (de órdenes entregadas)
+    // Ingresos totales (de órdenes pagadas)
     const revenueData = await this.prisma.order.aggregate({
-      where: { ...orderBranchFilter, status: { in: ['DELIVERED', 'PICKED_UP'] } },
+      where: { ...orderBranchFilter, status: { in: ['CONFIRMED', 'PREPARING', 'READY', 'IN_DELIVERY', 'DELIVERED', 'PICKED_UP'] } },
       _sum: { total: true },
     });
     const totalRevenue = revenueData._sum.total ?? 0;
@@ -81,7 +85,7 @@ export class DashboardService {
 
     // Ingresos en los últimos 30 días
     const revenueLast30Days = ordersLast30Days
-      .filter((o) => o.status === 'DELIVERED' || o.status === 'PICKED_UP')
+      .filter((o) => ['CONFIRMED', 'PREPARING', 'READY', 'IN_DELIVERY', 'DELIVERED', 'PICKED_UP'].includes(o.status))
       .reduce((sum, o) => sum + Number(o.total ?? 0), 0);
 
     // Productos con bajo inventario (disponibles < 5 unidades)
@@ -159,7 +163,7 @@ export class DashboardService {
 
     // Valor promedio de orden
     const deliveredOrders = await this.prisma.order.findMany({
-      where: { ...orderBranchFilter, status: { in: ['DELIVERED', 'PICKED_UP'] } },
+      where: { ...orderBranchFilter, status: { in: ['CONFIRMED', 'PREPARING', 'READY', 'IN_DELIVERY', 'DELIVERED', 'PICKED_UP'] } },
       select: { total: true },
     });
     const avgOrderValue =
@@ -194,7 +198,7 @@ export class DashboardService {
         COALESCE(SUM(o.total), 0)::float as "totalSales",
         COUNT(o.id)::int as "orderCount"
       FROM "Branch" b
-      LEFT JOIN "Order" o ON b.id = o."branchId" AND o.status IN ('DELIVERED', 'PICKED_UP')
+      LEFT JOIN "Order" o ON b.id = o."branchId" AND o.status IN ('CONFIRMED', 'PREPARING', 'READY', 'IN_DELIVERY', 'DELIVERED', 'PICKED_UP')
       GROUP BY b.id, b.name
       ORDER BY "totalSales" DESC
     `;
@@ -211,7 +215,7 @@ export class DashboardService {
             COUNT(o.id)::int as "orderCount"
           FROM "Order" o
           WHERE o."createdAt" >= ${sevenDaysAgo}
-            AND o.status IN ('DELIVERED', 'PICKED_UP')
+            AND o.status IN ('CONFIRMED', 'PREPARING', 'READY', 'IN_DELIVERY', 'DELIVERED', 'PICKED_UP')
             AND o."branchId" = ${branchId}
           GROUP BY DATE(o."createdAt")
           ORDER BY date ASC
@@ -225,7 +229,7 @@ export class DashboardService {
             COUNT(o.id)::int as "orderCount"
           FROM "Order" o
           WHERE o."createdAt" >= ${sevenDaysAgo}
-            AND o.status IN ('DELIVERED', 'PICKED_UP')
+            AND o.status IN ('CONFIRMED', 'PREPARING', 'READY', 'IN_DELIVERY', 'DELIVERED', 'PICKED_UP')
           GROUP BY DATE(o."createdAt")
           ORDER BY date ASC
         `;

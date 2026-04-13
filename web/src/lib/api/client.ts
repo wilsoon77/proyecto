@@ -151,7 +151,20 @@ class ApiClient {
       body: body ? JSON.stringify(body) : undefined,
     }
 
-    let response = await fetch(`${this.baseUrl}${endpoint}`, config)
+    let response: Response;
+    try {
+      response = await fetch(`${this.baseUrl}${endpoint}`, config)
+    } catch (error: any) {
+      // Usar fallback a producción / render si el servidor local está apagado
+      const fallbackUrl = process.env.NEXT_PUBLIC_FALLBACK_API_URL;
+      if (fallbackUrl && this.baseUrl !== fallbackUrl) {
+        console.warn(`[API] Servidor ${this.baseUrl} caído o inalcanzable. Usando fallback: ${fallbackUrl}`);
+        this.baseUrl = fallbackUrl; // Guardar URL para futuras consultas
+        response = await fetch(`${this.baseUrl}${endpoint}`, config);
+      } else {
+        throw new ApiClientError('Error de conexión con el servidor', 0, { statusCode: 0, message: error.message || 'Error de red' });
+      }
+    }
 
     // Si el token expiró, intentar refrescar
     if (response.status === 401 && !skipAuth) {
@@ -220,11 +233,27 @@ class ApiClient {
       headers['Authorization'] = `Bearer ${token}`
     }
 
-    let response = await fetch(`${this.baseUrl}${endpoint}`, {
-      method: 'POST',
-      headers,
-      body: formData,
-    })
+    let response: Response;
+    try {
+      response = await fetch(`${this.baseUrl}${endpoint}`, {
+        method: 'POST',
+        headers,
+        body: formData,
+      })
+    } catch (error: any) {
+      const fallbackUrl = process.env.NEXT_PUBLIC_FALLBACK_API_URL;
+      if (fallbackUrl && this.baseUrl !== fallbackUrl) {
+        console.warn(`[API] Fallback upload: Usando ${fallbackUrl}`);
+        this.baseUrl = fallbackUrl;
+        response = await fetch(`${this.baseUrl}${endpoint}`, {
+          method: 'POST',
+          headers,
+          body: formData,
+        })
+      } else {
+        throw new ApiClientError('Error de conexión con el servidor', 0, { statusCode: 0, message: error.message || 'Error de red' });
+      }
+    }
 
     // Si el token expiró, intentar refrescar
     if (response.status === 401) {

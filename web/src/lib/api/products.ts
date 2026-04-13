@@ -40,15 +40,18 @@ export const productsService = {
   /**
    * Obtener productos destacados
    */
-  async featured(limit: number = 10): Promise<ApiProduct[]> {
-    return api.get<ApiProduct[]>(`/products/featured?limit=${limit}`, { skipAuth: true })
+  async featured(limit: number = 10, branch?: string): Promise<ApiProduct[]> {
+    const params = new URLSearchParams({ limit: String(limit) })
+    if (branch) params.set('branch', branch)
+    return api.get<ApiProduct[]>(`/products/featured?${params.toString()}`, { skipAuth: true })
   },
 
   /**
    * Obtener un producto por slug
    */
-  async getBySlug(slug: string): Promise<ApiProduct> {
-    return api.get<ApiProduct>(`/products/${slug}`, { skipAuth: true })
+  async getBySlug(slug: string, branch?: string): Promise<ApiProduct> {
+    const query = branch ? `?branch=${branch}` : ''
+    return api.get<ApiProduct>(`/products/${slug}${query}`, { skipAuth: true })
   },
 
   /**

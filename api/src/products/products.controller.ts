@@ -84,16 +84,13 @@ export class ProductsController {
   }
 
   @Get('featured')
-  @ApiOperation({ summary: 'Productos destacados', description: 'Productos nuevos o con descuento para homepage.' })
-  @ApiQuery({ name: 'limit', required: false, description: 'Cantidad de productos (default: 10, max: 50)' })
-  @ApiResponse({
-    status: 200,
-    description: 'Lista de productos destacados',
-    type: [ProductDto],
-  })
-  findFeatured(@Query('limit') limit?: string) {
-    const parsedLimit = limit ? Math.min(50, Number(limit)) : 10;
-    return this.productsService.findFeatured(parsedLimit);
+  @ApiOperation({ summary: 'Obtener productos destacados', description: 'Obtiene una lista de productos destacados (nuevos o con combo) ordenados por relevancia.' })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'branch', required: false, description: 'Slug de la sucursal' })
+  @ApiResponse({ status: 200, description: 'Lista de productos', type: [ProductDto] })
+  findFeatured(@Query('limit') limit?: string, @Query('branch') branch?: string) {
+    const parsedLimit = limit ? parseInt(limit, 10) : undefined;
+    return this.productsService.findFeatured(parsedLimit, branch);
   }
 
   // ==================== ENDPOINTS POR ID (para admin) ====================
@@ -103,10 +100,11 @@ export class ProductsController {
   @Roles('ADMIN')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Obtener producto por ID', description: 'Obtiene información completa de un producto por su ID numérico. Requiere rol ADMIN.' })
+  @ApiQuery({ name: 'branch', required: false, description: 'Slug de la sucursal para obtener stock específico' })
   @ApiResponse({ status: 200, description: 'Producto encontrado', type: ProductDto })
   @ApiNotFoundResponse({ description: 'Producto no encontrado' })
-  async findOneById(@Param('id') id: string) {
-    const prod = await this.productsService.findById(Number(id));
+  async findOneById(@Param('id') id: string, @Query('branch') branch?: string) {
+    const prod = await this.productsService.findById(Number(id), branch);
     if (!prod) throw new NotFoundException('Producto no encontrado');
     return prod;
   }
@@ -206,10 +204,11 @@ export class ProductsController {
 
   @Get(':slug')
   @ApiOperation({ summary: 'Obtener detalle de producto', description: 'Obtiene información completa de un producto por su slug.' })
+  @ApiQuery({ name: 'branch', required: false, description: 'Slug de la sucursal para obtener stock específico' })
   @ApiResponse({ status: 200, description: 'Producto encontrado', type: ProductDto })
   @ApiNotFoundResponse({ description: 'Producto no encontrado' })
-  async findOne(@Param('slug') slug: string) {
-    const prod = await this.productsService.findOne(slug);
+  async findOne(@Param('slug') slug: string, @Query('branch') branch?: string) {
+    const prod = await this.productsService.findOne(slug, branch);
     if (!prod) throw new NotFoundException('Producto no encontrado');
     return prod;
   }

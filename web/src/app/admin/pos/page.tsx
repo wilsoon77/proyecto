@@ -11,7 +11,7 @@ import { useToast } from "@/components/ui/toast"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ShoppingCart, Trash2, Plus, Minus, Search, CreditCard, Banknote, Store } from "lucide-react"
+import { ShoppingCart, Trash2, Plus, Minus, Search, CreditCard, Banknote, Store, Cookie, ArrowLeft } from "lucide-react"
 
 // Types for POS
 type CartItem = {
@@ -43,6 +43,7 @@ export default function PosPage() {
   const [paymentMethod, setPaymentMethod] = useState<string>("EFECTIVO")
   const [amountTendered, setAmountTendered] = useState<string>("")
   const [isProcessing, setIsProcessing] = useState(false)
+  const [showCartOnMobile, setShowCartOnMobile] = useState(false)
 
   // When user branch is available, set it as default
   useEffect(() => {
@@ -58,10 +59,10 @@ export default function PosPage() {
     return products.filter((p) => {
       // Solo activos
       if (!p.isActive || !p.isAvailable) return false
-      
+
       const matchesCategory = selectedCategory === "ALL" || p.categorySlug === selectedCategory
-      const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                            p.sku.toLowerCase().includes(searchQuery.toLowerCase())
+      const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.sku.toLowerCase().includes(searchQuery.toLowerCase())
       return matchesCategory && matchesSearch
     })
   }, [products, selectedCategory, searchQuery])
@@ -76,8 +77,8 @@ export default function PosPage() {
           showToast(`Stock máximo alcanzado para ${product.name}`, 'error')
           return prev
         }
-        return prev.map(item => item.product.id === product.id 
-          ? { ...item, quantity: item.quantity + 1 } 
+        return prev.map(item => item.product.id === product.id
+          ? { ...item, quantity: item.quantity + 1 }
           : item
         )
       }
@@ -91,10 +92,10 @@ export default function PosPage() {
         if (item.product.id === productId) {
           const newQ = item.quantity + delta
           if (item.product.available !== undefined && newQ > item.product.available) {
-             showToast(`Stock físico máximo alcanzado`, 'error')
-             return item
+            showToast(`Stock físico máximo alcanzado`, 'error')
+            return item
           }
-           return { ...item, quantity: newQ }
+          return { ...item, quantity: newQ }
         }
         return item
       }).filter(item => item.quantity > 0)
@@ -116,19 +117,19 @@ export default function PosPage() {
     cart.forEach(({ product, quantity }) => {
       const basePrice = Number(product.basePrice)
       let itemTotal = basePrice * quantity
-      
+
       // Aplicar combos localmente en frontend para mostrar el total en tiempo real
       if (product.comboQuantity && product.comboPrice && product.comboQuantity > 0) {
         const comboQty = Number(product.comboQuantity)
         const comboPrice = Number(product.comboPrice)
         const nCombos = Math.floor(quantity / comboQty)
         const remainder = quantity % comboQty
-        
+
         const priceWithCombo = (nCombos * comboPrice) + (remainder * basePrice)
         const discountForThisItem = itemTotal - priceWithCombo
         discount += discountForThisItem
       }
-      
+
       subtotal += itemTotal
     })
 
@@ -139,7 +140,14 @@ export default function PosPage() {
     }
   }, [cart])
 
+  const isTenderedInsufficient = useMemo(() => {
+    if (amountTendered === "") return false
+    const tendered = Number(amountTendered)
+    return isNaN(tendered) || tendered < cartTotals.total
+  }, [amountTendered, cartTotals.total])
+
   const changeDue = useMemo(() => {
+    if (amountTendered === "") return 0
     const tendered = Number(amountTendered)
     if (isNaN(tendered) || tendered < cartTotals.total) return 0
     return tendered - cartTotals.total
@@ -152,23 +160,24 @@ export default function PosPage() {
       showToast('Seleccione una sucursal', 'error')
       return
     }
-    
+
     setIsProcessing(true)
     try {
       const payload = {
         branchSlug: selectedBranch,
-        paymentMethod: paymentMethod,
-        amountTendered: Number(amountTendered) || undefined,
+        paymentMethod: 'EFECTIVO',
+        amountTendered: amountTendered === "" ? cartTotals.total : Number(amountTendered),
         items: cart.map(item => ({
           productSlug: item.product.slug,
           quantity: item.quantity
         }))
       }
-      
+
       await ordersService.posSale(payload)
       showToast('Venta registrada con éxito', 'success')
       clearCart()
       setAmountTendered("")
+      setShowCartOnMobile(false)
       // Refrescar inventario disparando el refetch del hook (React Query auto-invalida)
       refetchProducts()
     } catch (error: any) {
@@ -181,25 +190,25 @@ export default function PosPage() {
 
   return (
     <div className="flex flex-col lg:flex-row h-[calc(100vh-64px)] overflow-hidden bg-gray-50">
-      
+
       {/* LEFT: PRODUCTS LISTING */}
-      <div className="flex-1 flex flex-col h-full border-r border-gray-200">
-        
+      <div className={`flex-1 flex flex-col h-full border-r border-gray-200 ${showCartOnMobile ? 'hidden lg:flex' : 'flex'}`}>
+
         {/* HEADER: Branches & Search */}
         <div className="p-4 bg-white border-b flex flex-wrap gap-4 items-center shadow-sm z-10">
           <div className="flex-1 min-w-[200px] relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input 
-              placeholder="Buscar productos (nombre o SKU)..." 
+            <Input
+              placeholder="Buscar productos (nombre o SKU)..."
               className="pl-9 bg-gray-50"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          
+
           <div className="flex items-center gap-2">
             <Store className="h-5 w-5 text-gray-500" />
-            <select 
+            <select
               className="border border-gray-300 rounded-md text-sm p-2 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500"
               value={selectedBranch}
               onChange={(e) => setSelectedBranch(e.target.value)}
@@ -248,54 +257,119 @@ export default function PosPage() {
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {filteredProducts.map(p => (
-                <div 
-                  key={p.id} 
-                  onClick={() => addToCart(p)}
-                  className={`
-                    relative group bg-white border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer h-full flex flex-col
-                    ${p.available === 0 ? 'opacity-50 pointer-events-none' : 'hover:border-amber-400'}
-                  `}
-                >
-                  <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-0.5 rounded text-xs font-bold text-gray-700 shadow-sm">
-                    {p.available !== undefined ? p.available : '∞'}
-                  </div>
-                  
-                  {p.comboQuantity && p.comboPrice && (
-                    <div className="absolute top-2 left-0 bg-blue-500 text-white text-[10px] font-bold px-2 py-1 rounded-r-md shadow-sm z-10">
-                      {p.comboQuantity} x Q{Number(p.comboPrice).toFixed(2)}
-                    </div>
-                  )}
+              {filteredProducts.map(p => {
+                const cartItem = cart.find(item => item.product.id === p.id)
+                const qtyInCart = cartItem?.quantity || 0
+                const isOutOfStock = p.available === 0
 
-                  <div className="h-28 bg-gray-100 flex items-center justify-center">
-                    {p.images?.[0] ? (
-                      <img src={p.images[0].url} alt={p.name} className="h-full w-full object-cover" />
-                    ) : (
-                      <div className="text-4xl text-gray-300 opacity-50">🥖</div>
+                return (
+                  <div
+                    key={p.id}
+                    className={`
+                      relative group bg-white border rounded-xl overflow-hidden shadow-sm transition-all h-full flex flex-col
+                      ${isOutOfStock ? 'opacity-50' : qtyInCart > 0 ? 'border-amber-400 ring-1 ring-amber-200 shadow-md' : 'hover:shadow-md hover:border-amber-400 cursor-pointer'}
+                    `}
+                    onClick={() => { if (!isOutOfStock && qtyInCart === 0) addToCart(p) }}
+                  >
+                    {/* Stock badge */}
+                    <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-0.5 rounded text-xs font-bold text-gray-700 shadow-sm z-10">
+                      {p.available !== undefined ? p.available : '∞'}
+                    </div>
+
+                    {/* Combo badge */}
+                    {p.comboQuantity && p.comboPrice && (
+                      <div className="absolute top-2 left-0 bg-blue-500 text-white text-[10px] font-bold px-2 py-1 rounded-r-md shadow-sm z-10">
+                        {p.comboQuantity} x Q{Number(p.comboPrice).toFixed(2)}
+                      </div>
                     )}
-                  </div>
-                  
-                  <div className="p-3 flex flex-col flex-1 justify-between">
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-900 line-clamp-2 leading-tight">{p.name}</h3>
-                      <p className="text-xs text-gray-500 mt-1">{p.sku}</p>
+
+                    {/* Cart quantity badge */}
+                    {qtyInCart > 0 && (
+                      <div className="absolute top-2 left-2 bg-amber-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shadow-sm z-10">
+                        {qtyInCart}
+                      </div>
+                    )}
+
+                    <div className="h-28 bg-gray-100 flex items-center justify-center">
+                      {p.images?.[0] ? (
+                        <img src={p.images[0].url} alt={p.name} className="h-full w-full object-cover" />
+                      ) : (
+                        <Cookie className="h-12 w-12 text-gray-300 stroke-[1.5]" />
+                      )}
                     </div>
-                    <div className="mt-2 text-amber-600 font-bold">
-                      Q{Number(p.basePrice).toFixed(2)}
+
+                    <div className="p-3 flex flex-col flex-1 justify-between">
+                      <div>
+                        <h3 className="text-sm font-medium text-gray-900 line-clamp-2 leading-tight">{p.name}</h3>
+                        <p className="text-xs text-gray-500 mt-1">{p.sku}</p>
+                      </div>
+
+                      {/* Price + inline quantity controls */}
+                      <div className="mt-2 flex flex-wrap items-center justify-between gap-1">
+                        <span className="text-amber-600 font-bold">Q{Number(p.basePrice).toFixed(2)}</span>
+
+                        {qtyInCart > 0 ? (
+                          <div className="flex items-center border border-gray-200 rounded-lg bg-gray-50 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              onClick={() => updateQuantity(p.id, -1)}
+                              className="px-1.5 py-1 text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+                            >
+                              <Minus className="h-3.5 w-3.5" />
+                            </button>
+                            <span className="w-5 text-center text-sm font-bold text-gray-800">{qtyInCart}</span>
+                            <button
+                              onClick={() => addToCart(p)}
+                              className="px-1.5 py-1 text-gray-500 hover:bg-green-50 hover:text-green-600 transition-colors"
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        ) : !isOutOfStock ? (
+                          <span className="text-xs text-gray-400 group-hover:text-amber-600 transition-colors font-medium">+ Agregar</span>
+                        ) : (
+                          <span className="text-xs text-red-400 font-medium">Agotado</span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>
+
+        {/* Mobile Floating Cart Summary Button */}
+        {cart.length > 0 && (
+          <div className="lg:hidden p-3 bg-white border-t border-gray-200">
+            <Button
+              onClick={() => setShowCartOnMobile(true)}
+              className="w-full bg-amber-600 hover:bg-amber-700 text-white h-12 rounded-xl flex items-center justify-between px-4 font-bold shadow-lg transition-transform active:scale-[0.98]"
+            >
+              <div className="flex items-center gap-2">
+                <ShoppingCart className="h-5 w-5" />
+                <span className="bg-amber-700 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                  {cart.reduce((sum, item) => sum + item.quantity, 0)}
+                </span>
+                <span>Ver Carrito</span>
+              </div>
+              <span>Q{cartTotals.total.toFixed(2)}</span>
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* RIGHT: CART & CHECKOUT (Width: 380px fixed on Desktop) */}
-      <div className="w-full lg:w-[380px] flex flex-col h-full bg-white border-l shadow-2xl z-20">
-        
+      <div className={`w-full lg:w-[380px] flex flex-col h-full bg-white border-l shadow-2xl z-20 ${showCartOnMobile ? 'flex' : 'hidden lg:flex'}`}>
+
         {/* Cart Header */}
         <div className="p-4 border-b bg-gray-50 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowCartOnMobile(false)}
+            className="lg:hidden p-1 mr-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
           <ShoppingCart className="h-5 w-5 text-gray-600" />
           <h2 className="text-lg font-bold text-gray-800">Orden Actual</h2>
           <span className="ml-auto bg-amber-100 text-amber-800 text-xs font-bold px-2 py-1 rounded-full">
@@ -319,33 +393,33 @@ export default function PosPage() {
                       <p className="font-semibold text-gray-800 leading-tight">{item.product.name}</p>
                       <p className="text-xs text-gray-500">Q{Number(item.product.basePrice).toFixed(2)} c/u</p>
                     </div>
-                    <button 
+                    <button
                       onClick={() => removeFromCart(item.product.id)}
                       className="text-red-400 hover:text-red-600 p-1"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
-                  
+
                   <div className="flex items-center justify-between mt-1">
                     <div className="flex items-center border rounded-md bg-white">
-                      <button 
+                      <button
                         onClick={() => updateQuantity(item.product.id, -1)}
                         className="px-2 py-1 flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-red-500"
                       >
                         <Minus className="h-4 w-4" />
                       </button>
                       <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
-                      <button 
+                      <button
                         onClick={() => updateQuantity(item.product.id, 1)}
                         className="px-2 py-1 flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-amber-500"
                       >
                         <Plus className="h-4 w-4" />
                       </button>
                     </div>
-                    
+
                     <div className="font-bold text-gray-800">
-                       Q{(Number(item.product.basePrice) * item.quantity).toFixed(2)}
+                      Q{(Number(item.product.basePrice) * item.quantity).toFixed(2)}
                     </div>
                   </div>
                 </div>
@@ -356,7 +430,7 @@ export default function PosPage() {
 
         {/* Totals & Checkout Panel */}
         <div className="border-t bg-gray-50 p-4 shrink-0">
-          
+
           <div className="space-y-2 mb-4">
             <div className="flex justify-between text-sm text-gray-600">
               <span>Subtotal</span>
@@ -374,59 +448,87 @@ export default function PosPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 mb-4">
-            <button
-              onClick={() => setPaymentMethod('EFECTIVO')}
-              className={`flex flex-col items-center justify-center py-2 px-1 rounded-lg border-2 transition-all
-                ${paymentMethod === 'EFECTIVO' ? 'border-amber-500 bg-amber-50 text-amber-700 font-bold' : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50'}`}
-            >
-              <Banknote className="h-5 w-5 mb-1" />
-              <span className="text-xs">Efectivo</span>
-            </button>
-            <button
-              onClick={() => setPaymentMethod('TARJETA')}
-              className={`flex flex-col items-center justify-center py-2 px-1 rounded-lg border-2 transition-all
-                ${paymentMethod === 'TARJETA' ? 'border-amber-500 bg-amber-50 text-amber-700 font-bold' : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50'}`}
-            >
-              <CreditCard className="h-5 w-5 mb-1" />
-              <span className="text-xs">Tarjeta</span>
-            </button>
+          {/* Efectivo Recibido y Vuelto simplificado */}
+          <div className="mb-4 bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+            <div className="flex justify-between items-center mb-1.5">
+              <label className="text-xs text-gray-500 font-medium">Efectivo Recibido (Q)</label>
+              {amountTendered !== "" && (
+                <button
+                  type="button"
+                  onClick={() => setAmountTendered("")}
+                  className="text-[10px] text-amber-600 hover:text-amber-700 font-bold"
+                >
+                  Usar Pago Exacto
+                </button>
+              )}
+            </div>
+            <Input
+              type="number"
+              placeholder={`Q${cartTotals.total.toFixed(2)} (Pago Exacto)`}
+              className="text-lg font-bold h-10 mb-2 border-gray-300 focus-visible:ring-amber-500"
+              value={amountTendered}
+              onChange={(e) => setAmountTendered(e.target.value)}
+              min={cartTotals.total}
+              step="0.01"
+            />
+
+            {/* Billetes rápidos */}
+            <div className="flex flex-wrap gap-1 mb-2.5">
+              {[10, 20, 50, 100, 200].map((bill) => (
+                <button
+                  key={bill}
+                  type="button"
+                  onClick={() => setAmountTendered(bill.toString())}
+                  disabled={bill < cartTotals.total}
+                  className={`text-[11px] px-2 py-0.5 rounded border font-medium transition-all ${
+                    bill < cartTotals.total
+                      ? 'opacity-40 bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed'
+                      : amountTendered === bill.toString()
+                        ? 'bg-amber-100 border-amber-400 text-amber-800'
+                        : 'bg-white hover:bg-gray-50 border-gray-200 text-gray-700'
+                  }`}
+                >
+                  Q{bill}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => setAmountTendered("")}
+                className={`text-[11px] px-2 py-0.5 rounded border font-medium transition-all ${
+                  amountTendered === ""
+                    ? 'bg-amber-100 border-amber-400 text-amber-800'
+                    : 'bg-white hover:bg-gray-50 border-gray-200 text-gray-700'
+                }`}
+              >
+                Exacto
+              </button>
+            </div>
+
+            <div className="flex justify-between items-center text-sm border-t border-gray-100 pt-2">
+              <span className="text-gray-500">Cambio:</span>
+              <span className={`font-black text-lg ${isTenderedInsufficient ? 'text-red-500 animate-pulse' : 'text-green-600'}`}>
+                {isTenderedInsufficient
+                  ? 'Monto insuficiente'
+                  : amountTendered === ""
+                    ? 'Q0.00 (Pago Exacto)'
+                    : `Q${changeDue.toFixed(2)}`}
+              </span>
+            </div>
           </div>
 
-          {paymentMethod === 'EFECTIVO' && (
-             <div className="mb-4 bg-white p-3 rounded-lg border border-gray-200">
-               <label className="text-xs text-gray-500 font-medium mb-1 block">Efectivo Recibido (Q)</label>
-               <Input 
-                 type="number" 
-                 placeholder="0.00" 
-                 className="text-lg font-medium h-10 mb-2"
-                 value={amountTendered}
-                 onChange={(e) => setAmountTendered(e.target.value)}
-                 min={cartTotals.total}
-                 step="0.01"
-               />
-               <div className="flex justify-between items-center text-sm">
-                 <span className="text-gray-500">Cambio:</span>
-                 <span className={`font-bold text-lg ${changeDue >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-                   Q{changeDue >= 0 ? changeDue.toFixed(2) : '0.00'}
-                 </span>
-               </div>
-             </div>
-          )}
-
           <div className="flex gap-2">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="px-3"
               onClick={clearCart}
               disabled={cart.length === 0 || isProcessing}
             >
               <Trash2 className="h-4 w-4" />
             </Button>
-            <Button 
+            <Button
               className="flex-1 bg-amber-600 hover:bg-amber-700 text-white h-12 text-lg font-bold shadow-lg"
               onClick={handleCheckout}
-              disabled={cart.length === 0 || isProcessing || (paymentMethod === 'EFECTIVO' && changeDue < 0)}
+              disabled={cart.length === 0 || isProcessing || isTenderedInsufficient}
             >
               {isProcessing ? 'Procesando...' : `Cobrar Q${cartTotals.total.toFixed(2)}`}
             </Button>

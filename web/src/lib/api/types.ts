@@ -264,6 +264,8 @@ export interface ProductFilters {
   branch?: string
   page?: number
   pageSize?: number
+  all?: boolean | string
+  status?: 'active' | 'inactive' | 'all'
 }
 
 export interface OrderFilters {
@@ -272,3 +274,60 @@ export interface OrderFilters {
   page?: number
   pageSize?: number
 }
+
+// ==================== CONFIGURACIÓN ====================
+export interface SystemConfig {
+  id: number
+  key: string
+  value: any
+  type: string
+  category: string
+  label: string
+  description?: string | null
+  isPublic: boolean
+  isReadOnly: boolean
+  sortOrder: number
+  updatedAt: string
+  createdAt: string
+}
+
+// ==================== NOTIFICACIONES ====================
+export interface NotificationConfig {
+  id: number
+  key: string
+  name: string
+  description?: string | null
+  category: string
+  isEnabled: boolean
+  title: string
+  message: string
+  targetRoles: string[]
+  thresholds?: { threshold: number; unit?: string } | null
+  soundType: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Notification {
+  id: number
+  userId: string
+  type: string
+  title: string
+  message: string
+  url?: string | null
+  icon?: string | null
+  isRead: boolean
+  readAt?: string | null
+  metadata?: any | null
+  createdAt: string
+}
+
+export interface SubscribePushDto {
+  endpoint: string
+  keys: {
+    p256dh: string
+    auth: string
+  }
+}
+
+

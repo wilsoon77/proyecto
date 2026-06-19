@@ -78,10 +78,16 @@ const RECIPE_FRANCES = {
 describe('ProductionService', () => {
   let service: ProductionService;
   let mockPrisma: ReturnType<typeof createMockPrisma>;
+  
+  const mockNotificationsService = {
+    checkThreshold: jest.fn().mockResolvedValue(false),
+    sendByConfig: jest.fn().mockResolvedValue(undefined),
+    sendToUser: jest.fn().mockResolvedValue(undefined),
+  };
 
   beforeEach(() => {
     mockPrisma = createMockPrisma();
-    service = new ProductionService(mockPrisma);
+    service = new ProductionService(mockPrisma, mockNotificationsService as any);
   });
 
   describe('registerProduction', () => {

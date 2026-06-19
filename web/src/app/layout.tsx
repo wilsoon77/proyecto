@@ -4,8 +4,11 @@ import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
 import { ToastProvider } from "@/context/ToastContext";
+import { SystemConfigProvider } from "@/context/SystemConfigContext";
 import { LayoutWrapper } from "@/components/layout/LayoutWrapper";
 import { QueryProvider } from "@/components/providers/query-provider";
+
+import { NotificationProvider } from "@/context/NotificationContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,13 +38,17 @@ export default function RootLayout({
       >
         <QueryProvider>
           <ToastProvider>
-            <AuthProvider>
-              <CartProvider>
-                <LayoutWrapper>
-                  {children}
-                </LayoutWrapper>
-              </CartProvider>
-            </AuthProvider>
+            <SystemConfigProvider>
+              <AuthProvider>
+                <NotificationProvider>
+                  <CartProvider>
+                    <LayoutWrapper>
+                      {children}
+                    </LayoutWrapper>
+                  </CartProvider>
+                </NotificationProvider>
+              </AuthProvider>
+            </SystemConfigProvider>
           </ToastProvider>
         </QueryProvider>
       </body>

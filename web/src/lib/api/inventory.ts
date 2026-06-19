@@ -115,6 +115,32 @@ export const inventoryService = {
    */
   async createMovement(data: CreateStockMovementData): Promise<StockMovement> {
     return api.post<StockMovement>('/stock-movements', data)
+  },
+
+  /**
+   * Reconciliar inventario (conteo físico masivo)
+   */
+  async reconcile(data: {
+    branchSlug: string
+    items: Array<{ productId: number; actualQuantity: number }>
+    note?: string
+  }): Promise<{
+    branchName: string
+    totalReviewed: number
+    totalAdjusted: number
+    sobrantes: number
+    mermas: number
+    sinCambio: number
+    details: Array<{
+      productId: number
+      productName: string
+      systemQuantity: number
+      actualQuantity: number
+      difference: number
+      adjustmentType: 'SOBRANTE' | 'MERMA' | 'SIN_CAMBIO'
+    }>
+  }> {
+    return api.post('/stock-movements/reconcile', data)
   }
 }
 

@@ -33,6 +33,7 @@ export default function AdminProductosPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
   
   // Delete modal state
   const [deleteModal, setDeleteModal] = useState<{
@@ -53,23 +54,13 @@ export default function AdminProductosPage() {
     }
   }, [currentUser, router])
 
-  const handleToggleActive = async (product: ApiProduct) => {
-    try {
-      await adminService.updateProduct(product.id, { isActive: !product.isActive })
-      showToast(`Producto "${product.name}" ${product.isActive ? 'ocultado' : 'activado'}`, 'success')
-      loadProducts(currentPage, searchQuery)
-    } catch (error) {
-      console.error('Error toggling product:', error)
-      showToast('Error al cambiar visibilidad', 'error')
-    }
-  }
-
-  const loadProducts = useCallback(async (page: number = 1, search: string = "") => {
+  const loadProducts = useCallback(async (page: number = 1, search: string = "", status: 'all' | 'active' | 'inactive' = 'all') => {
     setIsLoading(true)
     try {
-      const params: Record<string, string | number> = { 
+      const params: any = { 
         page, 
         pageSize: 10,
+        status,
       }
       if (search) {
         params.search = search
@@ -87,23 +78,34 @@ export default function AdminProductosPage() {
     }
   }, [showToast])
 
-  // Initial load
+  const handleToggleActive = async (product: ApiProduct) => {
+    try {
+      await adminService.updateProduct(product.id, { isActive: !product.isActive })
+      showToast(`Producto "${product.name}" ${product.isActive ? 'ocultado' : 'activado'}`, 'success')
+      loadProducts(currentPage, searchQuery, statusFilter)
+    } catch (error) {
+      console.error('Error toggling product:', error)
+      showToast('Error al cambiar visibilidad', 'error')
+    }
+  }
+
+  // Initial load when filter changes
   useEffect(() => {
-    loadProducts()
-  }, [loadProducts])
+    loadProducts(1, searchQuery, statusFilter)
+  }, [statusFilter, loadProducts])
 
   // Debounced search - auto search when user types (with 500ms delay)
   useEffect(() => {
     const timer = setTimeout(() => {
-      loadProducts(1, searchQuery)
+      loadProducts(1, searchQuery, statusFilter)
     }, 500)
 
     return () => clearTimeout(timer)
-  }, [searchQuery, loadProducts])
+  }, [searchQuery, statusFilter, loadProducts])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    loadProducts(1, searchQuery)
+    loadProducts(1, searchQuery, statusFilter)
   }
 
   const handleClearSearch = () => {
@@ -132,7 +134,7 @@ export default function AdminProductosPage() {
       await adminService.deleteProduct(deleteModal.productId)
       showToast(`Producto "${deleteModal.productName}" eliminado correctamente`, "success")
       setDeleteModal({ isOpen: false, productId: null, productName: "" })
-      loadProducts(currentPage, searchQuery)
+      loadProducts(currentPage, searchQuery, statusFilter)
     } catch (error) {
       console.error("Error deleting product:", error)
       showToast("Error al eliminar el producto. Puede que esté referenciado en órdenes.", "error")
@@ -157,9 +159,9 @@ export default function AdminProductosPage() {
         </Link>
       </div>
 
-      {/* Search */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
-        <form onSubmit={handleSearch} className="flex gap-4">
+      {/* Search and Filters */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <form onSubmit={handleSearch} className="flex-1 flex gap-2 w-full">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
@@ -183,6 +185,40 @@ export default function AdminProductosPage() {
             Buscar
           </Button>
         </form>
+
+        {/* State filters tabs */}
+        <div className="flex bg-gray-100 p-1 rounded-lg w-full sm:w-auto justify-center sm:justify-start">
+          <button
+            onClick={() => setStatusFilter('all')}
+            className={`flex-1 sm:flex-initial px-4 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-all ${
+              statusFilter === 'all'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Todos
+          </button>
+          <button
+            onClick={() => setStatusFilter('active')}
+            className={`flex-1 sm:flex-initial px-4 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-all ${
+              statusFilter === 'active'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Activos
+          </button>
+          <button
+            onClick={() => setStatusFilter('inactive')}
+            className={`flex-1 sm:flex-initial px-4 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-all ${
+              statusFilter === 'inactive'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Ocultos
+          </button>
+        </div>
       </div>
 
       {/* Products Table */}
@@ -205,9 +241,13 @@ export default function AdminProductosPage() {
           <div className="p-8 text-center">
             <ImageIcon className="h-12 w-12 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500">
-              {searchQuery ? "No se encontraron productos para esta búsqueda" : "No hay productos"}
+              {searchQuery 
+                ? "No se encontraron productos para esta búsqueda" 
+                : statusFilter === 'inactive' 
+                ? "No hay productos ocultos" 
+                : "No hay productos"}
             </p>
-            {!searchQuery && (
+            {!searchQuery && statusFilter === 'all' && (
               <Link href="/admin/productos/nuevo">
                 <Button className="mt-4 bg-amber-600 hover:bg-amber-700">
                   <Plus className="h-4 w-4 mr-2" />
@@ -230,33 +270,49 @@ export default function AdminProductosPage() {
                       size={56}
                     />
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 truncate">{product.name}</p>
-                      <p className="text-sm text-gray-500">{product.category}</p>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <p className="font-medium text-gray-900 truncate max-w-[120px]">{product.name}</p>
+                        {!product.isActive && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-red-100 text-red-800">
+                            Oculto
+                          </span>
+                        )}
+                        {product.isNew && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-800">
+                            Nuevo
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-0.5">{product.category}</p>
                       <div className="flex items-center gap-3 mt-2">
-                        <span className="font-medium text-gray-900">{formatPrice(product.basePrice)}</span>
-                        <span className={`text-sm font-medium ${
+                        <span className="font-medium text-gray-900 text-sm">{formatPrice(product.basePrice)}</span>
+                        <span className={`text-xs font-medium ${
                           (product.available || 0) > 10 ? "text-green-600" : 
                           (product.available || 0) > 0 ? "text-yellow-600" : "text-red-600"
                         }`}>
                           Stock: {product.available || 0}
                         </span>
-                        {product.isNew && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            Nuevo
-                          </span>
-                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
                       <Link href={`/admin/productos/${product.id}/editar`}>
-                        <Button variant="ghost" size="icon" className="h-10 w-10" title="Editar">
+                        <Button variant="ghost" size="icon" className="h-9 w-9" title="Editar">
                           <Edit className="h-4 w-4" />
                         </Button>
                       </Link>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={`h-9 w-9 ${product.isActive ? 'text-gray-500 hover:text-gray-700' : 'text-amber-600 hover:text-amber-700 hover:bg-amber-50'}`}
+                        onClick={() => handleToggleActive(product)}
+                        title={product.isActive ? 'Ocultar producto' : 'Mostrar producto'}
+                      >
+                        {product.isActive ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
                       <Button 
                         variant="ghost" 
                         size="icon"
-                        className="h-10 w-10 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        className="h-9 w-9 text-red-600 hover:text-red-700 hover:bg-red-50"
                         onClick={() => openDeleteModal(product)}
                         title="Eliminar"
                       >
@@ -380,7 +436,7 @@ export default function AdminProductosPage() {
                     variant="outline"
                     size="sm"
                     disabled={currentPage <= 1 || isLoading}
-                    onClick={() => loadProducts(currentPage - 1, searchQuery)}
+                    onClick={() => loadProducts(currentPage - 1, searchQuery, statusFilter)}
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
@@ -388,7 +444,7 @@ export default function AdminProductosPage() {
                     variant="outline"
                     size="sm"
                     disabled={currentPage >= totalPages || isLoading}
-                    onClick={() => loadProducts(currentPage + 1, searchQuery)}
+                    onClick={() => loadProducts(currentPage + 1, searchQuery, statusFilter)}
                   >
                     <ChevronRight className="h-4 w-4" />
                   </Button>

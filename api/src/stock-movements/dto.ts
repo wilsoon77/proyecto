@@ -1,6 +1,7 @@
-import { IsInt, IsPositive, IsString, IsOptional, IsEnum } from 'class-validator';
+import { IsInt, IsPositive, IsString, IsOptional, IsEnum, IsArray, ValidateNested, Min } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { StockMovementType } from '@prisma/client';
+import { Type } from 'class-transformer';
 
 export class CreateStockMovementDto {
   @ApiProperty({ enum: StockMovementType, example: StockMovementType.COMPRA })
@@ -32,6 +33,34 @@ export class CreateStockMovementDto {
   referenceId?: string;
 
   @ApiProperty({ example: 'Compra de proveedor X', required: false })
+  @IsOptional()
+  @IsString()
+  note?: string;
+}
+
+export class ReconcileItemDto {
+  @ApiProperty({ example: 1 })
+  @IsInt()
+  productId!: number;
+
+  @ApiProperty({ example: 45, description: 'Cantidad física real contada' })
+  @IsInt()
+  @Min(0)
+  actualQuantity!: number;
+}
+
+export class ReconcileInventoryDto {
+  @ApiProperty({ example: 'central' })
+  @IsString()
+  branchSlug!: string;
+
+  @ApiProperty({ type: [ReconcileItemDto] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ReconcileItemDto)
+  items!: ReconcileItemDto[];
+
+  @ApiProperty({ example: 'Conteo cierre 13/04/2026', required: false })
   @IsOptional()
   @IsString()
   note?: string;

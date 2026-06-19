@@ -247,17 +247,34 @@ export class AuthService {
       if (user) {
         this.logger.info(`Usuario OAuth existente por email, actualizando: ${input.email}`);
       } else {
-        user = await this.prisma.user.create({
-          data: {
-            id: input.supabaseUserId,
-            email: input.email,
-            passwordHash: '',
-            firstName: input.firstName,
-            lastName: input.lastName || '',
-            phone: null,
-          },
-        });
-        this.logger.info(`Usuario OAuth creado: ${input.email}`, { provider: input.provider });
+        try {
+          user = await this.prisma.user.create({
+            data: {
+              id: input.supabaseUserId,
+              email: input.email,
+              passwordHash: '',
+              firstName: input.firstName,
+              lastName: input.lastName || '',
+              phone: null,
+            },
+          });
+          this.logger.info(`Usuario OAuth creado: ${input.email}`, { provider: input.provider });
+        } catch (error: any) {
+          // Si falló por constraint único (Prisma P2002), es probable que el trigger de Supabase
+          // (on_auth_user_created) ya haya insertado el registro de forma concurrente.
+          if (error.code === 'P2002') {
+            this.logger.warn(`Conflicto de inserción por constraint único en OAuth para ${input.email}. Reintentando búsqueda.`);
+            user = await this.prisma.user.findUnique({ where: { id: input.supabaseUserId } });
+            if (!user) {
+              user = await this.prisma.user.findUnique({ where: { email: input.email } });
+            }
+            if (!user) {
+              throw error;
+            }
+          } else {
+            throw error;
+          }
+        }
       }
     }
 

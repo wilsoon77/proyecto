@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ProductsModule } from './products/products.module.js';
 import { InventoryModule } from './inventory/inventory.module.js';
 import { StockMovementsModule } from './stock-movements/stock-movements.module.js';
@@ -19,6 +20,9 @@ import { AuditModule } from './audit/audit.module.js';
 import { RecipesModule } from './recipes/recipes.module.js';
 import { ProductionModule } from './production/production.module.js';
 import { RawMaterialsModule } from './raw-materials/raw-materials.module.js';
+import { TasksModule } from './tasks/tasks.module.js';
+import { SystemConfigModule } from './system-config/system-config.module.js';
+import { NotificationsModule } from './notifications/notifications.module.js';
 
 @Module({
   imports: [
@@ -27,7 +31,11 @@ import { RawMaterialsModule } from './raw-materials/raw-materials.module.js';
       ttl: 60000, // 1 minuto en ms
       limit: 100, // 100 peticiones por minuto
     }]),
+    ScheduleModule.forRoot(), // Tareas programadas (expiración de reservas)
     AuditModule, // Debe estar primero para que esté disponible globalmente
+    SystemConfigModule,
+    NotificationsModule,
+
     ProductsModule, 
     InventoryModule, 
     StockMovementsModule, 
@@ -45,6 +53,7 @@ import { RawMaterialsModule } from './raw-materials/raw-materials.module.js';
     RecipesModule,
     ProductionModule,
     RawMaterialsModule,
+    TasksModule, // Tareas programadas (expiración de reservas)
   ],
   controllers: [],
   providers: [

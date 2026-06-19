@@ -58,6 +58,8 @@ export class ProductsController {
     @Query('branch') branch?: string,
     @Query('page') page?: string,
     @Query('pageSize') pageSize?: string,
+    @Query('all') all?: string,
+    @Query('status') status?: string,
   ) {
     const result = this.productsService.findAll({
       search,
@@ -68,6 +70,8 @@ export class ProductsController {
       branch,
       page: page ? Number(page) : undefined,
       pageSize: pageSize ? Number(pageSize) : undefined,
+      all: all === 'true',
+      status,
     });
     // Set headers when promise resolves
     return Promise.resolve(result).then((r: any) => {

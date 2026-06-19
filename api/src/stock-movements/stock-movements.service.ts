@@ -1,14 +1,16 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { CreateStockMovementDto } from './dto.js';
+import { CreateStockMovementDto, ReconcileInventoryDto } from './dto.js';
 import { StockMovementType } from '@prisma/client';
 import { LoggerService } from '../common/logger/logger.service.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 
 @Injectable()
 export class StockMovementsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly logger: LoggerService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async create(dto: CreateStockMovementDto, userId?: string) {
@@ -40,7 +42,7 @@ export class StockMovementsService {
         break;
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    const movement = await this.prisma.$transaction(async (tx) => {
       const adjust = async (branchId: number, delta: number) => {
         const existing = await tx.inventory.findUnique({
           where: { productId_branchId: { productId: product.id, branchId } },
@@ -98,7 +100,56 @@ export class StockMovementsService {
 
       return movement;
     });
+
+    // Enviar alertas si hay merma o robo
+    if (dto.type === StockMovementType.MERMA || dto.type === StockMovementType.PERDIDA_ROBO) {
+      const typeLabel = dto.type === StockMovementType.MERMA ? 'MERMA' : 'PÉRDIDA/ROBO';
+      await this.notificationsService.sendByConfig('inventory.loss_detected', {
+        productName: product.name,
+        quantity: dto.quantity,
+        type: typeLabel,
+        branchName: fromBranch?.name || 'Sucursal',
+      }, `/admin/inventario/movimiento`);
+
+      // Verificar si bajó el stock físico
+      if (fromBranch) {
+        const currentInv = await this.prisma.inventory.findUnique({
+          where: { productId_branchId: { productId: product.id, branchId: fromBranch.id } },
+        });
+        if (currentInv) {
+          const isLow = await this.notificationsService.checkThreshold('inventory.low_stock', currentInv.quantity);
+          if (isLow) {
+            await this.notificationsService.sendByConfig('inventory.low_stock', {
+              productName: product.name,
+              current: currentInv.quantity,
+              branchName: fromBranch.name,
+            }, `/admin/inventario`);
+          }
+        }
+      }
+    }
+
+    // Verificar stock físico bajo en ventas manuales
+    if (dto.type === StockMovementType.VENTA && fromBranch) {
+      const currentInv = await this.prisma.inventory.findUnique({
+        where: { productId_branchId: { productId: product.id, branchId: fromBranch.id } },
+      });
+      if (currentInv) {
+        const isLow = await this.notificationsService.checkThreshold('inventory.low_stock', currentInv.quantity);
+        if (isLow) {
+          await this.notificationsService.sendByConfig('inventory.low_stock', {
+            productName: product.name,
+            current: currentInv.quantity,
+            branchName: fromBranch.name,
+          }, `/admin/inventario`);
+        }
+      }
+    }
+
+    return movement;
   }
+
+
 
   async list(filters: { productSlug?: string; branchSlug?: string; type?: string; from?: string; to?: string; page?: number; pageSize?: number }) {
     const where: any = {};
@@ -126,5 +177,101 @@ export class StockMovementsService {
       this.prisma.stockMovement.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (page - 1) * pageSize, take: pageSize }),
     ]);
     return { data, meta: { total, pageCount: Math.ceil(total / pageSize) || 0, page, pageSize } };
+  }
+
+  /**
+   * Reconciliación masiva: compara conteo físico real vs sistema.
+   * Genera movimientos SOBRANTE (si hay más de lo esperado) o MERMA (si hay menos).
+   * Retorna un resumen de los ajustes realizados.
+   */
+  async reconcile(dto: ReconcileInventoryDto, userId?: string) {
+    const branch = await this.prisma.branch.findUnique({ where: { slug: dto.branchSlug } });
+    if (!branch) throw new BadRequestException('Sucursal no encontrada');
+    if (!dto.items?.length) throw new BadRequestException('Sin productos para reconciliar');
+
+    const results: Array<{
+      productId: number;
+      productName: string;
+      systemQuantity: number;
+      actualQuantity: number;
+      difference: number;
+      adjustmentType: 'SOBRANTE' | 'MERMA' | 'SIN_CAMBIO';
+    }> = [];
+
+    await this.prisma.$transaction(async (tx) => {
+      for (const item of dto.items) {
+        const product = await tx.product.findUnique({ where: { id: item.productId } });
+        if (!product) continue;
+
+        const inv = await tx.inventory.findUnique({
+          where: { productId_branchId: { productId: item.productId, branchId: branch.id } },
+        });
+
+        const systemQty = inv?.quantity ?? 0;
+        const diff = item.actualQuantity - systemQty;
+
+        if (diff === 0) {
+          results.push({
+            productId: item.productId,
+            productName: product.name,
+            systemQuantity: systemQty,
+            actualQuantity: item.actualQuantity,
+            difference: 0,
+            adjustmentType: 'SIN_CAMBIO',
+          });
+          continue;
+        }
+
+        const movementType = diff > 0 ? StockMovementType.SOBRANTE : StockMovementType.MERMA;
+        const absQty = Math.abs(diff);
+
+        // Ajustar inventario
+        if (inv) {
+          await tx.inventory.update({
+            where: { id: inv.id },
+            data: { quantity: item.actualQuantity },
+          });
+        } else {
+          await tx.inventory.create({
+            data: { productId: item.productId, branchId: branch.id, quantity: item.actualQuantity },
+          });
+        }
+
+        // Registrar movimiento
+        await tx.stockMovement.create({
+          data: {
+            productId: item.productId,
+            fromBranchId: diff < 0 ? branch.id : undefined,
+            toBranchId: diff > 0 ? branch.id : undefined,
+            type: movementType,
+            quantity: absQty,
+            userId,
+            note: dto.note ? `[Conteo] ${dto.note}` : '[Conteo] Ajuste por reconciliación de inventario',
+          },
+        });
+
+        results.push({
+          productId: item.productId,
+          productName: product.name,
+          systemQuantity: systemQty,
+          actualQuantity: item.actualQuantity,
+          difference: diff,
+          adjustmentType: diff > 0 ? 'SOBRANTE' : 'MERMA',
+        });
+      }
+    });
+
+    const adjusted = results.filter(r => r.adjustmentType !== 'SIN_CAMBIO');
+    this.logger.log(`[Reconciliación] Sucursal ${branch.name}: ${adjusted.length} ajustes de ${results.length} productos revisados`);
+
+    return {
+      branchName: branch.name,
+      totalReviewed: results.length,
+      totalAdjusted: adjusted.length,
+      sobrantes: results.filter(r => r.adjustmentType === 'SOBRANTE').length,
+      mermas: results.filter(r => r.adjustmentType === 'MERMA').length,
+      sinCambio: results.filter(r => r.adjustmentType === 'SIN_CAMBIO').length,
+      details: results,
+    };
   }
 }

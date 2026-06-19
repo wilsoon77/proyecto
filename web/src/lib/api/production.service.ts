@@ -85,4 +85,35 @@ export const productionService = {
     const params = branchId ? `?branchId=${branchId}` : ''
     return api.get<ProductionLog[]>(`/production/today${params}`)
   },
+
+  /** Crear una receta (Amasijo) - ADMIN/MANAGER */
+  async createRecipe(data: {
+    productId: number
+    name: string
+    standardTrays: number
+    ingredients: Array<{
+      rawMaterialId: number
+      quantity: number
+    }>
+  }): Promise<Recipe> {
+    return api.post<Recipe>('/recipes', data)
+  },
+
+  /** Actualizar una receta - ADMIN/MANAGER */
+  async updateRecipe(id: number, data: {
+    name?: string
+    standardTrays?: number
+    isActive?: boolean
+    ingredients?: Array<{
+      rawMaterialId: number
+      quantity: number
+    }>
+  }): Promise<Recipe> {
+    return api.patch<Recipe>(`/recipes/${id}`, data)
+  },
+
+  /** Eliminar/Desactivar receta (soft delete) - ADMIN/MANAGER */
+  async deleteRecipe(id: number): Promise<{ message: string }> {
+    return api.delete<{ message: string }>(`/recipes/${id}`)
+  },
 }

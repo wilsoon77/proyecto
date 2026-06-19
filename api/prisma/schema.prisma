@@ -99,6 +99,8 @@ model User {
   refreshTokens RefreshToken[]
   trustedDevices TrustedDevice[]
   auditLogs     AuditLog[]
+  notifications      Notification[]
+  pushSubscriptions  PushSubscription[]
 }
 
 model Address {
@@ -447,3 +449,77 @@ model AuditLog {
   @@index([action, createdAt])
   @@index([createdAt])
 }
+
+// Configuración global del sistema (key-value tipado)
+model SystemConfig {
+  id          Int      @id @default(autoincrement())
+  key         String   @unique           // Clave única: 'store.name', 'orders.min_amount', etc.
+  value       Json                       // Valor almacenado como JSON (string, number, boolean, object)
+  type        String   @default("string") // Tipo de dato: 'string', 'number', 'boolean', 'json'
+  category    String                     // Agrupación: 'STORE', 'ORDERS', 'OPERATIONS', 'APPEARANCE'
+  label       String                     // Nombre legible: "Nombre de la tienda"
+  description String?                    // Descripción para el admin
+  isPublic    Boolean  @default(false)   // Si es accesible sin autenticación (ej: nombre tienda, moneda)
+  isReadOnly  Boolean  @default(false)   // Si no es editable desde admin (ej: moneda, timezone)
+  sortOrder   Int      @default(0)       // Orden de presentación en el UI
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+
+  @@index([category])
+  @@index([isPublic])
+}
+
+// Configuración administrable de cada tipo de notificación
+model NotificationConfig {
+  id           Int      @id @default(autoincrement())
+  key          String   @unique       // 'order.status_changed', 'inventory.low_stock'
+  name         String                 // "Cambio de estado de orden"
+  description  String?
+  category     String                 // 'ORDERS', 'INVENTORY', 'PRODUCTION', 'SYSTEM'
+  isEnabled    Boolean  @default(true)
+  title        String                 // Título con placeholders: "Tu pedido cambió"
+  message      String                 // Mensaje con placeholders: "#{orderNumber} → {status}"
+  targetRoles  Json                   // ["CUSTOMER"] — array de roles destino
+  thresholds   Json?                  // { "threshold": 50, "unit": "LB" }
+  soundType    String   @default("suave") // 'suave', 'alerta', 'importante'
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([category])
+  @@index([isEnabled])
+}
+
+// Historial de notificaciones por usuario (in-app)
+model Notification {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  type      String                   // Clave del NotificationConfig
+  title     String
+  message   String
+  url       String?                  // Ruta de redirección: '/admin/ordenes/123'
+  icon      String?                  // Nombre icono Lucide: 'ShoppingCart', 'AlertTriangle'
+  isRead    Boolean  @default(false)
+  readAt    DateTime?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, isRead])
+  @@index([createdAt])
+}
+
+// Suscripciones push por dispositivo
+model PushSubscription {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+

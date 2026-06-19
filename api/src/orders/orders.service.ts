@@ -3,6 +3,8 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { POSOrderDto, ReserveOrderDto } from './dto.js';
 import { StockMovementType } from '@prisma/client';
 import { LoggerService } from '../common/logger/logger.service.js';
+import { SystemConfigService } from '../system-config/system-config.service.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 
 function formatOrderNumber(id: number) {
   return 'ORD-' + id.toString().padStart(6, '0');
@@ -29,9 +31,28 @@ export class OrdersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly logger: LoggerService,
+    private readonly systemConfig: SystemConfigService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async reserve(dto: ReserveOrderDto, userId?: string) {
+    // 1. Verificar modo mantenimiento
+    if (await this.systemConfig.getBool('operations.maintenance_mode')) {
+      throw new BadRequestException('El sistema se encuentra en mantenimiento. No se pueden realizar pedidos en este momento.');
+    }
+
+    // 2. Verificar si se aceptan pedidos
+    if (!(await this.systemConfig.getBool('orders.accept_orders'))) {
+      throw new BadRequestException('La tienda no está aceptando pedidos en línea en este momento.');
+    }
+
+    // 3. Validar cantidad máxima de items
+    const maxItems = await this.systemConfig.getNumber('orders.max_items');
+    const totalItems = dto.items?.reduce((sum, item) => sum + item.quantity, 0) ?? 0;
+    if (totalItems > maxItems) {
+      throw new BadRequestException(`El pedido supera el límite máximo de ${maxItems} unidades.`);
+    }
+
     const branch = await this.prisma.branch.findUnique({ where: { slug: dto.branchSlug } });
     if (!branch) throw new NotFoundException('Sucursal no encontrada');
     if (!dto.items?.length) throw new BadRequestException('Sin items');
@@ -67,6 +88,7 @@ export class OrdersService {
           total: 0,
           paymentMethod: dto.paymentMethod,
           customerNotes: dto.customerNotes,
+          shippingMethod: 'WEB',
           status: 'PENDING',
           userId: userId,
           items: { create: [] },
@@ -85,6 +107,13 @@ export class OrdersService {
         subtotal += price * item.quantity;
         await tx.orderItem.create({ data: { orderId: created.id, productId: p.id, productName: p.name, quantity: item.quantity, unitPrice: p.basePrice } });
       }
+
+      // Validar monto mínimo de pedido
+      const minAmount = await this.systemConfig.getNumber('orders.min_amount');
+      if (subtotal < minAmount) {
+        throw new BadRequestException(`El monto del pedido (Q${subtotal.toFixed(2)}) es menor al pedido mínimo requerido (Q${minAmount.toFixed(2)}).`);
+      }
+
       const updated = await tx.order.update({ where: { id: created.id }, data: { orderNumber: formatOrderNumber(created.id), subtotal, total: subtotal } });
       return updated;
     });
@@ -92,10 +121,18 @@ export class OrdersService {
     // Auditoría
     this.logger.auditOrderCreated(order.id, userId, Number(order.total));
 
+    // Enviar notificación de nuevo pedido pendiente
+    await this.notificationsService.sendByConfig('order.new_pending', {
+      orderNumber: order.orderNumber,
+    }, `/admin/ordenes/${order.id}`);
+
     return order;
   }
 
   async directSale(dto: POSOrderDto, userId?: string) {
+    if (await this.systemConfig.getBool('operations.maintenance_mode')) {
+      throw new BadRequestException('El sistema se encuentra en mantenimiento. No se pueden realizar ventas en este momento.');
+    }
     const branch = await this.prisma.branch.findUnique({ where: { slug: dto.branchSlug } });
     if (!branch) throw new NotFoundException('Sucursal no encontrada');
     if (!dto.items?.length) throw new BadRequestException('Sin items');
@@ -129,6 +166,7 @@ export class OrdersService {
           discount: 0,
           total: 0,
           paymentMethod: dto.paymentMethod,
+          shippingMethod: 'POS',
           status: 'DELIVERED', // Instant delivery
           userId: userId,
           items: { create: [] },
@@ -229,11 +267,19 @@ export class OrdersService {
     // Auditoría
     this.logger.auditOrderCancelled(orderId, userId);
 
+    // Enviar notificación de pedido cancelado
+    await this.notificationsService.sendByConfig('order.cancelled', {
+      orderNumber: order.orderNumber,
+    }, `/admin/ordenes/${order.id}`);
+
     return { ok: true };
   }
 
   async pickup(orderId: number, userId?: string) {
-    const order: any = await this.prisma.order.findUnique({ where: { id: orderId }, include: { items: true } as any });
+    const order: any = await this.prisma.order.findUnique({ 
+      where: { id: orderId }, 
+      include: { items: true, branch: true } as any 
+    });
     if (!order) throw new NotFoundException('Orden no encontrada');
     if (!order.branchId) throw new BadRequestException('Orden sin sucursal');
 
@@ -257,6 +303,25 @@ export class OrdersService {
 
     // Auditoría
     this.logger.auditOrderPickup(orderId, userId);
+
+    // Verificar si el stock de los productos retirados quedó bajo
+    if (order.branchId) {
+      for (const it of order.items) {
+        const currentInv = await this.prisma.inventory.findUnique({
+          where: { productId_branchId: { productId: it.productId, branchId: order.branchId } },
+        });
+        if (currentInv) {
+          const isLow = await this.notificationsService.checkThreshold('inventory.low_stock', currentInv.quantity);
+          if (isLow) {
+            await this.notificationsService.sendByConfig('inventory.low_stock', {
+              productName: it.productName,
+              current: currentInv.quantity,
+              branchName: order.branch?.name || 'Sucursal',
+            }, `/admin/inventario`);
+          }
+        }
+      }
+    }
 
     return { ok: true };
   }
@@ -323,10 +388,19 @@ export class OrdersService {
     if (!order) throw new NotFoundException('Orden no encontrada');
     if (order.status !== 'PENDING') throw new BadRequestException('Solo se pueden confirmar órdenes PENDING');
     
-    return normalizeOrder(await this.prisma.order.update({
+    const updated = await this.prisma.order.update({
       where: { id: orderId },
       data: { status: 'CONFIRMED' },
-    }));
+    });
+
+    if (updated.userId) {
+      await this.notificationsService.sendToUser(updated.userId, 'order.status_changed', {
+        orderNumber: updated.orderNumber,
+        status: 'CONFIRMADO',
+      }, `/pedidos`);
+    }
+
+    return normalizeOrder(updated);
   }
 
   async updateStatus(orderId: number, newStatus: string) {
@@ -338,9 +412,29 @@ export class OrdersService {
       throw new BadRequestException(`Estado inválido. Debe ser uno de: ${validStatuses.join(', ')}`);
     }
     
-    return normalizeOrder(await this.prisma.order.update({
+    const updated = await this.prisma.order.update({
       where: { id: orderId },
       data: { status: newStatus as any },
-    }));
+    });
+
+    if (updated.userId) {
+      const statusLabels: Record<string, string> = {
+        PENDING: 'PENDIENTE',
+        CONFIRMED: 'CONFIRMADO',
+        PREPARING: 'EN PREPARACIÓN',
+        READY: 'LISTO PARA RECOGER',
+        IN_DELIVERY: 'EN CAMINO',
+        DELIVERED: 'ENTREGADO',
+        CANCELLED: 'CANCELADO',
+        PICKED_UP: 'ENTREGADO',
+      };
+      const statusLabel = statusLabels[newStatus] || newStatus;
+      await this.notificationsService.sendToUser(updated.userId, 'order.status_changed', {
+        orderNumber: updated.orderNumber,
+        status: statusLabel,
+      }, `/pedidos`);
+    }
+
+    return normalizeOrder(updated);
   }
 }

@@ -1,6 +1,6 @@
 import { Controller, Post, Body, UseGuards, Get, Query, Req, Res } from '@nestjs/common';
 import { StockMovementsService } from './stock-movements.service.js';
-import { CreateStockMovementDto } from './dto.js';
+import { CreateStockMovementDto, ReconcileInventoryDto } from './dto.js';
 import { ApiTags, ApiBody, ApiBearerAuth, ApiQuery, ApiOperation, ApiResponse, ApiBadRequestResponse } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/roles.guard.js';
@@ -107,5 +107,39 @@ export class StockMovementsController {
       });
       return r;
     });
+  }
+
+  @Post('reconcile')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'MANAGER')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Reconciliar inventario', description: 'Compara conteo físico real vs sistema y genera ajustes automáticos (SOBRANTE o MERMA). Solo ADMIN o MANAGER.' })
+  @ApiBody({ type: ReconcileInventoryDto })
+  @ApiResponse({ status: 201, description: 'Reconciliación completada con resumen de ajustes' })
+  @ApiBadRequestResponse({ description: 'Sucursal no encontrada o sin productos' })
+  async reconcile(@Req() req: any, @Body() dto: ReconcileInventoryDto) {
+    const result = await this.service.reconcile(dto, req.user?.userId);
+
+    // Registrar en auditoría
+    const userName = await this.auditService.getUserName(req.user?.userId);
+    await this.auditService.log({
+      userId: req.user?.userId,
+      userName,
+      action: 'CREATE',
+      entity: 'StockMovement',
+      entityName: `Reconciliación - ${result.branchName}`,
+      details: {
+        action: 'RECONCILE',
+        branch: result.branchName,
+        totalReviewed: result.totalReviewed,
+        totalAdjusted: result.totalAdjusted,
+        sobrantes: result.sobrantes,
+        mermas: result.mermas,
+      },
+      ipAddress: getClientIp(req),
+      userAgent: req.headers?.['user-agent'],
+    });
+
+    return result;
   }
 }

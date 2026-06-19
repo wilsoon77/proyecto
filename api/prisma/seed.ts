@@ -298,6 +298,251 @@ async function main() {
   }
 
   console.log('🧑‍🍳 Materia prima, recetas e inventario seedeados');
+
+  // ─────────────────────────────────────────────
+  // CONFIGURACIÓN GLOBAL DEL SISTEMA (System Config)
+  // ─────────────────────────────────────────────
+  const systemConfigs = [
+    {
+      key: 'store.name',
+      value: 'Panadería Svetlana',
+      type: 'string',
+      category: 'STORE',
+      label: 'Nombre de la tienda',
+      description: 'Nombre principal de la panadería que se muestra en el sitio web.',
+      isPublic: true,
+      isReadOnly: false,
+      sortOrder: 1,
+    },
+    {
+      key: 'store.description',
+      value: 'Los mejores panes de masa madre y repostería artesanal.',
+      type: 'string',
+      category: 'STORE',
+      label: 'Descripción de la tienda',
+      description: 'Descripción que se muestra en los motores de búsqueda y la página de inicio.',
+      isPublic: true,
+      isReadOnly: false,
+      sortOrder: 2,
+    },
+    {
+      key: 'store.currency',
+      value: 'GTQ',
+      type: 'string',
+      category: 'STORE',
+      label: 'Moneda',
+      description: 'Código de moneda de tres letras para la tienda.',
+      isPublic: true,
+      isReadOnly: true,
+      sortOrder: 3,
+    },
+    {
+      key: 'store.currency_symbol',
+      value: 'Q',
+      type: 'string',
+      category: 'STORE',
+      label: 'Símbolo de moneda',
+      description: 'Símbolo de moneda para mostrar los precios.',
+      isPublic: true,
+      isReadOnly: true,
+      sortOrder: 4,
+    },
+    {
+      key: 'store.timezone',
+      value: 'America/Guatemala',
+      type: 'string',
+      category: 'STORE',
+      label: 'Zona horaria',
+      description: 'Zona horaria de operación de la tienda.',
+      isPublic: true,
+      isReadOnly: true,
+      sortOrder: 5,
+    },
+    {
+      key: 'store.operating_hours',
+      value: '06:00 - 20:00',
+      type: 'string',
+      category: 'STORE',
+      label: 'Horario de operación',
+      description: 'Horario en el que la tienda está abierta al público.',
+      isPublic: true,
+      isReadOnly: false,
+      sortOrder: 6,
+    },
+    {
+      key: 'orders.min_amount',
+      value: 15,
+      type: 'number',
+      category: 'ORDERS',
+      label: 'Pedido mínimo (Q)',
+      description: 'Monto mínimo total requerido para poder realizar un pedido.',
+      isPublic: true,
+      isReadOnly: false,
+      sortOrder: 7,
+    },
+    {
+      key: 'orders.max_items',
+      value: 50,
+      type: 'number',
+      category: 'ORDERS',
+      label: 'Máximo items por pedido',
+      description: 'Cantidad máxima total de productos que se pueden agregar a un solo pedido.',
+      isPublic: false,
+      isReadOnly: false,
+      sortOrder: 8,
+    },
+    {
+      key: 'orders.accept_orders',
+      value: true,
+      type: 'boolean',
+      category: 'OPERATIONS',
+      label: 'Aceptar pedidos',
+      description: 'Habilita o deshabilita la posibilidad de realizar pedidos en línea.',
+      isPublic: true,
+      isReadOnly: false,
+      sortOrder: 9,
+    },
+    {
+      key: 'operations.maintenance_mode',
+      value: false,
+      type: 'boolean',
+      category: 'OPERATIONS',
+      label: 'Modo mantenimiento',
+      description: 'Habilita el modo mantenimiento para suspender temporalmente el acceso público.',
+      isPublic: true,
+      isReadOnly: false,
+      sortOrder: 10,
+    },
+  ];
+
+  for (const config of systemConfigs) {
+    await prisma.systemConfig.upsert({
+      where: { key: config.key },
+      update: {},
+      create: {
+        ...config,
+        value: config.value as any,
+      },
+    });
+  }
+
+  console.log('⚙️ Configuración del sistema seedeada');
+
+  // ─────────────────────────────────────────────
+  // CONFIGURACIÓN DE NOTIFICACIONES (Notification Config)
+  // ─────────────────────────────────────────────
+  const notificationConfigs = [
+    {
+      key: 'order.status_changed',
+      name: 'Cambio de estado de orden',
+      description: 'Notifica al cliente cuando el estado de su orden cambia (ej. de PENDIENTE a CONFIRMADO).',
+      category: 'ORDERS',
+      isEnabled: true,
+      title: 'Estado de tu pedido',
+      message: 'Tu pedido #{orderNumber} cambió a: {status}',
+      targetRoles: ['CUSTOMER'],
+      thresholds: null,
+      soundType: 'suave',
+    },
+    {
+      key: 'order.new_pending',
+      name: 'Nueva orden pendiente',
+      description: 'Alerta al personal operativo cuando ingresa un nuevo pedido del sitio web.',
+      category: 'ORDERS',
+      isEnabled: true,
+      title: 'Nuevo pedido pendiente',
+      message: 'Nueva orden entrante #{orderNumber} pendiente de confirmar',
+      targetRoles: ['CASHIER', 'MANAGER'],
+      thresholds: null,
+      soundType: 'alerta',
+    },
+    {
+      key: 'order.cancelled',
+      name: 'Orden cancelada',
+      description: 'Notifica a administración cuando una orden se cancela.',
+      category: 'ORDERS',
+      isEnabled: true,
+      title: 'Pedido cancelado',
+      message: 'La orden #{orderNumber} fue cancelada',
+      targetRoles: ['CASHIER', 'MANAGER'],
+      thresholds: null,
+      soundType: 'alerta',
+    },
+    {
+      key: 'inventory.low_stock',
+      name: 'Stock de producto bajo',
+      description: 'Notifica cuando el stock físico de un producto horneado o de reventa cae por debajo del umbral.',
+      category: 'INVENTORY',
+      isEnabled: true,
+      title: 'Stock de producto bajo',
+      message: 'Stock bajo: {productName} tiene {current} unidades en {branchName}',
+      targetRoles: ['MANAGER', 'ADMIN'],
+      thresholds: { threshold: 10 },
+      soundType: 'alerta',
+    },
+    {
+      key: 'inventory.raw_material_low',
+      name: 'Materia prima baja',
+      description: 'Alerta a panaderos y gerentes cuando la materia prima en inventario cae por debajo del umbral mínimo.',
+      category: 'INVENTORY',
+      isEnabled: true,
+      title: 'Materia prima baja',
+      message: 'Materia prima baja: {materialName} tiene {current} {unit} en {branchName}',
+      targetRoles: ['BAKER', 'MANAGER'],
+      thresholds: { threshold: 50, unit: 'LB' },
+      soundType: 'importante',
+    },
+    {
+      key: 'inventory.loss_detected',
+      name: 'Merma o pérdida registrada',
+      description: 'Alerta cuando se registra un movimiento de merma, robo, o pérdida.',
+      category: 'INVENTORY',
+      isEnabled: true,
+      title: 'Merma/Pérdida registrada',
+      message: 'Se registró {type}: {quantity} unidades de {productName} en {branchName}',
+      targetRoles: ['MANAGER', 'ADMIN'],
+      thresholds: null,
+      soundType: 'suave',
+    },
+    {
+      key: 'production.assigned',
+      name: 'Producción asignada',
+      description: 'Notifica al panadero cuando se le asigna un nuevo amasijo.',
+      category: 'PRODUCTION',
+      isEnabled: true,
+      title: 'Nueva producción asignada',
+      message: 'Nueva producción asignada: {recipeName} en {branchName}',
+      targetRoles: ['BAKER'],
+      thresholds: null,
+      soundType: 'suave',
+    },
+    {
+      key: 'system.audit_alert',
+      name: 'Alerta de auditoría',
+      description: 'Notifica al administrador sobre múltiples intentos fallidos de inicio de sesión o acciones sospechosas.',
+      category: 'SYSTEM',
+      isEnabled: true,
+      title: 'Alerta de seguridad',
+      message: 'Se detectaron {count} intentos fallidos de login desde {ip}',
+      targetRoles: ['ADMIN'],
+      thresholds: { threshold: 5 },
+      soundType: 'importante',
+    },
+  ];
+
+  for (const config of notificationConfigs) {
+    await prisma.notificationConfig.upsert({
+      where: { key: config.key },
+      update: {},
+      create: {
+        ...config,
+        targetRoles: config.targetRoles as any,
+        thresholds: config.thresholds as any,
+      },
+    });
+  }
+
+  console.log('🔔 Configuraciones de notificación seedeadas');
 }
 
 main().catch(e => {

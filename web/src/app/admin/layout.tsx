@@ -24,20 +24,54 @@ import {
   X,
   History,
   Flame,
-  Store
+  Store,
+  BookOpen,
+  BarChart3,
+  ArrowRightLeft,
+  ChevronDown,
+  ClipboardCheck
 } from "lucide-react"
 import { GlobalSearch } from "@/components/ui/global-search"
+import NotificationBell from "@/components/layout/NotificationBell"
 
 const OPERATIONAL_ROLES = ['ADMIN', 'MANAGER', 'BAKER', 'CASHIER']
 
-const adminNavItems = [
+interface NavItem {
+  href: string
+  label: string
+  icon: any
+  exact?: boolean
+  roles: string[]
+  children?: {
+    href: string
+    label: string
+    icon: any
+    exact?: boolean
+    roles: string[]
+  }[]
+}
+
+const adminNavItems: NavItem[] = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true, roles: ["ADMIN", "MANAGER", "BAKER", "CASHIER"] },
   { href: "/admin/pos", label: "Caja (POS)", icon: Store, roles: ["ADMIN", "MANAGER", "CASHIER"] },
   { href: "/admin/productos", label: "Productos", icon: Package, roles: ["ADMIN", "MANAGER"] },
   { href: "/admin/categorias", label: "Categorías", icon: Tag, roles: ["ADMIN"] },
   { href: "/admin/ordenes", label: "Pedidos", icon: ShoppingCart, roles: ["ADMIN", "MANAGER", "CASHIER"] },
   { href: "/admin/produccion", label: "Producción", icon: Flame, roles: ["ADMIN", "MANAGER", "BAKER"] },
-  { href: "/admin/inventario", label: "Inventario", icon: Warehouse, roles: ["ADMIN", "MANAGER"] },
+  { href: "/admin/recetas", label: "Recetas", icon: BookOpen, roles: ["ADMIN", "MANAGER"] },
+  { 
+    href: "/admin/inventario", 
+    label: "Inventario", 
+    icon: Warehouse, 
+    roles: ["ADMIN", "MANAGER"],
+    children: [
+      { href: "/admin/inventario", label: "Resumen", icon: BarChart3, exact: true, roles: ["ADMIN", "MANAGER"] },
+      { href: "/admin/inventario/productos", label: "Productos", icon: Package, roles: ["ADMIN", "MANAGER"] },
+      { href: "/admin/inventario/materias-primas", label: "Materias Primas", icon: Warehouse, roles: ["ADMIN", "MANAGER"] },
+      { href: "/admin/inventario/movimiento", label: "Movimientos", icon: ArrowRightLeft, roles: ["ADMIN", "MANAGER"] },
+      { href: "/admin/inventario/conteo", label: "Conteo Físico", icon: ClipboardCheck, roles: ["ADMIN", "MANAGER"] },
+    ]
+  },
   { href: "/admin/sucursales", label: "Sucursales", icon: Building2, roles: ["ADMIN"] },
   { href: "/admin/usuarios", label: "Usuarios", icon: Users, roles: ["ADMIN"] },
   { href: "/admin/historial", label: "Historial", icon: History, roles: ["ADMIN"] },
@@ -54,6 +88,7 @@ export default function AdminLayout({
   const { user, isAuthenticated, isLoading, logout } = useAuth()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     if (!isLoading) {
@@ -68,6 +103,22 @@ export default function AdminLayout({
   // Cerrar menú móvil al cambiar de ruta
   useEffect(() => {
     setMobileMenuOpen(false)
+  }, [pathname])
+
+  // Auto-expandir grupos basados en la ruta activa
+  useEffect(() => {
+    if (pathname) {
+      adminNavItems.forEach((item) => {
+        if (item.children) {
+          const hasActiveChild = item.children.some((child) => 
+            child.exact ? pathname === child.href : pathname.startsWith(child.href)
+          )
+          if (hasActiveChild) {
+            setExpandedGroups((prev) => ({ ...prev, [item.label]: true }))
+          }
+        }
+      })
+    }
   }, [pathname])
 
   const isActiveRoute = (href: string, exact?: boolean) => {
@@ -158,30 +209,136 @@ export default function AdminLayout({
             {adminNavItems
               .filter((item) => item.roles.includes(user?.role || ""))
               .map((item) => {
-              const isActive = isActiveRoute(item.href, item.exact)
-              return (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    className={`
-                      flex items-center gap-3 px-3 py-2.5 rounded-lg
-                      transition-all duration-200
-                      ${isActive 
-                        ? 'bg-amber-500 text-white shadow-md' 
-                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                      }
-                      ${sidebarCollapsed ? 'justify-center' : ''}
-                    `}
-                    title={sidebarCollapsed ? item.label : undefined}
-                  >
-                    <item.icon className={`h-5 w-5 flex-shrink-0 ${isActive ? 'text-white' : ''}`} />
-                    {!sidebarCollapsed && (
-                      <span className="font-medium">{item.label}</span>
-                    )}
-                  </Link>
-                </li>
-              )
-            })}
+                const hasChildren = !!item.children
+                const isGroupExpanded = expandedGroups[item.label]
+                const activeChild = hasChildren && item.children?.some(c => isActiveRoute(c.href, c.exact))
+                const isActive = hasChildren ? activeChild : isActiveRoute(item.href, item.exact)
+
+                if (hasChildren) {
+                  const filteredChildren = item.children!.filter(c => c.roles.includes(user?.role || ""))
+                  if (filteredChildren.length === 0) return null
+
+                  return (
+                    <li key={item.label} className="relative group/menu-item">
+                      {/* Parent Item */}
+                      <button
+                        onClick={() => {
+                          if (!sidebarCollapsed) {
+                            setExpandedGroups(prev => ({ ...prev, [item.label]: !prev[item.label] }))
+                          }
+                        }}
+                        className={`
+                          w-full flex items-center justify-between px-3 py-2.5 rounded-lg
+                          transition-all duration-200
+                          ${isActive && !isGroupExpanded 
+                            ? 'bg-amber-500 text-white shadow-md' 
+                            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                          }
+                          ${sidebarCollapsed ? 'justify-center' : ''}
+                        `}
+                        title={sidebarCollapsed ? item.label : undefined}
+                      >
+                        <div className="flex items-center gap-3">
+                          <item.icon className={`h-5 w-5 flex-shrink-0 ${isActive && !isGroupExpanded ? 'text-white' : ''}`} />
+                          {!sidebarCollapsed && (
+                            <span className="font-medium">{item.label}</span>
+                          )}
+                        </div>
+                        {!sidebarCollapsed && (
+                          <ChevronDown 
+                            className={`h-4 w-4 transition-transform duration-200 ${
+                              isGroupExpanded ? 'transform rotate-180' : ''
+                            }`} 
+                          />
+                        )}
+                      </button>
+
+                      {/* Children Items (Expanded Mode) */}
+                      {!sidebarCollapsed && isGroupExpanded && (
+                        <ul className="mt-1 ml-6 space-y-1 border-l border-gray-100 pl-2">
+                          {filteredChildren.map((child) => {
+                            const isChildActive = isActiveRoute(child.href, child.exact)
+                            return (
+                              <li key={child.href}>
+                                <Link
+                                  href={child.href}
+                                  className={`
+                                    flex items-center gap-3 px-3 py-2 rounded-lg text-sm
+                                    transition-all duration-200
+                                    ${isChildActive 
+                                      ? 'bg-amber-50 text-amber-700 font-medium' 
+                                      : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                                    }
+                                  `}
+                                >
+                                  <child.icon className={`h-4 w-4 flex-shrink-0 ${isChildActive ? 'text-amber-600' : ''}`} />
+                                  <span>{child.label}</span>
+                                </Link>
+                              </li>
+                            )
+                          })}
+                        </ul>
+                      )}
+
+                      {/* Children Items (Collapsed Popover Mode) */}
+                      {sidebarCollapsed && (
+                        <div className="invisible opacity-0 group-hover/menu-item:visible group-hover/menu-item:opacity-100 absolute left-full top-0 ml-2 w-48 bg-white border border-gray-200 rounded-lg shadow-xl py-2 z-50 transition-all duration-200">
+                          <div className="px-3 py-1.5 border-b border-gray-100 font-semibold text-xs text-gray-400 uppercase tracking-wider">
+                            {item.label}
+                          </div>
+                          <ul className="mt-1 space-y-1 px-2">
+                            {filteredChildren.map((child) => {
+                              const isChildActive = isActiveRoute(child.href, child.exact)
+                              return (
+                                <li key={child.href}>
+                                  <Link
+                                    href={child.href}
+                                    className={`
+                                      flex items-center gap-2 px-2 py-1.5 rounded-md text-sm
+                                      transition-all duration-200
+                                      ${isChildActive 
+                                        ? 'bg-amber-50 text-amber-700 font-medium' 
+                                        : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                                      }
+                                    `}
+                                  >
+                                    <child.icon className={`h-4 w-4 flex-shrink-0 ${isChildActive ? 'text-amber-600' : ''}`} />
+                                    <span>{child.label}</span>
+                                  </Link>
+                                </li>
+                              )
+                            })}
+                          </ul>
+                        </div>
+                      )}
+                    </li>
+                  )
+                }
+
+                // Normal Item
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      className={`
+                        flex items-center gap-3 px-3 py-2.5 rounded-lg
+                        transition-all duration-200
+                        ${isActive 
+                          ? 'bg-amber-500 text-white shadow-md' 
+                          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                        }
+                        ${sidebarCollapsed ? 'justify-center' : ''}
+                      `}
+                      title={sidebarCollapsed ? item.label : undefined}
+                    >
+                      <item.icon className={`h-5 w-5 flex-shrink-0 ${isActive ? 'text-white' : ''}`} />
+                      {!sidebarCollapsed && (
+                        <span className="font-medium">{item.label}</span>
+                      )}
+                    </Link>
+                  </li>
+                )
+              })}
           </ul>
         </nav>
 
@@ -241,10 +398,7 @@ export default function AdminLayout({
           {/* Right: Notifications + User */}
           <div className="flex items-center gap-2">
             {/* Notifications */}
-            <button className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg relative">
-              <Bell className="h-5 w-5" />
-              <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
-            </button>
+            <NotificationBell />
 
             {/* User Menu */}
             <div className="flex items-center gap-3 pl-3 border-l border-gray-200">

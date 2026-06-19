@@ -21,9 +21,18 @@ export interface ProductDTO {
 export class ProductsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(query: { search?: string; category?: string; min?: number; max?: number; sort?: string; branch?: string; page?: number; pageSize?: number }) {
+  async findAll(query: { search?: string; category?: string; min?: number; max?: number; sort?: string; branch?: string; page?: number; pageSize?: number; all?: boolean; status?: string }) {
     const where: any = {};
-    where.isActive = true;
+    if (query.status === 'active') {
+      where.isActive = true;
+    } else if (query.status === 'inactive') {
+      where.isActive = false;
+    } else if (query.status === 'all' || query.all) {
+      // No filter on isActive, show all
+    } else {
+      // Default behavior (compatibility with public store)
+      where.isActive = true;
+    }
 
     if (query.category) {
       where.category = { slug: query.category };

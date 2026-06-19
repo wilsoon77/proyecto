@@ -12,15 +12,17 @@ import { ROUTES } from "@/lib/constants"
 import { getOrderStatusLabel } from "@/lib/constants"
 import { formatDate, formatPrice } from "@/lib/utils"
 
+import { Clock, Check, Wrench, Package, CheckCircle2, XCircle, Home, Lightbulb } from "lucide-react"
+
 // Iconos de estado para accesibilidad (#69)
-const STATUS_ICONS: Record<string, string> = {
-  'PENDING': '⏳',
-  'CONFIRMED': '✓',
-  'PREPARING': '🔧',
-  'READY': '📦',
-  'DELIVERED': '✅',
-  'CANCELLED': '✗',
-  'PICKED_UP': '🏠',
+const STATUS_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  'PENDING': Clock,
+  'CONFIRMED': Check,
+  'PREPARING': Wrench,
+  'READY': Package,
+  'DELIVERED': CheckCircle2,
+  'CANCELLED': XCircle,
+  'PICKED_UP': Home,
 }
 
 export default function PedidosPage() {
@@ -92,7 +94,10 @@ export default function PedidosPage() {
       {/* Mensaje para usuarios no autenticados */}
       {!isAuthenticated && (
         <div className="mb-6 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
-          <p className="font-medium">💡 ¿Ya tienes cuenta?</p>
+          <p className="font-medium flex items-center gap-1.5 mb-1">
+            <Lightbulb className="h-4 w-4 text-amber-600" />
+            ¿Ya tienes cuenta?
+          </p>
           <p>
             <Link href={ROUTES.login} className="underline hover:no-underline">Inicia sesión</Link> para ver todo tu historial de pedidos.
           </p>
@@ -128,7 +133,10 @@ export default function PedidosPage() {
                         ? 'bg-red-100 text-red-800' 
                         : 'bg-amber-100 text-amber-800'
                   }`}>
-                    <span aria-hidden="true">{STATUS_ICONS[order.status] || ''}</span>
+                    {(() => {
+                      const Icon = STATUS_ICONS[order.status] || Clock
+                      return <Icon className="h-3.5 w-3.5" />
+                    })()}
                     {getOrderStatusLabel(order.status)}
                   </span>
                 </div>
@@ -215,8 +223,11 @@ export default function PedidosPage() {
                 <p className="font-medium">{formatDate(new Date((localOrder as { createdAt?: string }).createdAt || ''))}</p>
               </div>
             </div>
-            <div className="mt-4 inline-flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700">
-              <span aria-hidden="true">{STATUS_ICONS[(localOrder as { status?: string }).status || 'PENDING'] || '⏳'}</span>
+            <div className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700">
+              {(() => {
+                const Icon = STATUS_ICONS[(localOrder as { status?: string }).status || 'PENDING'] || Clock
+                return <Icon className="h-3.5 w-3.5" />
+              })()}
               {getOrderStatusLabel((localOrder as { status?: string }).status || 'PENDING')}
             </div>
           </div>

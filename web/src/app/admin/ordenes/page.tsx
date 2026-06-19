@@ -14,7 +14,9 @@ import {
   Package,
   ChefHat,
   Filter,
-  RefreshCw
+  RefreshCw,
+  Monitor,
+  Globe
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
@@ -260,7 +262,12 @@ export default function OrdenesPage() {
             {/* Mobile Card Layout */}
             <div className="md:hidden divide-y divide-gray-100">
               {filteredOrders.map((order) => {
-                const statusConfig = STATUS_MAP[order.status]
+                const statusConfig = STATUS_MAP[order.status] || {
+                  value: order.status,
+                  label: order.status,
+                  icon: Clock,
+                  color: "bg-gray-100 text-gray-700"
+                }
                 const StatusIcon = statusConfig.icon
                 const totalItems = order.items.reduce((sum, i) => sum + i.quantity, 0)
                 
@@ -268,7 +275,14 @@ export default function OrdenesPage() {
                   <div key={order.id} className="p-4 hover:bg-gray-50">
                     <div className="flex items-start justify-between mb-2">
                       <div>
-                        <p className="font-medium text-gray-900">{order.orderNumber}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-gray-900">{order.orderNumber}</p>
+                          {order.shippingMethod === 'POS' ? (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-100 text-violet-700"><Monitor className="h-3 w-3" />POS</span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-sky-100 text-sky-700"><Globe className="h-3 w-3" />Web</span>
+                          )}
+                        </div>
                         <p className="text-xs text-gray-400">{formatDate(order.createdAt)}</p>
                       </div>
                       <Link href={`/admin/ordenes/${order.id}`}>
@@ -320,14 +334,26 @@ export default function OrdenesPage() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {filteredOrders.map((order) => {
-                  const statusConfig = STATUS_MAP[order.status]
+                  const statusConfig = STATUS_MAP[order.status] || {
+                    value: order.status,
+                    label: order.status,
+                    icon: Clock,
+                    color: "bg-gray-100 text-gray-700"
+                  }
                   const StatusIcon = statusConfig.icon
                   const totalItems = order.items.reduce((sum, i) => sum + i.quantity, 0)
                   
                   return (
                     <tr key={order.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <p className="font-medium text-gray-900">{order.orderNumber}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-gray-900">{order.orderNumber}</p>
+                          {order.shippingMethod === 'POS' ? (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-100 text-violet-700"><Monitor className="h-3 w-3" />POS</span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-sky-100 text-sky-700"><Globe className="h-3 w-3" />Web</span>
+                          )}
+                        </div>
                         <p className="text-xs text-gray-400">ID: {order.id}</p>
                       </td>
                       <td className="px-6 py-4">

@@ -9,11 +9,14 @@ import { Input } from "@/components/ui/input"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { formatPrice } from "@/lib/utils"
 import { ORDER_CONFIG, ROUTES } from "@/lib/constants"
-import { Trash2, Plus, Minus } from "lucide-react"
+import { useSystemConfig } from "@/context/SystemConfigContext"
+import { Trash2, Plus, Minus, ShoppingCart, Cookie } from "lucide-react"
 
 export default function CarritoPage() {
   const { items, itemCount, subtotal, updateQuantity, removeItem, clearCart } = useCart()
   const [showClearConfirm, setShowClearConfirm] = useState(false)
+  const { config } = useSystemConfig()
+  const minOrderAmount = config['orders.min_amount'] ?? ORDER_CONFIG.minOrderAmount
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
@@ -21,7 +24,7 @@ export default function CarritoPage() {
 
       {items.length === 0 ? (
         <div className="flex min-h-[300px] flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-12">
-          <div className="text-6xl mb-4">🛒</div>
+          <ShoppingCart className="h-16 w-16 text-gray-300 mb-4 stroke-[1.5]" />
           <h3 className="mb-2 text-xl font-semibold text-gray-900">Tu carrito está vacío</h3>
           <p className="mb-6 text-gray-600">Agrega productos para continuar con tu compra.</p>
           <Link href={ROUTES.products}>
@@ -39,7 +42,9 @@ export default function CarritoPage() {
                     {product.imageUrl ? (
                       <Image src={product.imageUrl} alt={product.name} fill className="object-cover" />
                     ) : (
-                      <div className="flex h-full items-center justify-center text-3xl">🥖</div>
+                      <div className="flex h-full items-center justify-center">
+                        <Cookie className="h-10 w-10 text-gray-300 stroke-[1.5]" />
+                      </div>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -84,9 +89,9 @@ export default function CarritoPage() {
             <div className="rounded-lg border bg-white p-6">
               <h2 className="mb-4 text-xl font-semibold">Resumen</h2>
               {/* Advertencia de mínimo */}
-              {subtotal > 0 && subtotal < ORDER_CONFIG.minOrderAmount && (
+              {subtotal > 0 && subtotal < minOrderAmount && (
                 <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-                  El pedido mínimo es de {formatPrice(ORDER_CONFIG.minOrderAmount)}. Agrega más productos para continuar.
+                  El pedido mínimo es de {formatPrice(minOrderAmount)}. Agrega más productos para continuar.
                 </div>
               )}
               <div className="space-y-2 text-sm">
@@ -99,7 +104,7 @@ export default function CarritoPage() {
                   <span className="font-bold text-primary">{formatPrice(subtotal)}</span>
                 </div>
               </div>
-              {subtotal >= ORDER_CONFIG.minOrderAmount ? (
+              {subtotal >= minOrderAmount ? (
                 <Link href={ROUTES.checkout}>
                   <Button className="mt-4 w-full">Confirmar Pedido</Button>
                 </Link>
@@ -118,7 +123,7 @@ export default function CarritoPage() {
               />
             </div>
             <div className="rounded-lg border bg-white p-4 text-sm text-gray-600">
-              <p>📍 Retira en sucursal. Pedido mínimo: {formatPrice(ORDER_CONFIG.minOrderAmount)}. Pago al recoger.</p>
+              <p>📍 Retira en sucursal. Pedido mínimo: {formatPrice(minOrderAmount)}. Pago al recoger.</p>
             </div>
           </div>
         </div>

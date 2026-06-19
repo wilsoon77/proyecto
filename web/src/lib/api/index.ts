@@ -18,10 +18,16 @@ export { inventoryService } from './inventory'
 export type { InventoryItem, StockMovement, CreateStockMovementData, StockMovementType, StockMovementsListResponse } from './inventory'
 export { productionService } from './production.service'
 export type { Recipe, ProductionLog, ProductionResult } from './production.service'
+export { rawMaterialsService } from './raw-materials'
+export type { RawMaterial, RawMaterialInventory, PurchaseRawMaterialData, PurchaseRawMaterialResult } from './raw-materials'
 export { auditService } from './audit'
 export type { AuditLog, AuditListFilters, AuditListResponse, AuditStats, AuditFilterOptions } from './audit'
+export { systemConfigService } from './system-config'
+export { notificationsService } from './notifications'
+export type { SystemConfig, Notification, NotificationConfig, SubscribePushDto } from './types'
 export type { ProductDetailResponse, CreateProductData, UpdateProductData } from './admin.service'
 export type { User, UserRole, CreateUserData, UpdateUserData } from './users'
+
 
 // Transformadores
 export * from './transformers'

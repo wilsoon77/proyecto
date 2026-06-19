@@ -6,17 +6,21 @@ import { useRouter } from "next/navigation"
 import { useCart } from "@/context/CartContext"
 import { useAuth } from "@/context/AuthContext"
 import { ORDER_CONFIG, ROUTES } from "@/lib/constants"
+import { useSystemConfig } from "@/context/SystemConfigContext"
 import { formatPrice } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ordersService, branchesService, authService } from "@/lib/api"
 import type { ApiBranch } from "@/lib/api/types"
 import { useToast } from "@/context/ToastContext"
+import { Lightbulb } from "lucide-react"
 
 export default function CheckoutPage() {
   const { items, subtotal, clearCart } = useCart()
   const { user, isAuthenticated, isLoading } = useAuth()
   const { show } = useToast()
+  const { config } = useSystemConfig()
+  const minOrderAmount = config['orders.min_amount'] ?? ORDER_CONFIG.minOrderAmount
   
   const router = useRouter()
 
@@ -41,7 +45,7 @@ export default function CheckoutPage() {
   const [branchesError, setBranchesError] = useState(false)
   const [savePhoneToProfile, setSavePhoneToProfile] = useState(true)
 
-  const belowMin = subtotal > 0 && subtotal < ORDER_CONFIG.minOrderAmount
+  const belowMin = subtotal > 0 && subtotal < minOrderAmount
 
   const canPlace = useMemo(() => {
     if (items.length === 0) return false
@@ -281,14 +285,17 @@ export default function CheckoutPage() {
           {belowMin && (
             <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
               <p className="font-medium">Pedido mínimo no alcanzado</p>
-              <p>El monto mínimo para realizar un pedido es de {formatPrice(ORDER_CONFIG.minOrderAmount)}. Tu subtotal actual es {formatPrice(subtotal)}.</p>
+              <p>El monto mínimo para realizar un pedido es de {formatPrice(minOrderAmount)}. Tu subtotal actual es {formatPrice(subtotal)}.</p>
             </div>
           )}
 
           {/* Mensaje para usuarios no autenticados */}
           {!isAuthenticated && (
             <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
-              <p className="font-medium">💡 ¿Ya tienes cuenta?</p>
+              <p className="font-medium flex items-center gap-1.5 mb-1">
+                <Lightbulb className="h-4 w-4 text-amber-600 animate-pulse" />
+                ¿Ya tienes cuenta?
+              </p>
               <p>
                 <Link href={ROUTES.login} className="underline hover:no-underline">Inicia sesión</Link> para guardar tus pedidos y ver tu historial.
               </p>
@@ -341,7 +348,7 @@ export default function CheckoutPage() {
             <p className="mt-2 text-center text-xs text-gray-500">Al realizar el pedido, aceptas nuestros términos y políticas.</p>
           </div>
           <div className="rounded-lg border bg-white p-4 text-sm text-gray-600">
-            <p>📍 Retira en sucursal. Pedido mínimo: {formatPrice(ORDER_CONFIG.minOrderAmount)}. Pago al recoger.</p>
+            <p>📍 Retira en sucursal. Pedido mínimo: {formatPrice(minOrderAmount)}. Pago al recoger.</p>
           </div>
         </div>
       </div>

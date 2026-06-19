@@ -122,7 +122,7 @@ export function GlobalSearch() {
             title: p.name,
             subtitle: `${p.category} • Q${p.price}`,
             type: "product",
-            href: `/admin/productos/${p.id}`,
+            href: `/admin/productos/${p.id}/editar`,
             icon: TYPE_ICONS.product,
           })
         })
@@ -150,7 +150,7 @@ export function GlobalSearch() {
             title: c.name,
             subtitle: `${c.productCount || 0} productos`,
             type: "category",
-            href: `/admin/categorias/${c.id}`,
+            href: `/admin/categorias/${c.slug}`,
             icon: TYPE_ICONS.category,
           })
         })

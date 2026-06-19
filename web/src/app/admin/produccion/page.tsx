@@ -124,11 +124,10 @@ export default function ProduccionPage() {
             <button
               key={recipe.id}
               onClick={() => handleSelectRecipe(recipe)}
-              className={`text-left p-5 rounded-xl border-2 transition-all duration-200 ${
-                selectedRecipeId === recipe.id
+              className={`text-left p-5 rounded-xl border-2 transition-all duration-200 ${selectedRecipeId === recipe.id
                   ? 'border-amber-500 bg-amber-50 shadow-md ring-2 ring-amber-200'
                   : 'border-gray-200 bg-white hover:border-amber-300 hover:shadow-sm'
-              }`}
+                }`}
             >
               <div className="flex items-start justify-between">
                 <div>
@@ -226,7 +225,7 @@ export default function ProduccionPage() {
             ) : (
               <>
                 <Flame className="h-6 w-6 mr-3" />
-                🔥 Registrar Horneado
+                Registrar Horneado
               </>
             )}
           </Button>

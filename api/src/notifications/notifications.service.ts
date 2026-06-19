@@ -1,0 +1,302 @@
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service.js';
+import { SubscribePushDto } from './dto/subscribe-push.dto.js';
+import webpush from 'web-push';
+
+@Injectable()
+export class NotificationsService {
+  constructor(private readonly prisma: PrismaService) {
+    // Configure VAPID details
+    const subject = process.env.VAPID_SUBJECT || 'mailto:soporte@panaderiasvetlana.com';
+    const publicKey = process.env.VAPID_PUBLIC_KEY || '';
+    const privateKey = process.env.VAPID_PRIVATE_KEY || '';
+
+    if (publicKey && privateKey) {
+      webpush.setVapidDetails(subject, publicKey, privateKey);
+    } else {
+      console.warn('[PUSH] VAPID keys are not fully configured in environment variables.');
+    }
+  }
+
+  /**
+   * Registra una suscripción push para un usuario
+   */
+  async subscribe(userId: string, dto: SubscribePushDto, userAgent?: string): Promise<void> {
+    await this.prisma.pushSubscription.upsert({
+      where: { endpoint: dto.endpoint },
+      update: {
+        userId,
+        p256dh: dto.keys.p256dh,
+        auth: dto.keys.auth,
+        userAgent,
+      },
+      create: {
+        userId,
+        endpoint: dto.endpoint,
+        p256dh: dto.keys.p256dh,
+        auth: dto.keys.auth,
+        userAgent,
+      },
+    });
+  }
+
+  /**
+   * Elimina una suscripción push
+   */
+  async unsubscribe(endpoint: string): Promise<void> {
+    await this.prisma.pushSubscription.deleteMany({
+      where: { endpoint },
+    });
+  }
+
+  /**
+   * Retorna las configuraciones de notificación (ADMIN)
+   */
+  async getConfigs() {
+    return this.prisma.notificationConfig.findMany({
+      orderBy: { category: 'asc' },
+    });
+  }
+
+  /**
+   * Actualiza una configuración de notificación (ADMIN)
+   */
+  async updateConfig(key: string, data: any) {
+    const config = await this.prisma.notificationConfig.findUnique({
+      where: { key },
+    });
+
+    if (!config) {
+      throw new NotFoundException(`Configuración de notificación '${key}' no encontrada`);
+    }
+
+    return this.prisma.notificationConfig.update({
+      where: { key },
+      data,
+    });
+  }
+
+  /**
+   * Obtiene el historial de notificaciones in-app de un usuario
+   */
+  async getHistory(userId: string, page: number = 1, pageSize: number = 20) {
+    const skip = (page - 1) * pageSize;
+    const [data, total] = await Promise.all([
+      this.prisma.notification.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: pageSize,
+      }),
+      this.prisma.notification.count({ where: { userId } }),
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        pageSize,
+        pageCount: Math.ceil(total / pageSize),
+      },
+    };
+  }
+
+  /**
+   * Obtiene el conteo de notificaciones no leídas
+   */
+  async getUnreadCount(userId: string): Promise<number> {
+    return this.prisma.notification.count({
+      where: { userId, isRead: false },
+    });
+  }
+
+  /**
+   * Marca una notificación como leída
+   */
+  async markAsRead(id: number, userId: string): Promise<void> {
+    const notif = await this.prisma.notification.findFirst({
+      where: { id, userId },
+    });
+
+    if (!notif) {
+      throw new NotFoundException('Notificación no encontrada');
+    }
+
+    await this.prisma.notification.update({
+      where: { id },
+      data: { isRead: true, readAt: new Date() },
+    });
+  }
+
+  /**
+   * Marca todas las notificaciones como leídas
+   */
+  async markAllAsRead(userId: string): Promise<void> {
+    await this.prisma.notification.updateMany({
+      where: { userId, isRead: false },
+      data: { isRead: true, readAt: new Date() },
+    });
+  }
+
+  /**
+   * Envía una notificación a un usuario específico
+   */
+  async sendToUser(
+    userId: string,
+    configKey: string,
+    placeholders: Record<string, any>,
+    url?: string,
+    icon?: string
+  ): Promise<void> {
+    const config = await this.prisma.notificationConfig.findUnique({
+      where: { key: configKey },
+    });
+
+    if (!config || !config.isEnabled) return;
+
+    const formattedTitle = this.formatMessage(config.title, placeholders);
+    const formattedMessage = this.formatMessage(config.message, placeholders);
+
+    // 1. Guardar en base de datos (In-app history)
+    const notif = await this.prisma.notification.create({
+      data: {
+        userId,
+        type: configKey,
+        title: formattedTitle,
+        message: formattedMessage,
+        url,
+        icon: icon || this.getDefaultIcon(configKey),
+        metadata: placeholders,
+      },
+    });
+
+    // 2. Enviar push a todos sus dispositivos
+    const subs = await this.prisma.pushSubscription.findMany({
+      where: { userId },
+    });
+
+    if (subs.length === 0) return;
+
+    const payload = JSON.stringify({
+      id: notif.id,
+      title: formattedTitle,
+      message: formattedMessage,
+      url: url || '/',
+      type: configKey,
+      soundType: config.soundType,
+    });
+
+    const sendPromises = subs.map(async (sub) => {
+      try {
+        await webpush.sendNotification({
+          endpoint: sub.endpoint,
+          keys: {
+            p256dh: sub.p256dh,
+            auth: sub.auth,
+          }
+        }, payload);
+      } catch (error: any) {
+        if (error.statusCode === 410 || error.statusCode === 404) {
+          // Suscripción inválida o expirada, eliminarla de la BD
+          await this.prisma.pushSubscription.delete({ where: { id: sub.id } }).catch(() => {});
+        } else {
+          console.error('[PUSH] Error al despachar notificación push:', error);
+        }
+      }
+    });
+
+    await Promise.all(sendPromises);
+  }
+
+  /**
+   * Envía una notificación a todos los usuarios con ciertos roles
+   */
+  async sendToRoles(
+    roles: string[],
+    configKey: string,
+    placeholders: Record<string, any>,
+    url?: string,
+    icon?: string
+  ): Promise<void> {
+    const users = await this.prisma.user.findMany({
+      where: { role: { in: roles as any }, isActive: true },
+      select: { id: true },
+    });
+
+    const sendPromises = users.map((u) =>
+      this.sendToUser(u.id, configKey, placeholders, url, icon)
+    );
+
+    await Promise.all(sendPromises);
+  }
+
+  /**
+   * Despacha una notificación basándose en la configuración del evento
+   */
+  async sendByConfig(
+    configKey: string,
+    placeholders: Record<string, any>,
+    url?: string,
+    icon?: string
+  ): Promise<void> {
+    const config = await this.prisma.notificationConfig.findUnique({
+      where: { key: configKey },
+    });
+
+    if (!config || !config.isEnabled) return;
+
+    const targetRoles = config.targetRoles as string[];
+    
+    // Si la notificación va dirigida a un cliente (CUSTOMER) y tenemos su userId, se la enviamos a él
+    if (targetRoles.includes('CUSTOMER') && placeholders.userId) {
+      await this.sendToUser(placeholders.userId, configKey, placeholders, url, icon);
+    } else {
+      await this.sendToRoles(targetRoles, configKey, placeholders, url, icon);
+    }
+  }
+
+  /**
+   * Compara un valor contra el umbral configurado
+   */
+  async checkThreshold(configKey: string, currentValue: number): Promise<boolean> {
+    const config = await this.prisma.notificationConfig.findUnique({
+      where: { key: configKey },
+    });
+
+    if (!config || !config.isEnabled || !config.thresholds) return false;
+
+    const thresholdsObj = config.thresholds as Record<string, any>;
+    const threshold = Number(thresholdsObj.threshold);
+    
+    if (isNaN(threshold)) return false;
+
+    return currentValue < threshold;
+  }
+
+  /**
+   * Helper para formatear mensajes reemplazando placeholders
+   */
+  private formatMessage(text: string, placeholders: Record<string, any>): string {
+    let formatted = text;
+    for (const [key, val] of Object.entries(placeholders)) {
+      const stringVal = String(val);
+      formatted = formatted.replace(new RegExp(`{${key}}`, 'g'), stringVal);
+      formatted = formatted.replace(new RegExp(`#{${key}}`, 'g'), stringVal);
+    }
+    // Remover emojis genéricos si existiera alguno remanente en el texto
+    formatted = formatted.replace(/[\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD00-\uDFFF]/g, '');
+    return formatted;
+  }
+
+  /**
+   * Helper para obtener el icono por defecto de una clave/categoría
+   */
+  private getDefaultIcon(configKey: string): string {
+    if (configKey.startsWith('order.')) return 'ShoppingCart';
+    if (configKey.startsWith('inventory.')) return 'AlertTriangle';
+    if (configKey.startsWith('production.')) return 'Flame';
+    if (configKey.startsWith('system.')) return 'Shield';
+    return 'Bell';
+  }
+}

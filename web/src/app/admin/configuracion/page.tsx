@@ -16,12 +16,29 @@ import {
   AlertTriangle,
   Building2,
   Package,
-  Coins
+  Coins,
+  Volume2,
+  Play,
+  ShoppingCart,
+  Flame
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { useAuth } from "@/context/AuthContext"
-import { branchesService } from "@/lib/api"
+import { branchesService, systemConfigService, notificationsService } from "@/lib/api"
+import { useNotifications } from "@/context/NotificationContext"
+import type { NotificationConfig } from "@/lib/api/types"
+
+const PLACEHOLDERS_HELP: Record<string, string[]> = {
+  'order.status_changed': ['{orderNumber}', '{status}'],
+  'order.new_pending': ['{orderNumber}'],
+  'order.cancelled': ['{orderNumber}'],
+  'inventory.low_stock': ['{productName}', '{current}', '{branchName}'],
+  'inventory.raw_material_low': ['{materialName}', '{current}', '{unit}', '{branchName}'],
+  'inventory.loss_detected': ['{type}', '{quantity}', '{productName}'],
+  'production.assigned': ['{recipeName}', '{branchName}'],
+  'system.audit_alert': ['{count}', '{ip}']
+}
 
 interface Branch {
   id: number
@@ -78,6 +95,68 @@ export default function ConfiguracionPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [activeTab, setActiveTab] = useState<"general" | "pedidos" | "notificaciones" | "sucursales">("general")
 
+  const { 
+    isSubscribed, 
+    permissionState, 
+    subscribeUser, 
+    unsubscribeUser, 
+    playNotificationSound 
+  } = useNotifications()
+  const [notificationConfigs, setNotificationConfigs] = useState<NotificationConfig[]>([])
+  const [editingConfigKey, setEditingConfigKey] = useState<string | null>(null)
+  const [configForm, setConfigForm] = useState<Partial<NotificationConfig>>({})
+
+  const handleStartEditConfig = (cfg: NotificationConfig) => {
+    setEditingConfigKey(cfg.key)
+    setConfigForm({
+      title: cfg.title,
+      message: cfg.message,
+      targetRoles: [...cfg.targetRoles],
+      soundType: cfg.soundType,
+      thresholds: cfg.thresholds ? { ...cfg.thresholds } : null
+    })
+  }
+
+  const handleSaveConfig = async (key: string) => {
+    try {
+      const updated = await notificationsService.updateConfig(key, {
+        title: configForm.title,
+        message: configForm.message,
+        targetRoles: configForm.targetRoles,
+        soundType: configForm.soundType,
+        thresholds: configForm.thresholds
+      })
+      
+      setNotificationConfigs(prev => prev.map(c => c.key === key ? updated : c))
+      setEditingConfigKey(null)
+      showToast("Configuración guardada correctamente", "success")
+    } catch (error) {
+      console.error("Error saving config:", error)
+      showToast("Error al guardar la configuración", "error")
+    }
+  }
+
+  const handleToggleConfig = async (key: string, isEnabled: boolean) => {
+    try {
+      const updated = await notificationsService.updateConfig(key, { isEnabled })
+      setNotificationConfigs(prev => prev.map(c => c.key === key ? updated : c))
+      showToast(isEnabled ? "Notificación activada" : "Notificación desactivada", "success")
+    } catch (error) {
+      console.error("Error toggling config:", error)
+      showToast("Error al actualizar la notificación", "error")
+    }
+  }
+
+  const handleTestConfig = async (key: string) => {
+    try {
+      await notificationsService.sendTestNotification(key)
+      showToast("Notificación de prueba enviada", "success")
+    } catch (error) {
+      console.error("Error sending test notification:", error)
+      showToast("Error al enviar notificación de prueba", "error")
+    }
+  }
+
   // Protección de rol - solo ADMIN puede acceder
   useEffect(() => {
     if (currentUser && currentUser.role !== "ADMIN") {
@@ -96,10 +175,51 @@ export default function ConfiguracionPage() {
       const branchesData = await branchesService.list()
       setBranches(branchesData)
       
-      // Cargar configuración desde localStorage (en futuro sería de una API)
-      const savedSettings = localStorage.getItem("app_settings")
-      if (savedSettings) {
-        setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(savedSettings) })
+      // Cargar configuración desde la API
+      const dbConfigs = await systemConfigService.list()
+      const newSettings = { ...DEFAULT_SETTINGS }
+      
+      // Mapear cada config clave-valor
+      dbConfigs.forEach(cfg => {
+        switch (cfg.key) {
+          case 'store.name':
+            newSettings.storeName = cfg.value
+            break
+          case 'store.description':
+            newSettings.storeDescription = cfg.value
+            break
+          case 'store.currency':
+            newSettings.currency = cfg.value
+            break
+          case 'store.timezone':
+            newSettings.timezone = cfg.value
+            break
+          case 'store.operating_hours':
+            newSettings.operatingHours = cfg.value
+            break
+          case 'orders.min_amount':
+            newSettings.minOrderAmount = Number(cfg.value)
+            break
+          case 'orders.max_items':
+            newSettings.maxOrderItems = Number(cfg.value)
+            break
+          case 'orders.accept_orders':
+            newSettings.acceptOrders = cfg.value === true || cfg.value === 'true'
+            break
+          case 'operations.maintenance_mode':
+            newSettings.maintenanceMode = cfg.value === true || cfg.value === 'true'
+            break
+        }
+      })
+      
+      setSettings(newSettings)
+
+      // Cargar configs de notificaciones reales
+      try {
+        const configsData = await notificationsService.getConfigs()
+        setNotificationConfigs(configsData)
+      } catch (err) {
+        console.error("Error loading notification configs:", err)
       }
     } catch (error) {
       console.error("Error loading settings:", error)
@@ -112,8 +232,20 @@ export default function ConfiguracionPage() {
   const handleSaveSettings = async () => {
     setIsSaving(true)
     try {
-      // Guardar en localStorage (en futuro sería a una API)
-      localStorage.setItem("app_settings", JSON.stringify(settings))
+      // Guardar cada config en la API que no sea read-only
+      const updates = [
+        systemConfigService.update('store.name', settings.storeName),
+        systemConfigService.update('store.description', settings.storeDescription),
+        systemConfigService.update('store.operating_hours', settings.operatingHours),
+        systemConfigService.update('orders.min_amount', settings.minOrderAmount),
+        systemConfigService.update('orders.max_items', settings.maxOrderItems),
+        systemConfigService.update('orders.accept_orders', settings.acceptOrders),
+        systemConfigService.update('operations.maintenance_mode', settings.maintenanceMode),
+      ]
+      
+      await Promise.all(updates)
+
+
       showToast("Configuración guardada correctamente", "success")
     } catch (error) {
       console.error("Error saving settings:", error)
@@ -425,81 +557,320 @@ export default function ConfiguracionPage() {
 
             {/* Tab: Notificaciones */}
             {activeTab === "notificaciones" && (
-              <div className="space-y-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <Bell className="h-5 w-5 text-amber-600" />
-                  Configuración de Notificaciones
-                </h2>
+              <div className="space-y-6 animate-in fade-in duration-200">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-gray-100 pb-4 gap-4">
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                      <Bell className="h-5 w-5 text-amber-600" />
+                      Configuración de Notificaciones
+                    </h2>
+                    <p className="text-sm text-gray-500 mt-0.5">Controla las alertas automáticas del sistema, umbrales y roles destinatarios.</p>
+                  </div>
+                </div>
 
-                <div className="space-y-4">
-                  <label className="flex items-center justify-between p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
-                    <div className="flex items-center gap-3">
-                      <Mail className="h-5 w-5 text-blue-600" />
-                      <div>
-                        <p className="font-medium text-gray-900">Notificaciones por Email</p>
-                        <p className="text-sm text-gray-500">Recibir notificaciones generales por email</p>
-                      </div>
+                {/* Device Push Subscription Management */}
+                <div className="bg-gradient-to-r from-amber-50 to-amber-50/20 rounded-xl p-5 border border-amber-100/55 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex items-start gap-4">
+                    <div className={`p-3 rounded-xl flex items-center justify-center ${isSubscribed ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-400'}`}>
+                      <Volume2 className="h-6 w-6" />
                     </div>
-                    <input
-                      type="checkbox"
-                      checked={settings.emailNotifications}
-                      onChange={(e) => updateSetting("emailNotifications", e.target.checked)}
-                      className="w-5 h-5 text-amber-600 rounded focus:ring-amber-500"
-                    />
-                  </label>
-
-                  <label className="flex items-center justify-between p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
-                    <div className="flex items-center gap-3">
-                      <Check className="h-5 w-5 text-green-600" />
-                      <div>
-                        <p className="font-medium text-gray-900">Confirmación de Pedido</p>
-                        <p className="text-sm text-gray-500">Enviar email al cliente cuando se confirme su pedido</p>
-                      </div>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={settings.orderConfirmationEmail}
-                      onChange={(e) => updateSetting("orderConfirmationEmail", e.target.checked)}
-                      className="w-5 h-5 text-amber-600 rounded focus:ring-amber-500"
-                    />
-                  </label>
-
-                  <label className="flex items-center justify-between p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
-                    <div className="flex items-center gap-3">
-                      <AlertTriangle className="h-5 w-5 text-yellow-600" />
-                      <div>
-                        <p className="font-medium text-gray-900">Alertas de Stock Bajo</p>
-                        <p className="text-sm text-gray-500">Recibir alerta cuando un producto tenga poco stock</p>
-                      </div>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={settings.lowStockAlerts}
-                      onChange={(e) => updateSetting("lowStockAlerts", e.target.checked)}
-                      className="w-5 h-5 text-amber-600 rounded focus:ring-amber-500"
-                    />
-                  </label>
-
-                  {settings.lowStockAlerts && (
-                    <div className="ml-12 p-4 border-l-2 border-amber-200 bg-amber-50 rounded-r-lg">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Umbral de Stock Bajo
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="number"
-                          min="1"
-                          value={settings.lowStockThreshold}
-                          onChange={(e) => updateSetting("lowStockThreshold", Number(e.target.value))}
-                          className="w-24 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
-                        />
-                        <span className="text-sm text-gray-600">unidades</span>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Se enviará alerta cuando el stock sea menor a este valor
+                    <div>
+                      <h3 className="font-semibold text-gray-900">Estado de Notificaciones Push</h3>
+                      <p className="text-sm text-gray-600 mt-0.5">
+                        {isSubscribed 
+                          ? 'Recibirás alertas en tiempo real en este dispositivo, incluso con el navegador cerrado.' 
+                          : 'Activa las notificaciones para mantenerte al tanto de pedidos, inventarios y alertas de seguridad.'}
                       </p>
+                      {permissionState === 'denied' && (
+                        <p className="text-xs text-red-600 font-medium mt-1.5 flex items-center gap-1">
+                          <AlertTriangle className="h-3.5 w-3.5" />
+                          Permiso denegado por el navegador. Por favor restablece los permisos en la barra de direcciones.
+                        </p>
+                      )}
                     </div>
-                  )}
+                  </div>
+                  <div>
+                    {isSubscribed ? (
+                      <button
+                        onClick={unsubscribeUser}
+                        className="px-4 py-2 bg-white text-gray-700 font-medium rounded-lg border border-gray-200 shadow-sm hover:bg-gray-50 text-sm transition-colors whitespace-nowrap"
+                      >
+                        Desactivar en este navegador
+                      </button>
+                    ) : (
+                      <button
+                        onClick={subscribeUser}
+                        disabled={permissionState === 'denied'}
+                        className="px-4 py-2 bg-amber-600 text-white font-semibold rounded-lg hover:bg-amber-700 shadow-sm text-sm transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Activar en este navegador
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Notification Config Cards List */}
+                <div className="space-y-4">
+                  {notificationConfigs.map((cfg) => {
+                    const isEditing = editingConfigKey === cfg.key
+                    const hasThreshold = !!cfg.thresholds
+                    
+                    return (
+                      <div 
+                        key={cfg.key} 
+                        className={`border rounded-xl transition-all duration-200 ${
+                          cfg.isEnabled 
+                            ? 'bg-white border-gray-100 shadow-sm' 
+                            : 'bg-gray-50/50 border-gray-200/60 opacity-80'
+                        }`}
+                      >
+                        {/* Card Header */}
+                        <div className="p-4 sm:p-5 flex items-start justify-between gap-4">
+                          <div className="flex items-start gap-3">
+                            <div className={`mt-0.5 p-2 rounded-lg border flex items-center justify-center ${
+                              cfg.isEnabled 
+                                ? 'bg-amber-50 text-amber-700 border-amber-100/50' 
+                                : 'bg-gray-100 text-gray-400 border-gray-200/50'
+                            }`}>
+                              {cfg.category === 'ORDERS' && <ShoppingCart className="h-4 w-4" />}
+                              {cfg.category === 'INVENTORY' && <AlertTriangle className="h-4 w-4" />}
+                              {cfg.category === 'PRODUCTION' && <Flame className="h-4 w-4" />}
+                              {cfg.category === 'SYSTEM' && <Shield className="h-4 w-4" />}
+                            </div>
+                            <div>
+                              <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                                {cfg.name}
+                                <span className="text-[10px] uppercase tracking-wider font-bold bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">
+                                  {cfg.category}
+                                </span>
+                              </h3>
+                              <p className="text-xs text-gray-500 mt-0.5">{cfg.description}</p>
+                            </div>
+                          </div>
+                          
+                          {/* Toggle Switch */}
+                          <div className="flex items-center">
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={cfg.isEnabled}
+                                onChange={(e) => handleToggleConfig(cfg.key, e.target.checked)}
+                                className="sr-only peer"
+                              />
+                              <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-600"></div>
+                            </label>
+                          </div>
+                        </div>
+
+                        {/* Card Content */}
+                        {cfg.isEnabled && (
+                          <div className="border-t border-gray-50 px-4 py-4 sm:px-5 bg-gray-50/20">
+                            {isEditing ? (
+                              // Edit Mode Form
+                              <div className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div>
+                                    <label className="block text-xs font-semibold text-gray-700 mb-1">Título de la Alerta</label>
+                                    <input
+                                      type="text"
+                                      value={configForm.title || ''}
+                                      onChange={(e) => setConfigForm(prev => ({ ...prev, title: e.target.value }))}
+                                      className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
+                                      Sonido Sintetizado
+                                      <button 
+                                        type="button"
+                                        onClick={() => playNotificationSound(configForm.soundType || 'suave')}
+                                        className="p-1 text-gray-400 hover:text-amber-600 rounded-md"
+                                        title="Escuchar sonido"
+                                      >
+                                        <Play className="h-3 w-3 fill-current" />
+                                      </button>
+                                    </label>
+                                    <select
+                                      value={configForm.soundType || 'suave'}
+                                      onChange={(e) => setConfigForm(prev => ({ ...prev, soundType: e.target.value }))}
+                                      className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white"
+                                    >
+                                      <option value="suave">Suave (E5-G5)</option>
+                                      <option value="alerta">Alerta (E5-C5)</option>
+                                      <option value="importante">Importante (A5-E5-A5)</option>
+                                    </select>
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-semibold text-gray-700 mb-1">Cuerpo del Mensaje</label>
+                                  <textarea
+                                    value={configForm.message || ''}
+                                    onChange={(e) => setConfigForm(prev => ({ ...prev, message: e.target.value }))}
+                                    rows={2}
+                                    className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white resize-none"
+                                  />
+                                  
+                                  {/* Placeholders Help Badge List */}
+                                  {PLACEHOLDERS_HELP[cfg.key] && (
+                                    <div className="flex flex-wrap items-center gap-1 mt-1.5">
+                                      <span className="text-[10px] text-gray-400 mr-1">Placeholders:</span>
+                                      {PLACEHOLDERS_HELP[cfg.key].map(ph => (
+                                        <button
+                                          key={ph}
+                                          type="button"
+                                          onClick={() => {
+                                            // Append placeholder to message input
+                                            setConfigForm(prev => ({ 
+                                              ...prev, 
+                                              message: (prev.message || '') + ' ' + ph 
+                                            }))
+                                          }}
+                                          className="text-[10px] font-mono bg-gray-100 text-gray-600 hover:bg-amber-100 hover:text-amber-800 px-1.5 py-0.5 rounded transition-colors"
+                                          title="Hacer clic para insertar"
+                                        >
+                                          {ph}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  {/* Roles Checkboxes */}
+                                  <div>
+                                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">Roles que Reciben Notificación</label>
+                                    <div className="flex flex-wrap gap-2">
+                                      {['ADMIN', 'MANAGER', 'BAKER', 'CASHIER', 'CUSTOMER'].map((role) => {
+                                        const isChecked = configForm.targetRoles?.includes(role)
+                                        return (
+                                          <button
+                                            key={role}
+                                            type="button"
+                                            onClick={() => {
+                                              const currentRoles = configForm.targetRoles || []
+                                              const newRoles = currentRoles.includes(role)
+                                                ? currentRoles.filter(r => r !== role)
+                                                : [...currentRoles, role]
+                                              setConfigForm(prev => ({ ...prev, targetRoles: newRoles }))
+                                            }}
+                                            className={`px-2 py-1 rounded-lg text-xs font-semibold border transition-all ${
+                                              isChecked
+                                                ? 'bg-amber-55 text-amber-800 border-amber-300'
+                                                : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
+                                            }`}
+                                          >
+                                            {role}
+                                          </button>
+                                        )
+                                      })}
+                                    </div>
+                                  </div>
+
+                                  {/* Threshold Setting */}
+                                  {hasThreshold && (
+                                    <div>
+                                      <label className="block text-xs font-semibold text-gray-700 mb-1">
+                                        Umbral de Disparo ({configForm.thresholds?.unit || 'Unidades'})
+                                      </label>
+                                      <input
+                                        type="number"
+                                        value={configForm.thresholds?.threshold || 0}
+                                        onChange={(e) => setConfigForm(prev => ({
+                                          ...prev,
+                                          thresholds: {
+                                            threshold: Number(e.target.value),
+                                            unit: prev.thresholds?.unit || 'LB'
+                                          }
+                                        }))}
+                                        className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white"
+                                      />
+                                      <p className="text-[10px] text-gray-400 mt-1">Se alerta si el valor cae por debajo de esta cantidad.</p>
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+                                  <button
+                                    onClick={() => setEditingConfigKey(null)}
+                                    className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg text-xs transition-colors"
+                                  >
+                                    Cancelar
+                                  </button>
+                                  <button
+                                    onClick={() => handleSaveConfig(cfg.key)}
+                                    className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg text-xs transition-colors"
+                                  >
+                                    Guardar cambios
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              // Read-only View Mode Summary
+                              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                                <div className="space-y-1.5 flex-1 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs font-semibold text-gray-500">Formato:</span>
+                                    <span className="text-xs font-bold text-gray-800 truncate">"{cfg.title}"</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs font-semibold text-gray-500">Cuerpo:</span>
+                                    <span className="text-xs text-gray-600 truncate">"{cfg.message}"</span>
+                                  </div>
+                                  <div className="flex flex-wrap items-center gap-1.5">
+                                    <span className="text-xs font-semibold text-gray-500">Destinatarios:</span>
+                                    {cfg.targetRoles.map(role => (
+                                      <span key={role} className="text-[10px] font-bold bg-amber-50 border border-amber-100 text-amber-800 px-1.5 py-0.5 rounded">
+                                        {role}
+                                      </span>
+                                    ))}
+                                    {cfg.targetRoles.length === 0 && (
+                                      <span className="text-[10px] text-red-500 font-medium">Nadie asignado</span>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                                  <div className="flex items-center gap-1 border border-gray-200 rounded-lg p-1 bg-white">
+                                    <span className="text-[10px] uppercase font-bold text-gray-400 px-1">
+                                      Sonido: {cfg.soundType}
+                                    </span>
+                                    <button 
+                                      onClick={() => playNotificationSound(cfg.soundType)}
+                                      className="p-1 hover:bg-gray-100 text-gray-500 hover:text-amber-600 rounded-md transition-colors"
+                                      title="Escuchar"
+                                    >
+                                      <Volume2 className="h-3.5 w-3.5" />
+                                    </button>
+                                  </div>
+                                  
+                                  {cfg.thresholds && (
+                                    <div className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-1.5 rounded-lg">
+                                      Umbral: {cfg.thresholds.threshold} {cfg.thresholds.unit}
+                                    </div>
+                                  )}
+                                  
+                                  <button
+                                    onClick={() => handleStartEditConfig(cfg)}
+                                    className="px-2.5 py-1.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold rounded-lg text-xs shadow-sm transition-colors"
+                                  >
+                                    Configurar
+                                  </button>
+                                  
+                                  <button
+                                    onClick={() => handleTestConfig(cfg.key)}
+                                    className="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 font-semibold rounded-lg text-xs border border-amber-200/50 transition-colors"
+                                    title="Probar Alerta"
+                                  >
+                                    Probar
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             )}

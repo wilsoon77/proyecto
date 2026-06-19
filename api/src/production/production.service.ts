@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, NotFoundException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateProductionLogDto } from './dto/production.dto.js';
 import { Prisma } from '@prisma/client';
+import { NotificationsService } from '../notifications/notifications.service.js';
 
 /**
  * ProductionService — Motor de producción del sistema PanaderIA.
@@ -19,7 +20,10 @@ import { Prisma } from '@prisma/client';
  */
 @Injectable()
 export class ProductionService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   /**
    * Registrar un horneado (producción) de forma atómica.
@@ -147,6 +151,43 @@ export class ProductionService {
         isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
       }),
     );
+
+    // Obtener información de la sucursal para las notificaciones
+    const branch = await this.prisma.branch.findUnique({ where: { id: branchId } });
+    const branchName = branch?.name || 'Sucursal';
+
+    // Verificar si las materias primas utilizadas quedaron bajas
+    for (const ingredient of recipe.ingredients) {
+      const currentInv = await this.prisma.rawMaterialInventory.findUnique({
+        where: {
+          rawMaterialId_branchId: {
+            rawMaterialId: ingredient.rawMaterialId,
+            branchId,
+          },
+        },
+        include: { rawMaterial: true },
+      });
+
+      if (currentInv) {
+        const currentQty = Number(currentInv.quantity);
+        const isLow = await this.notificationsService.checkThreshold('inventory.raw_material_low', currentQty);
+        
+        if (isLow) {
+          await this.notificationsService.sendByConfig('inventory.raw_material_low', {
+            materialName: currentInv.rawMaterial.name,
+            current: currentQty.toFixed(1),
+            unit: currentInv.rawMaterial.baseUnit,
+            branchName,
+          }, `/admin/inventario/materias-primas`);
+        }
+      }
+    }
+
+    // Enviar notificación de producción asignada (horneado completado)
+    await this.notificationsService.sendByConfig('production.assigned', {
+      recipeName: recipe.name,
+      branchName,
+    }, `/admin/produccion`);
 
     return {
       id: result.id,

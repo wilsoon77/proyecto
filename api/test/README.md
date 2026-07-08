@@ -2,45 +2,45 @@
 
 Este directorio contiene tests end-to-end (e2e) que validan las funcionalidades de seguridad implementadas.
 
-## 📋 Tests Implementados
+## Tests Implementados
 
 ### `auth-security.e2e-spec.ts`
 
 Suite completa de tests de seguridad para el sistema de autenticación:
 
 #### 1. Autenticación (Login)
-- ✅ Login exitoso con credenciales válidas
-- ✅ Rechazo de credenciales inválidas
-- ✅ Rechazo de usuarios inexistentes
+- Login exitoso con credenciales válidas
+- Rechazo de credenciales inválidas
+- Rechazo de usuarios inexistentes
 
 #### 2. Rotación de Refresh Tokens
-- ✅ Generación de nuevo par de tokens
-- ✅ Revocación automática del token anterior
-- ✅ Rechazo de tokens inválidos
-- ✅ Validación de DTOs (refresh token requerido)
+- Generación de nuevo par de tokens
+- Revocación automática del token anterior
+- Rechazo de tokens inválidos
+- Validación de DTOs (refresh token requerido)
 
 #### 3. Rate Limiting
-- ✅ Bloqueo después de 10 intentos de login/min
-- ✅ Bloqueo después de 5 intentos de registro/min
-- ✅ Respuesta HTTP 429 (Too Many Requests)
+- Bloqueo después de 10 intentos de login/min
+- Bloqueo después de 5 intentos de registro/min
+- Respuesta HTTP 429 (Too Many Requests)
 
 #### 4. Logout y Revocación
-- ✅ Revocación de token específico (logout en un dispositivo)
-- ✅ Revocación global (logout en todos los dispositivos)
-- ✅ Verificación de autenticación requerida
+- Revocación de token específico (logout en un dispositivo)
+- Revocación global (logout en todos los dispositivos)
+- Verificación de autenticación requerida
 
 #### 5. Validación de DTOs
-- ✅ Rechazo de propiedades no permitidas (forbidNonWhitelisted)
-- ✅ Protección contra inyección de campos maliciosos
+- Rechazo de propiedades no permitidas (forbidNonWhitelisted)
+- Protección contra inyección de campos maliciosos
 
 #### 6. Metadata de Tokens
-- ✅ Almacenamiento de IP y User-Agent
-- ✅ Trazabilidad de sesiones
+- Almacenamiento de IP y User-Agent
+- Trazabilidad de sesiones
 
 #### 7. Expiración
-- ✅ Rechazo de tokens expirados
+- Rechazo de tokens expirados
 
-## 🚀 Ejecutar Tests
+## Ejecutar Tests
 
 ### Prerrequisitos
 ```bash
@@ -75,7 +75,7 @@ npx jest -c jest.config.cjs --coverage
 npx jest -c jest.config.cjs --watch
 ```
 
-## ⚙️ Configuración
+## Configuración
 
 Los tests utilizan:
 - **Jest**: Framework de testing
@@ -92,7 +92,7 @@ JWT_SECRET="tu-secret-key"
 CORS_ORIGINS="http://localhost:3000"
 ```
 
-## 📊 Resultados Esperados
+## Resultados Esperados
 
 Todos los tests deben pasar:
 
@@ -126,7 +126,7 @@ Test Suites: 1 passed, 1 total
 Tests:       15 passed, 15 total
 ```
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Error: Cannot connect to database
 - Verifica que PostgreSQL/Supabase esté accesible
@@ -143,14 +143,14 @@ import bcryptjs from 'bcryptjs';
 const bcrypt = bcryptjs.default || bcryptjs;
 ```
 
-## 📝 Notas
+## Notas
 
 - **Usuarios de prueba**: Los tests crean y limpian automáticamente datos de prueba
 - **Aislamiento**: Cada test tiene su propio setup/teardown
 - **Timeouts**: Algunos tests (rate limiting) tienen timeouts extendidos
 - **Base de datos**: No uses la BD de producción para tests
 
-## 🔄 CI/CD
+## CI/CD
 
 Para integrar en pipeline:
 
@@ -175,7 +175,7 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
 ```
 
-## 📚 Referencias
+## Referencias
 
 - [Jest Documentation](https://jestjs.io/)
 - [Supertest](https://github.com/visionmedia/supertest)

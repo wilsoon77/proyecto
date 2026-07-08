@@ -1,14 +1,20 @@
-# 🗄️ DISEÑO DE BASE DE DATOS - Panaderia Svetlana Smart System
+# DISEÑO DE BASE DE DATOS - Panaderia Svetlana Smart System
 
-> ⚠️ **ACTUALIZACIÓN IMPORTANTE (Marzo 2026):** El diseño original fue refactorizado y migrado a Prisma. El sistema ahora soporta producción por amasijos, combos de precios y unidades estandarizadas de materia prima. La fuente absoluta de la verdad técnica se encuentra en el archivo `api/prisma/schema.prisma`. En este documento persisten definiciones originales, pero aquí se detalla el rediseño clave.
+> **ACTUALIZACIÓN IMPORTANTE:** El diseño de la base de datos está implementado mediante Prisma ORM sobre PostgreSQL en Supabase. Toda la lógica operativa (amasijos, combos de precios, conversión de unidades de insumos y multi-sucursal) se encuentra reflejada en el código del esquema físico de Prisma en `api/prisma/schema.prisma`. Este documento representa la documentación técnica oficial de la estructura de tablas y relaciones implementadas.
 
-## 🚀 JUSTIFICACIÓN DEL REDISEÑO OPERATIVO
-1. **Caos en unidades de medida:** Se agregó `BaseUnit` a un nuevo modelo `RawMaterial` (se reemplazó la tabla de ingredientes genérica). Toda materia prima se transacciona internamente en unidades base (LB, ML, UNIT) y se convierte al comprar en quintales o galones.
-2. **Producción Atómica:** Se creó el ciclo `Recipe` -> `RecipeIngredient` -> `ProductionLog`. La panadería no produce por unidad, produce por "Amasijo" y cuenta en "Latas". Cuando un manager registra que se hornearon X latas, el backend: resta stock de `RawMaterial` y suma pan terminado a `Inventory` multiplicando por `unitsPerTray`.
-3. **Precios Combos:** La tabla de productos reemplazó los campos erróneos de "descuento porcentual" para incorporar explícitamente `basePrice`, `comboQuantity` y `comboPrice` (ej. 3 panes x 1.25).
-4. **Roles Realistas:** El acceso se maneja por sucursal para `MANAGER`, `BAKER` y `CASHIER`, delegando full access al `ADMIN`/`SUPERADMIN`.
+---
 
-## 📊 DIAGRAMA CONCEPTUAL ACTUALIZADO (Núcleo Operativo)
+## JUSTIFICACIÓN DEL REDISEÑO OPERATIVO
+
+1. **Estandarización de Unidades de Medida:** Toda materia prima se registra en la tabla `RawMaterial` en unidades base normalizadas (LB, ML, UNIT). La conversión automática se realiza al registrar compras a proveedores en unidades comerciales (quintales, galones, cartones), garantizando un inventario de insumos consistente por sucursal (`RawMaterialInventory`).
+2. **Producción Atómica (Ciclo Amasijo-Lata):** La panadería produce por amasijo y se cuenta en latas. Al registrar un ProductionLog (horneado de receta), el sistema ejecuta una transacción que descuenta de forma automática los ingredientes (`RecipeIngredient`) del inventario de insumos y suma el producto terminado (`Inventory`) multiplicando las latas por la equivalencia de unidades por lata del producto.
+3. **Esquema de Precios y Combos:** Soporte directo en la tabla de productos para precios individuales y combos específicos (ej: 3 panes por Q1.25) mediante los campos `basePrice`, `comboQuantity` y `comboPrice`.
+4. **Seguridad y Control de Acceso:** Asociación física de usuarios operativos (`User` con rol `MANAGER`, `BAKER` o `CASHIER`) a una sucursal específica (`Branch`), manteniendo roles claros y auditoría completa (`AuditLog`).
+5. **Reservas para Recoger en Tienda:** Estructura de pedidos simplificada para gestionar la reserva física de stock en la sucursal seleccionada, sin soporte de delivery (campo de costo de envío predeterminado a 0).
+
+---
+
+## DIAGRAMA CONCEPTUAL (Núcleo Operativo)
 
 ```text
 ┌───────────┐      ┌────────────────┐      ┌────────────┐     ┌──────────────┐
@@ -30,810 +36,472 @@
 
 ---
 
-## 📋 MODELO RELACIONAL NORMALIZADO (3FN)
+## MODELO RELACIONAL DE TABLAS (PostgreSQL)
 
-### **TABLA: users**
+### TABLA: users
+Almacena las credenciales, información de perfil y roles de todos los usuarios (clientes y personal operativo).
 ```sql
 CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    email VARCHAR(255) UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    first_name VARCHAR(100) NOT NULL,
-    last_name VARCHAR(100) NOT NULL,
-    phone VARCHAR(20),
-    avatar_url VARCHAR(500),
-    email_verified BOOLEAN DEFAULT FALSE,
-    phone_verified BOOLEAN DEFAULT FALSE,
-    two_factor_enabled BOOLEAN DEFAULT FALSE,
-    two_factor_secret VARCHAR(255),
-    oauth_provider VARCHAR(50), -- 'google', 'facebook', 'apple', null
-    oauth_provider_id VARCHAR(255),
-    last_login TIMESTAMP,
+    id VARCHAR(191) PRIMARY KEY,
+    email VARCHAR(191) UNIQUE NOT NULL,
+    password_hash VARCHAR(191) NOT NULL,
+    first_name VARCHAR(191) NOT NULL,
+    last_name VARCHAR(191) NOT NULL,
+    phone VARCHAR(32),
+    role VARCHAR(50) DEFAULT 'CUSTOMER', -- 'CUSTOMER', 'ADMIN', 'MANAGER', 'BAKER', 'CASHIER'
     is_active BOOLEAN DEFAULT TRUE,
+    branch_id INTEGER, -- Asignado si es personal operativo
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP, -- Soft delete
     
-    CONSTRAINT email_format CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
+    FOREIGN KEY (branch_id) REFERENCES branches(id) ON DELETE SET NULL
 );
 
 CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_phone ON users(phone);
-CREATE INDEX idx_users_oauth ON users(oauth_provider, oauth_provider_id);
 ```
 
-**Normalización:** 
-- ✅ 1FN: Todos los atributos son atómicos
-- ✅ 2FN: No hay dependencias parciales
-- ✅ 3FN: No hay dependencias transitivas
-
----
-
-### **TABLA: roles**
-```sql
-CREATE TABLE roles (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(50) UNIQUE NOT NULL, -- 'ADMIN', 'EMPLOYEE', 'CUSTOMER'
-    description TEXT,
-    permissions JSONB, -- Permisos específicos del rol
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    CONSTRAINT role_name_check CHECK (name IN ('ADMIN', 'EMPLOYEE', 'CUSTOMER', 'MANAGER'))
-);
-
--- Datos iniciales
-INSERT INTO roles (name, description, permissions) VALUES
-('ADMIN', 'Administrador del sistema', '{"all": true}'),
-('MANAGER', 'Gerente de panadería', '{"orders": true, "inventory": true, "reports": true}'),
-('EMPLOYEE', 'Empleado', '{"orders": true, "production": true}'),
-('CUSTOMER', 'Cliente', '{"orders": true, "profile": true}');
-```
-
----
-
-### **TABLA: user_roles (Tabla Intermedia N:M)**
-```sql
-CREATE TABLE user_roles (
-    id SERIAL PRIMARY KEY,
-    user_id UUID NOT NULL,
-    role_id INTEGER NOT NULL,
-    assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    assigned_by UUID, -- ID del usuario que asignó el rol
-    
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
-    FOREIGN KEY (assigned_by) REFERENCES users(id) ON DELETE SET NULL,
-    
-    UNIQUE(user_id, role_id) -- Un usuario no puede tener el mismo rol dos veces
-);
-
-CREATE INDEX idx_user_roles_user ON user_roles(user_id);
-CREATE INDEX idx_user_roles_role ON user_roles(role_id);
-```
-
----
-
-### **TABLA: addresses**
+### TABLA: addresses
+Almacena direcciones del cliente para contexto de facturación o contacto.
 ```sql
 CREATE TABLE addresses (
     id SERIAL PRIMARY KEY,
-    user_id UUID NOT NULL,
-    address_type VARCHAR(20) DEFAULT 'SHIPPING', -- 'SHIPPING', 'BILLING'
-    street VARCHAR(255) NOT NULL,
-    number VARCHAR(20) NOT NULL,
-    apartment VARCHAR(50),
-    neighborhood VARCHAR(100),
-    city VARCHAR(100) NOT NULL,
-    state VARCHAR(100) NOT NULL,
-    postal_code VARCHAR(20) NOT NULL,
-    country VARCHAR(100) DEFAULT 'Honduras',
-    latitude DECIMAL(10, 8),
-    longitude DECIMAL(11, 8),
-    is_default BOOLEAN DEFAULT FALSE,
-    delivery_instructions TEXT,
+    user_id VARCHAR(191),
+    street VARCHAR(191) NOT NULL,
+    city VARCHAR(191) NOT NULL,
+    state VARCHAR(191),
+    zone VARCHAR(191),
+    reference VARCHAR(191),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    CONSTRAINT address_type_check CHECK (address_type IN ('SHIPPING', 'BILLING'))
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE INDEX idx_addresses_user ON addresses(user_id);
-CREATE INDEX idx_addresses_default ON addresses(user_id, is_default);
 ```
 
----
+### TABLA: refresh_tokens
+Gestión de sesiones activas y seguridad móvil/web con rotación de tokens.
+```sql
+CREATE TABLE refresh_tokens (
+    id VARCHAR(191) PRIMARY KEY,
+    user_id VARCHAR(191) NOT NULL,
+    hashed_token VARCHAR(191) NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    revoked_at TIMESTAMP,
+    user_agent VARCHAR(500),
+    ip_address VARCHAR(45),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
 
-### **TABLA: categories**
+CREATE INDEX idx_refresh_tokens_user ON refresh_tokens(user_id);
+```
+
+### TABLA: trusted_devices
+Registra los dispositivos de confianza del usuario para auditoría.
+```sql
+CREATE TABLE trusted_devices (
+    id VARCHAR(191) PRIMARY KEY,
+    user_id VARCHAR(191) NOT NULL,
+    device_id VARCHAR(191) NOT NULL,
+    name VARCHAR(191),
+    user_agent VARCHAR(500),
+    last_used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(user_id, device_id)
+);
+```
+
+### TABLA: login_attempts
+Control de seguridad para mitigar ataques de fuerza bruta y disparar captchas.
+```sql
+CREATE TABLE login_attempts (
+    id VARCHAR(191) PRIMARY KEY,
+    email VARCHAR(191) NOT NULL,
+    ip_address VARCHAR(45) NOT NULL,
+    success BOOLEAN NOT NULL,
+    device_id VARCHAR(191),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### TABLA: categories
+Agrupamiento jerárquico de productos del catálogo.
 ```sql
 CREATE TABLE categories (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(100) UNIQUE NOT NULL,
-    slug VARCHAR(100) UNIQUE NOT NULL,
-    description TEXT,
-    image_url VARCHAR(500),
-    parent_category_id INTEGER, -- Para subcategorías
-    display_order INTEGER DEFAULT 0,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (parent_category_id) REFERENCES categories(id) ON DELETE SET NULL
+    name VARCHAR(191) UNIQUE NOT NULL,
+    slug VARCHAR(191) UNIQUE NOT NULL,
+    description VARCHAR(191)
 );
-
-CREATE INDEX idx_categories_slug ON categories(slug);
-CREATE INDEX idx_categories_parent ON categories(parent_category_id);
-
--- Datos de ejemplo
-INSERT INTO categories (name, slug, description) VALUES
-('Panes', 'panes', 'Pan fresco artesanal'),
-('Pasteles', 'pasteles', 'Pasteles y tortas'),
-('Galletas', 'galletas', 'Galletas artesanales'),
-('Repostería', 'reposteria', 'Productos de repostería fina');
 ```
 
----
-
-### **TABLA: products**
+### TABLA: products
+Definición de productos del catálogo, incluyendo precios de combo y latas equivalentes.
 ```sql
 CREATE TABLE products (
     id SERIAL PRIMARY KEY,
-    category_id INTEGER NOT NULL,
-    sku VARCHAR(50) UNIQUE NOT NULL,
-    name VARCHAR(200) NOT NULL,
-    slug VARCHAR(200) UNIQUE NOT NULL,
+    sku VARCHAR(191) UNIQUE NOT NULL,
+    name VARCHAR(191) NOT NULL,
+    slug VARCHAR(191) UNIQUE NOT NULL,
     description TEXT,
-    short_description VARCHAR(500),
-    
-    -- Precios
-    price DECIMAL(10, 2) NOT NULL,
-    cost_price DECIMAL(10, 2), -- Precio de costo (solo admin)
-    compare_at_price DECIMAL(10, 2), -- Precio antes del descuento
-    
-    -- Inventario
-    stock_quantity INTEGER DEFAULT 0,
-    low_stock_threshold INTEGER DEFAULT 10,
-    track_inventory BOOLEAN DEFAULT TRUE,
-    
-    -- Características
-    weight DECIMAL(8, 2), -- en gramos
-    calories INTEGER,
-    shelf_life_days INTEGER, -- Vida útil en días
-    requires_refrigeration BOOLEAN DEFAULT FALSE,
-    
-    -- Imágenes y multimedia
-    main_image_url VARCHAR(500),
-    images JSONB, -- Array de URLs de imágenes adicionales
-    
-    -- Estado
-    is_featured BOOLEAN DEFAULT FALSE,
-    is_available BOOLEAN DEFAULT TRUE,
+    base_price DECIMAL(10, 2) NOT NULL,
+    combo_quantity INTEGER,
+    combo_price DECIMAL(10, 2),
+    origin VARCHAR(50) DEFAULT 'PRODUCIDO', -- 'PRODUCIDO', 'COMPRADO'
+    units_per_tray INTEGER, -- Unidades que rinde una lata (solo si es PRODUCIDO)
+    is_new BOOLEAN DEFAULT FALSE,
     is_active BOOLEAN DEFAULT TRUE,
-    
-    -- Metadata
-    tags JSONB, -- ['sin-gluten', 'vegano', 'organico']
-    allergens JSONB, -- ['gluten', 'lactosa', 'nueces']
-    nutritional_info JSONB, -- Información nutricional completa
-    
-    -- SEO
-    meta_title VARCHAR(200),
-    meta_description VARCHAR(500),
-    
-    -- Timestamps
+    is_available BOOLEAN DEFAULT TRUE,
+    category_id INTEGER NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP, -- Soft delete
     
-    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE RESTRICT,
-    CONSTRAINT price_positive CHECK (price >= 0),
-    CONSTRAINT stock_positive CHECK (stock_quantity >= 0)
+    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE RESTRICT
 );
 
 CREATE INDEX idx_products_category ON products(category_id);
-CREATE INDEX idx_products_sku ON products(sku);
-CREATE INDEX idx_products_slug ON products(slug);
-CREATE INDEX idx_products_featured ON products(is_featured, is_active);
-CREATE INDEX idx_products_stock ON products(stock_quantity);
 ```
 
----
-
-### **TABLA: ingredients**
+### TABLA: product_images
+Imágenes secundarias y de catálogo para cada producto.
 ```sql
-CREATE TABLE ingredients (
+CREATE TABLE product_images (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(100) UNIQUE NOT NULL,
-    unit VARCHAR(20) NOT NULL, -- 'kg', 'g', 'L', 'ml', 'unidad'
-    cost_per_unit DECIMAL(10, 2) NOT NULL,
-    stock_quantity DECIMAL(10, 2) DEFAULT 0,
-    min_stock_quantity DECIMAL(10, 2) DEFAULT 0,
-    supplier VARCHAR(200),
-    supplier_contact VARCHAR(200),
-    expiration_date DATE,
+    product_id INTEGER NOT NULL,
+    url TEXT NOT NULL,
+    position INTEGER DEFAULT 0,
+    
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+);
+```
+
+### TABLA: raw_materials
+Insumos base registrados en el catálogo de producción (ej: Harina, Levadura, Manteca).
+```sql
+CREATE TABLE raw_materials (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(191) UNIQUE NOT NULL,
+    base_unit VARCHAR(50) NOT NULL, -- 'LB', 'ML', 'UNIT'
+    cost_per_unit DECIMAL(10, 4) NOT NULL,
+    min_stock DECIMAL(10, 2),
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### TABLA: raw_material_inventories
+Control de existencias físicas de materias primas por sucursal, expresado siempre en unidad base.
+```sql
+CREATE TABLE raw_material_inventories (
+    id SERIAL PRIMARY KEY,
+    raw_material_id INTEGER NOT NULL,
+    branch_id INTEGER NOT NULL,
+    quantity DECIMAL(12, 4) DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (raw_material_id) REFERENCES raw_materials(id),
+    FOREIGN KEY (branch_id) REFERENCES branches(id),
+    UNIQUE(raw_material_id, branch_id)
+);
+```
+
+### TABLA: recipes
+Recetas de producción asociadas a un producto producido.
+```sql
+CREATE TABLE recipes (
+    id SERIAL PRIMARY KEY,
+    product_id INTEGER NOT NULL,
+    name VARCHAR(191) NOT NULL,
+    standard_trays INTEGER NOT NULL, -- Latas estimadas por amasijo
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
-    CONSTRAINT unit_check CHECK (unit IN ('kg', 'g', 'L', 'ml', 'unidad'))
+    FOREIGN KEY (product_id) REFERENCES products(id)
 );
-
-CREATE INDEX idx_ingredients_name ON ingredients(name);
-CREATE INDEX idx_ingredients_stock ON ingredients(stock_quantity);
 ```
 
----
-
-### **TABLA: product_ingredients (Tabla Intermedia N:M)**
+### TABLA: recipe_ingredients
+Ingredientes requeridos por receta de amasijo, medidos en unidad base del insumo.
 ```sql
-CREATE TABLE product_ingredients (
+CREATE TABLE recipe_ingredients (
+    id SERIAL PRIMARY KEY,
+    recipe_id INTEGER NOT NULL,
+    raw_material_id INTEGER NOT NULL,
+    quantity DECIMAL(10, 4) NOT NULL,
+    
+    FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE CASCADE,
+    FOREIGN KEY (raw_material_id) REFERENCES raw_materials(id),
+    UNIQUE(recipe_id, raw_material_id)
+);
+```
+
+### TABLA: production_logs
+Bitácora de producción diaria (horneado de amasijos) que dispara el movimiento de inventarios.
+```sql
+CREATE TABLE production_logs (
+    id SERIAL PRIMARY KEY,
+    recipe_id INTEGER NOT NULL,
+    branch_id INTEGER NOT NULL,
+    user_id VARCHAR(191) NOT NULL,
+    trays_produced INTEGER NOT NULL, -- Latas reales obtenidas
+    units_produced INTEGER NOT NULL, -- Calculado: latas * units_per_tray
+    note TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (recipe_id) REFERENCES recipes(id),
+    FOREIGN KEY (branch_id) REFERENCES branches(id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+```
+
+### TABLA: inventories
+Existencias físicas y reservas comprometidas de producto terminado en cada sucursal.
+```sql
+CREATE TABLE inventories (
     id SERIAL PRIMARY KEY,
     product_id INTEGER NOT NULL,
-    ingredient_id INTEGER NOT NULL,
-    quantity DECIMAL(10, 3) NOT NULL, -- Cantidad necesaria del ingrediente
-    unit VARCHAR(20) NOT NULL,
+    branch_id INTEGER NOT NULL,
+    quantity INTEGER DEFAULT 0, -- Stock físico en sucursal
+    reserved INTEGER DEFAULT 0, -- Reservas activas de clientes
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
-    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
-    FOREIGN KEY (ingredient_id) REFERENCES ingredients(id) ON DELETE CASCADE,
-    
-    UNIQUE(product_id, ingredient_id),
-    CONSTRAINT quantity_positive CHECK (quantity > 0)
+    FOREIGN KEY (product_id) REFERENCES products(id),
+    FOREIGN KEY (branch_id) REFERENCES branches(id),
+    UNIQUE(product_id, branch_id)
 );
-
-CREATE INDEX idx_product_ingredients_product ON product_ingredients(product_id);
-CREATE INDEX idx_product_ingredients_ingredient ON product_ingredients(ingredient_id);
 ```
 
----
+### TABLA: stock_movements
+Kárdex o historial de transacciones físicas de producto terminado (producción, mermas, ventas, compras).
+```sql
+CREATE TABLE stock_movements (
+    id SERIAL PRIMARY KEY,
+    product_id INTEGER NOT NULL,
+    from_branch_id INTEGER,
+    to_branch_id INTEGER,
+    type VARCHAR(50) NOT NULL, -- 'PRODUCCION', 'COMPRA', 'VENTA', 'TRANSFERENCIA', 'MERMA'
+    quantity INTEGER NOT NULL,
+    production_log_id INTEGER,
+    expires_at TIMESTAMP,
+    user_id VARCHAR(191),
+    reference_id VARCHAR(191),
+    note TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (product_id) REFERENCES products(id),
+    FOREIGN KEY (from_branch_id) REFERENCES branches(id),
+    FOREIGN KEY (to_branch_id) REFERENCES branches(id),
+    FOREIGN KEY (production_log_id) REFERENCES production_logs(id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+```
 
-### **TABLA: orders**
+### TABLA: branches
+Sucursales del negocio que operan como centros independientes de inventario.
+```sql
+CREATE TABLE branches (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(191) NOT NULL,
+    slug VARCHAR(191) UNIQUE NOT NULL,
+    address TEXT NOT NULL,
+    phone VARCHAR(191),
+    latitude DOUBLE PRECISION,
+    longitude DOUBLE PRECISION,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### TABLA: orders
+Reservas de pedidos generadas por los clientes en la plataforma.
 ```sql
 CREATE TABLE orders (
     id SERIAL PRIMARY KEY,
-    user_id UUID NOT NULL,
-    order_number VARCHAR(50) UNIQUE NOT NULL, -- ORD-20250110-0001
-    
-    -- Status del pedido
-    status VARCHAR(20) DEFAULT 'PENDING',
-    -- 'PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'IN_DELIVERY', 'DELIVERED', 'CANCELLED'
-    
-    -- Tipo de pedido
-    order_type VARCHAR(20) DEFAULT 'DELIVERY', -- 'DELIVERY', 'PICKUP'
-    
-    -- Montos
+    order_number VARCHAR(191) UNIQUE NOT NULL,
+    user_id VARCHAR(191),
+    status VARCHAR(50) DEFAULT 'PENDING', -- 'PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'DELIVERED', 'CANCELLED', 'PICKED_UP'
     subtotal DECIMAL(10, 2) NOT NULL,
-    tax DECIMAL(10, 2) DEFAULT 0,
-    delivery_fee DECIMAL(10, 2) DEFAULT 0,
-    discount DECIMAL(10, 2) DEFAULT 0,
+    delivery_fee DECIMAL(10, 2) DEFAULT 0.00, -- Siempre 0 para reservas de recogida
+    discount DECIMAL(10, 2) DEFAULT 0.00,
     total DECIMAL(10, 2) NOT NULL,
-    
-    -- Dirección de entrega
-    shipping_address_id INTEGER,
-    
-    -- Fechas
-    scheduled_delivery_date TIMESTAMP,
-    estimated_delivery_time TIMESTAMP,
-    actual_delivery_time TIMESTAMP,
-    
-    -- Notas
+    payment_method VARCHAR(191),
+    shipping_method VARCHAR(191) DEFAULT 'PICKUP',
+    branch_id INTEGER,
     customer_notes TEXT,
-    internal_notes TEXT,
-    cancellation_reason TEXT,
-    
-    -- Tracking
-    assigned_employee_id UUID, -- Empleado asignado
-    
+    address_id INTEGER, -- Opcional para facturación
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (shipping_address_id) REFERENCES addresses(id) ON DELETE SET NULL,
-    FOREIGN KEY (assigned_employee_id) REFERENCES users(id) ON DELETE SET NULL,
-    
-    CONSTRAINT status_check CHECK (status IN ('PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'IN_DELIVERY', 'DELIVERED', 'CANCELLED')),
-    CONSTRAINT order_type_check CHECK (order_type IN ('DELIVERY', 'PICKUP')),
-    CONSTRAINT total_positive CHECK (total >= 0)
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (branch_id) REFERENCES branches(id),
+    FOREIGN KEY (address_id) REFERENCES addresses(id) ON DELETE SET NULL
 );
 
 CREATE INDEX idx_orders_user ON orders(user_id);
-CREATE INDEX idx_orders_number ON orders(order_number);
 CREATE INDEX idx_orders_status ON orders(status);
-CREATE INDEX idx_orders_date ON orders(created_at);
-CREATE INDEX idx_orders_employee ON orders(assigned_employee_id);
 ```
 
----
-
-### **TABLA: order_items**
+### TABLA: order_items
+Desglose detallado de los productos e importes individuales de una orden.
 ```sql
 CREATE TABLE order_items (
     id SERIAL PRIMARY KEY,
     order_id INTEGER NOT NULL,
     product_id INTEGER NOT NULL,
-    
+    product_name VARCHAR(191) NOT NULL,
     quantity INTEGER NOT NULL,
-    unit_price DECIMAL(10, 2) NOT NULL, -- Precio al momento del pedido
-    discount DECIMAL(10, 2) DEFAULT 0,
-    subtotal DECIMAL(10, 2) NOT NULL,
-    
-    -- Snapshot de información del producto (por si cambia después)
-    product_name VARCHAR(200) NOT NULL,
-    product_sku VARCHAR(50),
-    product_image_url VARCHAR(500),
-    
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    unit_price DECIMAL(10, 2) NOT NULL,
     
     FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
-    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT,
-    
-    CONSTRAINT quantity_positive CHECK (quantity > 0),
-    CONSTRAINT unit_price_positive CHECK (unit_price >= 0)
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
 );
-
-CREATE INDEX idx_order_items_order ON order_items(order_id);
-CREATE INDEX idx_order_items_product ON order_items(product_id);
 ```
 
----
-
-### **TABLA: payments**
+### TABLA: audit_logs
+Bitácora de seguridad del sistema para auditoría de acciones administrativas y de login.
 ```sql
-CREATE TABLE payments (
-    id SERIAL PRIMARY KEY,
-    order_id INTEGER UNIQUE NOT NULL,
-    
-    payment_method VARCHAR(50) NOT NULL, -- 'CARD', 'CASH', 'TRANSFER', 'PAYPAL'
-    payment_provider VARCHAR(50), -- 'stripe', 'mercadopago', 'paypal'
-    
-    amount DECIMAL(10, 2) NOT NULL,
-    currency VARCHAR(3) DEFAULT 'HNL',
-    
-    status VARCHAR(20) DEFAULT 'PENDING', -- 'PENDING', 'COMPLETED', 'FAILED', 'REFUNDED'
-    
-    -- IDs de transacción externos
-    transaction_id VARCHAR(255), -- ID de Stripe/MercadoPago
-    payment_intent_id VARCHAR(255),
-    
-    -- Metadata de pago
-    card_last4 VARCHAR(4),
-    card_brand VARCHAR(20),
-    
-    -- Fechas
-    paid_at TIMESTAMP,
-    refunded_at TIMESTAMP,
-    
-    -- Información adicional
-    metadata JSONB,
-    error_message TEXT,
-    
+CREATE TABLE audit_logs (
+    id VARCHAR(191) PRIMARY KEY,
+    user_id VARCHAR(191),
+    user_name VARCHAR(191) NOT NULL,
+    action VARCHAR(191) NOT NULL, -- 'CREATE', 'UPDATE', 'DELETE', 'LOGIN', etc.
+    entity VARCHAR(191) NOT NULL, -- 'Product', 'Order', 'User', etc.
+    entity_id VARCHAR(191),
+    entity_name VARCHAR(191),
+    details TEXT,
+    ip_address VARCHAR(45),
+    user_agent VARCHAR(500),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
-    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
-    
-    CONSTRAINT status_check CHECK (status IN ('PENDING', 'COMPLETED', 'FAILED', 'REFUNDED')),
-    CONSTRAINT amount_positive CHECK (amount >= 0)
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
-
-CREATE INDEX idx_payments_order ON payments(order_id);
-CREATE INDEX idx_payments_status ON payments(status);
-CREATE INDEX idx_payments_transaction ON payments(transaction_id);
 ```
 
----
-
-### **TABLA: carts**
+### TABLA: system_configs
+Configuraciones dinámicas administrables del sistema en formato clave-valor tipado.
 ```sql
-CREATE TABLE carts (
+CREATE TABLE system_configs (
     id SERIAL PRIMARY KEY,
-    user_id UUID UNIQUE NOT NULL, -- Un usuario solo tiene un carrito activo
-    session_id VARCHAR(255), -- Para usuarios no autenticados
-    
-    expires_at TIMESTAMP, -- Carrito expira después de X días
-    
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_carts_user ON carts(user_id);
-CREATE INDEX idx_carts_session ON carts(session_id);
-```
-
----
-
-### **TABLA: cart_items**
-```sql
-CREATE TABLE cart_items (
-    id SERIAL PRIMARY KEY,
-    cart_id INTEGER NOT NULL,
-    product_id INTEGER NOT NULL,
-    
-    quantity INTEGER NOT NULL DEFAULT 1,
-    
-    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (cart_id) REFERENCES carts(id) ON DELETE CASCADE,
-    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
-    
-    UNIQUE(cart_id, product_id), -- Un producto solo puede estar una vez en el carrito
-    CONSTRAINT quantity_positive CHECK (quantity > 0)
-);
-
-CREATE INDEX idx_cart_items_cart ON cart_items(cart_id);
-CREATE INDEX idx_cart_items_product ON cart_items(product_id);
-```
-
----
-
-### **TABLA: reviews**
-```sql
-CREATE TABLE reviews (
-    id SERIAL PRIMARY KEY,
-    product_id INTEGER NOT NULL,
-    user_id UUID NOT NULL,
-    order_id INTEGER, -- Opcional: vincular con pedido comprobado
-    
-    rating INTEGER NOT NULL, -- 1-5 estrellas
-    title VARCHAR(200),
-    comment TEXT,
-    
-    -- Moderación
-    is_verified_purchase BOOLEAN DEFAULT FALSE,
-    is_approved BOOLEAN DEFAULT FALSE,
-    moderated_by UUID,
-    
-    -- Utilidad
-    helpful_count INTEGER DEFAULT 0,
-    
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL,
-    FOREIGN KEY (moderated_by) REFERENCES users(id) ON DELETE SET NULL,
-    
-    CONSTRAINT rating_range CHECK (rating >= 1 AND rating <= 5),
-    UNIQUE(product_id, user_id) -- Un usuario solo puede reseñar un producto una vez
-);
-
-CREATE INDEX idx_reviews_product ON reviews(product_id);
-CREATE INDEX idx_reviews_user ON reviews(user_id);
-CREATE INDEX idx_reviews_rating ON reviews(rating);
-CREATE INDEX idx_reviews_approved ON reviews(is_approved);
-```
-
----
-
-### **TABLA: promotions**
-```sql
-CREATE TABLE promotions (
-    id SERIAL PRIMARY KEY,
-    code VARCHAR(50) UNIQUE NOT NULL,
-    name VARCHAR(200) NOT NULL,
+    key VARCHAR(191) UNIQUE NOT NULL,
+    value JSONB NOT NULL,
+    type VARCHAR(191) DEFAULT 'string',
+    category VARCHAR(191) NOT NULL,
+    label VARCHAR(191) NOT NULL,
     description TEXT,
-    
-    discount_type VARCHAR(20) NOT NULL, -- 'PERCENTAGE', 'FIXED_AMOUNT'
-    discount_value DECIMAL(10, 2) NOT NULL,
-    
-    min_purchase_amount DECIMAL(10, 2) DEFAULT 0,
-    max_discount_amount DECIMAL(10, 2),
-    
-    usage_limit INTEGER, -- Límite total de usos
-    usage_limit_per_user INTEGER DEFAULT 1,
-    times_used INTEGER DEFAULT 0,
-    
-    applicable_to VARCHAR(20) DEFAULT 'ALL', -- 'ALL', 'CATEGORY', 'PRODUCT'
-    applicable_category_id INTEGER,
-    applicable_product_ids JSONB, -- Array de IDs de productos
-    
-    starts_at TIMESTAMP NOT NULL,
-    expires_at TIMESTAMP NOT NULL,
-    
-    is_active BOOLEAN DEFAULT TRUE,
-    
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_public BOOLEAN DEFAULT FALSE,
+    is_read_only BOOLEAN DEFAULT FALSE,
+    sort_order INTEGER DEFAULT 0,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (applicable_category_id) REFERENCES categories(id) ON DELETE SET NULL,
-    
-    CONSTRAINT discount_type_check CHECK (discount_type IN ('PERCENTAGE', 'FIXED_AMOUNT')),
-    CONSTRAINT discount_value_positive CHECK (discount_value > 0)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
-CREATE INDEX idx_promotions_code ON promotions(code);
-CREATE INDEX idx_promotions_active ON promotions(is_active, starts_at, expires_at);
 ```
 
----
-
-### **TABLA: employees**
+### TABLA: notification_configs
+Configuración de plantillas, roles y parámetros para alertas automáticas del sistema.
 ```sql
-CREATE TABLE employees (
+CREATE TABLE notification_configs (
     id SERIAL PRIMARY KEY,
-    user_id UUID UNIQUE NOT NULL,
-    
-    employee_code VARCHAR(20) UNIQUE NOT NULL,
-    position VARCHAR(100) NOT NULL, -- 'Panadero', 'Cajero', 'Repartidor', etc.
-    department VARCHAR(100),
-    
-    hire_date DATE NOT NULL,
-    termination_date DATE,
-    
-    salary DECIMAL(10, 2),
-    commission_rate DECIMAL(5, 2) DEFAULT 0,
-    
-    emergency_contact_name VARCHAR(200),
-    emergency_contact_phone VARCHAR(20),
-    
-    is_active BOOLEAN DEFAULT TRUE,
-    
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_employees_user ON employees(user_id);
-CREATE INDEX idx_employees_code ON employees(employee_code);
-CREATE INDEX idx_employees_active ON employees(is_active);
-```
-
----
-
-### **TABLA: shifts**
-```sql
-CREATE TABLE shifts (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    start_time TIME NOT NULL,
-    end_time TIME NOT NULL,
-    days_of_week JSONB NOT NULL, -- [0,1,2,3,4,5,6] donde 0=Domingo
-    
-    is_active BOOLEAN DEFAULT TRUE,
-    
+    key VARCHAR(191) UNIQUE NOT NULL,
+    name VARCHAR(191) NOT NULL,
+    description TEXT,
+    category VARCHAR(191) NOT NULL,
+    is_enabled BOOLEAN DEFAULT TRUE,
+    title VARCHAR(191) NOT NULL,
+    message TEXT NOT NULL,
+    target_roles JSONB NOT NULL,
+    thresholds JSONB,
+    sound_type VARCHAR(191) DEFAULT 'suave',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
-INSERT INTO shifts (name, start_time, end_time, days_of_week) VALUES
-('Turno Mañana', '06:00', '14:00', '[1,2,3,4,5,6]'),
-('Turno Tarde', '14:00', '22:00', '[1,2,3,4,5,6]'),
-('Turno Noche', '22:00', '06:00', '[5,6,0]');
 ```
 
----
-
-### **TABLA: employee_shifts (Tabla Intermedia N:M)**
-```sql
-CREATE TABLE employee_shifts (
-    id SERIAL PRIMARY KEY,
-    employee_id INTEGER NOT NULL,
-    shift_id INTEGER NOT NULL,
-    assigned_date DATE NOT NULL,
-    
-    clock_in TIMESTAMP,
-    clock_out TIMESTAMP,
-    
-    status VARCHAR(20) DEFAULT 'SCHEDULED', -- 'SCHEDULED', 'COMPLETED', 'ABSENT', 'CANCELLED'
-    
-    notes TEXT,
-    
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE,
-    FOREIGN KEY (shift_id) REFERENCES shifts(id) ON DELETE CASCADE,
-    
-    CONSTRAINT status_check CHECK (status IN ('SCHEDULED', 'COMPLETED', 'ABSENT', 'CANCELLED'))
-);
-
-CREATE INDEX idx_employee_shifts_employee ON employee_shifts(employee_id);
-CREATE INDEX idx_employee_shifts_shift ON employee_shifts(shift_id);
-CREATE INDEX idx_employee_shifts_date ON employee_shifts(assigned_date);
-```
-
----
-
-### **TABLA: notifications**
+### TABLA: notifications
+Historial de alertas del sistema enviadas (in-app) para visualización del usuario.
 ```sql
 CREATE TABLE notifications (
     id SERIAL PRIMARY KEY,
-    user_id UUID NOT NULL,
-    
-    type VARCHAR(50) NOT NULL, -- 'ORDER', 'PROMOTION', 'SYSTEM', 'DELIVERY'
-    title VARCHAR(200) NOT NULL,
+    user_id VARCHAR(191) NOT NULL,
+    type VARCHAR(191) NOT NULL,
+    title VARCHAR(191) NOT NULL,
     message TEXT NOT NULL,
-    
-    channel VARCHAR(20) NOT NULL, -- 'EMAIL', 'SMS', 'PUSH', 'IN_APP'
-    
+    url VARCHAR(191),
+    icon VARCHAR(191),
     is_read BOOLEAN DEFAULT FALSE,
     read_at TIMESTAMP,
-    
-    metadata JSONB, -- Datos adicionales según el tipo
-    
+    metadata JSONB,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    
-    CONSTRAINT channel_check CHECK (channel IN ('EMAIL', 'SMS', 'PUSH', 'IN_APP'))
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_notifications_user ON notifications(user_id);
-CREATE INDEX idx_notifications_unread ON notifications(user_id, is_read);
-CREATE INDEX idx_notifications_type ON notifications(type);
+CREATE INDEX idx_notifications_user_read ON notifications(user_id, is_read);
 ```
 
----
-
-### **TABLA: loyalty_points**
+### TABLA: push_subscriptions
+Suscripciones activas de Web Push para alertas a navegadores web y móviles (PWA).
 ```sql
-CREATE TABLE loyalty_points (
+CREATE TABLE push_subscriptions (
     id SERIAL PRIMARY KEY,
-    user_id UUID NOT NULL,
-    
-    points INTEGER DEFAULT 0,
-    lifetime_points INTEGER DEFAULT 0, -- Total acumulado histórico
-    
-    tier VARCHAR(20) DEFAULT 'BRONZE', -- 'BRONZE', 'SILVER', 'GOLD', 'PLATINUM'
-    
-    expires_at TIMESTAMP,
-    
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    
-    UNIQUE(user_id),
-    CONSTRAINT tier_check CHECK (tier IN ('BRONZE', 'SILVER', 'GOLD', 'PLATINUM'))
-);
-
-CREATE INDEX idx_loyalty_points_user ON loyalty_points(user_id);
-CREATE INDEX idx_loyalty_points_tier ON loyalty_points(tier);
-```
-
----
-
-### **TABLA: loyalty_transactions**
-```sql
-CREATE TABLE loyalty_transactions (
-    id SERIAL PRIMARY KEY,
-    user_id UUID NOT NULL,
-    order_id INTEGER,
-    
-    points INTEGER NOT NULL, -- Positivo para ganados, negativo para gastados
-    type VARCHAR(20) NOT NULL, -- 'EARNED', 'REDEEMED', 'EXPIRED', 'BONUS'
-    description TEXT,
-    
+    user_id VARCHAR(191) NOT NULL,
+    endpoint TEXT UNIQUE NOT NULL,
+    p256dh VARCHAR(191) NOT NULL,
+    auth VARCHAR(191) NOT NULL,
+    user_agent VARCHAR(191),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL,
-    
-    CONSTRAINT type_check CHECK (type IN ('EARNED', 'REDEEMED', 'EXPIRED', 'BONUS', 'ADJUSTMENT'))
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
-
-CREATE INDEX idx_loyalty_transactions_user ON loyalty_transactions(user_id);
-CREATE INDEX idx_loyalty_transactions_order ON loyalty_transactions(order_id);
 ```
 
 ---
 
-## 📊 TABLAS PARA ANALYTICS Y LOGS (MongoDB)
-
-### **Colección: activity_logs**
-```javascript
-{
-    _id: ObjectId,
-    userId: UUID,
-    action: String, // 'LOGIN', 'LOGOUT', 'CREATE_ORDER', 'UPDATE_PROFILE'
-    resource: String, // 'user', 'order', 'product'
-    resourceId: String,
-    ipAddress: String,
-    userAgent: String,
-    metadata: Object,
-    createdAt: ISODate
-}
-```
-
-### **Colección: analytics_events**
-```javascript
-{
-    _id: ObjectId,
-    eventType: String, // 'page_view', 'product_view', 'add_to_cart'
-    userId: UUID,
-    sessionId: String,
-    page: String,
-    productId: Number,
-    metadata: Object,
-    timestamp: ISODate
-}
-```
-
-### **Colección: ai_predictions**
-```javascript
-{
-    _id: ObjectId,
-    predictionType: String, // 'demand_forecast', 'recommendation'
-    productId: Number,
-    predictedValue: Number,
-    confidence: Number,
-    modelVersion: String,
-    metadata: Object,
-    createdAt: ISODate
-}
-```
+## RELACIONES DE BASE DE DATOS
+1. **users → addresses** (1:N)
+2. **users → refresh_tokens** (1:N)
+3. **users → trusted_devices** (1:N)
+4. **users → orders** (1:N)
+5. **users → production_logs** (1:N)
+6. **users → audit_logs** (1:N)
+7. **users → notifications** (1:N)
+8. **users → push_subscriptions** (1:N)
+9. **branches → users** (1:N)
+10. **branches → raw_material_inventories** (1:N)
+11. **branches → production_logs** (1:N)
+12. **branches → inventories** (1:N)
+13. **branches → orders** (1:N)
+14. **categories → products** (1:N)
+15. **products → product_images** (1:N)
+16. **products → recipes** (1:N)
+17. **products → inventories** (1:N)
+18. **products → order_items** (1:N)
+19. **products → stock_movements** (1:N)
+20. **raw_materials → raw_material_inventories** (1:N)
+21. **raw_materials → recipe_ingredients** (1:N)
+22. **recipes → recipe_ingredients** (1:N)
+23. **recipes → production_logs** (1:N)
+24. **production_logs → stock_movements** (1:N)
+25. **orders → order_items** (1:N)
+26. **orders → addresses** (N:1)
 
 ---
 
-## 🔗 RELACIONES PRINCIPALES
+## NORMALIZACIÓN VERIFICADA (3FN)
 
-1. **users ↔ roles** (N:M) → user_roles
-2. **users → addresses** (1:N)
-3. **users → orders** (1:N)
-4. **users → carts** (1:1)
-5. **orders → order_items** (1:N)
-6. **orders → payments** (1:1)
-7. **products → categories** (N:1)
-8. **products ↔ ingredients** (N:M) → product_ingredients
-9. **products → reviews** (1:N)
-10. **cart → cart_items** (1:N)
-11. **employees ↔ shifts** (N:M) → employee_shifts
+* **Primera Forma Normal (1FN):** Todos los valores en los campos de las tablas son atómicos. No existen grupos repetitivos; en su lugar, se utilizan relaciones y tablas intermedias dedicadas como `recipe_ingredients`.
+* **Segunda Forma Normal (2FN):** Se cumple la 1FN y todas las columnas no clave de las tablas dependen por completo de sus respectivas claves primarias completas (sin dependencias parciales).
+* **Tercera Forma Normal (3FN):** Se cumple la 2FN y no existen dependencias transitivas entre columnas no clave (es decir, las columnas no clave dependen exclusivamente de la clave primaria y no de otras columnas no clave).
 
 ---
 
-## 📈 ÍNDICES Y OPTIMIZACIÓN
+**Total de Tablas PostgreSQL:** 23  
+**Total de Relaciones:** 26  
 
-### Índices Compuestos Adicionales
-```sql
--- Búsqueda de productos activos por categoría
-CREATE INDEX idx_products_category_active ON products(category_id, is_active, is_available);
-
--- Pedidos por usuario y estado
-CREATE INDEX idx_orders_user_status ON orders(user_id, status, created_at DESC);
-
--- Items de carrito con producto y cantidad
-CREATE INDEX idx_cart_items_composite ON cart_items(cart_id, product_id, quantity);
-
--- Reseñas aprobadas por producto
-CREATE INDEX idx_reviews_product_approved ON reviews(product_id, is_approved, rating);
-```
-
----
-
-## 🎯 NORMALIZACIÓN VERIFICADA
-
-### Primera Forma Normal (1FN)
-✅ Todos los atributos contienen valores atómicos
-✅ No hay grupos repetitivos
-✅ Cada columna tiene un nombre único
-
-### Segunda Forma Normal (2FN)
-✅ Cumple 1FN
-✅ No existen dependencias parciales
-✅ Todos los atributos no-clave dependen de la clave primaria completa
-
-### Tercera Forma Normal (3FN)
-✅ Cumple 2FN
-✅ No existen dependencias transitivas
-✅ Los atributos no-clave no dependen de otros atributos no-clave
-
----
-
-## 📝 NOTAS IMPORTANTES
-
-1. **Soft Deletes:** Usar `deleted_at` para no perder datos históricos
-2. **Timestamps:** Siempre incluir `created_at` y `updated_at`
-3. **UUIDs:** Para usuarios (seguridad y compatibilidad con OAuth)
-4. **JSONB:** Para datos flexibles que no requieren búsquedas frecuentes
-5. **Constraints:** Validaciones a nivel de base de datos
-6. **Indexes:** En todas las foreign keys y campos de búsqueda frecuente
-
----
-
-**Total de Tablas PostgreSQL: 24**
-**Total de Colecciones MongoDB: 3**
-**Total de Relaciones: 11 principales**
-
-✅ **Base de datos completamente normalizada y lista para implementar**
+El diseño de la base de datos se encuentra completamente normalizado a nivel documental y alineado de forma exacta al esquema físico del motor de base de datos implementado en Prisma.

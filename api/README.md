@@ -2,7 +2,7 @@
 
 Backend para el sistema ERP/POS de panaderías multi-sucursal.
 
-## 📚 Documentación API
+## Documentacion API
 
 **Swagger local:** http://localhost:4000/docs (cuando el servidor esté corriendo)
 
@@ -138,7 +138,7 @@ Backend para el sistema ERP/POS de panaderías multi-sucursal.
 | `openapi:gen:dist` | Genera `openapi.json` sin conectar a DB |
 | `test` / `test:e2e` | Ejecuta tests con Jest |
 
-## Seguridad Implementada ✅
+## Seguridad Implementada
 - **Helmet** — Headers de seguridad HTTP
 - **CORS** — Orígenes configurables via `CORS_ORIGINS`
 - **Rate Limiting** — 100 req/min global (ThrottlerModule)

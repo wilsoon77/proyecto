@@ -92,23 +92,13 @@ apps/web/
 │   │   │   │       └── page.tsx
 │   │   │   ├── customers/
 │   │   │   │   └── page.tsx
-│   │   │   ├── employees/
-│   │   │   │   └── page.tsx
 │   │   │   ├── inventory/
 │   │   │   │   └── page.tsx
 │   │   │   ├── reports/
 │   │   │   │   └── page.tsx
-│   │   │   ├── promotions/
-│   │   │   │   └── page.tsx
 │   │   │   └── layout.tsx            # Layout admin
 │   │   │
 │   │   ├── api/                      # API Routes (Next.js)
-│   │   │   ├── auth/
-│   │   │   │   └── [...nextauth]/
-│   │   │   │       └── route.ts      # NextAuth config
-│   │   │   ├── webhooks/
-│   │   │   │   └── stripe/
-│   │   │   │       └── route.ts
 │   │   │   └── upload/
 │   │   │       └── route.ts
 │   │   │
@@ -335,9 +325,7 @@ apps/api/
 │   ├── config/                       # Configuraciones
 │   │   ├── database.config.ts
 │   │   ├── jwt.config.ts
-│   │   ├── stripe.config.ts
-│   │   ├── cloudinary.config.ts
-│   │   └── redis.config.ts
+│   │   └── cloudinary.config.ts
 │   │
 │   ├── common/                       # Código compartido
 │   │   ├── decorators/
@@ -432,7 +420,6 @@ apps/api/
 │   │   │   ├── payments.module.ts
 │   │   │   ├── payments.controller.ts
 │   │   │   ├── payments.service.ts
-│   │   │   ├── stripe.service.ts
 │   │   │   └── dto/
 │   │   │
 │   │   ├── inventory/                # Inventario
@@ -441,29 +428,12 @@ apps/api/
 │   │   │   ├── inventory.service.ts
 │   │   │   └── dto/
 │   │   │
-│   │   ├── reviews/                  # Reseñas
-│   │   │   ├── reviews.module.ts
-│   │   │   ├── reviews.controller.ts
-│   │   │   ├── reviews.service.ts
-│   │   │   └── dto/
-│   │   │
-│   │   ├── promotions/               # Promociones
-│   │   │   ├── promotions.module.ts
-│   │   │   ├── promotions.controller.ts
-│   │   │   ├── promotions.service.ts
-│   │   │   └── dto/
 │   │   │
 │   │   ├── notifications/            # Notificaciones
 │   │   │   ├── notifications.module.ts
 │   │   │   ├── notifications.service.ts
 │   │   │   ├── email.service.ts
-│   │   │   ├── sms.service.ts
 │   │   │   └── push.service.ts
-│   │   │
-│   │   ├── employees/                # Empleados
-│   │   │   ├── employees.module.ts
-│   │   │   ├── employees.controller.ts
-│   │   │   └── employees.service.ts
 │   │   │
 │   │   ├── analytics/                # Analítica
 │   │   │   ├── analytics.module.ts

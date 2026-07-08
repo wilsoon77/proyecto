@@ -1,4 +1,4 @@
-# 🚀 Guía de Despliegue a Producción
+# Guia de Despliegue a Produccion
 
 Este documento describe cómo desplegar el proyecto de Panadería usando:
 - **Frontend (Next.js)**: Vercel
@@ -8,7 +8,7 @@ Este documento describe cómo desplegar el proyecto de Panadería usando:
 
 ---
 
-## 📋 Prerrequisitos
+## Prerrequisitos
 
 Antes de comenzar, asegúrate de tener:
 - Cuenta en [Vercel](https://vercel.com) (gratuita)
@@ -19,7 +19,7 @@ Antes de comenzar, asegúrate de tener:
 
 ---
 
-## 1️⃣ Configurar Appwrite (Storage)
+## 1. Configurar Appwrite (Storage)
 
 ### Paso 1: Crear proyecto en Appwrite
 1. Ve a la [Consola de Appwrite](https://cloud.appwrite.io)
@@ -51,7 +51,7 @@ APPWRITE_BUCKET_ID=product-images
 
 ---
 
-## 2️⃣ Desplegar Backend en Render
+## 2. Desplegar Backend en Render
 
 ### Paso 1: Conectar repositorio
 1. Ve a [Render Dashboard](https://dashboard.render.com)
@@ -99,7 +99,7 @@ Después del primer deploy, ejecuta las migraciones:
 
 ---
 
-## 3️⃣ Desplegar Frontend en Vercel
+## 3. Desplegar Frontend en Vercel
 
 ### Paso 1: Importar proyecto
 1. Ve a [Vercel Dashboard](https://vercel.com/dashboard)
@@ -128,7 +128,7 @@ Agrega estas variables:
 
 ---
 
-## 4️⃣ Configuración Post-Despliegue
+## 4. Configuración Post-Despliegue
 
 ### Actualizar CORS en Render
 Una vez tengas la URL de Vercel, actualiza la variable:
@@ -148,7 +148,7 @@ CORS_ORIGINS=https://panaderia-web.vercel.app
 
 ---
 
-## 5️⃣ Verificación
+## 5. Verificación
 
 ### Checklist de pruebas:
 - [ ] API Health: `https://tu-api.onrender.com/health`
@@ -165,7 +165,7 @@ CORS_ORIGINS=https://panaderia-web.vercel.app
 
 ---
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### Error: "Cannot connect to database"
 - Verifica que `DATABASE_URL` use la conexión pooled (puerto 6543)
@@ -185,7 +185,7 @@ CORS_ORIGINS=https://panaderia-web.vercel.app
 
 ---
 
-## 📝 Comandos útiles
+## Comandos útiles
 
 ```bash
 # Generar secretos JWT
@@ -203,7 +203,7 @@ curl https://tu-api.onrender.com/health
 
 ---
 
-## 💡 Tips
+## Tips
 
 1. **Cold Starts**: El plan gratuito de Render "duerme" después de 15 min de inactividad. El primer request puede tardar 30-60 segundos.
 
@@ -215,4 +215,4 @@ curl https://tu-api.onrender.com/health
 
 ---
 
-¡Tu aplicación está lista para producción! 🎉
+¡Tu aplicación está lista para producción!

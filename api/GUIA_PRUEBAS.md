@@ -1,14 +1,14 @@
-# 🎯 Guía Rápida de Pruebas - API Panaderia Svetlana
+# Guia Rapida de Pruebas - API Panaderia Svetlana
 
-## 📋 Preparación Inicial
+## Preparacion Inicial
 
 ### 1. Asegúrate que el servidor esté corriendo
 ```powershell
 cd api
 node .\dist\src\main.js
 ```
-✅ Servidor en: http://localhost:4000
-✅ Swagger docs: http://localhost:4000/docs
+Servidor en: http://localhost:4000
+Swagger docs: http://localhost:4000/docs
 
 ### 2. Crear Usuario ADMIN (solo primera vez)
 
@@ -43,7 +43,7 @@ VALUES (
 
 ---
 
-## 🚀 Pruebas Esenciales (en orden)
+## Pruebas Esenciales (en orden)
 
 ### PASO 1: Autenticación
 
@@ -71,7 +71,7 @@ Content-Type: application/json
   "password": "Admin123!"
 }
 ```
-💾 **GUARDAR**: `accessToken` y `refreshToken` de la respuesta
+GUARDAR: `accessToken` y `refreshToken` de la respuesta
 
 #### Login CLIENTE
 ```http
@@ -83,7 +83,7 @@ Content-Type: application/json
   "password": "Cliente123!"
 }
 ```
-💾 **GUARDAR**: `accessToken` del cliente
+GUARDAR: `accessToken` del cliente
 
 ---
 
@@ -101,7 +101,7 @@ Content-Type: application/json
   "description": "Panes dulces tradicionales"
 }
 ```
-📝 Obtener el `categoryId` desde Prisma Studio o la respuesta debe incluir el ID
+Obtener el `categoryId` desde Prisma Studio o la respuesta debe incluir el ID
 
 #### Crear Sucursal
 ```http
@@ -210,7 +210,7 @@ Content-Type: application/json
   ]
 }
 ```
-💾 **GUARDAR**: `orderId` de la respuesta
+GUARDAR: `orderId` de la respuesta
 
 #### Ver Mis Pedidos
 ```http
@@ -236,51 +236,51 @@ Authorization: Bearer {adminToken}
 
 ---
 
-## 🔍 Endpoints Importantes por Rol
+## Endpoints Importantes por Rol
 
-### 👤 PÚBLICO (sin autenticación)
-- ✅ `GET /products` - Listar productos con filtros
-- ✅ `GET /products/featured` - Productos destacados
-- ✅ `GET /products/:slug` - Detalle de producto
-- ✅ `GET /categories` - Listar categorías
-- ✅ `GET /categories/:slug/products` - Productos por categoría
-- ✅ `GET /branches` - Listar sucursales
-- ✅ `GET /inventory` - Ver disponibilidad
-- ✅ `GET /health` - Health check
+### PÚBLICO (sin autenticación)
+- `GET /products` - Listar productos con filtros
+- `GET /products/featured` - Productos destacados
+- `GET /products/:slug` - Detalle de producto
+- `GET /categories` - Listar categorías
+- `GET /categories/:slug/products` - Productos por categoría
+- `GET /branches` - Listar sucursales
+- `GET /inventory` - Ver disponibilidad
+- `GET /health` - Health check
 
-### 🔐 CLIENTE (autenticado)
+### CLIENTE (autenticado)
 Todo lo público más:
-- ✅ `POST /auth/register` - Registro
-- ✅ `POST /auth/login` - Login
-- ✅ `GET /auth/me` - Mi perfil
-- ✅ `PATCH /auth/me` - Actualizar perfil
-- ✅ `GET /addresses` - Mis direcciones
-- ✅ `POST /addresses` - Crear dirección
-- ✅ `POST /orders/reserve` - Hacer pedido
-- ✅ `GET /orders/my-orders` - Mis pedidos
-- ✅ `GET /orders/:id` - Ver mi pedido (solo si es suyo)
-- ✅ `POST /orders/:id/cancel` - Cancelar mi pedido
+- `POST /auth/register` - Registro
+- `POST /auth/login` - Login
+- `GET /auth/me` - Mi perfil
+- `PATCH /auth/me` - Actualizar perfil
+- `GET /addresses` - Mis direcciones
+- `POST /addresses` - Crear dirección
+- `POST /orders/reserve` - Hacer pedido
+- `GET /orders/my-orders` - Mis pedidos
+- `GET /orders/:id` - Ver mi pedido (solo si es suyo)
+- `POST /orders/:id/cancel` - Cancelar mi pedido
 
-### 👨‍💼 ADMIN/EMPLOYEE
+### ADMIN/EMPLOYEE
 Todo lo anterior más:
-- ✅ `POST /products` - Crear producto
-- ✅ `PATCH /products/:slug` - Actualizar producto
-- ✅ `DELETE /products/:slug` - Eliminar producto
-- ✅ `POST /categories` - Crear categoría
-- ✅ `POST /branches` - Crear sucursal
-- ✅ `POST /stock-movements` - Crear movimiento
-- ✅ `GET /stock-movements` - Ver movimientos
-- ✅ `GET /orders` - Ver TODAS las órdenes
-- ✅ `POST /orders/:id/confirm` - Confirmar pago
-- ✅ `POST /orders/:id/pickup` - Entregar pedido
-- ✅ `GET /users` - Gestión de usuarios (solo ADMIN)
-- ✅ `GET /metrics` - Métricas del sistema (solo ADMIN)
+- `POST /products` - Crear producto
+- `PATCH /products/:slug` - Actualizar producto
+- `DELETE /products/:slug` - Eliminar producto
+- `POST /categories` - Crear categoría
+- `POST /branches` - Crear sucursal
+- `POST /stock-movements` - Crear movimiento
+- `GET /stock-movements` - Ver movimientos
+- `GET /orders` - Ver TODAS las órdenes
+- `POST /orders/:id/confirm` - Confirmar pago
+- `POST /orders/:id/pickup` - Entregar pedido
+- `GET /users` - Gestión de usuarios (solo ADMIN)
+- `GET /metrics` - Métricas del sistema (solo ADMIN)
 
 ---
 
-## 📊 Nuevos Endpoints Implementados
+## Nuevos Endpoints Implementados
 
-### ⭐ Críticos para Frontend
+### Críticos para Frontend
 
 1. **GET /orders/my-orders**
    - Cliente ve solo sus pedidos
@@ -302,16 +302,16 @@ Todo lo anterior más:
    - Transición PENDING → CONFIRMED
    - Puede ser usado por webhook de pago
 
-### 🔒 Mejoras de Seguridad
+### Mejoras de Seguridad
 
-- ✅ Validación de propiedad en `GET /orders/:id`
-- ✅ Guards ADMIN/EMPLOYEE en stock-movements
-- ✅ Filtro automático por userId en my-orders
-- ✅ Bcryptjs para hash de contraseñas
+- Validación de propiedad en `GET /orders/:id`
+- Guards ADMIN/EMPLOYEE en stock-movements
+- Filtro automático por userId en my-orders
+- Bcryptjs para hash de contraseñas
 
 ---
 
-## 🧪 Usar Swagger (Recomendado)
+## Usar Swagger (Recomendado)
 
 1. Abre http://localhost:4000/docs
 2. Haz clic en "Authorize" (candado arriba a la derecha)
@@ -320,14 +320,14 @@ Todo lo anterior más:
 5. Ahora puedes probar endpoints directamente en el navegador
 
 **Ventajas:**
-- ✅ Interfaz visual intuitiva
-- ✅ Validaciones automáticas
-- ✅ Ejemplos de respuestas
-- ✅ No necesitas herramientas externas
+- Interfaz visual intuitiva
+- Validaciones automáticas
+- Ejemplos de respuestas
+- No necesitas herramientas externas
 
 ---
 
-## 📝 Usar REST Client (VS Code)
+## Usar REST Client (VS Code)
 
 1. Instala la extensión "REST Client" en VS Code
 2. Abre el archivo `PRUEBAS_API.http`
@@ -335,14 +335,14 @@ Todo lo anterior más:
 4. Los tokens se guardan automáticamente en variables
 
 **Ventajas:**
-- ✅ Todo en el editor
-- ✅ Variables dinámicas
-- ✅ Historial de peticiones
-- ✅ Versionable con Git
+- Todo en el editor
+- Variables dinámicas
+- Historial de peticiones
+- Versionable con Git
 
 ---
 
-## 🎯 Flujo Completo E2E
+## Flujo Completo E2E
 
 ### Caso de uso: Cliente hace un pedido
 
@@ -373,7 +373,7 @@ Todo lo anterior más:
    ```
    POST /orders/reserve
    → Bloquea inventario (reserved++)
-   → Retorna orderId
+   &rarr; Retorna orderId
    ```
 
 6. **Cliente ve su pedido**
@@ -393,12 +393,12 @@ Todo lo anterior más:
    POST /orders/{orderId}/pickup
    → Descuenta inventario (quantity--)
    → Libera reserva (reserved--)
-   → CONFIRMED → DELIVERED
+   → CONFIRMED → PICKED_UP
    ```
 
 ---
 
-## ❌ Errores Comunes y Soluciones
+## Errores Comunes y Soluciones
 
 ### 401 Unauthorized
 **Causa:** Token inválido, expirado o no enviado
@@ -436,44 +436,44 @@ Todo lo anterior más:
 
 ---
 
-## 🔄 Estados de Órdenes
+## Estados de Órdenes
 
 ```
-PENDING → CONFIRMED → PREPARING → READY → IN_DELIVERY → DELIVERED
+PENDING → CONFIRMED → PREPARING → READY → PICKED_UP
    ↓
-CANCELLED (en cualquier momento antes de DELIVERED)
+CANCELLED (en cualquier momento antes de PICKED_UP)
 ```
 
 **Transiciones disponibles:**
 - `reserve` → PENDING
 - `confirm` → CONFIRMED
-- `pickup` → DELIVERED (directamente si es pickup en tienda)
+- `pickup` → PICKED_UP (directamente si es pickup en tienda)
 - `cancel` → CANCELLED
 
 ---
 
-## 📈 Próximos Pasos Recomendados
+## Próximos Pasos Recomendados
 
-### Para MVP (mínimo viable):
-1. ✅ Implementado: Todos los endpoints críticos
-2. ⏳ Pendiente: Dashboard de estadísticas (`GET /dashboard/stats`)
-3. ⏳ Pendiente: Upload de imágenes de productos
-4. ⏳ Pendiente: Recuperación de contraseña
+### Para la fase inicial del desarrollo:
+1. Implementado: Todos los endpoints críticos
+2. Pendiente: Dashboard de estadísticas (`GET /dashboard/stats`)
+3. Pendiente: Upload de imágenes de productos
+4. Pendiente: Recuperación de contraseña
 
 ### Para Producción:
-1. ⏳ Deshabilitar Swagger (`SWAGGER_ENABLED=false`)
-2. ⏳ Configurar CORS con dominio específico
-3. ⏳ Rate limiting más estricto
-4. ⏳ Logging a archivo o servicio externo
-5. ⏳ Backup automático de base de datos
-6. ⏳ Monitoreo de salud del servidor
-7. ⏳ HTTPS obligatorio
+1. Deshabilitar Swagger (`SWAGGER_ENABLED=false`)
+2. Configurar CORS con dominio específico
+3. Rate limiting más estricto
+4. Logging a archivo o servicio externo
+5. Backup automático de base de datos
+6. Monitoreo de salud del servidor
+7. HTTPS obligatorio
 
 ---
 
-## 🎉 Resumen
+## Resumen
 
-**✅ Backend al 95% completo**
+**Backend al 95% completo**
 - 47 endpoints funcionales
 - Seguridad implementada
 - Validaciones completas
@@ -481,7 +481,7 @@ CANCELLED (en cualquier momento antes de DELIVERED)
 - Logging de auditoría
 - Tests automatizados (10/13)
 
-**🚀 Listo para integrar con Frontend**
+**Listo para integrar con Frontend**
 
 El backend está preparado para soportar:
 - Sistema de autenticación completo

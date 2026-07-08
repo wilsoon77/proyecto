@@ -1,12 +1,12 @@
 # Pruebas de Seguridad - Sistema Panadería
 
-## 📋 Resumen de Implementación
+## Resumen de Implementación
 
 Todas las pruebas documentadas en este archivo fueron ejecutadas exitosamente el **22 de noviembre de 2025** y están automatizadas en el archivo `api/test/auth-security.e2e-spec.ts`.
 
 ---
 
-## 🔐 Funcionalidades de Seguridad Implementadas
+## Funcionalidades de Seguridad Implementadas
 
 ### 1. Helmet - Headers de Seguridad HTTP
 - Protección contra XSS, clickjacking, MIME sniffing
@@ -53,7 +53,7 @@ Todas las pruebas documentadas en este archivo fueron ejecutadas exitosamente el
 
 ---
 
-## ✅ Pruebas Realizadas (22/11/2025)
+## Pruebas Realizadas (22/11/2025)
 
 ### Prueba 1: Login Exitoso
 **Objetivo**: Verificar que usuarios válidos pueden autenticarse
@@ -76,7 +76,7 @@ Content-Type: application/json
   - `refreshToken` (token de refresco, válido 7 días)
   - `user` (datos del usuario: id, email, firstName, lastName, role)
 
-**✅ Estado**: PASÓ - Login exitoso con tokens generados
+**Estado**: PASÓ - Login exitoso con tokens generados
 
 ---
 
@@ -102,7 +102,7 @@ Content-Type: application/json
   - `user` (datos del usuario)
 - El refresh token anterior debe quedar revocado en BD (`revokedAt` != null)
 
-**✅ Estado**: PASÓ - Token rotado exitosamente, nuevo par generado
+**Estado**: PASÓ - Token rotado exitosamente, nuevo par generado
 
 ---
 
@@ -124,7 +124,7 @@ Content-Type: application/json
 - Status: 401 Unauthorized
 - Mensaje de error apropiado
 
-**✅ Estado**: PASÓ - Token revocado correctamente rechazado con 401
+**Estado**: PASÓ - Token revocado correctamente rechazado con 401
 
 ---
 
@@ -145,7 +145,7 @@ for ($i = 1; $i -le 11; $i++) {
 - Peticiones 10-11: 429 Too Many Requests
 - Header `Retry-After` presente en respuestas 429
 
-**✅ Estado**: PASÓ - Rate limiting activado en intento 10
+**Estado**: PASÓ - Rate limiting activado en intento 10
 - **Aceptadas**: 9 peticiones
 - **Bloqueadas**: 2 peticiones (429)
 
@@ -178,28 +178,28 @@ Content-Type: application/json
 - Logout: 200 OK, `{"message": "Sesión cerrada"}`
 - Intento de refresh posterior: 401 Unauthorized
 
-**✅ Estado**: PASÓ - Token revocado exitosamente tras logout
+**Estado**: PASÓ - Token revocado exitosamente tras logout
 
 ---
 
-## 🔧 Fix Aplicado Durante Pruebas
+## Fix Aplicado Durante Pruebas
 
 ### Problema: `bcrypt.compare is not a function`
 **Causa**: Import ESM incompatible en `auth.service.ts`
 
 **Solución Aplicada**:
 ```typescript
-// ❌ Antes (no funcionaba)
+// Antes (no funcionaba)
 import * as bcrypt from 'bcryptjs';
 
-// ✅ Después (funcionando)
+// Después (funcionando)
 import bcryptjs from 'bcryptjs';
 const bcrypt = bcryptjs.default || bcryptjs;
 ```
 
 ---
 
-## 🧪 Tests Automatizados
+## Tests Automatizados
 
 Los tests automatizados están en:
 ```
@@ -213,20 +213,20 @@ npm run test:e2e
 ```
 
 ### Cobertura de Tests
-- ✅ Login exitoso con credenciales válidas
-- ✅ Login fallido con credenciales inválidas
-- ✅ Refresh token rotation (nuevo par generado)
-- ✅ Rechazo de refresh token revocado
-- ✅ Rate limiting en endpoint de login
-- ✅ Rate limiting en endpoint de registro
-- ✅ Rate limiting en endpoint de refresh
-- ✅ Logout revoca refresh token específico
-- ✅ Logout global revoca todos los tokens del usuario
-- ✅ Token expirado no puede usarse para refresh
+- Login exitoso con credenciales válidas
+- Login fallido con credenciales inválidas
+- Refresh token rotation (nuevo par generado)
+- Rechazo de refresh token revocado
+- Rate limiting en endpoint de login
+- Rate limiting en endpoint de registro
+- Rate limiting en endpoint de refresh
+- Logout revoca refresh token específico
+- Logout global revoca todos los tokens del usuario
+- Token expirado no puede usarse para refresh
 
 ---
 
-## 📊 Configuración de Rate Limiting
+## Configuración de Rate Limiting
 
 | Endpoint | Límite | Ventana |
 |----------|--------|---------|
@@ -237,7 +237,7 @@ npm run test:e2e
 
 ---
 
-## 🔒 Configuración de Tokens
+## Configuración de Tokens
 
 | Token Type | Duración | Almacenamiento |
 |------------|----------|----------------|
@@ -246,7 +246,7 @@ npm run test:e2e
 
 ---
 
-## 📝 Variables de Entorno Requeridas
+## Variables de Entorno Requeridas
 
 ```env
 # Seguridad
@@ -260,7 +260,7 @@ SWAGGER_ENABLED=false  # Solo en producción si necesitas Swagger
 
 ---
 
-## 🎯 Próximos Pasos (Opcional)
+## Próximos Pasos (Opcional)
 
 - [ ] Integrar logging en OrdersService y StockMovementsService
 - [ ] Implementar detección de refresh token reuse attacks
@@ -270,7 +270,7 @@ SWAGGER_ENABLED=false  # Solo en producción si necesitas Swagger
 
 ---
 
-## 📚 Referencias
+## Referencias
 
 - [NestJS Helmet Documentation](https://docs.nestjs.com/security/helmet)
 - [NestJS Throttler](https://docs.nestjs.com/security/rate-limiting)

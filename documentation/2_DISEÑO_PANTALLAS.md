@@ -1,6 +1,6 @@
-# 📱 DISEÑO DE PANTALLAS - Panaderia Svetlana Smart System
+# DISEÑO DE PANTALLAS - Panaderia Svetlana Smart System
 
-## 🎨 SISTEMA DE DISEÑO
+## SISTEMA DE DISEÑO
 
 ### Paleta de Colores
 ```css
@@ -46,66 +46,66 @@ Caption: 0.75rem (12px) - Regular
 
 ---
 
-## 📱 APLICACIÓN WEB - PANTALLAS
+## APLICACIÓN WEB - PANTALLAS
 
-### **1. LANDING PAGE (Página Principal)**
+### 1. LANDING PAGE (Página Principal)
 
 #### Secciones:
 ```
 ┌─────────────────────────────────────────────────┐
 │  NAVBAR                                         │
-│  Logo | Productos | Promociones | Sobre | Login│
+│  Logo | Productos | Sobre Nosotros | Login      │
+│  [Carrito: 0]                                   │
 └─────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────┐
 │  HERO SECTION                                   │
 │                                                 │
-│  "Pan Artesanal Fresco Cada Día" 🥖            │
+│  "Pan Artesanal Fresco Cada Día"                │
 │  [Imagen grande de pan recién horneado]        │
-│  [Botón: Ver Productos] [Botón: Ordenar Ahora]│
+│  [Botón: Ver Catálogo] [Botón: Reservar Ahora]  │
 └─────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────┐
 │  PRODUCTOS DESTACADOS                           │
 │  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐          │
-│  │ Pan  │ │Torta │ │Cookie│ │Pastel│          │
+│  │ Pan  │ │Torta │ │Gallet│ │Pastel│          │
 │  │$2.50 │ │$15.00│ │$1.00 │ │$12.00│          │
 │  └──────┘ └──────┘ └──────┘ └──────┘          │
 └─────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────┐
 │  CATEGORÍAS                                     │
-│  [Panes] [Pasteles] [Galletas] [Repostería]   │
+│  [Panes] [Pasteles] [Galletas] [Repostería]     │
 └─────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────┐
-│  PROMOCIONES ACTIVAS                            │
-│  "2x1 en Galletas" | "20% OFF en Pasteles"     │
+│  SOBRE NOSOTROS (Breve reseña)                  │
+│  Calidad tradicional e ingredientes seleccionados│
 └─────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────┐
 │  TESTIMONIOS                                    │
-│  ⭐⭐⭐⭐⭐ "El mejor pan de la ciudad"          │
+│  Calificación: Excelente. "El mejor pan"        │
 └─────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────┐
 │  FOOTER                                         │
-│  Contacto | Redes Sociales | Políticas         │
+│  Contacto | Sucursales | Políticas de Privacidad│
 └─────────────────────────────────────────────────┘
 ```
 
 #### Componentes:
 - `<Navbar />` - Navegación principal con carrito
-- `<HeroSection />` - Banner principal
+- `<HeroSection />` - Banner principal de bienvenida
 - `<ProductGrid />` - Grid de productos destacados
 - `<CategoryCards />` - Tarjetas de categorías
-- `<PromoSlider />` - Carrusel de promociones
 - `<Testimonials />` - Reseñas de clientes
 - `<Footer />` - Pie de página
 
 ---
 
-### **2. CATÁLOGO DE PRODUCTOS**
+### 2. CATÁLOGO DE PRODUCTOS
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -116,40 +116,38 @@ Caption: 0.75rem (12px) - Regular
 │  FILTROS   │  PRODUCTOS (Grid)                  │
 │            │                                    │
 │ Categorías │  ┌──────┐ ┌──────┐ ┌──────┐       │
-│ □ Panes    │  │ Pan  │ │Torta │ │Cookie│       │
-│ □ Pasteles │  │$2.50 │ │$15.00│ │$1.00 │       │
-│ □ Galletas │  │⭐4.5 │ │⭐4.8 │ │⭐5.0 │       │
-│            │  │[+]🛒 │ │[+]🛒 │ │[+]🛒 │       │
+│ [ ] Panes  │  │ Pan  │ │Torta │ │Gallet│       │
+│ [ ] Pastel │  │$2.50 │ │$15.00│ │$1.00 │       │
+│ [ ] Gallet │  │4.5/5 │ │4.8/5 │ │5.0/5 │       │
+│            │  │[+]Reservar │ │[+]Reservar  │       │
 │ Precio     │  └──────┘ └──────┘ └──────┘       │
 │ $0 - $50   │                                    │
 │ [═══●═══]  │  ┌──────┐ ┌──────┐ ┌──────┐       │
 │            │  │      │ │      │ │      │       │
-│ Rating     │  │      │ │      │ │      │       │
-│ ★★★★★ ↑   │  └──────┘ └──────┘ └──────┘       │
+│ Disponible │  │      │ │      │ │      │       │
+│ [x] Stock  │  └──────┘ └──────┘ └──────┘       │
 │            │                                    │
-│ Disponible │  [Paginación: 1 2 3 ... 10]       │
-│ ☑ En stock │                                    │
+│            │  [Paginación: 1 2 3 ... 10]       │
 └────────────┴────────────────────────────────────┘
 ```
 
 #### Funcionalidades:
-- Filtros por categoría, precio, rating
-- Búsqueda en tiempo real
-- Ordenar por: Precio, Popularidad, Nuevo
-- Vista Grid o Lista
-- Agregar al carrito rápido
+- Filtros por categoría, rango de precio y stock
+- Búsqueda de productos en tiempo real
+- Ordenamiento por: Precio ascendente/descendente, Popularidad
+- Agregar rápido al carrito
 - Ver detalles del producto
 
 #### Componentes:
 - `<ProductFilters />` - Panel de filtros lateral
-- `<ProductCard />` - Tarjeta de producto
+- `<ProductCard />` - Tarjeta de producto en catálogo
 - `<SearchBar />` - Barra de búsqueda
-- `<SortDropdown />` - Ordenamiento
-- `<Pagination />` - Paginación
+- `<SortDropdown />` - Desplegable de ordenamiento
+- `<Pagination />` - Control de paginación
 
 ---
 
-### **3. DETALLE DE PRODUCTO**
+### 3. DETALLE DE PRODUCTO
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -158,12 +156,12 @@ Caption: 0.75rem (12px) - Regular
 
 ┌───────────────────┬─────────────────────────────┐
 │                   │  Pan Francés Artesanal      │
-│   [Imagen        │  ⭐⭐⭐⭐⭐ (4.8) 127 reseñas│
+│   [Imagen        │  Calificación: 4.8 / 5      │
 │    Principal]     │                             │
 │                   │  $2.50                      │
-│  [🔍]            │  En Stock (45 unidades)     │
+│  [Zoom]           │  En Stock (45 unidades)     │
 │                   │                             │
-│  [○] [○] [○]     │  Descripción:               │
+│  [Img1][Img2]     │  Descripción:               │
 │  Miniaturas       │  Pan francés recién         │
 │                   │  horneado, crujiente por    │
 │                   │  fuera, suave por dentro    │
@@ -171,29 +169,18 @@ Caption: 0.75rem (12px) - Regular
 │                   │  Peso: 250g                 │
 │                   │  Calorías: 180 cal          │
 │                   │  Vida útil: 2 días          │
-│                   │                             │
-│                   │  Alérgenos: 🌾 Gluten      │
+│                   │  Alérgenos: Gluten          │
 │                   │                             │
 │                   │  Cantidad: [- 1 +]          │
 │                   │                             │
-│                   │  [🛒 Agregar al Carrito]   │
-│                   │  [♡ Agregar a Favoritos]   │
+│                   │  [Agregar al Carrito]       │
 └───────────────────┴─────────────────────────────┘
 
 ┌─────────────────────────────────────────────────┐
-│  INFORMACIÓN NUTRICIONAL                        │
-│  [Tab: Nutrición | Ingredientes | Reseñas]     │
+│  INFORMACIÓN ADICIONAL                          │
+│  [Tab: Nutrición | Ingredientes ]               │
 │                                                 │
 │  Proteínas: 8g | Carbohidratos: 35g | Grasas: 2g│
-└─────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────┐
-│  RESEÑAS DE CLIENTES                            │
-│                                                 │
-│  ⭐⭐⭐⭐⭐ Juan Pérez - "Excelente pan"        │
-│  ⭐⭐⭐⭐ María García - "Muy fresco"          │
-│                                                 │
-│  [Escribir Reseña]                              │
 └─────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────┐
@@ -203,18 +190,16 @@ Caption: 0.75rem (12px) - Regular
 ```
 
 #### Componentes:
-- `<ProductGallery />` - Galería de imágenes con zoom
-- `<ProductInfo />` - Información principal
-- `<QuantitySelector />` - Selector de cantidad
-- `<AddToCartButton />` - Botón agregar al carrito
-- `<ProductTabs />` - Tabs de información
-- `<ReviewsList />` - Lista de reseñas
-- `<ReviewForm />` - Formulario de reseña
-- `<RelatedProducts />` - Productos relacionados
+- `<ProductGallery />` - Galería de imágenes
+- `<ProductInfo />` - Información principal, precio e ingredientes
+- `<QuantitySelector />` - Selector de cantidad a comprar
+- `<AddToCartButton />` - Botón de agregar al carrito
+- `<ProductTabs />` - Pestañas de especificaciones nutricionales
+- `<RelatedProducts />` - Carrusel de productos recomendados
 
 ---
 
-### **4. CARRITO DE COMPRAS**
+### 4. CARRITO DE COMPRAS
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -227,141 +212,105 @@ Caption: 0.75rem (12px) - Regular
 │  ┌─────────────────────────┐  │  Subtotal:     │
 │  │ [Img] Pan Francés       │  │  $12.50        │
 │  │       $2.50 x 5         │  │                │
-│  │       [- 5 +] [🗑]     │  │  Descuento:    │
-│  │       = $12.50          │  │  -$2.50        │
-│  └─────────────────────────┘  │                │
-│                                │  Envío:        │
-│  ┌─────────────────────────┐  │  $3.00         │
-│  │ [Img] Torta Chocolate   │  │                │
-│  │       $15.00 x 1        │  │  ────────────  │
-│  │       [- 1 +] [🗑]     │  │  TOTAL:        │
-│  │       = $15.00          │  │  $28.00        │
-│  └─────────────────────────┘  │                │
-│                                │  ┌──────────┐ │
-│  ┌─────────────────────────┐  │  │ COMPRAR  │ │
-│  │ [Img] Galletas          │  │  └──────────┘ │
-│  │       $1.00 x 3         │  │                │
-│  │       [- 3 +] [🗑]     │  │  [♡ Guardar] │
-│  │       = $3.00           │  │                │
-│  └─────────────────────────┘  │                │
+│  │       [- 5 +] [Eliminar]│  │  Impuestos:    │
+│  │       = $12.50          │  │  $1.50         │
+│  │ └───────────────────────┘  │                │
+│                                │  ────────────  │
+│  ┌─────────────────────────┐  │  TOTAL:        │
+│  │ [Img] Torta Chocolate   │  │  $29.00        │
+│  │       $15.00 x 1        │  │                │
+│  │       [- 1 +] [Eliminar]│  │  ┌──────────┐  │
+│  │       = $15.00          │  │  │ RESERVAR │  │
+│  └─────────────────────────┘  │  └──────────┘  │
 │                                │                │
 │  ┌─────────────────────────┐  │                │
-│  │ 🏷️ Código de descuento │  │                │
-│  │ [________] [Aplicar]    │  │                │
+│  │ [Img] Galletas          │  │                │
+│  │       $1.00 x 3         │  │                │
+│  │       [- 3 +] [Eliminar]│  │                │
+│  │       = $3.00           │  │                │
 │  └─────────────────────────┘  │                │
 └────────────────────────────────┴────────────────┘
 
 ┌─────────────────────────────────────────────────┐
-│  ✨ Recomendaciones para ti                     │
+│  Recomendaciones para ti                        │
 │  [Pan Integral] [Brownies]                      │
 └─────────────────────────────────────────────────┘
 ```
 
 #### Funcionalidades:
-- Actualizar cantidades
-- Eliminar productos
-- Aplicar códigos de descuento
-- Calcular envío
-- Guardar carrito
-- Ver recomendaciones
+- Actualizar cantidades de productos
+- Eliminar productos del carrito
+- Ver total acumulado de reserva (sin cobro de envío)
+- Visualizar recomendaciones personalizadas de productos
 
 #### Componentes:
-- `<CartItem />` - Item del carrito
-- `<CartSummary />` - Resumen de compra
-- `<CouponInput />` - Input de cupón
-- `<CartRecommendations />` - Recomendaciones
+- `<CartItem />` - Fila del producto en carrito
+- `<CartSummary />` - Panel resumen con el botón para ir a reservar
+- `<CartRecommendations />` - Recomendaciones personalizadas
 
 ---
 
-### **5. CHECKOUT (Proceso de Compra)**
+### 5. CHECKOUT (Proceso de Reserva en 2 Pasos)
 
-#### **Paso 1: Información de Envío**
+#### Paso 1: Datos de la Reserva y Sucursal
 ```
 ┌─────────────────────────────────────────────────┐
-│  Checkout                                       │
-│  [●━━━━○━━━━○] 1.Envío 2.Pago 3.Confirmación  │
+│  Formulario de Reserva                          │
+│  [●━━━━━○] 1.Datos de Reserva 2.Confirmación    │
 └─────────────────────────────────────────────────┘
 
 ┌────────────────────────────────┬────────────────┐
-│  INFORMACIÓN DE ENVÍO          │  TU PEDIDO     │
+│  DATOS DE RECOGIDA             │  TU RESERVA    │
 │                                │                │
-│  Tipo de Entrega:              │  3 productos   │
-│  ● Delivery  ○ Pickup          │                │
-│                                │  Pan x5        │
-│  Dirección de Entrega:         │  Torta x1      │
-│  ┌──────────────────────────┐ │  Galletas x3   │
-│  │ Calle Principal #123     │ │                │
-│  │ Col. Centro              │ │  Subtotal:     │
-│  │ Tegucigalpa, Honduras    │ │  $30.50        │
-│  └──────────────────────────┘ │                │
-│                                │  Envío:        │
-│  [+ Agregar Nueva Dirección]   │  $3.00         │
-│                                │                │
-│  Fecha de Entrega:             │  ────────────  │
-│  [📅 11/11/2025] [⏰ 3:00 PM] │  Total:        │
-│                                │  $33.50        │
+│  Sucursal de Recogida:         │  3 productos   │
+│  ( ) Sucursal Centro           │                │
+│  ( ) Sucursal Norte            │  Pan x5        │
+│  ( ) Sucursal Sur              │  Torta x1      │
+│                                │  Galletas x3   │
+│  Fecha de Recogida:            │                │
+│  [ Seleccionar Fecha (📅) ]    │  Subtotal:     │
+│                                │  $27.50        │
+│  Hora de Recogida:             │  Impuestos:    │
+│  [ Seleccionar Hora (⏰) ]    │  $1.50         │
+│                                │  ────────────  │
+│  Método de Pago en Tienda:     │  Total:        │
+│  ( ) Pago al recoger (Caja)    │  $29.00        │
+│  ( ) Transferencia bancaria    │                │
+│                                │  [Confirmar]   │
 │  Notas Especiales:             │                │
-│  [________________________]    │  [Continuar]   │
-│                                │                │
+│  [________________________]    │                │
 └────────────────────────────────┴────────────────┘
 ```
 
-#### **Paso 2: Método de Pago**
+#### Paso 2: Confirmación de Reserva
 ```
 ┌─────────────────────────────────────────────────┐
-│  Checkout                                       │
-│  [●━━━━●━━━━○] 1.Envío 2.Pago 3.Confirmación  │
-└─────────────────────────────────────────────────┘
-
-┌────────────────────────────────┬────────────────┐
-│  MÉTODO DE PAGO                │  TU PEDIDO     │
-│                                │                │
-│  ● Tarjeta de Crédito/Débito   │  Total: $33.50 │
-│  ○ Pago contra entrega         │                │
-│  ○ Transferencia bancaria      │  🔒 Pago      │
-│                                │  Seguro        │
-│  ┌──────────────────────────┐ │                │
-│  │ 💳 Stripe Payment        │ │                │
-│  │                          │ │                │
-│  │ Número de Tarjeta        │ │                │
-│  │ [____-____-____-____]    │ │                │
-│  │                          │ │                │
-│  │ Nombre                   │ │                │
-│  │ [__________________]     │ │                │
-│  │                          │ │                │
-│  │ Exp.    CVV              │ │                │
-│  │ [MM/YY] [___]            │ │                │
-│  │                          │ │                │
-│  │ [Guardar para después]  │ │                │
-│  └──────────────────────────┘ │                │
-│                                │                │
-│  [← Volver]    [Pagar $33.50] │                │
-└────────────────────────────────┴────────────────┘
-```
-
-#### **Paso 3: Confirmación**
-```
-┌─────────────────────────────────────────────────┐
-│  ✅ ¡Pedido Confirmado!                         │
-│  [●━━━━●━━━━●] Completado                      │
+│  ¡Reserva Confirmada Exitosamente!              │
+│  [●━━━━━●] Completado                           │
 └─────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────┐
-│  Número de Orden: #ORD-20250111-0042            │
+│  Número de Reserva: #ORD-20261111-0042          │
 │                                                 │
-│  📧 Hemos enviado la confirmación a tu email    │
-│  📱 Recibirás notificaciones del estado         │
+│  Hemos enviado los detalles a tu correo         │
 │                                                 │
-│  Estado: EN PREPARACIÓN                         │
-│  Entrega estimada: 11 Nov, 3:00 PM              │
+│  Estado de Reserva: PENDIENTE DE RECOGIDA       │
+│  Horario Pactado: 11 Nov 2026, 3:00 PM          │
+│  Lugar: Sucursal Centro                         │
 │                                                 │
-│  [Ver Detalles] [Seguir Pedido] [Volver]       │
+│  [Ver Detalle de Reservas] [Volver al Inicio]   │
 └─────────────────────────────────────────────────┘
 ```
+
+#### Componentes:
+- `<BranchSelector />` - Selector de sucursal
+- `<DateTimePicker />` - Selectores de fecha y hora permitidas
+- `<OrderSummary />` - Resumen del pedido
+- `<ConfirmationCard />` - Tarjeta final con el código único de pedido
 
 ---
 
-### **6. PERFIL DE USUARIO**
+### 6. PERFIL DE USUARIO
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -372,466 +321,178 @@ Caption: 0.75rem (12px) - Regular
 │  MENÚ      │  PERFIL                            │
 │            │                                    │
 │ ● Perfil   │  [Avatar]                          │
-│ ○ Pedidos  │  Juan Pérez                        │
+│ ○ Reservas │  Juan Pérez                        │
 │ ○ Direc.   │  juan@email.com                    │
-│ ○ Favoritos│  +504 9999-9999                    │
-│ ○ Puntos   │                                    │
-│ ○ Seguridad│  ┌──────────────────────────────┐ │
-│ ○ Salir    │  │ Editar Perfil               │ │
+│ ○ Seguridad│  +502 5555-5555                    │
+│ ○ Salir    │                                    │
+│            │  ┌──────────────────────────────┐ │
+│            │  │ Editar Perfil               │ │
 │            │  │                              │ │
-│            │  │ Nombre: [____________]       │ │
-│            │  │ Email:  [____________]       │ │
-│            │  │ Teléfono: [__________]       │ │
+│            │  │ Nombre: [Juan Pérez      ]   │ │
+│            │  │ Email:  [juan@email.com  ]   │ │
+│            │  │ Teléfono: [5555-5555     ]   │ │
 │            │  │                              │ │
 │            │  │ [Cancelar] [Guardar Cambios]│ │
 │            │  └──────────────────────────────┘ │
-│            │                                    │
-│            │  Puntos de Fidelidad               │
-│            │  ⭐ 1,250 puntos (Nivel: GOLD)    │
-│            │  [Ver Recompensas]                 │
 └────────────┴────────────────────────────────────┘
 ```
 
 ---
 
-### **7. MIS PEDIDOS**
+### 7. MIS RESERVAS (Historial de Pedidos)
 
 ```
 ┌─────────────────────────────────────────────────┐
-│  Mis Pedidos                                    │
-│  [Todo] [Activos] [Completados] [Cancelados]   │
+│  Mis Reservas                                   │
+│  [Todas] [Pendientes] [Listas] [Entregadas]     │
 └─────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────┐
-│  📦 Pedido #ORD-20250111-0042                   │
-│  Estado: EN ENTREGA 🚚                          │
-│  Fecha: 11 Nov 2025, 2:30 PM                    │
-│  Total: $33.50                                  │
+│  Reserva #ORD-20261111-0042                     │
+│  Estado: LISTO PARA RECOGER                     │
+│  Fecha programada: 11 Nov 2026, 3:00 PM         │
+│  Lugar: Sucursal Centro                         │
+│  Total: $29.00                                  │
 │                                                 │
-│  Items: Pan x5, Torta x1, Galletas x3           │
+│  Detalle: Pan Francés x5, Torta x1, Galletas x3 │
 │                                                 │
-│  ────────────────────────────────────────────── │
-│  ● Pedido Recibido     ✅ 2:30 PM              │
-│  ● Preparando          ✅ 2:45 PM              │
-│  ● En Camino           🔵 3:00 PM (actual)     │
-│  ○ Entregado           ⏳                      │
+│  Timeline:                                      │
+│  - Reserva Recibida    (Completado 2:30 PM)     │
+│  - En Horno/Preparando (Completado 2:45 PM)     │
+│  - Listo en Sucursal   (Actual - Esperando)     │
 │                                                 │
-│  [📍 Rastrear] [📞 Contactar] [Ver Detalles]  │
+│  [Cancelar Reserva] [📞 Contactar Sucursal]     │
 └─────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────┐
-│  📦 Pedido #ORD-20250109-0038                   │
-│  Estado: ENTREGADO ✅                           │
-│  Fecha: 09 Nov 2025                             │
+│  Reserva #ORD-20261109-0038                     │
+│  Estado: ENTREGADO Y PAGADO                     │
+│  Fecha de entrega: 09 Nov 2026                  │
 │  Total: $25.00                                  │
 │                                                 │
-│  [Ver Detalles] [⭐ Dejar Reseña] [Reordenar]  │
+│  [Ver Detalles] [Volver a Reservar]             │
 └─────────────────────────────────────────────────┘
 ```
 
 ---
 
-### **8. DASHBOARD ADMIN**
+### 8. DASHBOARD ADMIN
 
 ```
 ┌─────────────────────────────────────────────────┐
-│  Panaderia Svetlana Admin | Juan Admin | 🔔 [3] | Salir │
+│  Panaderia Svetlana Admin | Cajero Centro | Salir│
 └─────────────────────────────────────────────────┘
 
 ┌────────────┬────────────────────────────────────┐
-│  MENÚ      │  DASHBOARD                         │
+│  MENÚ      │  DASHBOARD GENERAL                 │
 │            │                                    │
-│ ● Dashboard│  Resumen de Hoy                    │
-│ ○ Pedidos  │  ┌────┐ ┌────┐ ┌────┐ ┌────┐     │
-│ ○ Productos│  │$125│ │ 15 │ │ 89%│ │ 12 │     │
-│ ○ Inventar.│  │Vtas│ │Ord.│ │Sat.│ │New│     │
+│ ● Dashboard│  Resumen del Día                   │
+│ ○ Reservas │  ┌────┐ ┌────┐ ┌────┐ ┌────┐     │
+│ ○ Productos│  │$125│ │ 15 │ │ 98%│ │ 04 │     │
+│ ○ Inventar.│  │Vtas│ │Res.│ │Cump│ │Agot│     │
 │ ○ Clientes │  └────┘ └────┘ └────┘ └────┘     │
-│ ○ Empleados│                                    │
-│ ○ Reportes │  Gráfico de Ventas (Últimos 7d)   │
-│ ○ Promoc.  │  [Gráfico de línea]                │
-│ ○ Config.  │                                    │
-│            │  Pedidos Recientes                 │
+│ ○ Reportes │                                    │
+│ ○ Config.  │  Ventas Semanales (Por sucursal)   │
+│            │  [Gráfico de barras comparativo]   │
+│            │                                    │
+│            │  Reservas Recientes                │
 │            │  ┌──────────────────────────────┐ │
-│            │  │ #042 | Juan P. | $33.50 | 🔵│ │
-│            │  │ #041 | María G.| $15.00 | ✅│ │
+│            │  │ #042 | Juan P. | $29.00 | Listo  │ │
+│            │  │ #041 | María G.| $15.00 | Prep.  │ │
 │            │  └──────────────────────────────┘ │
 │            │                                    │
-│            │  Productos Bajo Stock ⚠️          │
-│            │  • Pan Integral (3 unidades)       │
-│            │  • Galletas Avena (5 unidades)     │
+│            │  Alertas de Materia Prima Baja     │
+│            │  - Harina Suave (25 Libras - Min)  │
 └────────────┴────────────────────────────────────┘
 ```
 
 ---
 
-### **9. GESTIÓN DE PRODUCTOS (Admin)**
+### 9. GESTIÓN DE PRODUCTOS (Admin)
 
 ```
 ┌─────────────────────────────────────────────────┐
-│  Productos                                      │
-│  [+ Nuevo Producto] [📥 Importar] [📤 Exportar]│
+│  Catálogo de Productos                          │
+│  [+ Nuevo Producto]                             │
 └─────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────┐
-│  🔍 [Buscar productos...]  [Filtros▾]          │
+│  [Buscar productos...]       [Categorías▾]      │
 └─────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────┐
-│  Tabla de Productos                             │
+│  Listado de Productos                           │
 │  ┌──────────────────────────────────────────┐  │
-│  │ [✓] | Img | Nombre | Cat. | Precio | Stock│ │
+│  │ Nombre | SKU | Categoría | Precio | Stock│  │
 │  ├──────────────────────────────────────────┤  │
-│  │ [ ] | 🥖 | Pan F. | Panes| $2.50 | 45   │ │
-│  │ [ ] | 🍰 | Torta  | Past.| $15.0 | 12   │ │
-│  │ [ ] | 🍪 | Cookie | Gall.| $1.00 | ⚠️5 │ │
+│  │ Pan F. | PF1 | Panes     | $2.50  | 45   │  │
+│  │ Torta  | TC1 | Pasteles  | $15.00 | 12   │  │
+│  │ Cookie | GA1 | Galletas  | $1.00  | 5    │  │
 │  │                                          │  │
-│  │ [Acciones: ✏️ Editar | 👁️ Ver | 🗑️ Borrar]│  │
+│  │ [Acciones: Editar | Ver Detalle | Eliminar] │  │
 │  └──────────────────────────────────────────┘  │
 │                                                 │
-│  [Paginación: 1 2 3 ... 10] Mostrando 1-20/187 │
+│  [Paginación: 1 2 3] Mostrando 1-10 de 30       │
 └─────────────────────────────────────────────────┘
 ```
 
 ---
 
-### **10. GESTIÓN DE PEDIDOS (Admin)**
+### 10. GESTIÓN DE PEDIDOS (Admin / Reservas)
 
 ```
 ┌─────────────────────────────────────────────────┐
-│  Pedidos                                        │
-│  [Todos] [Pendientes] [En Proceso] [Entregados]│
+│  Reservas de Clientes                           │
+│  [Todas] [Pendientes] [En Preparación] [Listas] │
 └─────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────┐
-│  Vista de Kanban                                │
+│  Tablero Kanban de Control                      │
 │                                                 │
-│  PENDIENTE    EN PREP.    EN CAMINO   ENTREGADO│
-│  ┌──────┐    ┌──────┐    ┌──────┐    ┌──────┐ │
-│  │ #042 │    │ #041 │    │ #039 │    │ #038 │ │
-│  │$33.50│    │$15.00│    │$28.00│    │$45.00│ │
-│  │ 2:30 │    │ 1:15 │    │11:30 │    │ 9:00 │ │
-│  └──────┘    └──────┘    └──────┘    └──────┘ │
-│  ┌──────┐    ┌──────┐                          │
-│  │ #040 │    │ #037 │                          │
-│  │$22.00│    │$19.50│                          │
-│  └──────┘    └──────┘                          │
+│  PENDIENTE      EN PREPARACIÓN    LISTO EN TIENDA │
+│  ┌─────────┐    ┌─────────┐      ┌─────────┐      │
+│  │ #ORD-042│    │ #ORD-041│      │ #ORD-040│      │
+│  │ $29.00  │    │ $15.00  │      │ $22.50  │      │
+│  │ 15:00   │    │ 16:30   │      │ 12:15   │      │
+│  └─────────┘    └─────────┘      └─────────┘      │
 │                                                 │
-│  [Arrastrar para cambiar estado]                │
+│  [Arrastrar tarjeta para cambiar estado]        │
 └─────────────────────────────────────────────────┘
 ```
 
 ---
 
-### **11. REPORTES Y ANALÍTICA (Admin)**
+### 11. REPORTES Y ANALÍTICA (Admin)
 
 ```
 ┌─────────────────────────────────────────────────┐
-│  Reportes y Analítica                           │
-│  [📅 Hoy] [Esta Semana] [Este Mes] [Custom]    │
+│  Reportes y Rendimiento                         │
+│  [Hoy] [Esta Semana] [Este Mes]                 │
 └─────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────┐
-│  KPIs Principales                               │
-│  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐  │
-│  │ Ventas │ │ Pedidos│ │  AOV   │ │  CTR   │  │
-│  │$1,234  │ │   45   │ │ $27.42 │ │ 23.5% │  │
-│  │ ↑ 12%  │ │ ↑ 8%   │ │ ↓ 3%   │ │ ↑ 5%  │  │
-│  └────────┘ └────────┘ └────────┘ └────────┘  │
-└─────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────┐
-│  Ventas por Categoría                           │
-│  [Gráfico de Donut]                             │
-│  🥖 Panes: 45%                                  │
-│  🍰 Pasteles: 30%                               │
-│  🍪 Galletas: 15%                               │
-│  🧁 Repostería: 10%                             │
-└─────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────┐
-│  Predicción de Demanda (IA) 🤖                  │
-│  [Gráfico de Línea con Predicción]              │
-│  Productos con mayor demanda mañana:             │
-│  • Pan Francés: 85 unidades estimadas           │
-│  • Torta Chocolate: 12 unidades estimadas       │
-└─────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────┐
-│  [📥 Exportar PDF] [📊 Exportar Excel]          │
+│  Gráficos Estadísticos                          │
+│                                                 │
+│  Ventas Totales por Sucursal:                   │
+│  - Sucursal Centro: $1,250.00                   │
+│  - Sucursal Norte: $850.00                      │
+│                                                 │
+│  Predicción de Demanda Inteligente (IA):        │
+│  [Gráfico de línea - Estimaciones futuras]      │
+│  Sugerencias de producción para mañana:         │
+│  - Pan Francés: 80 unidades estimadas           │
+│  - Baguette: 20 unidades estimadas             │
 └─────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 📱 APLICACIÓN MÓVIL - PANTALLAS
+## COMPONENTES REUTILIZABLES
 
-### **ARQUITECTURA DE NAVEGACIÓN**
-
-```
-Bottom Tab Navigator
-├─ Home (Stack)
-│  ├─ HomeScreen
-│  ├─ ProductDetailScreen
-│  └─ CategoryScreen
-│
-├─ Catálogo (Stack)
-│  ├─ ProductsScreen
-│  ├─ ProductDetailScreen
-│  └─ FilterScreen
-│
-├─ Carrito (Stack)
-│  ├─ CartScreen
-│  ├─ CheckoutScreen
-│  └─ OrderConfirmationScreen
-│
-├─ Pedidos (Stack)
-│  ├─ OrdersListScreen
-│  └─ OrderDetailScreen
-│
-└─ Perfil (Stack)
-   ├─ ProfileScreen
-   ├─ EditProfileScreen
-   ├─ AddressesScreen
-   └─ SettingsScreen
-```
-
----
-
-### **M1. HOME SCREEN (Móvil)**
-
-```
-┌─────────────────────────┐
-│  ☰  Panaderia Svetlana    🔔 🛒 │
-├─────────────────────────┤
-│                         │
-│  Hola, Juan! 👋         │
-│                         │
-│  🔍 Buscar productos... │
-│                         │
-├─────────────────────────┤
-│  🔥 Promociones         │
-│  ┌──────────┐           │
-│  │ 2x1 en   │→          │
-│  │ Galletas │           │
-│  └──────────┘           │
-├─────────────────────────┤
-│  Categorías             │
-│  ┌────┐┌────┐┌────┐    │
-│  │🥖 ││🍰 ││🍪 │    │
-│  │Pan││Tort││Cook│    │
-│  └────┘└────┘└────┘    │
-├─────────────────────────┤
-│  Productos Destacados   │
-│  ┌───────┐ ┌───────┐   │
-│  │ Pan   │ │ Torta │   │
-│  │ $2.50 │ │$15.00 │   │
-│  │ ⭐4.5│ │ ⭐4.8│   │
-│  │ [+🛒]│ │ [+🛒]│   │
-│  └───────┘ └───────┘   │
-│                         │
-└─────────────────────────┘
-  [🏠] [📦] [🛒] [📋] [👤]
-```
-
----
-
-### **M2. PRODUCTO DETALLE (Móvil)**
-
-```
-┌─────────────────────────┐
-│  ← Pan Francés     ♡ ⋮ │
-├─────────────────────────┤
-│                         │
-│    [Imagen Grande]      │
-│                         │
-│    ○ ○ ● ○ ○          │
-├─────────────────────────┤
-│  Pan Francés Artesanal  │
-│  ⭐⭐⭐⭐⭐ (4.8) 127  │
-│                         │
-│  $2.50                  │
-│  En Stock (45 unidades) │
-│                         │
-├─────────────────────────┤
-│  Descripción ▾          │
-│  Pan recién horneado,   │
-│  crujiente por fuera... │
-│                         │
-│  Información ▾          │
-│  • Peso: 250g           │
-│  • Calorías: 180        │
-│  • Vida útil: 2 días    │
-│                         │
-│  Alérgenos ▾            │
-│  🌾 Gluten             │
-│                         │
-│  Reseñas (127) ▾        │
-│  ⭐⭐⭐⭐⭐ Juan P.     │
-│  "Excelente pan..."     │
-│                         │
-└─────────────────────────┘
-┌─────────────────────────┐
-│  [- 1 +]  [🛒 Agregar] │
-└─────────────────────────┘
-```
-
----
-
-### **M3. CARRITO (Móvil)**
-
-```
-┌─────────────────────────┐
-│  ← Mi Carrito (3)       │
-├─────────────────────────┤
-│  ┌─────────────────────┐│
-│  │[Img] Pan Francés    ││
-│  │      $2.50 x 5      ││
-│  │      [- 5 +]  🗑   ││
-│  │      = $12.50       ││
-│  └─────────────────────┘│
-│  ┌─────────────────────┐│
-│  │[Img] Torta Chocolate││
-│  │      $15.00 x 1     ││
-│  │      [- 1 +]  🗑   ││
-│  │      = $15.00       ││
-│  └─────────────────────┘│
-│  ┌─────────────────────┐│
-│  │[Img] Galletas       ││
-│  │      $1.00 x 3      ││
-│  │      [- 3 +]  🗑   ││
-│  │      = $3.00        ││
-│  └─────────────────────┘│
-│                         │
-│  🏷️ Código descuento   │
-│  [________] [Aplicar]   │
-│                         │
-├─────────────────────────┤
-│  Subtotal:      $30.50 │
-│  Descuento:     -$2.50 │
-│  Envío:          $3.00 │
-│  ─────────────────────  │
-│  Total:         $31.00 │
-└─────────────────────────┘
-┌─────────────────────────┐
-│  [Continuar Comprando]  │
-│  [Proceder al Pago]     │
-└─────────────────────────┘
-```
-
----
-
-### **M4. CHECKOUT (Móvil)**
-
-```
-┌─────────────────────────┐
-│  ← Checkout             │
-│  ●━━━○━━━○             │
-│  Envío Pago Confirm     │
-├─────────────────────────┤
-│  Tipo de Entrega        │
-│  ● Delivery             │
-│  ○ Pickup               │
-│                         │
-│  Dirección de Entrega   │
-│  ┌─────────────────────┐│
-│  │📍 Casa              ││
-│  │   Calle Principal #││
-│  │   Col. Centro       ││
-│  │   ● Seleccionada    ││
-│  └─────────────────────┘│
-│  [+ Nueva Dirección]    │
-│                         │
-│  Fecha de Entrega       │
-│  📅 11/11/2025          │
-│  ⏰ 3:00 PM             │
-│                         │
-│  Notas Especiales       │
-│  ┌─────────────────────┐│
-│  │                     ││
-│  └─────────────────────┘│
-│                         │
-├─────────────────────────┤
-│  Total: $31.00          │
-└─────────────────────────┘
-┌─────────────────────────┐
-│  [Continuar al Pago]    │
-└─────────────────────────┘
-```
-
----
-
-### **M5. MIS PEDIDOS (Móvil)**
-
-```
-┌─────────────────────────┐
-│  ← Mis Pedidos          │
-│  [Activos] [Historial]  │
-├─────────────────────────┤
-│  📦 #ORD-042            │
-│  EN CAMINO 🚚           │
-│  ┌─────────────────────┐│
-│  │ ● Recibido    ✅   ││
-│  │ ● Preparando  ✅   ││
-│  │ ● En Camino   🔵   ││
-│  │ ○ Entregado   ⏳   ││
-│  └─────────────────────┘│
-│  Items: 3               │
-│  Total: $33.50          │
-│  Llegada: 3:00 PM       │
-│                         │
-│  [📍Rastrear] [Detalle]│
-├─────────────────────────┤
-│  📦 #ORD-038            │
-│  ENTREGADO ✅           │
-│  09 Nov 2025            │
-│  Total: $25.00          │
-│                         │
-│  [Ver] [⭐Reseñar]     │
-├─────────────────────────┤
-│                         │
-└─────────────────────────┘
-  [🏠] [📦] [🛒] [📋] [👤]
-```
-
----
-
-### **M6. PERFIL (Móvil)**
-
-```
-┌─────────────────────────┐
-│  ← Mi Perfil            │
-├─────────────────────────┤
-│      [Avatar]           │
-│      Juan Pérez         │
-│   juan@email.com        │
-│                         │
-│   ⭐ 1,250 Puntos      │
-│   Nivel: GOLD           │
-│   [Ver Recompensas]     │
-├─────────────────────────┤
-│  👤 Editar Perfil       │
-│  📍 Mis Direcciones     │
-│  ♡  Favoritos           │
-│  🎁 Puntos y Premios    │
-│  🔔 Notificaciones      │
-│  🔐 Seguridad           │
-│  ❓ Ayuda               │
-│  ⚙️ Configuración       │
-│  🚪 Cerrar Sesión       │
-│                         │
-│  Versión 1.0.0          │
-└─────────────────────────┘
-  [🏠] [📦] [🛒] [📋] [👤]
-```
-
----
-
-## 🎨 COMPONENTES REUTILIZABLES
-
-### Librería de Componentes
+### Librería de Componentes (TypeScript / React)
 ```typescript
 // Botones
-<Button variant="primary" size="lg">Comprar</Button>
+<Button variant="primary" size="lg">Confirmar Reserva</Button>
 <Button variant="outline" size="md">Cancelar</Button>
 <IconButton icon="cart" badge={3} />
 
@@ -842,15 +503,13 @@ Bottom Tab Navigator
 
 // Formularios
 <Input label="Email" type="email" />
-<Select options={categories} label="Categoría" />
-<TextArea label="Notas" rows={4} />
-<Checkbox label="Recordarme" />
-<Radio options={options} />
+<Select options={branches} label="Sucursal de recogida" />
+<TextArea label="Notas de reserva" rows={4} />
 
 // Feedback
-<Alert type="success">Producto agregado</Alert>
-<Toast message="Pedido confirmado" />
-<Modal title="Confirmar" onClose={handleClose} />
+<Alert type="success">Reserva creada con éxito</Alert>
+<Toast message="Estado actualizado" />
+<Modal title="Confirmar Acción" onClose={handleClose} />
 <Loader />
 
 // Navegación
@@ -858,55 +517,36 @@ Bottom Tab Navigator
 <Pagination currentPage={1} totalPages={10} />
 <Tabs tabs={tabs} />
 
-// Datos
+// Tablas e Indicadores
 <Table columns={columns} data={products} />
-<Badge>Nuevo</Badge>
-<Rating value={4.5} />
-<PriceDisplay price={12.50} compareAt={15.00} />
-
-// Layout
-<Container>
-<Grid cols={3}>
-<Card>
-<Sidebar>
+<Badge>Listo para recoger</Badge>
+<PriceDisplay price={12.50} />
 ```
 
 ---
 
-## 📐 RESPONSIVE BREAKPOINTS
-
+## RESPONSIVE BREAKPOINTS
 ```css
-/* Mobile First */
-sm: 640px   // Tablet
-md: 768px   // Tablet Landscape
-lg: 1024px  // Desktop
-xl: 1280px  // Large Desktop
-2xl: 1536px // Extra Large
+sm: 640px   /* Dispositivos móviles / Tablets pequeños */
+md: 768px   /* Tablets en modo vertical */
+lg: 1024px  /* Computadoras de escritorio estándar */
+xl: 1280px  /* Monitores de pantalla ancha */
 ```
 
 ---
 
-## ✅ CHECKLIST DE PANTALLAS
+## CHECKLIST DE PANTALLAS (APLICACIÓN WEB RESPONSIVE)
 
-### Web App
-- [x] Landing Page
-- [x] Catálogo de Productos
-- [x] Detalle de Producto
-- [x] Carrito
-- [x] Checkout (3 pasos)
-- [x] Perfil de Usuario
-- [x] Mis Pedidos
-- [x] Dashboard Admin
-- [x] Gestión de Productos
-- [x] Gestión de Pedidos
-- [x] Reportes y Analítica
+- [x] Landing Page (Página de inicio y bienvenida)
+- [x] Catálogo de Productos (Filtros y búsqueda)
+- [x] Detalle de Producto (Información y galería)
+- [x] Carrito de Compras (Gestión de ítems a reservar)
+- [x] Checkout (2 pasos: Datos de recogida y Confirmación)
+- [x] Perfil de Usuario (Datos personales y direcciones)
+- [x] Historial de Reservas (Listas de pedidos de clientes)
+- [x] Dashboard de Administración (Resumen general y gráficos)
+- [x] Gestión de Catálogo de Productos (CRUD completo para Admin)
+- [x] Panel Kanban de Control de Reservas (Cambio de estados para Admin)
+- [x] Reportes y Analítica (Ventas y predicciones de IA)
 
-### Mobile App
-- [x] Home
-- [x] Producto Detalle
-- [x] Carrito
-- [x] Checkout
-- [x] Mis Pedidos
-- [x] Perfil
-
-**Total: 17 pantallas principales diseñadas** ✅
+**Total: 11 pantallas web responsivas diseñadas**

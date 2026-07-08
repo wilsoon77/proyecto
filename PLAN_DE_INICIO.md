@@ -1,18 +1,18 @@
-# 🚀 PLAN DE INICIO - Por dónde empezar
+# PLAN DE INICIO - Por donde empezar
 
-## 📍 ESTÁS AQUÍ (Fase de Planificación Completada ✅)
+## ESTAS AQUI (Fase de Planificacion Completada)
 
 Ya tienes:
-- ✅ Stack tecnológico definido
-- ✅ Arquitectura planificada
-- ✅ Costos clarificados
-- ✅ GitHub Education listo para usar
+- Stack tecnológico definido
+- Arquitectura planificada
+- Costos clarificados
+- GitHub Education listo para usar
 
 ---
 
-## 🎯 RUTA RECOMENDADA PARA EMPEZAR
+## RUTA RECOMENDADA PARA EMPEZAR
 
-### **OPCIÓN A: Enfoque Visual-First (Recomendado para presentación) ⭐**
+### **OPCIÓN A: Enfoque Visual-First (Recomendado para presentación)**
 
 ```
 1. Diseño UI/UX en Figma
@@ -22,10 +22,10 @@ Ya tienes:
 ```
 
 **Ventajas:**
-- ✅ Ves resultados rápido
-- ✅ Motiva más
-- ✅ Puedes mostrar avances visuales
-- ✅ Defines bien qué necesitas del backend
+- Ves resultados rápido
+- Motiva más
+- Puedes mostrar avances visuales
+- Defines bien qué necesitas del backend
 
 ### **OPCIÓN B: Enfoque Backend-First (Más tradicional)**
 
@@ -37,11 +37,11 @@ Ya tienes:
 ```
 
 **Ventajas:**
-- ✅ Base sólida desde el inicio
-- ✅ Frontend consume APIs reales
-- ✅ Más estructurado
+- Base sólida desde el inicio
+- Frontend consume APIs reales
+- Más estructurado
 
-### **OPCIÓN C: Enfoque Full-Stack Simultáneo (Mi favorito) 🌟**
+### **OPCIÓN C: Enfoque Full-Stack Simultáneo (Mi favorito)**
 
 ```
 1. Diseño UI/UX básico (wireframes)
@@ -51,16 +51,16 @@ Ya tienes:
 ```
 
 **Ventajas:**
-- ✅ Ves el sistema completo funcionando rápido
-- ✅ Detectas problemas temprano
-- ✅ Más práctico y real
-- ✅ Mejor para aprender
+- Ves el sistema completo funcionando rápido
+- Detectas problemas temprano
+- Más práctico y real
+- Mejor para aprender
 
 ---
 
-## 📋 MI RECOMENDACIÓN: PLAN DE 7 PASOS
+## MI RECOMENDACIÓN: PLAN DE 7 PASOS
 
-### **PASO 1: Diseño Conceptual (1-2 días) 📐**
+### **PASO 1: Diseño Conceptual (1-2 días)**
 
 **Qué hacer:**
 - Crear wireframes básicos en papel o Figma
@@ -71,11 +71,11 @@ Ya tienes:
 - Documento con wireframes
 - Diagrama ER de base de datos
 
-**¿Empezamos por aquí? 👈 TE RECOMIENDO ESTO**
+**¿Empezamos por aquí? (TE RECOMIENDO ESTO)**
 
 ---
 
-### **PASO 2: Setup del Proyecto (1 día) ⚙️**
+### **PASO 2: Setup del Proyecto (1 día)**
 
 **Qué hacer:**
 - Crear repositorio en GitHub
@@ -90,7 +90,7 @@ Ya tienes:
 
 ---
 
-### **PASO 3: Base de Datos y Backend Core (3-4 días) 🗄️**
+### **PASO 3: Base de Datos y Backend Core (3-4 días)**
 
 **Qué hacer:**
 - Configurar PostgreSQL local
@@ -105,7 +105,7 @@ Ya tienes:
 
 ---
 
-### **PASO 4: Frontend Base (3-4 días) 🎨**
+### **PASO 4: Frontend Base (3-4 días)**
 
 **Qué hacer:**
 - Configurar Tailwind y shadcn/ui
@@ -120,7 +120,7 @@ Ya tienes:
 
 ---
 
-### **PASO 5: Feature Principal - Productos (1 semana) 📦**
+### **PASO 5: Feature Principal - Productos (1 semana)**
 
 **Qué hacer:**
 - Backend: CRUD de productos
@@ -134,20 +134,20 @@ Ya tienes:
 
 ---
 
-### **PASO 6: Sistema de Pedidos (1 semana) 🛒**
+### **PASO 6: Sistema de Pedidos (1 semana)**
 
 **Qué hacer:**
 - Backend: CRUD de pedidos
 - Frontend: Carrito de compras
 - Proceso de checkout
-- Sistema de pagos (Stripe test mode)
+- Selección de sucursal para recogida y método de pago (efectivo/transferencia)
 
 **Entregable:**
-- Flujo completo de compra
+- Flujo completo de compra (reserva)
 
 ---
 
-### **PASO 7: Features Avanzadas (2-3 semanas) 🚀**
+### **PASO 7: Features Avanzadas (2-3 semanas)**
 
 **Qué hacer:**
 - Dashboard admin
@@ -157,9 +157,9 @@ Ya tienes:
 
 ---
 
-## 🎬 ¿POR DÓNDE EMPEZAMOS HOY?
+## ¿POR DÓNDE EMPEZAMOS HOY?
 
-### **Opción 1: Diseño de Base de Datos** 📊
+### **Opción 1: Diseño de Base de Datos**
 Te ayudo a crear el esquema completo de la base de datos (tablas, relaciones, etc.)
 
 **Tiempo:** 1-2 horas  
@@ -168,7 +168,7 @@ Te ayudo a crear el esquema completo de la base de datos (tablas, relaciones, et
 
 ---
 
-### **Opción 2: Setup Proyecto Next.js** ⚡ (MÁS RÁPIDO)
+### **Opción 2: Setup Proyecto Next.js** (MÁS RÁPIDO)
 Creamos el proyecto Next.js con toda la configuración inicial
 
 **Tiempo:** 15-30 minutos  
@@ -181,7 +181,7 @@ Creamos el proyecto Next.js con toda la configuración inicial
 
 ---
 
-### **Opción 3: Wireframes/Diseño UI** 🎨
+### **Opción 3: Wireframes/Diseño UI**
 Definimos cómo se verá la aplicación (pantallas principales)
 
 **Tiempo:** 1-2 horas  
@@ -190,44 +190,44 @@ Definimos cómo se verá la aplicación (pantallas principales)
 
 ---
 
-## 🤔 ¿Cuál te llama más la atención?
+## ¿Cuál te llama más la atención?
 
 **Mi recomendación personal:**
 
 ```
-1️⃣ PRIMERO: Setup proyecto Next.js (Opción 2)
+1. PRIMERO: Setup proyecto Next.js (Opción 2)
    ↓ (30 minutos - ves algo funcionando)
    
-2️⃣ SEGUNDO: Diseño de Base de Datos (Opción 1)
+2. SEGUNDO: Diseño de Base de Datos (Opción 1)
    ↓ (1 hora - defines la estructura)
    
-3️⃣ TERCERO: Setup proyecto NestJS
+3. TERCERO: Setup proyecto NestJS
    ↓ (30 minutos)
    
-4️⃣ CUARTO: Conectar todo y hacer primera feature
+4. CUARTO: Conectar todo y hacer primera feature
    (Login funcional)
 ```
 
 **¿Por qué este orden?**
-- ✅ Ves resultados rápido (motivación)
-- ✅ Tienes claridad de la estructura
-- ✅ Puedes iterar rápido
-- ✅ Aprendes haciendo
+- Ves resultados rápido (motivación)
+- Tienes claridad de la estructura
+- Puedes iterar rápido
+- Aprendes haciendo
 
 ---
 
-## 📝 Nota sobre IA
+## Nota sobre IA
 
-> **"Para la IA la podríamos cambiar después esa tecnología"**
+> "Para la IA la podríamos cambiar después esa tecnología"
 
-✅ **Perfecto!** La IA es modular, puede ser:
+**Perfecto!** La IA es modular, puede ser:
 
 **Opciones para IA (decides después):**
 
-1. **Python + TensorFlow** (lo mencionado)
-2. **Python + Scikit-learn** (más simple)
-3. **Node.js + TensorFlow.js** (todo en JavaScript)
-4. **APIs de terceros:**
+1. Python + TensorFlow (lo mencionado)
+2. Python + Scikit-learn (más simple)
+3. Node.js + TensorFlow.js (todo en JavaScript)
+4. APIs de terceros:
    - OpenAI API (GPT-4)
    - Anthropic Claude
    - Google Gemini
@@ -238,7 +238,7 @@ Primero tenemos que tener el sistema base funcionando.
 
 ---
 
-## ✅ CHECKLIST DE HOY
+## CHECKLIST DE HOY
 
 ¿Qué podemos lograr HOY?
 
@@ -250,17 +250,16 @@ Primero tenemos que tener el sistema base funcionando.
 - [ ] Primera ruta de navegación
 
 **Tiempo estimado:** 1-2 horas  
-**Resultado:** Aplicación web corriendo en `http://localhost:3000` 🎉
+**Resultado:** Aplicación web corriendo en `http://localhost:3000`
 
 ---
 
-## 🎯 ENTONCES, ¿POR DÓNDE EMPEZAMOS?
+## ENTONCES, ¿POR DÓNDE EMPEZAMOS?
 
 Dime cuál prefieres:
+**A)** Setup Next.js ahora mismo (empezamos a programar)
+**B)** Primero diseñar la base de datos
+**C)** Primero hacer wireframes de las pantallas
+**D)** Ver todo el proyecto armado desde cero (te guío paso a paso)
 
-**A)** Setup Next.js ahora mismo (empezamos a programar) 💻  
-**B)** Primero diseñar la base de datos 📊  
-**C)** Primero hacer wireframes de las pantallas 🎨  
-**D)** Ver todo el proyecto armado desde cero (te guío paso a paso) 🗺️
-
-**¿Cuál eliges?** 😊
+¿Cuál eliges?

@@ -1,662 +1,174 @@
-# 🥖 Sistema de Gestión para Panadería - Proyecto de Graduación
+# Sistema de Gestion para Panaderia - Proyecto de Graduacion
 
-## 📋 RESUMEN EJECUTIVO
+## RESUMEN EJECUTIVO
 
 **Nombre del Proyecto:** Panaderia Svetlana Smart System  
-**Tipo:** Aplicación Web y Móvil Full-Stack con IA  
-**Objetivo:** Sistema integral de gestión para panaderías con automatización inteligente
+**Tipo:** Aplicacion Web Adaptable (PWA)  
+**Objetivo:** Sistema integral de gestion para panaderias con automatizacion inteligente  
 
 ---
 
-## 🎯 ALCANCE DEL PROYECTO
+## ALCANCE DEL PROYECTO
 
 ### Funcionalidades Principales
-1. **E-commerce Completo**
-   - Catálogo de productos con búsqueda avanzada
-   - Carrito de compras en tiempo real
-   - Sistema de pedidos y seguimiento
-   - Pagos en línea seguros
+1. **Tienda en Linea y Catalogo Publico**
+   - Catalogo de productos con busqueda y filtros
+   - Carrito de compras
+   - Reserva de pedidos para recogida en tienda (sin envios a domicilio)
 
-2. **Gestión Administrativa**
-   - Inventario de productos e ingredientes
-   - Control de producción diaria
-   - Gestión de empleados y turnos
-   - Reportes y analítica con IA
+2. **Gestion Administrativa**
+   - Inventario de productos terminados por sucursal
+   - Insumos y materia prima con conversion de unidades de compra a unidades base
+   - Control transaccional de produccion diaria (recetas por amasijo y latas)
+   - Dashboard operativo multi-sucursal
 
 3. **Sistema de Clientes**
-   - Perfiles personalizados
-   - Historial de compras
-   - Programa de fidelización
-   - Notificaciones personalizadas
+   - Registro, inicio de sesion y perfiles de cliente
+   - Historial de reservas de pedidos
+   - Direcciones de facturacion y contacto
 
-4. **IA y Automatización**
-   - Predicción de demanda
-   - Optimización de inventario
-   - Análisis de tendencias de ventas
-   - Recomendaciones personalizadas
+4. **IA y Automatizacion**
+   - Prediccion de demanda de productos terminados para sugerencia de produccion diaria
+   - Recomendaciones personalizadas de productos en la tienda en linea
+   - Chatbot inteligente de atencion al cliente para FAQs y asistencia
 
 ---
 
-## 🏗️ ARQUITECTURA TECNOLÓGICA
+## ARQUITECTURA TECNOLOGICA
 
-### **FRONTEND**
+### FRONTEND
+- **Aplicacion Web Responsive y PWA (Progressive Web App):**
+  - Framework: Next.js 14+ (React 18)
+  - SSR y SSG para SEO optimo y carga veloz
+  - App Router
+  - Tailwind CSS y shadcn/ui para el sistema de diseno responsivo
+  - Zustand para el estado global ligero del cliente
+  - React Query para la sincronizacion de datos con el servidor
+  - PWA: Service Workers y manifiesto de aplicacion web para hacer la aplicacion instalable en dispositivos moviles (Android/iOS) y permitir funcionalidad basica sin conexion.
 
-#### **Web Application**
-- **Framework:** Next.js 14+ (React 18)
-  - ✅ SSR y SSG para SEO óptimo
-  - ✅ App Router (última versión)
-  - ✅ Server Components y Client Components
-  - ✅ Optimización automática de imágenes
-  - ✅ Route handlers para API routes
+### BACKEND
+- **API y Servidor:**
+  - Framework: NestJS
+  - TypeScript nativo, arquitectura modular y documentacion con Swagger/OpenAPI
+  - Autenticacion mediante JWT (Access Token y Refresh Token con rotacion)
+  - Seguridad: Helmet.js, CORS, limitacion de tasa (Rate Limiting) y hasheo de contrasenas con bcrypt
+  - Comunicacion en tiempo real: WebSockets
 
-- **UI/UX:**
-  - **Tailwind CSS** - Diseño moderno y responsivo
-  - **shadcn/ui** - Componentes accesibles y customizables
-  - **Framer Motion** - Animaciones fluidas
-  - **Lucide React** - Iconografía moderna
+### BASE DE DATOS
+- **Base de Datos Principal: PostgreSQL (Supabase)**
+  - ACID compliance para transacciones seguras (critico para la produccion transaccional y reservas)
+  - ORM: Prisma para tipado completo y migraciones controladas
+  - No se utiliza base de datos complementaria (sin MongoDB) ni capa de cache externa (sin Redis) para mantener la infraestructura simple y sostenible.
 
-- **State Management:**
-  - **Zustand** - Estado global ligero
-  - **React Query (TanStack Query)** - Gestión de estado del servidor
-  - **React Hook Form** - Manejo eficiente de formularios
-
-- **Validación:**
-  - **Zod** - Validación de esquemas TypeScript-first
-
-#### **Mobile Application**
-- **Framework:** React Native con Expo
-  - ✅ Desarrollo multiplataforma (iOS y Android)
-  - ✅ Expo Router para navegación
-  - ✅ EAS Build para compilación en la nube
-  - ✅ OTA Updates para actualizaciones sin tienda
-
-- **UI Mobile:**
-  - **NativeWind** - Tailwind para React Native
-  - **React Native Reanimated** - Animaciones nativas
-  - **React Native Paper** - Componentes Material Design
-
-### **BACKEND**
-
-#### **API y Servidor**
-- **Framework:** Node.js con Express.js o NestJS
-  - **Opción 1 (Recomendada):** NestJS
-    - ✅ TypeScript nativo
-    - ✅ Arquitectura modular y escalable
-    - ✅ Decoradores y dependency injection
-    - ✅ Integración perfecta con TypeORM/Prisma
-    - ✅ Documentación automática con Swagger
-  
-  - **Opción 2:** Express.js con TypeScript
-    - ✅ Más ligero y flexible
-    - ✅ Gran ecosistema de middlewares
-
-#### **Arquitectura API**
-- **Estilo:** RESTful API + GraphQL (opcional para consultas complejas)
-- **Documentación:** Swagger/OpenAPI 3.0
-- **Versionado:** `/api/v1/`
-
-#### **Autenticación y Seguridad**
-
-**Sistema de Autenticación:**
-- **JWT (JSON Web Tokens)**
-  - Access Token (corta duración: 15min)
-  - Refresh Token (larga duración: 7 días)
-  
-- **Autenticación en 2 Pasos (2FA)**
-  - **Google Authenticator** (TOTP)
-  - **SMS con Twilio**
-  - **Email con código de verificación**
-
-- **OAuth 2.0 / Social Login:**
-  - Google OAuth
-  - Facebook Login
-  - Apple Sign In (para iOS)
-
-**Seguridad:**
-- **Helmet.js** - Headers de seguridad HTTP
-- **CORS** configurado correctamente
-- **Rate Limiting** - Prevención de ataques DDoS
-- **bcrypt** - Hash de contraseñas
-- **express-validator** - Validación de inputs
-- **HTTPS/SSL** obligatorio en producción
-- **Sanitización de datos** contra XSS y SQL Injection
-
-### **BASE DE DATOS**
-
-#### **Base de Datos Principal: PostgreSQL**
-**¿Por qué PostgreSQL?**
-- ✅ ACID compliance (transacciones seguras para pagos)
-- ✅ Relaciones complejas (productos, pedidos, usuarios)
-- ✅ Rendimiento superior para consultas complejas
-- ✅ JSON support (flexibilidad cuando se necesite)
-- ✅ Madurez y estabilidad empresarial
-- ✅ Excelente para analítica
-
-**ORM:**
-- **Prisma** (Recomendado)
-  - Type-safety total
-  - Migraciones automáticas
-  - Prisma Studio para visualización
-  - Excelente DX (Developer Experience)
-
-#### **Base de Datos Complementaria: MongoDB**
-**Uso específico:**
-- Logs de sistema
-- Sesiones de usuario
-- Cache de datos temporales
-- Métricas y analytics en tiempo real
-
-#### **Cache y Performance:**
-- **Redis**
-  - Cache de consultas frecuentes
-  - Sesiones de usuario
-  - Rate limiting
-  - Cola de trabajos (Bull MQ)
-
-### **ALMACENAMIENTO DE ARCHIVOS**
-- **AWS S3** o **Cloudinary**
-  - Imágenes de productos
-  - Facturas PDF
-  - Assets de la aplicación
-  - Optimización automática de imágenes
+### ALMACENAMIENTO DE ARCHIVOS
+- **Almacenamiento en la Nube (Cloudinary)**
+  - Imagenes de productos e insumos
+  - Optimizacion automatica de imagenes
 
 ---
 
-## 🔔 SISTEMA DE NOTIFICACIONES
-
-### **Email Service**
-- **SendGrid** o **Resend** (Recomendado - moderno)
-  - Confirmación de pedidos
-  - Newsletters
-  - Recuperación de contraseña
-  - Facturas electrónicas
-  - Templates con React Email
-
-### **SMS**
-- **Twilio**
-  - Códigos 2FA
-  - Notificaciones de pedidos urgentes
-  - Alertas de stock bajo
-
-### **Push Notifications**
-- **Firebase Cloud Messaging (FCM)**
-  - Notificaciones móviles
-  - Promociones personalizadas
-  - Estado de pedidos
-
-### **Notificaciones en Tiempo Real**
-- **Socket.io** o **Pusher**
-  - Actualizaciones de pedidos en vivo
-  - Chat con soporte
-  - Notificaciones en dashboard admin
+## SISTEMA DE NOTIFICACIONES
+- **Email Service:**
+  - Resend o similar para confirmacion de reservas y alertas administrativas.
+- **Push Notifications:**
+  - Web Push API nativa del navegador para dispositivos moviles y de escritorio (gracias al manifiesto PWA), evitando dependencias externas complejas.
+- **SMS / Twilio:**
+  - No se implementa canal de SMS por costos y simplificacion de flujo.
 
 ---
 
-## 🤖 INTELIGENCIA ARTIFICIAL
+## INTELIGENCIA ARTIFICIAL
 
-### **Análisis y Predicción**
-
-#### **1. Predicción de Demanda**
-- **Modelo:** Time Series Forecasting
-- **Tecnología:** Python con TensorFlow/PyTorch
-- **Implementación:**
-  - Análisis histórico de ventas
-  - Predicción de productos más vendidos
-  - Optimización de producción diaria
-  - Consideración de estacionalidad y eventos
-
-#### **2. Sistema de Recomendaciones**
-- **Algoritmo:** Collaborative Filtering + Content-Based
-- **Tecnología:** Scikit-learn o TensorFlow Recommenders
-- **Funciones:**
-  - "Productos recomendados para ti"
-  - "Frecuentemente comprados juntos"
-  - Sugerencias basadas en historial
-
-#### **3. Análisis de Sentimientos**
-- **Procesamiento:** NLP (Natural Language Processing)
-- **Uso:**
-  - Análisis de reseñas de clientes
-  - Detección de problemas de servicio
-  - Mejora continua basada en feedback
-
-#### **4. Optimización de Inventario**
-- **Machine Learning:** Algoritmos de optimización
-- **Beneficios:**
-  - Predicción de stock necesario
-  - Alerta de productos próximos a vencer
-  - Minimización de desperdicios
-
-#### **5. Chatbot Inteligente**
-- **Tecnología:** OpenAI GPT-4 API o LangChain
-- **Funciones:**
-  - Atención al cliente 24/7
-  - Respuestas sobre productos
-  - Asistencia en pedidos
-  - FAQs automáticas
-
-### **Integración IA**
-- **API Gateway:** Microservicio Python separado
-- **Framework Python:** FastAPI
-- **Comunicación:** REST API con backend principal
-- **Procesamiento:** Asíncrono con Celery + Redis
+### Analisis y Prediccion
+1. **Prediccion de Demanda:**
+   - Time Series Forecasting para sugerencia automatica de produccion basada en ventas historicas.
+2. **Sistema de Recomendaciones:**
+   - Algoritmo colaborativo y basado en contenido para secciones de "Te puede gustar" en la tienda web.
+3. **Chatbot Inteligente:**
+   - Integracion con API de OpenAI o similar para resolver dudas frecuentes sobre sucursales, horarios, productos y pedidos.
 
 ---
 
-## 💳 SISTEMA DE PAGOS
-
-### **Pasarelas de Pago**
-- **Stripe** (Recomendado - internacional)
-  - Tarjetas de crédito/débito
-  - Subscripciones automáticas
-  - Facturación
-  
-- **Mercado Pago** (Latinoamérica)
-  - Popular en la región
-  - Múltiples métodos de pago locales
-
-- **PayPal** (Alternativa global)
-
-### **Seguridad de Pagos**
-- PCI DSS Compliance
-- 3D Secure
-- Tokenización de tarjetas
-- Webhooks para confirmaciones
+## INFRAESTRUCTURA Y DEPLOYMENT
+- **Hosting Frontend:** Vercel
+- **Hosting Backend (API):** Render o Railway
+- **Base de Datos:** Supabase (PostgreSQL)
+- **CI/CD:** GitHub Actions
+- **Monitoreo:** Sentry para tracking de errores en produccion
 
 ---
 
-## 📊 ANALÍTICA Y REPORTES
+## CRONOGRAMA Y METODOLOGIA (Scrum Hibrido)
 
-### **Business Intelligence**
-- **Dashboard Admin:**
-  - Ventas en tiempo real
-  - Productos más vendidos
-  - Análisis de clientes
-  - Métricas de rendimiento
+### Fase de Incepcion y Requisitos (Mayo - Junio 2026)
+- Levantamiento de requerimientos y casos de uso.
+- Diseno base de datos y mockups de pantallas en Figma.
+- Aprobacion del alcance y consolidacion de la documentacion inicial.
 
-### **Herramientas**
-- **Chart.js** o **Recharts** - Gráficos interactivos
-- **Google Analytics** - Análisis web
-- **Mixpanel** o **Amplitude** - Análisis de eventos
-- **Exportación:** PDF (PDFKit), Excel (ExcelJS)
+### Fase de Desarrollo y Ejecucion (Julio - Octubre 2026)
+La ejecucion se divide en 8 Sprints de 2 semanas cada uno:
 
----
+* **Sprint 1 (Julio - Semanas 1 y 2): Setup & Backend Core**
+  - Inicializacion de repositorio, configuracion del monorepo.
+  - Setup de NestJS, conexion a PostgreSQL via Prisma.
+  - Implementacion de autenticacion JWT y seguridad base.
 
-## 🚀 INFRAESTRUCTURA Y DEPLOYMENT
+* **Sprint 2 (Julio - Semanas 3 y 4): Modulo de Catalogo y Productos**
+  - CRUD de productos y categorias en panel administrativo.
+  - Integracion con Cloudinary para subida de imagenes.
+  - Frontend: Landing page y catalogo responsive publico.
 
-### **Hosting y Cloud**
+* **Sprint 3 (Agosto - Semanas 1 y 2): Inventario y Materia Prima**
+  - Implementacion de insumos (RawMaterial) y RawMaterialInventory.
+  - Logica de conversion de unidades de compra a unidades base.
+  - Flujo de movimientos de inventario de producto terminado.
 
-#### **Opción Recomendada: Vercel + Railway/Render**
-- **Frontend (Next.js):** Vercel
-  - Deploy automático desde Git
-  - Edge Functions
-  - CDN global
-  - Preview deployments
+* **Sprint 4 (Agosto - Semanas 3 y 4): Produccion Diaria Transaccional**
+  - Implementacion del modulo de recetas por amasijo (Recipe y RecipeIngredient).
+  - Desarrollo del servicio de ProductionLog con transacciones ACID para descontar ingredientes e incrementar stock terminado en una sola operacion atomica.
 
-- **Backend:** Railway o Render
-  - Auto-scaling
-  - CI/CD integrado
-  - Base de datos PostgreSQL incluida
+* **Sprint 5 (Septiembre - Semanas 1 y 2): Reservas y Checkout**
+  - Carrito de compras web y flujo de reservas de pedidos.
+  - Integracion de checkout con seleccion de sucursal y fecha/hora de recogida.
+  - Notificaciones por email y push para confirmacion de pedidos.
 
-#### **Opción Enterprise: AWS**
-- **EC2** - Servidores
-- **RDS** - PostgreSQL
-- **S3** - Almacenamiento
-- **CloudFront** - CDN
-- **Lambda** - Funciones serverless
-- **ECS/EKS** - Containers (si se usa Docker/Kubernetes)
+* **Sprint 6 (Septiembre - Semanas 3 y 4): Modulo Administrativo y Dashboard**
+  - Panel Kanban para la gestion y entrega de reservas en tienda.
+  - KPIs operativos y graficos estadisticos del dashboard multi-sucursal.
+  - Historico de auditoria y logs del sistema.
 
-### **Containerización**
-- **Docker** - Contenedores para desarrollo y producción
-- **Docker Compose** - Orquestación local
-- **Kubernetes** (opcional) - Para escalabilidad extrema
+* **Sprint 7 (Octubre - Semanas 1 y 2): Integracion de IA y PWA**
+  - Implementacion de algoritmos de sugerencia de produccion y recomendacion en la tienda.
+  - Configuracion de Service Workers, manifiesto de app web y cache local para soporte PWA.
+  - Pruebas unitarias y de integracion.
 
-### **CI/CD**
-- **GitHub Actions**
-  - Tests automáticos
-  - Linting y formateo
-  - Deploy automático
-  - Notificaciones de build
-
-### **Monitoreo**
-- **Sentry** - Tracking de errores
-- **LogRocket** - Session replay
-- **Prometheus + Grafana** - Métricas del servidor
-- **UptimeRobot** - Monitoreo de uptime
+* **Sprint 8 (Octubre - Semanas 3 y 4): Testing, Deployment y Entrega**
+  - Pruebas e2e completas y auditoria de seguridad.
+  - Despliegue final en produccion (Vercel + Railway/Render + Supabase).
+  - Preparacion de manuales tecnicos y presentacion final de tesis.
 
 ---
 
-## 🧪 TESTING Y CALIDAD
-
-### **Testing Strategy**
-
-#### **Frontend**
-- **Unit Tests:** Vitest (más rápido que Jest)
-- **Component Tests:** React Testing Library
-- **E2E Tests:** Playwright o Cypress
-- **Coverage mínimo:** 80%
-
-#### **Backend**
-- **Unit Tests:** Jest
-- **Integration Tests:** Supertest
-- **Load Testing:** Artillery o k6
-- **Coverage mínimo:** 85%
-
-### **Code Quality**
-- **ESLint** - Linting JavaScript/TypeScript
-- **Prettier** - Formateo de código
-- **Husky** - Git hooks
-- **Commitlint** - Convenciones de commits
-- **SonarQube** - Análisis de código
+## COSTOS ESTIMADOS (Fase de Desarrollo)
+- Vercel (Hosting Web): Plan Gratuito
+- Supabase (PostgreSQL): Plan Gratuito (Free Tier)
+- Render/Railway (API): Plan Gratuito / Bajo Costo (~$5-7/mes)
+- Cloudinary (Almacenamiento de Imagenes): Plan Gratuito
+- Resend (Emailing): Plan Gratuito
+- Dominio: ~$10-15/ano
+**Costo total desarrollo: ~$10-25**
 
 ---
 
-## 📱 FEATURES ADICIONALES
-
-### **PWA (Progressive Web App)**
-- Instalable en dispositivos
-- Funciona offline
-- Notificaciones push
-- Service Workers
-
-### **Accesibilidad (A11y)**
-- WCAG 2.1 Level AA compliance
-- Screen reader compatible
-- Navegación por teclado
-- Contraste de colores adecuado
-
-### **Internacionalización (i18n)**
-- **next-intl** para Next.js
-- **i18next** para React Native
-- Múltiples idiomas (Español, Inglés)
-- Múltiples monedas
-
-### **Geolocalización**
-- Google Maps API
-- Cálculo de rutas de entrega
-- Zonas de cobertura
-- Tracking de pedidos en tiempo real
+## STACK TECNOLOGICO
+- **Frontend Web & PWA:** Next.js 14+, React 18, TypeScript, Tailwind CSS, shadcn/ui, Zustand, React Query, Zod.
+- **Backend API:** NestJS, TypeScript, Prisma, PostgreSQL (Supabase), WebSockets.
+- **Herramientas DevOps & Calidad:** Docker, GitHub Actions, Sentry, Vitest.
 
 ---
 
-## 📅 CRONOGRAMA ESTIMADO
-
-### **Fase 1: Planificación y Diseño (2-3 semanas)**
-- Requisitos detallados
-- Diseño UI/UX en Figma
-- Arquitectura del sistema
-- Base de datos schema
-
-### **Fase 2: Setup y Backend Core (3-4 semanas)**
-- Configuración del proyecto
-- API REST básica
-- Autenticación y autorización
-- Base de datos y modelos
-
-### **Fase 3: Frontend Web (4-5 semanas)**
-- Layout y componentes base
-- Páginas principales
-- Integración con API
-- Carrito y checkout
-
-### **Fase 4: Mobile App (3-4 semanas)**
-- Setup React Native
-- Pantallas principales
-- Navegación
-- Sincronización con backend
-
-### **Fase 5: Funcionalidades Avanzadas (3-4 semanas)**
-- Sistema de pagos
-- Notificaciones
-- Reportes y analítica
-- Optimizaciones
-
-### **Fase 6: IA e Integración (3-4 semanas)**
-- Modelos de ML
-- Microservicio Python
-- Sistema de recomendaciones
-- Chatbot
-
-### **Fase 7: Testing y Refinamiento (2-3 semanas)**
-- Testing completo
-- Corrección de bugs
-- Optimización de rendimiento
-- Documentación
-
-### **Fase 8: Deployment y Presentación (1-2 semanas)**
-- Deploy en producción
-- Documentación de usuario
-- Video demo
-- Preparación de presentación
-
-**TOTAL ESTIMADO: 5-6 meses**
-
----
-
-## 💰 COSTOS ESTIMADOS (Fase de Desarrollo)
-
-### **Servicios Gratuitos/Free Tier**
-- Vercel (Frontend)
-- GitHub (Repositorio y CI/CD)
-- PostgreSQL en Render (512MB gratis)
-- Redis Cloud (30MB gratis)
-- SendGrid (100 emails/día gratis)
-- Cloudinary (25 créditos/mes)
-
-### **Servicios de Pago (Opcional para producción real)**
-- Railway/Render Pro: ~$20-50/mes
-- Twilio (SMS): Pay as you go
-- OpenAI API: ~$10-30/mes (testing)
-- Dominio: ~$10-15/año
-
-**Costo total desarrollo: $0-100** (usando tiers gratuitos)
-
----
-
-## 📚 STACK TECNOLÓGICO COMPLETO
-
-### **Frontend Web**
-```
-- Next.js 14+
-- React 18
-- TypeScript
-- Tailwind CSS
-- shadcn/ui
-- Zustand
-- React Query
-- React Hook Form
-- Zod
-- Framer Motion
-```
-
-### **Frontend Mobile**
-```
-- React Native
-- Expo
-- TypeScript
-- NativeWind
-- Expo Router
-- React Query
-- Zustand
-```
-
-### **Backend**
-```
-- NestJS (o Express.js)
-- TypeScript
-- Prisma
-- PostgreSQL
-- Redis
-- JWT
-- Socket.io
-```
-
-### **IA & ML**
-```
-- Python
-- FastAPI
-- TensorFlow/PyTorch
-- Scikit-learn
-- Pandas
-- NumPy
-```
-
-### **DevOps**
-```
-- Docker
-- GitHub Actions
-- Vercel
-- Railway/Render
-- Sentry
-```
-
-### **Testing**
-```
-- Vitest
-- Jest
-- Playwright
-- React Testing Library
-```
-
----
-
-## 🎓 VALOR ACADÉMICO PARA GRADUACIÓN
-
-### **Por qué este proyecto destaca:**
-
-✅ **Complejidad Técnica Alta**
-- Arquitectura full-stack completa
-- Múltiples plataformas (Web + Mobile)
-- Integración de IA y Machine Learning
-- Microservicios
-
-✅ **Tecnologías Modernas**
-- Stack actual y demandado en la industria
-- Mejores prácticas de desarrollo
-- Arquitectura escalable
-
-✅ **Problema Real**
-- Soluciona necesidades de negocio reales
-- Aplicable a PyMEs
-- Potencial comercial
-
-✅ **Aspectos Innovadores**
-- IA para predicción de demanda
-- Sistema de recomendaciones personalizado
-- Automatización inteligente
-- Optimización con ML
-
-✅ **Demostración de Habilidades**
-- Frontend avanzado
-- Backend robusto
-- Seguridad
-- Testing
-- DevOps
-- IA/ML
-- Diseño de sistemas
-
-✅ **Documentación Profesional**
-- Arquitectura bien definida
-- APIs documentadas
-- Tests comprehensivos
-- Manual de usuario
-
----
-
-## 📖 DOCUMENTACIÓN REQUERIDA
-
-### **Para el Proyecto de Graduación**
-
-1. **Documentación Técnica**
-   - Diagrama de arquitectura
-   - Diagrama de base de datos (ERD)
-   - Diagrama de flujo de procesos
-   - Documentación API (Swagger)
-   - Manual de instalación
-
-2. **Documentación de Usuario**
-   - Manual de usuario
-   - Guías de uso
-   - FAQs
-   - Videos tutoriales
-
-3. **Informe Académico**
-   - Introducción y justificación
-   - Objetivos
-   - Marco teórico
-   - Metodología
-   - Desarrollo
-   - Resultados
-   - Conclusiones
-   - Referencias
-
-4. **Presentación**
-   - Slides profesionales
-   - Demo en vivo
-   - Video presentación
-   - Casos de uso
-
----
-
-## 🔥 DIFERENCIADORES COMPETITIVOS
-
-1. **IA Integrada** - No es común en proyectos de graduación
-2. **Multi-plataforma Real** - Web + iOS + Android
-3. **Seguridad de Nivel Empresarial** - 2FA, OAuth, encriptación
-4. **Escalabilidad** - Arquitectura preparada para crecer
-5. **Testing Completo** - Calidad de código profesional
-6. **CI/CD Automatizado** - Procesos modernos de desarrollo
-7. **Monitoreo y Analytics** - Observabilidad completa
-8. **Accesibilidad** - Inclusivo y profesional
-
----
-
-## 🎯 PRÓXIMOS PASOS INMEDIATOS
-
-1. **Diseño UI/UX en Figma**
-   - Wireframes de todas las pantallas
-   - Prototipo interactivo
-   - Sistema de diseño (colores, tipografía, componentes)
-
-2. **Setup del Proyecto**
-   - Crear repositorio en GitHub
-   - Configurar monorepo (opcional: Turborepo)
-   - Setup inicial de Next.js
-   - Setup inicial de React Native
-
-3. **Diseño de Base de Datos**
-   - Esquema completo
-   - Relaciones
-   - Índices
-   - Migraciones
-
-4. **Definir MVP (Minimum Viable Product)**
-   - Features esenciales para primera versión
-   - Priorización de funcionalidades
-
----
-
-## 💡 RECOMENDACIONES FINALES
-
-- **Empieza con el MVP** - No intentes hacer todo a la vez
-- **Documenta todo** - Será crucial para tu presentación
-- **Git Flow** - Commits descriptivos y branches organizados
-- **Testing desde el inicio** - No lo dejes para el final
-- **Pide feedback** - Muéstrale avances a profesores/mentores
-- **Time management** - Usa herramientas como Trello/Jira
-- **Aprende en el camino** - Es normal no saber todo al inicio
-
----
-
-## 📞 RECURSOS DE APRENDIZAJE
-
-- **Next.js:** https://nextjs.org/docs
-- **NestJS:** https://docs.nestjs.com
-- **React Native:** https://reactnative.dev
-- **Prisma:** https://www.prisma.io/docs
-- **TensorFlow:** https://www.tensorflow.org/tutorials
-- **Stripe:** https://stripe.com/docs
-
----
-
-**¿Listo para empezar? Este proyecto tiene todo para ser excepcional. ¡Éxito! 🚀**
+## VALOR ACADÉMICO PARA GRADUACION
+- **Arquitectura de Software Profesional:** Aplicacion de diseno modular, transacciones ACID, y uso de APIs RESTful seguras.
+- **Innovacion con Inteligencia Artificial:** Integracion de modelos predictivos y de recomendacion orientados a la optimizacion de un negocio real.
+- **Adaptabilidad Movil Sostenible:** Uso de Progressive Web App (PWA) para garantizar un enfoque multi-dispositivo sin incurrir en costos de tiendas nativas.
+- **Gestion de Datos Complejos:** Conversion automatica de unidades de peso/volumen y produccion por latas/amasijos (logica de negocio no generica).

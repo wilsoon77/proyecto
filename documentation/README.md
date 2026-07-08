@@ -1,6 +1,6 @@
-# 📚 ÍNDICE DE DOCUMENTACIÓN - Panaderia Svetlana Smart System
+# INDICE DE DOCUMENTACION - Panaderia Svetlana Smart System
 
-## 📖 Guía de Navegación
+## Guia de Navegacion
 
 Bienvenido a la documentación completa del proyecto **Panaderia Svetlana Smart System**. Esta carpeta contiene la planificación técnica, diseños y documentación funcional.
 
@@ -8,21 +8,21 @@ Bienvenido a la documentación completa del proyecto **Panaderia Svetlana Smart 
 
 ---
 
-## 📂 Documentos Disponibles
+## Documentos Disponibles
 
-### **1. 📊 Diseño de Base de Datos**
+### **1. Diseno de Base de Datos**
 **Archivo:** `1_DISEÑO_BASE_DATOS.md`
 
 **Contenido:**
 - Diseño SQL original (planificación inicial, Noviembre 2025)
-- ⚠️ Incluye disclaimer de rediseño (Marzo 2026)
+- Incluye disclaimer de rediseño (Marzo 2026)
 - El diseño actual con 16 modelos Prisma está en `api/prisma/schema.prisma`
 
-**Estado:** ⚠️ Documento de referencia histórica. El schema Prisma es la fuente de verdad.
+**Estado:** Documento de referencia histórica. El schema Prisma es la fuente de verdad.
 
 ---
 
-### **2. 🎨 Diseño de Pantallas**
+### **2. Diseno de Pantallas**
 **Archivo:** `2_DISEÑO_PANTALLAS.md`
 
 **Contenido:**
@@ -35,7 +35,7 @@ Bienvenido a la documentación completa del proyecto **Panaderia Svetlana Smart 
 
 ---
 
-### **3. 🔒 Pruebas de Seguridad**
+### **3. Pruebas de Seguridad**
 **Archivo:** `3_PRUEBAS_SEGURIDAD.md`
 
 **Contenido:**
@@ -43,31 +43,31 @@ Bienvenido a la documentación completa del proyecto **Panaderia Svetlana Smart 
 - Tests de autenticación, rate limiting, tokens
 - Configuración de Helmet, CORS, Throttler
 
-**Estado:** ✅ Implementado. Las configuraciones de seguridad están activas en producción.
+**Estado:** Implementado. Las configuraciones de seguridad están activas en producción.
 
 ---
 
-### **4. 📝 Casos de Uso**
+### **4. Casos de Uso**
 **Archivo:** `3_CASOS_DE_USO.md`
 
 **Contenido:**
-- 50 Casos de uso completos
-- 4 Módulos: Clientes, Admin, Empleados, IA
+- 31 Casos de uso
+- 3 Módulos: Clientes, Admin, IA
 - Flujos principales y alternativos
-- 45 Reglas de negocio
+- 33 Reglas de negocio
 
 **Estado:** Referencia funcional. Parcialmente implementado en el sistema actual.
 
 ---
 
-### **5. 📁 Estructura del Proyecto**
+### **5. Estructura del Proyecto**
 **Archivo:** `4_ESTRUCTURA_PROYECTO.md`
 
 **Contenido:**
 - Arquitectura propuesta originalmente (apps/, packages/, infrastructure/)
-- ⚠️ La estructura real del proyecto es diferente — ver `README.md` de `api/` y `web/`
+- La estructura real del proyecto es diferente — ver `README.md` de `api/` y `web/`
 
-**Estado:** ⚠️ Documento de referencia histórica. La estructura real es:
+**Estado:** Documento de referencia histórica. La estructura real es:
 ```
 proyecto-panaderia/
 ├── api/          # NestJS Backend (no apps/api/)
@@ -77,20 +77,20 @@ proyecto-panaderia/
 
 ---
 
-### **6. 📱 Manual de Desarrollo Web**
+### **6. Manual de Desarrollo Web**
 **Archivo:** `5_MANUAL_DESARROLLO_WEB.md`
 
 **Contenido:**
 - Estado del proyecto web y tecnologías
 - Roadmap de desarrollo
 
-**Estado:** ⚠️ Desactualizado desde Noviembre 2025. Ver `web/README.md` para estado actual.
+**Estado:** Desactualizado desde Noviembre 2025. Ver `web/README.md` para estado actual.
 
 ---
 
-## 🎯 Documentos en la Raíz
+## Documentos en la Raíz
 
-### **context.md** ⭐
+### **context.md** (Recomendado)
 Contexto arquitectónico actualizado del proyecto. **Punto de partida recomendado.**
 - Reglas de negocio clave
 - Lógica de producción (amasijos/latas)
@@ -113,7 +113,7 @@ Guía rápida de pruebas de seguridad.
 
 ---
 
-## 📊 Estadísticas del Proyecto (Marzo 2026)
+## Estadísticas del Proyecto (Marzo 2026)
 
 ### **Base de Datos (Prisma)**
 - **Modelos:** 16
@@ -136,7 +136,7 @@ Guía rápida de pruebas de seguridad.
 
 ---
 
-## 🔍 Cómo Usar Esta Documentación
+## Cómo Usar Esta Documentación
 
 ### **Para entender el proyecto:**
 1. Lee `context.md` (reglas de negocio y estado actual)
@@ -152,7 +152,7 @@ Guía rápida de pruebas de seguridad.
 
 ---
 
-## 📞 Referencia Rápida
+## Referencia Rápida
 
 | Necesito... | Abro... |
 |-------------|---------|
@@ -166,6 +166,6 @@ Guía rápida de pruebas de seguridad.
 
 ---
 
-**📌 Nota:** Esta documentación es un documento vivo. Los documentos de planificación (1-5) reflejan el diseño original; el código es la fuente de verdad.
+**Nota:** Esta documentación es un documento vivo. Los documentos de planificación (1-5) reflejan el diseño original; el código es la fuente de verdad.
 
 **Última actualización:** 23 de Marzo de 2026

@@ -1,6 +1,6 @@
-# 🧪 Guía Rápida de Pruebas de Seguridad
+# Guia Rapida de Pruebas de Seguridad
 
-## ⚡ Inicio Rápido
+## Inicio Rapido
 
 ### 1. Ejecutar Tests Automatizados (Recomendado)
 
@@ -25,7 +25,7 @@ cd api/test
 
 ---
 
-## 📊 Cobertura de Tests
+## Cobertura de Tests
 
 ### Tests Automatizados (`auth-security.e2e-spec.ts`)
 
@@ -42,7 +42,7 @@ cd api/test
 
 ---
 
-## ✅ Checklist de Seguridad
+## Checklist de Seguridad
 
 Estas funcionalidades fueron probadas y están funcionando:
 
@@ -75,9 +75,9 @@ Estas funcionalidades fueron probadas y están funcionando:
 
 ---
 
-## 🎯 Resultados de Pruebas (22/11/2025)
+## Resultados de Pruebas (22/11/2025)
 
-### ✅ Todas las pruebas pasaron exitosamente
+### Todas las pruebas pasaron exitosamente
 
 **Login**
 - ✓ Tokens generados correctamente
@@ -102,11 +102,11 @@ Estas funcionalidades fueron probadas y están funcionando:
 
 ---
 
-## 🐛 Fix Aplicado
+## Fix Aplicado
 
-**Problema:** `bcrypt.compare is not a function`
+Problema: `bcrypt.compare is not a function`
 
-**Solución:**
+Solución:
 ```typescript
 // En auth.service.ts
 import bcryptjs from 'bcryptjs';
@@ -115,7 +115,7 @@ const bcrypt = bcryptjs.default || bcryptjs;
 
 ---
 
-## 📚 Documentación Completa
+## Documentacion Completa
 
 - **Detalle de pruebas:** `documentation/3_PRUEBAS_SEGURIDAD.md`
 - **Tests automatizados:** `api/test/auth-security.e2e-spec.ts`
@@ -124,7 +124,7 @@ const bcrypt = bcryptjs.default || bcryptjs;
 
 ---
 
-## 🚀 Próximos Pasos
+## Proximos Pasos
 
 Para integrar en CI/CD:
 
@@ -146,7 +146,7 @@ jobs:
 
 ---
 
-## 💡 Tips
+## Tips
 
 - **Rate limiting tests:** Espera 61 segundos entre ejecuciones
 - **Base de datos:** Los tests usan tu BD configurada en `.env`

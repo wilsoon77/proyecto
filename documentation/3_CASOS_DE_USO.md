@@ -1,995 +1,695 @@
-# 📝 CASOS DE USO - Panaderia Svetlana Smart System
+# CASOS DE USO - Panaderia Svetlana Smart System
 
-## 📋 ÍNDICE DE CASOS DE USO
+## INDICE DE CASOS DE USO
 
-### **MÓDULO CLIENTES** (CU-C)
+### MODULO CLIENTES (CU-C)
 1. CU-C01: Registro de Usuario
 2. CU-C02: Inicio de Sesión
 3. CU-C03: Recuperación de Contraseña
-4. CU-C04: Configurar Autenticación 2FA
-5. CU-C05: Login con OAuth (Google/Facebook)
-6. CU-C06: Ver Catálogo de Productos
-7. CU-C07: Buscar Productos
-8. CU-C08: Filtrar Productos
-9. CU-C09: Ver Detalle de Producto
-10. CU-C10: Agregar Producto al Carrito
-11. CU-C11: Modificar Cantidad en Carrito
-12. CU-C12: Eliminar Producto del Carrito
-13. CU-C13: Aplicar Código de Descuento
-14. CU-C14: Realizar Pedido
-15. CU-C15: Seleccionar Dirección de Entrega
-16. CU-C16: Procesar Pago
-17. CU-C17: Rastrear Pedido
-18. CU-C18: Cancelar Pedido
-19. CU-C19: Dejar Reseña de Producto
-20. CU-C20: Gestionar Perfil
-21. CU-C21: Gestionar Direcciones
-22. CU-C22: Ver Historial de Pedidos
-23. CU-C23: Ver Puntos de Fidelidad
-24. CU-C24: Canjear Puntos
-25. CU-C25: Agregar Producto a Favoritos
+4. CU-C04: Login con OAuth (Google/Facebook)
+5. CU-C05: Ver Catálogo de Productos
+6. CU-C06: Buscar Productos
+7. CU-C07: Filtrar Productos
+8. CU-C08: Ver Detalle de Producto
+9. CU-C09: Agregar Producto al Carrito
+10. CU-C10: Modificar Cantidad en Carrito
+11. CU-C11: Eliminar Producto del Carrito
+12. CU-C12: Realizar Pedido (Reserva para Recoger en Tienda)
+13. CU-C13: Seleccionar Dirección de Facturación
+14. CU-C14: Cancelar Pedido
+15. CU-C15: Gestionar Perfil
+16. CU-C16: Gestionar Direcciones
+17. CU-C17: Ver Historial de Pedidos
 
-### **MÓDULO ADMINISTRACIÓN** (CU-A)
-26. CU-A01: Gestionar Productos (CRUD)
-27. CU-A02: Gestionar Categorías
-28. CU-A03: Gestionar Inventario
-29. CU-A04: Gestionar Ingredientes
-30. CU-A05: Ver Dashboard de Ventas
-31. CU-A06: Generar Reportes
-32. CU-A07: Gestionar Pedidos
-33. CU-A08: Asignar Pedido a Empleado
-34. CU-A09: Actualizar Estado de Pedido
-35. CU-A10: Gestionar Promociones
-36. CU-A11: Gestionar Usuarios
-37. CU-A12: Gestionar Empleados
-38. CU-A13: Gestionar Turnos
-39. CU-A14: Ver Analítica de Productos
-40. CU-A15: Configurar Notificaciones
+### MODULO ADMINISTRACION (CU-A)
+18. CU-A01: Gestionar Productos (CRUD)
+19. CU-A02: Gestionar Categorías
+20. CU-A03: Gestionar Inventario
+21. CU-A04: Gestionar Ingredientes (Materia Prima)
+22. CU-A05: Ver Dashboard de Ventas
+23. CU-A06: Generar Reportes
+24. CU-A07: Gestionar Pedidos (Reservas)
+25. CU-A08: Actualizar Estado de Pedido
+26. CU-A09: Gestionar Usuarios
+27. CU-A10: Ver Analítica de Productos
+28. CU-A11: Configurar Notificaciones
 
-### **MÓDULO EMPLEADOS** (CU-E)
-41. CU-E01: Marcar Entrada/Salida
-42. CU-E02: Ver Turnos Asignados
-43. CU-E03: Gestionar Pedidos Asignados
-44. CU-E04: Actualizar Inventario
-45. CU-E05: Registrar Producción Diaria
-
-### **MÓDULO IA** (CU-IA)
-46. CU-IA01: Predecir Demanda de Productos
-47. CU-IA02: Generar Recomendaciones Personalizadas
-48. CU-IA03: Analizar Sentimientos de Reseñas
-49. CU-IA04: Optimizar Inventario
-50. CU-IA05: Chatbot de Atención al Cliente
+### MODULO IA (CU-IA)
+29. CU-IA01: Predecir Demanda de Productos
+30. CU-IA02: Generar Recomendaciones Personalizadas
+31. CU-IA03: Chatbot de Atención al Cliente
 
 ---
 
-## 📖 DETALLE DE CASOS DE USO
+## DETALLE DE CASOS DE USO
 
 ---
 
 ## CU-C01: Registro de Usuario
 
-### **Descripción**
-El usuario nuevo se registra en el sistema para poder realizar compras.
+### Descripcion
+El usuario nuevo se registra en el sistema para poder realizar reservas de pedidos.
 
-### **Actores**
-- **Principal:** Usuario Nuevo
-- **Secundario:** Sistema de Email
+### Actores
+- Principal: Usuario Nuevo
+- Secundario: Sistema de Email
 
-### **Precondiciones**
-- El usuario debe tener conexión a internet
+### Precondiciones
+- El usuario debe tener conexion a internet
 - El email no debe estar registrado previamente
 
-### **Flujo Principal**
+### Flujo Principal
 1. Usuario accede a la pantalla de registro
 2. Usuario ingresa:
    - Nombre completo
    - Email
-   - Número de teléfono (opcional)
-   - Contraseña
-   - Confirmación de contraseña
-3. Usuario acepta términos y condiciones
+   - Numero de telefono (opcional)
+   - Contrasena
+   - Confirmacion de contrasena
+3. Usuario acepta terminos y condiciones
 4. Sistema valida que:
-   - Email tenga formato válido
-   - Contraseña cumpla requisitos (mínimo 8 caracteres, 1 mayúscula, 1 número)
+   - Email tenga formato valido
+   - Contrasena cumpla requisitos (minimo 8 caracteres, 1 mayuscula, 1 numero)
    - Email no exista en la BD
 5. Sistema crea cuenta de usuario
-6. Sistema envía email de verificación
+6. Sistema envia email de verificacion
 7. Sistema asigna rol "CUSTOMER"
-8. Sistema crea carrito vacío para el usuario
-9. Sistema crea registro de puntos de fidelidad (0 puntos)
-10. Sistema muestra mensaje de éxito
-11. Sistema redirige a página de inicio de sesión
+8. Sistema crea carrito vacio para el usuario
+9. Sistema muestra mensaje de exito
+10. Sistema redirige a pagina de inicio de sesion
 
-### **Flujos Alternativos**
+### Flujos Alternativos
 
-**FA1: Email ya registrado**
+FA1: Email ya registrado
 - 4a. Sistema detecta email duplicado
-- 4b. Sistema muestra error "Este email ya está registrado"
-- 4c. Sistema sugiere recuperar contraseña
+- 4b. Sistema muestra error "Este email ya esta registrado"
+- 4c. Sistema sugiere recuperar contrasena
 - Retorna a paso 2
 
-**FA2: Contraseña no cumple requisitos**
-- 4a. Sistema detecta contraseña débil
+FA2: Contrasena no cumple requisitos
+- 4a. Sistema detecta contrasena debil
 - 4b. Sistema muestra requisitos no cumplidos
 - Retorna a paso 2
 
-**FA3: Verificación de Email**
+FA3: Verificacion de Email
 - Usuario recibe email
-- Usuario hace clic en link de verificación
+- Usuario hace clic en link de verificacion
 - Sistema marca email como verificado
-- Sistema otorga 50 puntos de bienvenida
 
-### **Postcondiciones**
+### Postcondiciones
 - Usuario registrado en BD
-- Email de verificación enviado
+- Email de verificacion enviado
 - Carrito creado
-- Puntos de fidelidad inicializados
+- Cuenta inicia en estado activo
 
-### **Reglas de Negocio**
-- RN01: Contraseña debe tener mínimo 8 caracteres
-- RN02: Email debe ser único
-- RN03: Usuarios nuevos obtienen 50 puntos de bienvenida
-- RN04: Cuenta inicia en estado "activo"
+### Reglas de Negocio
+- RN01: Contrasena debe tener minimo 8 caracteres
+- RN02: Email debe ser unico
+- RN03: Cuenta inicia en estado activo
 
 ---
 
 ## CU-C02: Inicio de Sesión
 
-### **Descripción**
+### Descripcion
 Usuario registrado ingresa al sistema con sus credenciales.
 
-### **Actores**
-- **Principal:** Usuario Registrado
-- **Secundario:** Sistema de Autenticación
+### Actores
+- Principal: Usuario Registrado
+- Secundario: Sistema de Autenticacion
 
-### **Precondiciones**
+### Precondiciones
 - Usuario debe estar registrado
-- Usuario debe tener credenciales válidas
+- Usuario debe tener credenciales validas
 
-### **Flujo Principal**
+### Flujo Principal
 1. Usuario accede a pantalla de login
-2. Usuario ingresa email y contraseña
+2. Usuario ingresa email y contrasena
 3. Sistema valida credenciales
-4. Sistema verifica si 2FA está habilitado
-5. SI 2FA habilitado → Va a CU-C04
-6. Sistema genera Access Token (JWT, 15 min)
-7. Sistema genera Refresh Token (7 días)
-8. Sistema registra "last_login" timestamp
-9. Sistema carga datos del usuario
-10. Sistema carga carrito activo
-11. Sistema muestra dashboard/home
-12. Sistema envía notificación de inicio de sesión
+4. Sistema genera Access Token (JWT, 15 min)
+5. Sistema genera Refresh Token (7 dias)
+6. Sistema registra "last_login" timestamp
+7. Sistema carga datos del usuario
+8. Sistema carga carrito activo
+9. Sistema muestra dashboard/home
+10. Sistema envia notificacion de inicio de sesion
 
-### **Flujos Alternativos**
+### Flujos Alternativos
 
-**FA1: Credenciales Incorrectas**
-- 3a. Sistema detecta credenciales inválidas
+FA1: Credenciales Incorrectas
+- 3a. Sistema detecta credenciales invalidas
 - 3b. Sistema incrementa contador de intentos fallidos
-- 3c. Sistema muestra error genérico "Email o contraseña incorrectos"
+- 3c. Sistema muestra error generico "Email o contrasena incorrectos"
 - 3d. SI intentos >= 5: Sistema bloquea cuenta por 15 minutos
 - Retorna a paso 2
 
-**FA2: Cuenta Bloqueada**
+FA2: Cuenta Bloqueada
 - 3a. Sistema detecta cuenta bloqueada
 - 3b. Sistema muestra mensaje "Cuenta temporalmente bloqueada"
-- 3c. Sistema sugiere recuperar contraseña
+- 3c. Sistema sugiere recuperar contrasena
 - Finaliza caso de uso
 
-**FA3: Email No Verificado**
+FA3: Email No Verificado
 - 3a. Sistema detecta email_verified = false
 - 3b. Sistema muestra mensaje "Verifica tu email"
-- 3c. Sistema ofrece reenviar email de verificación
+- 3c. Sistema ofrece reenviar email de verificacion
 - Finaliza caso de uso
 
-### **Postcondiciones**
+### Postcondiciones
 - Usuario autenticado
 - Tokens generados y almacenados
-- Sesión activa
+- Sesion activa
 - Log de actividad registrado
 
-### **Reglas de Negocio**
-- RN05: Access Token expira en 15 minutos
-- RN06: Refresh Token expira en 7 días
-- RN07: Máximo 5 intentos fallidos antes de bloqueo
-- RN08: Bloqueo temporal de 15 minutos
+### Reglas de Negocio
+- RN04: Access Token expira en 15 minutos
+- RN05: Refresh Token expira en 7 dias
+- RN06: Maximo 5 intentos fallidos antes de bloqueo
+- RN07: Bloqueo temporal de 15 minutos
 
 ---
 
-## CU-C10: Agregar Producto al Carrito
+## CU-C09: Agregar Producto al Carrito
 
-### **Descripción**
-Usuario agrega un producto con cantidad específica al carrito de compras.
+### Descripcion
+Usuario agrega un producto con cantidad especifica al carrito de compras para preparar su reserva.
 
-### **Actores**
-- **Principal:** Usuario (autenticado o anónimo)
+### Actores
+- Principal: Usuario (autenticado o anonimo)
 
-### **Precondiciones**
+### Precondiciones
 - Producto debe existir y estar activo
 - Producto debe tener stock disponible
 
-### **Flujo Principal**
-1. Usuario visualiza producto en catálogo o detalle
+### Flujo Principal
+1. Usuario visualiza producto en catalogo o detalle
 2. Usuario selecciona cantidad deseada
 3. Usuario hace clic en "Agregar al Carrito"
 4. Sistema verifica stock disponible
-5. Sistema verifica si producto ya está en carrito
+5. Sistema verifica si producto ya esta en carrito
 6. SI producto existe en carrito:
    - Sistema suma cantidades
 7. SI producto NO existe en carrito:
    - Sistema crea nuevo item en carrito
 8. Sistema actualiza total del carrito
-9. Sistema muestra notificación de éxito
+9. Sistema muestra notificacion de exito
 10. Sistema actualiza contador de carrito en navbar
 11. Sistema registra evento en analytics
 
-### **Flujos Alternativos**
+### Flujos Alternativos
 
-**FA1: Stock Insuficiente**
+FA1: Stock Insuficiente
 - 4a. Sistema detecta stock < cantidad solicitada
 - 4b. Sistema muestra error "Stock insuficiente"
 - 4c. Sistema muestra stock disponible actual
-- 4d. Sistema sugiere cantidad máxima disponible
+- 4d. Sistema sugiere cantidad maxima disponible
 - Retorna a paso 2
 
-**FA2: Producto Inactivo**
+FA2: Producto Inactivo
 - 4a. Sistema detecta producto no disponible
 - 4b. Sistema muestra error "Producto no disponible"
 - Finaliza caso de uso
 
-**FA3: Cantidad Excede Límite**
-- 2a. Usuario intenta agregar más de 50 unidades
+FA3: Cantidad Excede Limite
+- 2a. Usuario intenta agregar mas de 50 unidades
 - 2b. Sistema limita cantidad a 50
 - 2c. Sistema muestra advertencia
-- Continúa en paso 4
+- Continua en paso 4
 
-**FA4: Usuario Anónimo**
+FA4: Usuario Anonimo
 - 1a. Usuario no autenticado
 - 1b. Sistema crea carrito temporal con session_id
 - 1c. Sistema guarda en localStorage
-- Continúa flujo normal
+- Continua flujo normal
 
-### **Postcondiciones**
+### Postcondiciones
 - Item agregado/actualizado en carrito
 - Stock reservado temporalmente
 - Evento registrado en analytics
 - Total de carrito actualizado
 
-### **Reglas de Negocio**
-- RN09: Cantidad mínima: 1 unidad
-- RN10: Cantidad máxima por producto: 50 unidades
-- RN11: Stock se reserva temporalmente por 30 minutos
-- RN12: Carrito de usuario anónimo expira en 24 horas
+### Reglas de Negocio
+- RN08: Cantidad minima: 1 unidad
+- RN09: Cantidad maxima por producto: 50 unidades
+- RN10: Stock se reserva temporalmente por 30 minutos
+- RN11: Carrito de usuario anonimo expira en 24 horas
 
 ---
 
-## CU-C14: Realizar Pedido
+## CU-C12: Realizar Pedido (Reserva para Recoger en Tienda)
 
-### **Descripción**
-Usuario completa el proceso de compra desde el carrito hasta la confirmación del pedido.
+### Descripcion
+Usuario completa el proceso de reserva desde el carrito hasta la confirmacion del pedido para recoger en tienda.
 
-### **Actores**
-- **Principal:** Usuario autenticado
-- **Secundarios:** Sistema de Pagos (Stripe), Sistema de Email, Sistema de Notificaciones
+### Actores
+- Principal: Usuario autenticado
+- Secundarios: Sistema de Email, Sistema de Notificaciones
 
-### **Precondiciones**
+### Precondiciones
 - Usuario debe estar autenticado
 - Carrito debe tener al menos 1 producto
-- Usuario debe tener al menos 1 dirección registrada
-- Productos deben tener stock disponible
+- Productos deben tener stock disponible en la sucursal seleccionada
 
-### **Flujo Principal**
+### Flujo Principal
 
-**PASO 1: Revisión del Carrito**
+PASO 1: Revision del Carrito
 1. Usuario accede al carrito
 2. Sistema muestra resumen de productos
 3. Sistema calcula subtotal
 4. Usuario puede modificar cantidades o eliminar items
-5. Usuario hace clic en "Proceder al Pago"
+5. Usuario hace clic en "Proceder a la Reserva"
 
-**PASO 2: Información de Envío**
-6. Sistema muestra direcciones guardadas
-7. Usuario selecciona dirección de entrega
-8. Usuario selecciona tipo de pedido (Delivery/Pickup)
-9. SI Delivery:
-   - Sistema calcula costo de envío según zona
-   - Sistema muestra tiempo estimado de entrega
-10. Usuario selecciona fecha y hora de entrega
-11. Usuario ingresa notas especiales (opcional)
-12. Sistema valida zona de cobertura
-13. Usuario hace clic en "Continuar"
+PASO 2: Informacion de Sucursal y Recogida
+6. Sistema muestra sucursales disponibles
+7. Usuario selecciona la sucursal donde recogera el pedido
+8. Usuario selecciona fecha y hora de recogida (dentro del horario operativo de la sucursal)
+9. Usuario ingresa notas especiales (opcional)
+10. Usuario hace clic en "Continuar"
 
-**PASO 3: Método de Pago**
-14. Sistema muestra opciones de pago
-15. Usuario selecciona método:
-    - Tarjeta (Stripe)
-    - Pago contra entrega
-    - Transferencia bancaria
-16. SI Tarjeta:
-    - Usuario ingresa datos en formulario Stripe
-    - Sistema valida tarjeta
-17. Usuario puede aplicar código de descuento
-18. Sistema calcula total final:
-    - Subtotal + Envío - Descuentos + Impuestos
-19. Usuario hace clic en "Pagar"
+PASO 3: Metodo de Pago y Confirmacion
+11. Sistema muestra el metodo de pago unico: "Pago contra entrega al recoger en tienda" (Efectivo/Tarjeta en caja) o "Transferencia bancaria previa"
+12. Usuario ingresa codigo de descuento (opcional)
+13. Sistema calcula total final
+14. Usuario hace clic en "Confirmar Reserva"
 
-**PASO 4: Procesamiento**
-20. Sistema valida stock nuevamente
-21. Sistema crea registro de pedido en BD
-22. Sistema genera número de orden único
-23. Sistema procesa pago con Stripe
-24. SI pago exitoso:
-    - Sistema actualiza estado pedido a "CONFIRMED"
-    - Sistema descuenta stock de productos
-    - Sistema vacía carrito del usuario
-    - Sistema registra pago en tabla payments
-    - Sistema otorga puntos de fidelidad (1 punto por cada $1)
-25. Sistema envía emails:
-    - Confirmación al cliente
-    - Notificación a admin
-26. Sistema envía notificación push
-27. Sistema registra en logs
-28. Sistema muestra pantalla de confirmación
+PASO 4: Procesamiento
+15. Sistema valida stock nuevamente en la sucursal seleccionada
+16. Sistema crea registro de pedido en BD con estado "PENDING"
+17. Sistema genera numero de orden unico
+18. Sistema reserva stock de productos en la sucursal
+19. Sistema vacia carrito del usuario
+20. Sistema envia emails:
+    - Confirmacion al cliente con detalles de recogida
+    - Notificacion a administradores de la sucursal
+21. Sistema envia notificacion push
+22. Sistema registra en logs
+23. Sistema muestra pantalla de confirmacion
 
-**PASO 5: Confirmación**
-29. Sistema muestra:
-    - Número de orden
+PASO 5: Confirmacion
+24. Sistema muestra:
+    - Numero de orden
     - Resumen del pedido
-    - Estado actual
-    - Tiempo estimado de entrega
-30. Sistema ofrece opciones:
+    - Estado de reserva (Pendiente)
+    - Fecha y hora seleccionada para recoger
+    - Sucursal de recogida
+25. Sistema ofrece opciones:
     - Ver detalle del pedido
-    - Rastrear pedido
     - Volver al inicio
 
-### **Flujos Alternativos**
+### Flujos Alternativos
 
-**FA1: Stock Insuficiente al Confirmar**
-- 20a. Sistema detecta stock insuficiente
-- 20b. Sistema muestra productos sin stock
-- 20c. Sistema ofrece eliminar o reducir cantidad
+FA1: Stock Insuficiente al Confirmar
+- 15a. Sistema detecta stock insuficiente en la sucursal
+- 15b. Sistema muestra productos sin stock
+- 15c. Sistema ofrece eliminar o reducir cantidad
 - Retorna a paso 1
 
-**FA2: Pago Rechazado**
-- 23a. Stripe rechaza el pago
-- 23b. Sistema muestra error con razón
-- 23c. Sistema mantiene carrito intacto
-- 23d. Sistema actualiza estado pedido a "FAILED"
-- 23e. Sistema registra intento fallido
-- Retorna a paso 16
+FA2: Codigo de Descuento Invalido
+- 12a. Sistema valida codigo
+- 12b. Codigo no existe o expiro
+- 12c. Sistema muestra error
+- Retorna a paso 12
 
-**FA3: Código de Descuento Inválido**
-- 17a. Sistema valida código
-- 17b. Código no existe o expiró
-- 17c. Sistema muestra error
-- Retorna a paso 17
-
-**FA4: Fuera de Zona de Cobertura**
-- 12a. Sistema detecta dirección fuera de zona
-- 12b. Sistema muestra mensaje
-- 12c. Sistema sugiere pickup
-- Retorna a paso 7
-
-**FA5: Error de Conexión con Stripe**
-- 23a. No hay conexión con Stripe
-- 23b. Sistema muestra error técnico
-- 23c. Sistema ofrece otros métodos de pago
-- Retorna a paso 15
-
-### **Postcondiciones Exitosas**
-- Pedido creado en BD
-- Pago procesado y registrado
-- Stock actualizado
+### Postcondiciones Exitosas
+- Pedido de reserva creado en BD
+- Stock reservado en la sucursal
 - Carrito vaciado
 - Emails enviados
-- Notificaciones enviadas
-- Puntos otorgados
 - Logs registrados
 
-### **Reglas de Negocio**
-- RN13: Pedido mínimo: $5.00
-- RN14: Envío gratis para pedidos > $30
-- RN15: Zona de cobertura: Radio de 10km
-- RN16: Horario de entrega: 7am - 9pm
-- RN17: Puntos otorgados: 1 punto por cada $1 gastado
-- RN18: Stock se descuenta solo al confirmar pago
-- RN19: Número de orden formato: ORD-YYYYMMDD-XXXX
-- RN20: Pedido se puede cancelar solo si estado = PENDING o CONFIRMED
-
----
-
-## CU-C17: Rastrear Pedido
-
-### **Descripción**
-Usuario visualiza el estado actual y seguimiento en tiempo real de su pedido.
-
-### **Actores**
-- **Principal:** Usuario autenticado
-- **Secundario:** Sistema de Tracking
-
-### **Precondiciones**
-- Usuario debe tener pedidos activos
-- Pedido debe existir en la BD
-
-### **Flujo Principal**
-1. Usuario accede a "Mis Pedidos"
-2. Sistema muestra lista de pedidos ordenados por fecha
-3. Usuario selecciona pedido a rastrear
-4. Sistema carga detalles del pedido
-5. Sistema muestra:
-   - Número de orden
-   - Estado actual
-   - Progreso visual (barra de estados)
-   - Productos del pedido
-   - Dirección de entrega
-   - Empleado asignado (si aplica)
-   - Tiempo estimado de llegada
-6. SI pedido en estado "IN_DELIVERY":
-   - Sistema muestra mapa con ubicación del repartidor (opcional)
-   - Sistema muestra tiempo restante estimado
-7. Sistema permite:
-   - Contactar al repartidor
-   - Cancelar pedido (si está permitido)
-   - Ver factura
-8. Sistema actualiza en tiempo real vía WebSocket
-
-### **Estados Posibles del Pedido**
-- PENDING: Pedido recibido, pendiente de confirmación
-- CONFIRMED: Pedido confirmado, pendiente de preparación
-- PREPARING: En preparación
-- READY: Listo para entrega/pickup
-- IN_DELIVERY: En camino
-- DELIVERED: Entregado
-- CANCELLED: Cancelado
-
-### **Flujos Alternativos**
-
-**FA1: Pedido No Encontrado**
-- 4a. Sistema no encuentra el pedido
-- 4b. Sistema muestra error 404
-- Finaliza caso de uso
-
-**FA2: Actualización en Tiempo Real**
-- Sistema recibe evento de cambio de estado
-- Sistema actualiza UI sin refrescar página
-- Sistema muestra notificación del cambio
-
-### **Postcondiciones**
-- Usuario informado del estado
-- Evento de rastreo registrado en analytics
-
-### **Reglas de Negocio**
-- RN21: Actualizaciones en tiempo real vía WebSocket
-- RN22: Histórico de cambios de estado se mantiene
-- RN23: Notificación automática al cambiar estado
+### Reglas de Negocio
+- RN12: Pedido minimo: $5.00
+- RN13: Horario de recogida: De lunes a domingo de 7am a 9pm
+- RN14: Numero de orden formato: ORD-YYYYMMDD-XXXX
+- RN15: Pedido se puede cancelar solo si su estado es PENDING o CONFIRMED
+- RN16: Las reservas no retiradas en la fecha y hora pactadas se cancelan automaticamente despues de 2 horas de retraso, liberando el stock.
 
 ---
 
 ## CU-A01: Gestionar Productos (CRUD)
 
-### **Descripción**
-Administrador crea, lee, actualiza o elimina productos del catálogo.
+### Descripcion
+Administrador crea, lee, actualiza o elimina productos del catalogo general.
 
-### **Actores**
-- **Principal:** Administrador o Manager
+### Actores
+- Principal: Administrador o Manager
 
-### **Precondiciones**
+### Precondiciones
 - Usuario debe tener rol ADMIN o MANAGER
 - Usuario debe estar autenticado
 
-### **Flujo Principal - CREAR PRODUCTO**
+### Flujo Principal - CREAR PRODUCTO
 
-1. Admin accede a "Gestión de Productos"
-2. Admin hace clic en "Nuevo Producto"
-3. Sistema muestra formulario de creación
-4. Admin ingresa:
+1. Administrador accede a "Gestion de Productos"
+2. Administrador hace clic en "Nuevo Producto"
+3. Sistema muestra formulario de creacion
+4. Administrador ingresa:
    - SKU (auto-generado o manual)
    - Nombre del producto
-   - Categoría
-   - Descripción corta
-   - Descripción completa
+   - Categoria
+   - Descripcion corta
+   - Descripcion completa
    - Precio
    - Precio de costo
    - Stock inicial
    - Umbral de stock bajo
    - Peso
-   - Calorías
-   - Vida útil (días)
-   - Requiere refrigeración (sí/no)
-   - Tags (array)
-   - Alérgenos (array)
-   - Información nutricional (JSON)
-5. Admin sube imágenes:
+   - Calorias
+   - Vida util (dias)
+   - Requiere refrigeracion (si/no)
+   - Tags
+   - Alergenos
+   - Informacion nutricional
+5. Administrador sube imagenes:
    - Imagen principal (requerida)
-   - Imágenes adicionales (opcional)
+   - Imagenes adicionales (opcional)
 6. Sistema valida:
-   - SKU único
+   - SKU unico
    - Precio > 0
    - Campos requeridos completos
-   - Formato de imágenes (JPG, PNG, WebP)
-   - Tamaño de imagen < 5MB
-7. Sistema sube imágenes a Cloudinary
+   - Formato de imagenes (JPG, PNG, WebP)
+   - Tamano de imagen < 5MB
+7. Sistema sube imagenes a Cloudinary u otro servicio de almacenamiento
 8. Sistema optimiza y genera thumbnails
 9. Sistema crea registro en BD
-10. Sistema genera slug único
+10. Sistema genera slug unico
 11. Sistema registra en logs
-12. Sistema muestra mensaje de éxito
+12. Sistema muestra mensaje de exito
 13. Sistema redirige a lista de productos
 
-### **Flujo Principal - EDITAR PRODUCTO**
+### Flujo Principal - EDITAR PRODUCTO
 
-1. Admin busca producto en lista
-2. Admin hace clic en "Editar"
+1. Administrador busca producto en lista
+2. Administrador hace clic en "Editar"
 3. Sistema carga datos actuales en formulario
-4. Admin modifica campos deseados
+4. Administrador modifica campos deseados
 5. Sistema valida cambios
 6. SI cambio de precio:
-   - Sistema registra histórico de precios
+   - Sistema registra historico de precios
 7. Sistema actualiza registro en BD
 8. Sistema actualiza timestamp "updated_at"
 9. Sistema registra cambio en logs
-10. Sistema muestra mensaje de éxito
+10. Sistema muestra mensaje de exito
 
-### **Flujo Principal - ELIMINAR PRODUCTO**
+### Flujo Principal - ELIMINAR PRODUCTO
 
-1. Admin selecciona producto
-2. Admin hace clic en "Eliminar"
+1. Administrador selecciona producto
+2. Administrador hace clic en "Eliminar"
 3. Sistema verifica si producto tiene:
    - Pedidos activos asociados
    - Items en carritos de clientes
 4. SI tiene dependencias:
    - Sistema muestra advertencia
    - Sistema sugiere desactivar en lugar de eliminar
-5. Admin confirma eliminación
+5. Administrador confirma elminacion
 6. Sistema realiza soft delete (deleted_at = now())
-7. Sistema mantiene en BD para histórico
-8. Sistema oculta de catálogo público
+7. Sistema mantiene en BD para historico
+8. Sistema oculta de catalogo publico
 9. Sistema registra en logs
 
-### **Flujos Alternativos**
+### Flujos Alternativos
 
-**FA1: SKU Duplicado**
+FA1: SKU Duplicado
 - 6a. Sistema detecta SKU existente
 - 6b. Sistema muestra error
 - 6c. Sistema sugiere SKU alternativo
 - Retorna a paso 4
 
-**FA2: Error al Subir Imagen**
-- 7a. Cloudinary falla
+FA2: Error al Subir Imagen
+- 7a. El servicio de almacenamiento falla
 - 7b. Sistema muestra error
 - 7c. Sistema mantiene datos en formulario
 - Retorna a paso 5
 
-**FA3: Stock Negativo**
-- 6a. Admin ingresa stock < 0
+FA3: Stock Negativo
+- 6a. Administrador ingresa stock < 0
 - 6b. Sistema rechaza valor
 - 6c. Sistema muestra error
 - Retorna a paso 4
 
-### **Postcondiciones**
+### Postcondiciones
 - Producto creado/actualizado/eliminado
-- Imágenes subidas y optimizadas
+- Imagenes subidas y optimizadas
 - Logs registrados
 - Cache invalidado
 
-### **Reglas de Negocio**
-- RN24: SKU debe ser único
-- RN25: Precio debe ser mayor a costo
-- RN26: Soft delete para mantener histórico
-- RN27: Cambios de precio se registran en histórico
-- RN28: Imágenes máximo 5MB cada una
-- RN29: Máximo 5 imágenes por producto
-- RN30: Slug se genera automáticamente del nombre
+### Reglas de Negocio
+- RN17: SKU debe ser unico
+- RN18: Precio debe ser mayor a costo
+- RN19: Soft delete para mantener historico
+- RN20: Cambios de precio se registran en historico
+- RN21: Imagenes maximo 5MB cada una
+- RN22: Maximo 5 imagenes por producto
+- RN23: Slug se genera automaticamente del nombre
 
 ---
 
-## CU-A07: Gestionar Pedidos
+## CU-A07: Gestionar Pedidos (Reservas)
 
-### **Descripción**
-Administrador o empleado visualiza, filtra y actualiza el estado de los pedidos.
+### Descripcion
+Administrador o personal operativo visualiza, filtra y actualiza el estado de las reservas de pedidos hechas por los clientes.
 
-### **Actores**
-- **Principal:** Admin, Manager, Empleado
+### Actores
+- Principal: Administrador, Manager o Cajero
 
-### **Precondiciones**
+### Precondiciones
 - Usuario con permisos adecuados
 - Usuario autenticado
 
-### **Flujo Principal**
+### Flujo Principal
 
-1. Usuario accede a "Gestión de Pedidos"
-2. Sistema muestra dashboard de pedidos:
-   - Vista Kanban por estados
-   - Total de pedidos por estado
-   - Pedidos del día
-   - Ingresos del día
+1. Usuario accede a "Gestion de Pedidos"
+2. Sistema muestra panel de pedidos:
+   - Vista Kanban por estados de reserva
+   - Total de reservas del dia
+   - Ingresos estimados
 3. Usuario puede:
-   - Filtrar por: Estado, Fecha, Cliente, Empleado
-   - Buscar por número de orden
-   - Ordenar por: Fecha, Total, Estado
-4. Usuario selecciona un pedido
+   - Filtrar por: Estado de Reserva, Sucursal, Fecha, Cliente
+   - Buscar por numero de orden
+4. Usuario selecciona una reserva
 5. Sistema muestra detalles completos:
-   - Información del cliente
-   - Productos del pedido
-   - Dirección de entrega
-   - Estado de pago
+   - Informacion del cliente
+   - Productos reservados
+   - Sucursal y fecha/hora programada de recogida
+   - Estado de pago (Pendiente de pago en caja o Pagado)
    - Timeline de estados
-   - Notas del cliente
-   - Notas internas
+   - Notas del cliente y notas internas
 6. Usuario puede:
-   - Actualizar estado
-   - Asignar a empleado
+   - Actualizar estado de la reserva
    - Agregar notas internas
-   - Imprimir orden de producción
-   - Ver factura
-   - Contactar cliente
-7. Sistema registra todos los cambios
-8. Sistema envía notificaciones al cliente
+   - Imprimir orden para preparacion
+   - Registrar pago y entrega de productos
+   - Cancelar reserva
+7. Sistema registra todos los cambios en la bitacora de auditoria
+8. Sistema envia notificaciones al cliente al cambiar estados criticos
 
-### **Actualizar Estado de Pedido**
+### Actualizar Estado de Pedido
 
 1. Usuario hace clic en "Cambiar Estado"
-2. Sistema muestra estados válidos según estado actual:
-   - PENDING → CONFIRMED, CANCELLED
-   - CONFIRMED → PREPARING, CANCELLED
-   - PREPARING → READY, CANCELLED
-   - READY → IN_DELIVERY (delivery) o DELIVERED (pickup)
-   - IN_DELIVERY → DELIVERED, CANCELLED
+2. Sistema muestra transiciones de estado validas:
+   - PENDING -> CONFIRMED, CANCELLED
+   - CONFIRMED -> PREPARING, CANCELLED
+   - PREPARING -> READY, CANCELLED
+   - READY -> DELIVERED (Entregado al cliente en tienda), CANCELLED
 3. Usuario selecciona nuevo estado
-4. SI requiere información adicional:
-   - Razón de cancelación
-   - Empleado de entrega
-5. Sistema valida transición de estado
-6. Sistema actualiza registro
-7. Sistema registra timestamp del cambio
-8. Sistema envía notificación al cliente vía:
-   - Email
-   - Push notification
-   - SMS (opcional)
-9. Sistema actualiza dashboard en tiempo real
+4. SI se selecciona CANCELLED:
+   - Usuario ingresa razon de cancelacion
+   - Sistema libera el stock reservado de la sucursal
+5. SI se selecciona DELIVERED:
+   - Sistema registra el cobro en caja
+   - Sistema marca el inventario como descontado fisicamente
+6. Sistema valida transicion de estado
+7. Sistema actualiza registro con timestamp
+8. Sistema envia notificacion de cambio de estado al cliente via email y push
+9. Sistema actualiza el panel de control en tiempo real
 10. Sistema registra en logs
 
-### **Asignar Pedido a Empleado**
+### Flujos Alternativos
 
-1. Usuario hace clic en "Asignar Empleado"
-2. Sistema muestra lista de empleados disponibles
-3. Sistema filtra por:
-   - Empleados con turno activo
-   - Empleados con menos pedidos asignados
-4. Usuario selecciona empleado
-5. Sistema asigna pedido
-6. Sistema notifica al empleado
-7. Sistema actualiza contador de pedidos del empleado
-
-### **Flujos Alternativos**
-
-**FA1: Transición de Estado Inválida**
-- 5a. Usuario intenta cambio no permitido
-- 5b. Sistema muestra error
-- 5c. Sistema explica estados válidos
+FA1: Transicion de Estado Invalida
+- 6a. Usuario intenta cambio no permitido
+- 6b. Sistema muestra error
+- 6c. Sistema explica estados validos
 - Retorna a paso 2
 
-**FA2: Pedido Pagado No Se Puede Cancelar**
+FA2: Reserva Ya Entregada No Se Puede Cancelar
 - 3a. Usuario intenta cancelar pedido DELIVERED
-- 3b. Sistema muestra advertencia
-- 3c. Sistema sugiere proceso de reembolso
-- Finaliza
+- 3b. Sistema muestra error "El pedido ya fue entregado y pagado"
+- Finaliza flujo alternativo
 
-**FA3: Empleado No Disponible**
-- 4a. No hay empleados con turno activo
-- 4b. Sistema muestra advertencia
-- 4c. Sistema permite asignar de todas formas
-- Continúa en paso 4
+### Postcondiciones
+- Estado de la reserva actualizado
+- Stock modificado o liberado segun corresponda
+- Notificaciones enviadas al cliente
+- Logs de auditoria registrados
 
-### **Postcondiciones**
-- Estado de pedido actualizado
-- Notificaciones enviadas
-- Logs registrados
-- Dashboard actualizado en tiempo real
-
-### **Reglas de Negocio**
-- RN31: Solo ciertos estados pueden cambiar a otros
-- RN32: Cambio de estado envía notificación automática
-- RN33: Pedido DELIVERED no se puede cancelar
-- RN34: Pedido CANCELLED no se puede reactivar
-- RN35: Timestamp de cada cambio se registra
+### Reglas de Negocio
+- RN24: Transiciones de estado restringidas por flujo logico
+- RN25: Cambio de estado envia notificacion automatica
+- RN26: Pedidos en estado DELIVERED o CANCELLED no se pueden modificar
+- RN27: Timestamp de cada cambio se registra obligatoriamente
 
 ---
 
 ## CU-IA01: Predecir Demanda de Productos
 
-### **Descripción**
-Sistema de IA analiza datos históricos y predice la demanda de productos para optimizar producción.
+### Descripcion
+El sistema de IA analiza datos historicos de ventas de producto terminado para sugerir niveles de produccion.
 
-### **Actores**
-- **Principal:** Sistema de IA
-- **Secundario:** Administrador (visualiza resultados)
+### Actores
+- Principal: Sistema de IA
+- Secundario: Administrador o Manager (visualiza los resultados)
 
-### **Precondiciones**
-- Debe existir al menos 30 días de datos históricos
-- Microservicio de IA debe estar activo
+### Precondiciones
+- Debe existir al menos 30 dias de datos historicos de ventas
+- Microservicio de IA activo
 
-### **Flujo Principal**
+### Flujo Principal
 
-1. Sistema ejecuta predicción automática diariamente a las 11 PM
-2. Sistema recopila datos de últimos 90 días:
-   - Ventas por producto por día
-   - Cantidad vendida
-   - Días de la semana
-   - Eventos especiales (festivos)
-   - Promociones activas
-   - Clima (opcional)
-3. Sistema preprocesa datos:
-   - Limpia valores atípicos
-   - Normaliza datos
-   - Crea features adicionales
-4. Sistema aplica modelo de Time Series Forecasting
-5. Sistema genera predicciones para próximos 7 días:
-   - Cantidad estimada por producto
-   - Intervalo de confianza
-   - Tendencia
-6. Sistema calcula:
-   - Ingredientes necesarios
-   - Sugerencias de producción
-7. Sistema guarda predicciones en MongoDB
-8. Sistema genera alertas si:
-   - Ingrediente insuficiente
-   - Capacidad de producción insuficiente
-   - Demanda inusualmente alta
-9. Sistema envía reporte a administradores
-10. Admin visualiza en dashboard:
-    - Gráficos de predicción
-    - Tabla de producción sugerida
-    - Alertas y recomendaciones
+1. El sistema ejecuta el modelo de prediccion automaticamente todas las noches a las 11 PM
+2. El sistema recopila datos de los ultimos 90 dias de la sucursal:
+   - Cantidades de productos vendidos por dia
+   - Dias de la semana
+   - Eventos festivos o dias no habiles
+3. El sistema procesa los datos eliminando anomalias y normalizando las series temporales
+4. El sistema aplica algoritmos de prediccion de series temporales
+5. El sistema genera la prediccion de demanda para los próximos 7 dias
+6. El sistema calcula las cantidades sugeridas de productos a hornear y las materias primas estimadas para esa produccion
+7. El sistema almacena los resultados de la prediccion en la base de datos
+8. El sistema envia alertas a los managers si la demanda sugerida excede la capacidad de produccion usual o si hay riesgo de desabastecimiento de materias primas
+9. El manager visualiza en su panel operativo los graficos de prediccion y la tabla de produccion recomendada para el dia siguiente
 
-### **Flujos Alternativos**
+### Flujos Alternativos
 
-**FA1: Datos Insuficientes**
-- 2a. Menos de 30 días de historial
-- 2b. Sistema usa predicción simple basada en promedio
-- 2c. Sistema marca predicción como "baja confianza"
-- Continúa en paso 5
+FA1: Datos Insuficientes
+- 2a. Menos de 30 dias de historial en la base de datos
+- 2b. El sistema calcula un promedio movil simple como estimacion
+- 2c. El sistema marca el resultado como "Estimacion base (baja confianza)"
+- Continua en paso 5
 
-**FA2: Error en Modelo**
-- 4a. Modelo de ML falla
-- 4b. Sistema usa último pronóstico válido
-- 4c. Sistema notifica a admin del error
-- 4d. Sistema registra error en logs
-- Finaliza
+FA2: Error en el Modelo de ML
+- 4a. El modelo de IA presenta fallos de ejecucion o timeout
+- 4b. El sistema carga la ultima prediccion valida registrada o promedios historicos
+- 4c. El sistema registra el error en los logs y notifica al administrador del sistema
+- Finaliza flujo alternativo
 
-**FA3: Evento Especial Detectado**
-- 2a. Sistema detecta día festivo próximo
-- 2b. Sistema ajusta predicción con factor multiplicador
-- 2c. Sistema muestra nota explicativa
-- Continúa en paso 5
+### Postcondiciones
+- Predicciones de demanda generadas y almacenadas
+- Sugerencias de produccion diarias disponibles para consulta
+- Logs del proceso de IA registrados
 
-### **Postcondiciones**
-- Predicciones generadas y guardadas
-- Reporte enviado a admins
-- Dashboard actualizado
-- Alertas generadas si aplica
-
-### **Reglas de Negocio**
-- RN36: Predicción se ejecuta diariamente a las 11 PM
-- RN37: Se predice para próximos 7 días
-- RN38: Mínimo 30 días de datos requeridos
-- RN39: Confianza > 80% para alertas automáticas
-- RN40: Festivos ajustan predicción con factor 1.5x
+### Reglas de Negocio
+- RN28: Ejecucion automatica diaria programada
+- RN29: Minimo 30 dias de datos historicos
+- RN30: Ajuste automatico de prediccion por dias festivos o fines de semana
 
 ---
 
 ## CU-IA02: Generar Recomendaciones Personalizadas
 
-### **Descripción**
-Sistema de IA genera recomendaciones de productos personalizadas para cada usuario.
+### Descripcion
+El modulo de IA genera recomendaciones de productos en la tienda en linea basadas en las preferencias del cliente.
 
-### **Actores**
-- **Principal:** Sistema de IA
-- **Usuario:** Recibe recomendaciones
+### Actores
+- Principal: Sistema de IA
+- Secundario: Cliente (visualiza las recomendaciones)
 
-### **Precondiciones**
-- Usuario debe tener historial de compras o navegación
+### Precondiciones
+- Catalogo de productos cargado e imagenes disponibles
 
-### **Flujo Principal**
+### Flujo Principal
 
-1. Usuario accede a cualquier página del sitio
-2. Sistema verifica si hay recomendaciones en cache
-3. SI cache válido (< 1 hora):
-   - Sistema retorna desde cache
-4. SI cache expirado o no existe:
-   - Sistema recopila datos del usuario:
-     * Productos comprados anteriormente
-     * Productos vistos recientemente
-     * Productos en favoritos
-     * Categorías preferidas
-     * Productos en carrito actual
-5. Sistema recopila datos globales:
-   - Productos más vendidos
-   - Productos trending
-   - Productos similares comprados por otros usuarios
-6. Sistema aplica algoritmos:
-   - **Collaborative Filtering:** "Usuarios como tú también compraron"
-   - **Content-Based:** "Te puede gustar basado en tus compras"
-   - **Trending:** "Productos populares ahora"
-7. Sistema calcula score de relevancia para cada producto
-8. Sistema ordena por score descendente
-9. Sistema filtra:
-   - Productos ya comprados recientemente
-   - Productos sin stock
-   - Productos inactivos
-10. Sistema selecciona top 10 recomendaciones
-11. Sistema guarda en cache (Redis, 1 hora)
-12. Sistema retorna resultados al frontend
-13. Frontend muestra en secciones:
-    - "Recomendado para ti"
-    - "Basado en tu historial"
-    - "Clientes también compraron"
+1. Cliente autenticado navega por la tienda web
+2. El sistema verifica si existen recomendaciones personalizadas calculadas para el usuario en cache
+3. SI la cache esta activa y tiene menos de 1 hora:
+   - El sistema carga los productos recomendados de la cache
+4. SI la cache expiro o no existe:
+   - El sistema recopila datos de navegacion y pedidos del cliente (categorias preferidas, productos mas comprados)
+   - El sistema aplica algoritmos de recomendacion (filtrado colaborativo y recomendaciones basadas en contenido)
+   - El sistema evalua productos con stock disponible y activos en la sucursal del cliente
+   - El sistema genera una lista de 10 productos recomendados
+   - El sistema guarda los resultados en cache
+5. El sistema presenta al cliente los productos recomendados en secciones dedicadas: "Recomendado para ti" o "Te puede gustar"
+6. El cliente visualiza y puede agregar estos productos directamente al carrito
 
-### **Flujos Alternativos**
+### Flujos Alternativos
 
-**FA1: Usuario Nuevo Sin Historial**
-- 4a. No hay datos personales
-- 4b. Sistema usa solo datos globales:
-   - Productos más vendidos
-   - Productos nuevos
-   - Productos en promoción
-- Continúa en paso 10
+FA1: Cliente Nuevo o Anonimo (Sin Historial)
+- 4a. El sistema detecta que el usuario no tiene historial o es anonimo
+- 4b. El sistema genera recomendaciones basadas en los productos mas vendidos de la sucursal y promociones activas
+- Continua en paso 5
 
-**FA2: Recomendaciones Insuficientes**
-- 10a. Menos de 5 productos recomendados
-- 10b. Sistema completa con productos trending
-- Continúa en paso 11
+FA2: Fallo de Comunicacion con Modulo de IA
+- 4a. El servicio de IA no responde
+- 4b. El sistema muestra por defecto productos destacados y novedades del catalogo general
+- Finaliza flujo alternativo
 
-**FA3: Error en Servicio de IA**
-- 6a. Microservicio de IA no responde
-- 6b. Sistema usa recomendaciones por defecto
-- 6c. Sistema registra error
-- Continúa en paso 10
+### Postcondiciones
+- Recomendaciones de productos generadas e incorporadas al frontend
+- Cache del cliente actualizado
+- Eventos de interaccion registrados para mejorar el modelo
 
-### **Postcondiciones**
-- Recomendaciones generadas
-- Cache actualizado
-- Analytics registrado
-
-### **Reglas de Negocio**
-- RN41: Cache de recomendaciones dura 1 hora
-- RN42: Máximo 10 recomendaciones por usuario
-- RN43: Productos sin stock no se recomiendan
-- RN44: No recomendar productos comprados en últimos 7 días
-- RN45: Score mínimo de relevancia: 0.3
+### Reglas de Negocio
+- RN31: La duracion de la cache de recomendaciones es de 1 hora
+- RN32: Maximo 10 recomendaciones mostradas simultaneamente
+- RN33: Solo se recomiendan productos con stock disponible activo en la sucursal seleccionada
 
 ---
 
-## CU-E01: Marcar Entrada/Salida (Clock In/Out)
+## RESUMEN DE CASOS DE USO
 
-### **Descripción**
-Empleado registra su entrada y salida del turno de trabajo.
+### Por Modulo
 
-### **Actores**
-- **Principal:** Empleado
-
-### **Precondiciones**
-- Empleado debe estar registrado en el sistema
-- Empleado debe tener turno asignado
-
-### **Flujo Principal - ENTRADA**
-
-1. Empleado accede a app/sistema
-2. Empleado hace clic en "Marcar Entrada"
-3. Sistema verifica:
-   - Empleado tiene turno hoy
-   - Está dentro del horario permitido (±15 min)
-   - No tiene otra entrada activa
-4. Sistema registra timestamp de entrada (clock_in)
-5. Sistema actualiza estado a "ACTIVO"
-6. Sistema muestra confirmación
-7. Sistema notifica a supervisor
-
-### **Flujo Principal - SALIDA**
-
-1. Empleado hace clic en "Marcar Salida"
-2. Sistema verifica entrada activa
-3. Sistema registra timestamp de salida (clock_out)
-4. Sistema calcula horas trabajadas
-5. Sistema actualiza estado de turno a "COMPLETED"
-6. Sistema muestra resumen:
-   - Hora entrada
-   - Hora salida
-   - Total horas trabajadas
-   - Pedidos completados
-7. Sistema notifica a supervisor
-
-### **Flujos Alternativos**
-
-**FA1: Entrada Tarde**
-- 3a. Empleado marca después de 15 min del inicio
-- 3b. Sistema marca como "TARDANZA"
-- 3c. Sistema notifica a supervisor
-- Continúa en paso 4
-
-**FA2: Entrada Temprana**
-- 3a. Empleado marca antes de tiempo permitido
-- 3b. Sistema permite pero marca como anticipado
-- Continúa en paso 4
-
-**FA3: Olvido Marcar Salida**
-- 2a. Empleado no marcó salida ayer
-- 2b. Sistema muestra alerta
-- 2c. Sistema permite corrección manual (supervisor)
-- Continúa flujo normal
-
-### **Postcondiciones**
-- Entrada/Salida registrada
-- Horas calculadas
-- Estado de turno actualizado
-- Notificación enviada
-
-### **Reglas de Negocio**
-- RN46: Tolerancia de ±15 minutos
-- RN47: Después de 15 min se marca tardanza
-- RN48: Máximo 1 entrada activa por empleado
-- RN49: Horas extras después de 8 horas
-
----
-
-## 📊 RESUMEN DE CASOS DE USO
-
-### Por Módulo
-
-| Módulo | Cantidad | Complejidad |
+| Modulo | Cantidad | Complejidad |
 |--------|----------|-------------|
-| Clientes | 25 | Media-Alta |
-| Administración | 15 | Alta |
-| Empleados | 5 | Media |
-| IA | 5 | Muy Alta |
-| **TOTAL** | **50** | **Alta** |
+| Clientes | 17 | Media |
+| Administracion | 11 | Alta |
+| IA | 3 | Alta |
+| **TOTAL** | **31** | **Alta** |
 
 ### Por Prioridad
 
-| Prioridad | Casos de Uso | Para MVP |
+| Prioridad | Casos de Uso | Fase Inicial |
 |-----------|--------------|----------|
-| Alta | 20 | ✅ Sí |
-| Media | 18 | ⚠️ Algunos |
-| Baja | 12 | ❌ No |
+| Alta | 18 | Si |
+| Media | 10 | Si |
+| Baja | 3 | Opcional |
 
-### Casos de Uso MVP (Mínimo Viable)
+### Casos de Uso del Alcance Inicial
 
-**DEBE TENER (Fase 1):**
-1. CU-C01: Registro
-2. CU-C02: Login
-3. CU-C06: Ver Catálogo
-4. CU-C09: Ver Detalle
-5. CU-C10: Agregar al Carrito
-6. CU-C14: Realizar Pedido
-7. CU-C17: Rastrear Pedido
-8. CU-A01: Gestionar Productos
-9. CU-A07: Gestionar Pedidos
-10. CU-A05: Dashboard
+DEBE TENER (Fase 1):
+1. CU-C01: Registro de Usuario
+2. CU-C02: Inicio de Sesión
+3. CU-C05: Ver Catálogo de Productos
+4. CU-C08: Ver Detalle de Producto
+5. CU-C09: Agregar Producto al Carrito
+6. CU-C12: Realizar Pedido (Reserva)
+7. CU-A01: Gestionar Productos (CRUD)
+8. CU-A07: Gestionar Pedidos (Reservas)
+9. CU-A05: Ver Dashboard de Ventas
 
-**DEBERÍA TENER (Fase 2):**
-11. CU-C04: 2FA
-12. CU-C05: OAuth
-13. CU-C19: Reseñas
-14. CU-C23: Puntos
-15. CU-A10: Promociones
-16. CU-IA02: Recomendaciones
+DEBERIA TENER (Fase 2):
+10. CU-C04: Login con OAuth
+11. CU-C14: Cancelar Pedido
+12. CU-A03: Gestionar Inventario
+13. CU-A04: Gestionar Ingredientes
+14. CU-IA02: Generar Recomendaciones Personalizadas
 
-**PODRÍA TENER (Fase 3):**
-17. CU-IA01: Predicción
-18. CU-IA05: Chatbot
-19. CU-E01: Clock In/Out
-20. Resto de funcionalidades
+PODRIA TENER (Fase 3):
+15. CU-IA01: Predecir Demanda de Productos
+16. CU-IA03: Chatbot de Atención al Cliente
 
 ---
 
-## ✅ VALIDACIÓN Y TRAZABILIDAD
+## VALIDACION Y TRAZABILIDAD
 
-Cada caso de uso está vinculado a:
-- ✅ Requisitos funcionales
-- ✅ Historias de usuario
-- ✅ Tablas de base de datos
-- ✅ Pantallas diseñadas
-- ✅ APIs necesarias
-- ✅ Reglas de negocio
+Cada caso de uso esta vinculado a:
+- Requisitos funcionales
+- Historias de usuario
+- Tablas de base de datos
+- Pantallas disenadas
+- APIs necesarias
+- Reglas de negocio
 
-**Total de Casos de Uso Documentados: 50** ✅
-**Listos para implementación** 🚀
+**Total de Casos de Uso Documentados: 31**
+**Listos para implementacion**

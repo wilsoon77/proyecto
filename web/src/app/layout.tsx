@@ -24,6 +24,7 @@ export const metadata: Metadata = {
   title: "Panaderia Svetlana - Sistema Inteligente de Gestión",
   description: "Sistema de gestión para panaderías en Guatemala. Pan fresco, calidad garantizada.",
   keywords: ["panadería", "Guatemala", "pan", "pasteles", "delivery"],
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({

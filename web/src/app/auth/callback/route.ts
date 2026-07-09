@@ -24,8 +24,12 @@ export async function GET(request: NextRequest) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('[OAuth] Missing Supabase environment variables')
       return NextResponse.redirect(new URL('/login?error=oauth_failed', request.url))
     }
+
+    // We create a response object first so we can append cookies to it
+    let response = NextResponse.redirect(new URL(nextPath, request.url))
 
     const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
       cookies: {
@@ -33,9 +37,15 @@ export async function GET(request: NextRequest) {
           return cookieStore.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            cookieStore.set(name, value, options)
-          })
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options)
+            })
+          } catch (error) {
+            // The `set` method was called from a Server Component.
+            // This can be ignored if you have middleware refreshing
+            // user sessions.
+          }
         },
       },
     })
@@ -43,6 +53,7 @@ export async function GET(request: NextRequest) {
     const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
 
     if (exchangeError || !data.session?.user) {
+      console.error('[OAuth] Error exchanging code for session:', exchangeError)
       return NextResponse.redirect(new URL('/login?error=oauth_failed', request.url))
     }
 
@@ -54,22 +65,38 @@ export async function GET(request: NextRequest) {
     const lastName = parts.slice(1).join(' ')
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
-    const backendResponse = await fetch(`${apiUrl}/auth/oauth-callback`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        supabaseUserId: user.id,
-        email: user.email,
-        firstName,
-        lastName,
-        avatarUrl: user.user_metadata?.avatar_url,
-        provider: user.app_metadata?.provider,
-      }),
-    })
+    
+    // Add timeout to backend fetch (especially useful for free tier Render cold starts)
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 25000) // 25s timeout
+
+    let backendResponse;
+    try {
+      backendResponse = await fetch(`${apiUrl}/auth/oauth-callback`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          supabaseUserId: user.id,
+          email: user.email,
+          firstName,
+          lastName,
+          avatarUrl: user.user_metadata?.avatar_url,
+          provider: user.app_metadata?.provider,
+        }),
+        signal: controller.signal
+      })
+      clearTimeout(timeoutId)
+    } catch (fetchError) {
+      clearTimeout(timeoutId)
+      console.error('[OAuth] Failed to fetch backend (timeout or network error):', fetchError)
+      return NextResponse.redirect(new URL('/login?error=oauth_failed', request.url))
+    }
 
     if (!backendResponse.ok) {
+      const errorText = await backendResponse.text().catch(() => 'No text')
+      console.error(`[OAuth] Backend rejected callback with status ${backendResponse.status}:`, errorText)
       return NextResponse.redirect(new URL('/login?error=oauth_failed', request.url))
     }
 
@@ -77,7 +104,6 @@ export async function GET(request: NextRequest) {
     const isProduction = process.env.NODE_ENV === 'production'
 
     // Keep cookies short-lived: AuthContext will move them to localStorage on first load.
-    const response = NextResponse.redirect(new URL(nextPath, request.url))
     response.cookies.set('auth_token', authData.token, {
       path: '/',
       maxAge: 60,
@@ -94,7 +120,8 @@ export async function GET(request: NextRequest) {
     })
 
     return response
-  } catch {
+  } catch (err) {
+    console.error('[OAuth] Unexpected error during callback:', err)
     return NextResponse.redirect(new URL('/login?error=oauth_failed', request.url))
   }
 }

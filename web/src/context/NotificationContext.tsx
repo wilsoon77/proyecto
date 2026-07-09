@@ -288,23 +288,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
   }, [isLoggedIn, refreshHistory])
 
-  // Automatically request permission at login if not already checked or denied
+  // Remove automatic permission request on login. 
+  // It should only be requested on explicit user gesture (e.g. clicking the bell or a button)
   useEffect(() => {
-    if (isLoggedIn && !isLoading) {
-      const checkAndPrompt = async () => {
-        if (Notification.permission === 'default') {
-          // Trigger push permission prompt immediately on login
-          const permission = await Notification.requestPermission()
-          setPermissionState(permission)
-          if (permission === 'granted') {
-            await subscribeUser()
-          }
-        } else if (Notification.permission === 'granted' && !isSubscribed) {
-          // If browser has permission but no subscription, auto subscribe
-          await subscribeUser()
-        }
-      }
-      checkAndPrompt()
+    if (isLoggedIn && !isLoading && Notification.permission === 'granted' && !isSubscribed) {
+      // If browser already has permission but no subscription, auto subscribe
+      subscribeUser()
     }
   }, [isLoggedIn, isLoading, isSubscribed, subscribeUser])
 

@@ -28,6 +28,8 @@ import {
 } from "@/lib/api"
 import { useAuth } from "@/context/AuthContext"
 import { Button } from "@/components/ui/button"
+import { useToast } from "@/components/ui/toast"
+
 
 interface Branch {
   id: number
@@ -39,6 +41,32 @@ interface Product {
   id: number
   name: string
   slug: string
+  category?: string
+  categorySlug?: string
+}
+
+function getProductUnit(product?: Product | null): string {
+  if (!product) return "unidades"
+  const category = (product.categorySlug || product.category || "").toLowerCase()
+  const name = (product.name || "").toLowerCase()
+  const slug = (product.slug || "").toLowerCase()
+  if (
+    category.includes("bebida") ||
+    category.includes("cafeteria") ||
+    name.includes("bebida") ||
+    name.includes("café") ||
+    name.includes("cafe")
+  ) {
+    if (name.includes("ml") || slug.includes("ml")) {
+      const match = name.match(/(\d+)\s*ml/)
+      return match ? `${match[1]} ml` : "ml"
+    }
+    if (name.includes("litro") || name.includes("lt")) {
+      return "L"
+    }
+    return "unidades"
+  }
+  return "unidades"
 }
 
 // Tipos de movimiento con sus configuraciones
@@ -123,6 +151,8 @@ function MovimientoForm() {
   const branchSlug = searchParams.get("sucursal")
   
   const { user } = useAuth()
+  const { showToast } = useToast()
+  const submitAndKeepOpenRef = useRef(false)
 
   // Estados
   const [branches, setBranches] = useState<Branch[]>([])
@@ -132,6 +162,10 @@ function MovimientoForm() {
   const [productSearch, setProductSearch] = useState("")
   const [isSearchingProducts, setIsSearchingProducts] = useState(false)
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Combobox
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const comboboxRef = useRef<HTMLDivElement>(null)
 
   // Formulario
   const [selectedProduct, setSelectedProduct] = useState<string>(productSlug || "")
@@ -146,11 +180,16 @@ function MovimientoForm() {
   const [submitSuccess, setSubmitSuccess] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
+  const isManager = user?.role === 'MANAGER'
+  const managerBranchSlug = user?.branch?.slug || ""
+
   // Stock actual del producto seleccionado en la sucursal
   const currentStock = inventory.find(
     item => item.product.slug === selectedProduct && 
     (item.branch.slug === movementFromBranch || item.branch.slug === movementToBranch)
   )
+
+  const currentProduct = products.find(p => p.slug === selectedProduct)
 
   // Cargar datos
   useEffect(() => {
@@ -172,6 +211,73 @@ function MovimientoForm() {
     }
     loadData()
   }, [])
+
+  // click-outside for combobox
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (comboboxRef.current && !comboboxRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [])
+
+  // Sync URL productSlug with productSearch on mount
+  useEffect(() => {
+    if (productSlug) {
+      setSelectedProduct(productSlug)
+      setProductSearch(productSlug)
+    }
+  }, [productSlug])
+
+  useEffect(() => {
+    if (productSlug && products.length > 0) {
+      const match = products.find(p => p.slug === productSlug)
+      if (match) {
+        setProductSearch(match.name)
+      }
+    }
+  }, [productSlug, products])
+
+  useEffect(() => {
+    const fetchSelectedProductIfNeeded = async () => {
+      if (!selectedProduct) return
+      const alreadyFetched = products.find(p => p.slug === selectedProduct)
+      if (!alreadyFetched) {
+        try {
+          const productData = await productsService.getBySlug(selectedProduct)
+          if (productData) {
+            setProducts(prev => {
+              if (prev.some(p => p.id === productData.id)) return prev
+              return [...prev, productData]
+            })
+            setProductSearch(productData.name)
+          }
+        } catch (err) {
+          console.error("Error fetching selected product:", err)
+        }
+      }
+    }
+    fetchSelectedProductIfNeeded()
+  }, [selectedProduct, products])
+
+  const handleSelectProduct = (product: Product) => {
+    setSelectedProduct(product.slug)
+    setProductSearch(product.name)
+    setIsDropdownOpen(false)
+  }
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    handleProductSearchChange(value)
+    if (!value) {
+      setSelectedProduct("")
+    }
+    setIsDropdownOpen(true)
+  }
 
   // Búsqueda de productos con debounce
   const searchProducts = useCallback(async (query: string) => {
@@ -199,15 +305,29 @@ function MovimientoForm() {
     }
   }, [searchProducts])
 
-  // Auto-seleccionar sucursales según el tipo
+  // Auto-seleccionar sucursales según el tipo y rol
   useEffect(() => {
-    const config = MOVEMENT_TYPES[movementType]
-    if (config.requiresFromBranch && !config.requiresToBranch) {
-      setMovementToBranch("")
-    } else if (config.requiresToBranch && !config.requiresFromBranch) {
-      setMovementFromBranch("")
+    if (isManager && managerBranchSlug) {
+      if (movementType === 'TRANSFERENCIA') {
+        setMovementFromBranch(managerBranchSlug)
+      } else {
+        const config = MOVEMENT_TYPES[movementType]
+        if (config.requiresFromBranch) {
+          setMovementFromBranch(managerBranchSlug)
+        }
+        if (config.requiresToBranch) {
+          setMovementToBranch(managerBranchSlug)
+        }
+      }
+    } else {
+      const config = MOVEMENT_TYPES[movementType]
+      if (config.requiresFromBranch && !config.requiresToBranch) {
+        setMovementToBranch("")
+      } else if (config.requiresToBranch && !config.requiresFromBranch) {
+        setMovementFromBranch("")
+      }
     }
-  }, [movementType])
+  }, [movementType, isManager, managerBranchSlug])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -252,12 +372,20 @@ function MovimientoForm() {
       }
 
       await inventoryService.createMovement(data)
-      setSubmitSuccess(true)
       
-      // Redirigir después de 2 segundos
-      setTimeout(() => {
-        router.push("/admin/inventario")
-      }, 2000)
+      if (submitAndKeepOpenRef.current) {
+        showToast("Movimiento registrado con éxito", "success")
+        setSelectedProduct("")
+        setProductSearch("")
+        setMovementQuantity(1)
+        setMovementNote("")
+        setMovementReference("")
+      } else {
+        setSubmitSuccess(true)
+        setTimeout(() => {
+          router.push("/admin/inventario")
+        }, 2000)
+      }
     } catch (err) {
       console.error("Error creating movement:", err)
       const message = err instanceof Error ? err.message : "Error al registrar el movimiento"
@@ -324,37 +452,59 @@ function MovimientoForm() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Seleccionar producto *
                 </label>
-                {/* Búsqueda de producto */}
-                <input
-                  type="text"
-                  value={productSearch}
-                  onChange={(e) => handleProductSearchChange(e.target.value)}
-                  placeholder="Escribe para buscar un producto..."
-                  className="w-full px-4 py-2 mb-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm"
-                />
-                {isSearchingProducts && (
-                  <p className="text-xs text-gray-400 mb-1">Buscando productos...</p>
-                )}
-                <select
-                  value={selectedProduct}
-                  onChange={(e) => setSelectedProduct(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-base"
-                  required
-                >
-                  <option value="">-- Seleccionar producto --</option>
-                  {products
-                    .filter(p => !productSearch.trim() || p.name.toLowerCase().includes(productSearch.toLowerCase()))
-                    .map(product => (
-                    <option key={product.id} value={product.slug}>{product.name}</option>
-                  ))}
-                </select>
+                <div ref={comboboxRef} className="relative">
+                  <input
+                    type="text"
+                    value={productSearch}
+                    onChange={handleInputChange}
+                    onFocus={() => setIsDropdownOpen(true)}
+                    placeholder="Escribe para buscar un producto..."
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-base"
+                    required
+                  />
+                  {isDropdownOpen && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {isSearchingProducts && (
+                        <div className="px-4 py-2 text-sm text-gray-400">Buscando productos...</div>
+                      )}
+                      {products.filter(p => 
+                        !productSearch.trim() || 
+                        p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+                        p.slug.toLowerCase().includes(productSearch.toLowerCase())
+                      ).length === 0 ? (
+                        <div className="px-4 py-2 text-sm text-gray-500">No se encontraron productos</div>
+                      ) : (
+                        products
+                          .filter(p => 
+                            !productSearch.trim() || 
+                            p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+                            p.slug.toLowerCase().includes(productSearch.toLowerCase())
+                          )
+                          .map((product) => (
+                            <button
+                              key={product.id}
+                              type="button"
+                              onClick={() => handleSelectProduct(product)}
+                              className={`w-full text-left px-4 py-2 text-sm hover:bg-amber-50 hover:text-amber-900 transition-colors flex items-center justify-between ${
+                                selectedProduct === product.slug ? "bg-amber-100 text-amber-900 font-medium" : "text-gray-700"
+                              }`}
+                            >
+                              <span>{product.name}</span>
+                              {selectedProduct === product.slug && <Check className="h-4 w-4 text-amber-600" />}
+                            </button>
+                          ))
+                      )}
+                    </div>
+                  )}
+                </div>
+                <input type="hidden" name="selectedProduct" value={selectedProduct} required />
               </div>
 
               {currentStock && (
                 <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
                   <p className="text-sm text-amber-800">
                     <span className="font-medium">Stock actual:</span>{" "}
-                    <span className="text-lg font-bold">{currentStock.available}</span> unidades disponibles
+                    <span className="text-lg font-bold">{currentStock.available}</span> {getProductUnit(currentProduct)} disponibles
                     {currentStock.reserved > 0 && (
                       <span className="text-amber-600"> ({currentStock.reserved} reservadas)</span>
                     )}
@@ -409,14 +559,19 @@ function MovimientoForm() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Cantidad *
                 </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={movementQuantity}
-                  onChange={(e) => setMovementQuantity(parseInt(e.target.value) || 0)}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-lg font-semibold"
-                  required
-                />
+                <div className="relative flex items-center">
+                  <input
+                    type="number"
+                    min="1"
+                    value={movementQuantity}
+                    onChange={(e) => setMovementQuantity(parseInt(e.target.value) || 0)}
+                    className="w-full pr-24 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-lg font-semibold"
+                    required
+                  />
+                  <div className="absolute right-3 px-3 py-1 bg-gray-100 text-gray-600 rounded text-sm font-medium border border-gray-200">
+                    {getProductUnit(currentProduct)}
+                  </div>
+                </div>
               </div>
 
               {/* Sucursal origen */}
@@ -428,7 +583,8 @@ function MovimientoForm() {
                   <select
                     value={movementFromBranch}
                     onChange={(e) => setMovementFromBranch(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    disabled={isManager}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:bg-gray-100 disabled:text-gray-500"
                     required
                   >
                     <option value="">-- Seleccionar --</option>
@@ -448,7 +604,8 @@ function MovimientoForm() {
                   <select
                     value={movementToBranch}
                     onChange={(e) => setMovementToBranch(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    disabled={isManager && movementType !== 'TRANSFERENCIA'}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:bg-gray-100 disabled:text-gray-500"
                     required
                   >
                     <option value="">-- Seleccionar --</option>
@@ -515,13 +672,33 @@ function MovimientoForm() {
                 Cancelar
               </Button>
             </Link>
+            <Button
+              type="submit"
+              variant="secondary"
+              size="lg"
+              disabled={isSubmitting}
+              onClick={() => { submitAndKeepOpenRef.current = true }}
+            >
+              {isSubmitting && submitAndKeepOpenRef.current ? (
+                <>
+                  <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                  Registrando...
+                </>
+              ) : (
+                <>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Registrar y agregar otro
+                </>
+              )}
+            </Button>
             <Button 
               type="submit" 
               size="lg"
               disabled={isSubmitting}
+              onClick={() => { submitAndKeepOpenRef.current = false }}
               className="min-w-[200px]"
             >
-              {isSubmitting ? (
+              {isSubmitting && !submitAndKeepOpenRef.current ? (
                 <>
                   <RefreshCw className="h-4 w-4 animate-spin mr-2" />
                   Registrando...

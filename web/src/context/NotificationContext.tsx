@@ -186,6 +186,18 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
 
     try {
+      // Explicitly request permission first (required for some mobile browsers)
+      if (Notification.permission === 'default') {
+        const permission = await Notification.requestPermission()
+        setPermissionState(permission)
+        if (permission !== 'granted') {
+          console.warn('El usuario denegó o ignoró el permiso de notificaciones.')
+          return false
+        }
+      } else if (Notification.permission === 'denied') {
+        console.warn('Los permisos de notificación están bloqueados en este navegador.')
+        return false
+      }
       const { publicKey } = await notificationsService.getVapidPublicKey()
       if (!publicKey) {
         console.error('VAPID public key not found on backend.')

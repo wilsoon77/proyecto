@@ -211,6 +211,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       })
 
       const subJson = subscription.toJSON()
+      console.log('✅ Browser subscrito al PushManager con endpoint:', subJson.endpoint?.substring(0, 50) + '...')
       if (subJson.endpoint && subJson.keys?.p256dh && subJson.keys?.auth) {
         await notificationsService.subscribe({
           endpoint: subJson.endpoint,
@@ -219,13 +220,15 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             auth: subJson.keys.auth
           }
         })
+        console.log('✅ Suscripción enviada exitosamente al backend')
         setIsSubscribed(true)
         setPermissionState('granted')
         return true
       }
+      console.warn('Suscripción generada pero con datos faltantes', subJson)
       return false
     } catch (error) {
-      console.error('Error subscribing browser to Web Push:', error)
+      console.error('❌ Error subscribing browser to Web Push:', error)
       return false
     }
   }, [isLoggedIn])

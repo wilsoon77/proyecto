@@ -103,6 +103,42 @@ export class NotificationsService {
   }
 
   /**
+   * Obtiene el diagnóstico del estado del servicio push
+   */
+  async getDiagnostics(userId: string) {
+    const hasPublicKey = !!process.env.VAPID_PUBLIC_KEY;
+    const hasPrivateKey = !!process.env.VAPID_PRIVATE_KEY;
+    const hasSubject = !!process.env.VAPID_SUBJECT;
+    const isVapidConfigured = hasPublicKey && hasPrivateKey && hasSubject;
+
+    const subscriptions = await this.prisma.pushSubscription.findMany({
+      where: { userId },
+      select: {
+        id: true,
+        endpoint: true,
+        userAgent: true,
+        createdAt: true,
+      }
+    });
+
+    return {
+      vapidConfigured: isVapidConfigured,
+      vapidDetails: {
+        publicKey: hasPublicKey,
+        privateKey: hasPrivateKey,
+        subject: hasSubject,
+      },
+      activeSubscriptions: subscriptions.length,
+      subscriptions: subscriptions.map(sub => ({
+        id: sub.id,
+        endpoint: sub.endpoint.substring(0, 50) + '...',
+        userAgent: sub.userAgent || 'Desconocido',
+        createdAt: sub.createdAt,
+      })),
+    };
+  }
+
+  /**
    * Obtiene el conteo de notificaciones no leídas
    */
   async getUnreadCount(userId: string): Promise<number> {
@@ -189,6 +225,7 @@ export class NotificationsService {
 
     const sendPromises = subs.map(async (sub) => {
       try {
+        console.log(`[PUSH] Intentando enviar notificación a dispositivo (ID: ${sub.id}) del usuario ${userId}`);
         await webpush.sendNotification({
           endpoint: sub.endpoint,
           keys: {
@@ -196,12 +233,14 @@ export class NotificationsService {
             auth: sub.auth,
           }
         }, payload);
+        console.log(`[PUSH] ✅ Éxito al enviar a dispositivo (ID: ${sub.id})`);
       } catch (error: any) {
         if (error.statusCode === 410 || error.statusCode === 404) {
           // Suscripción inválida o expirada, eliminarla de la BD
+          console.warn(`[PUSH] ⚠️ Suscripción expirada o inválida (ID: ${sub.id}). Eliminando de la base de datos.`);
           await this.prisma.pushSubscription.delete({ where: { id: sub.id } }).catch(() => {});
         } else {
-          console.error('[PUSH] Error al despachar notificación push:', error);
+          console.error(`[PUSH] ❌ Error al despachar notificación push (ID: ${sub.id}):`, error.statusCode, error.body || error.message);
         }
       }
     });

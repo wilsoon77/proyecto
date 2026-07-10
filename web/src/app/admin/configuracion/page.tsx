@@ -20,7 +20,15 @@ import {
   Volume2,
   Play,
   ShoppingCart,
-  Flame
+  Flame,
+  Search,
+  CheckCircle2,
+  Info,
+  User,
+  Settings2,
+  Trash2,
+  LogOut,
+  Activity
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
@@ -105,6 +113,7 @@ export default function ConfiguracionPage() {
   const [notificationConfigs, setNotificationConfigs] = useState<NotificationConfig[]>([])
   const [editingConfigKey, setEditingConfigKey] = useState<string | null>(null)
   const [configForm, setConfigForm] = useState<Partial<NotificationConfig>>({})
+  const [diagnostics, setDiagnostics] = useState<any>(null)
 
   const handleStartEditConfig = (cfg: NotificationConfig) => {
     setEditingConfigKey(cfg.key)
@@ -214,12 +223,16 @@ export default function ConfiguracionPage() {
       
       setSettings(newSettings)
 
-      // Cargar configs de notificaciones reales
+      // Cargar configs de notificaciones reales y diagnóstico
       try {
-        const configsData = await notificationsService.getConfigs()
+        const [configsData, diagData] = await Promise.all([
+          notificationsService.getConfigs(),
+          notificationsService.getDiagnostics().catch(() => null)
+        ])
         setNotificationConfigs(configsData)
+        if (diagData) setDiagnostics(diagData)
       } catch (err) {
-        console.error("Error loading notification configs:", err)
+        console.error("Error loading notification configs or diagnostics:", err)
       }
     } catch (error) {
       console.error("Error loading settings:", error)
@@ -569,12 +582,12 @@ export default function ConfiguracionPage() {
                 </div>
 
                 {/* Device Push Subscription Management */}
-                <div className="bg-gradient-to-r from-amber-50 to-amber-50/20 rounded-xl p-5 border border-amber-100/55 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="flex items-start gap-4">
-                    <div className={`p-3 rounded-xl flex items-center justify-center ${isSubscribed ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-400'}`}>
+                <div className="bg-gradient-to-r from-amber-50 to-amber-50/20 rounded-xl p-5 border border-amber-100/55 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                  <div className="flex flex-col sm:flex-row items-start gap-4 w-full">
+                    <div className={`p-3 rounded-xl flex items-center justify-center shrink-0 ${isSubscribed ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-400'}`}>
                       <Volume2 className="h-6 w-6" />
                     </div>
-                    <div>
+                    <div className="flex-1">
                       <h3 className="font-semibold text-gray-900">Estado de Notificaciones Push</h3>
                       <p className="text-sm text-gray-600 mt-0.5">
                         {isSubscribed 
@@ -589,25 +602,56 @@ export default function ConfiguracionPage() {
                       )}
                     </div>
                   </div>
-                  <div>
+                  <div className="flex flex-col sm:flex-row w-full lg:w-auto shrink-0 gap-2 mt-2 lg:mt-0">
                     {isSubscribed ? (
                       <button
                         onClick={unsubscribeUser}
-                        className="px-4 py-2 bg-white text-gray-700 font-medium rounded-lg border border-gray-200 shadow-sm hover:bg-gray-50 text-sm transition-colors whitespace-nowrap"
+                        className="w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-white text-gray-700 font-medium rounded-lg border border-gray-200 shadow-sm hover:bg-gray-50 text-sm transition-colors whitespace-nowrap"
                       >
-                        Desactivar en este navegador
+                        Desactivar
                       </button>
                     ) : (
                       <button
                         onClick={subscribeUser}
                         disabled={permissionState === 'denied'}
-                        className="px-4 py-2 bg-amber-600 text-white font-semibold rounded-lg hover:bg-amber-700 shadow-sm text-sm transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-amber-600 text-white font-semibold rounded-lg hover:bg-amber-700 shadow-sm text-sm transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        Activar en este navegador
+                        Activar Notificaciones
                       </button>
                     )}
                   </div>
                 </div>
+
+                {/* Diagnostics Panel */}
+                {diagnostics && (
+                  <div className="bg-gray-50 rounded-xl p-5 border border-gray-200 text-sm">
+                    <h3 className="font-semibold text-gray-900 flex items-center gap-2 mb-3">
+                      <Activity className="h-4 w-4 text-gray-500" />
+                      Diagnóstico de Sistema Push (Backend)
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-gray-500 mb-1">Estado de VAPID (Render):</p>
+                        <div className="flex items-center gap-2">
+                          <div className={`h-2.5 w-2.5 rounded-full ${diagnostics.vapidConfigured ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                          <span className="font-medium text-gray-900">
+                            {diagnostics.vapidConfigured ? 'Configurado correctamente' : 'Faltan variables de entorno'}
+                          </span>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 mb-1">Suscripciones activas de tu usuario:</p>
+                        <p className="font-medium text-gray-900">{diagnostics.activeSubscriptions} dispositivos registrados</p>
+                      </div>
+                    </div>
+                    
+                    {!diagnostics.vapidConfigured && (
+                      <div className="mt-3 bg-red-50 text-red-700 p-3 rounded-md border border-red-100 text-xs">
+                        <strong>Atención:</strong> Las variables VAPID no están configuradas en el servidor. Las notificaciones push no llegarán a los dispositivos hasta que configures VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY y VAPID_SUBJECT en tu servidor.
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Notification Config Cards List */}
                 <div className="space-y-4">

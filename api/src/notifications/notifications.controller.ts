@@ -42,6 +42,16 @@ export class NotificationsController {
     return { publicKey: process.env.VAPID_PUBLIC_KEY || '' };
   }
 
+  @Get('push-diagnostics')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Diagnóstico Push', description: 'Obtiene el estado de configuración VAPID y suscripciones para diagnóstico.' })
+  @ApiResponse({ status: 200, description: 'Estado de las notificaciones push' })
+  getDiagnostics(@Req() req: any) {
+    return this.notificationsService.getDiagnostics(req.user.userId);
+  }
+
   @Post('subscribe')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -160,10 +170,12 @@ export class NotificationsController {
       recipeName: 'Baguette Tradicional',
       count: 3,
       ip: '192.168.1.1',
-      userId: req.user.userId, // Dirigido a sí mismo si fuera CUSTOMER
+      userId: req.user.userId, // Dirigido a sí mismo
     };
 
-    await this.notificationsService.sendByConfig(key, placeholders, '/admin/historial', 'Bell');
+    // Usamos sendToUser directamente en vez de sendByConfig para asegurar que llegue 
+    // al dispositivo del administrador que está probando, ignorando las reglas de roles.
+    await this.notificationsService.sendToUser(req.user.userId, key, placeholders, '/admin/historial', 'Bell');
     return { success: true, key };
   }
 }

@@ -1,14 +1,21 @@
 self.addEventListener('install', (event) => {
+  console.log('[SW] Instalando Service Worker...');
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(clients.claim());
+  console.log('[SW] Activando Service Worker...');
+  event.waitUntil(
+    clients.claim().then(() => {
+      console.log('[SW] Service Worker activo y controlando clientes.');
+    })
+  );
 });
 
 self.addEventListener('push', function (event) {
+  console.log('[SW] Evento push recibido');
   if (!event.data) {
-    console.log('Push event received but no data provided.');
+    console.warn('[SW] Evento push recibido pero sin datos (payload vacío).');
     return;
   }
 
@@ -30,11 +37,12 @@ self.addEventListener('push', function (event) {
       ]
     };
 
+    console.log('[SW] Mostrando notificación nativa:', data.title);
     event.waitUntil(
       self.registration.showNotification(data.title || 'Alerta del Sistema', options)
     );
   } catch (error) {
-    console.error('Error handling push event:', error);
+    console.error('[SW] ❌ Error procesando evento push:', error);
   }
 });
 

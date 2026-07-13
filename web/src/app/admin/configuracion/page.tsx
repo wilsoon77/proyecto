@@ -853,12 +853,12 @@ export default function ConfiguracionPage() {
                               // Read-only View Mode Summary
                               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                                 <div className="space-y-1.5 flex-1 min-w-0">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-xs font-semibold text-gray-500">Formato:</span>
+                                  <div className="flex items-center gap-2 min-w-0 w-full">
+                                    <span className="text-xs font-semibold text-gray-500 shrink-0">Formato:</span>
                                     <span className="text-xs font-bold text-gray-800 truncate">"{cfg.title}"</span>
                                   </div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-xs font-semibold text-gray-500">Cuerpo:</span>
+                                  <div className="flex items-center gap-2 min-w-0 w-full">
+                                    <span className="text-xs font-semibold text-gray-500 shrink-0">Cuerpo:</span>
                                     <span className="text-xs text-gray-600 truncate">"{cfg.message}"</span>
                                   </div>
                                   <div className="flex flex-wrap items-center gap-1.5">
@@ -873,8 +873,8 @@ export default function ConfiguracionPage() {
                                     )}
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                                  <div className="flex items-center gap-1 border border-gray-200 rounded-lg p-1 bg-white">
+                                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end mt-2 sm:mt-0">
+                                  <div className="flex items-center gap-1 border border-gray-200 rounded-lg p-1 bg-white shrink-0">
                                     <span className="text-[10px] uppercase font-bold text-gray-400 px-1">
                                       Sonido: {cfg.soundType}
                                     </span>

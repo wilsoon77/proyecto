@@ -85,6 +85,13 @@ export const notificationsService = {
   async sendTestNotification(key: string): Promise<{ success: boolean; key: string }> {
     return api.post<{ success: boolean; key: string }>('/notifications/test', { key })
   },
+
+  /**
+   * Obtener diagnóstico del sistema push (ADMIN)
+   */
+  async getDiagnostics(): Promise<any> {
+    return api.get<any>('/notifications/push-diagnostics')
+  }
 }
 
 export default notificationsService

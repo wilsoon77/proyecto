@@ -9,6 +9,7 @@ import { LayoutWrapper } from "@/components/layout/LayoutWrapper";
 import { QueryProvider } from "@/components/providers/query-provider";
 
 import { NotificationProvider } from "@/context/NotificationContext";
+import CookieConsent from "@/components/ui/CookieConsent";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -46,6 +47,7 @@ export default function RootLayout({
                     <LayoutWrapper>
                       {children}
                     </LayoutWrapper>
+                    <CookieConsent />
                   </CartProvider>
                 </NotificationProvider>
               </AuthProvider>

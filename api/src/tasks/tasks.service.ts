@@ -1,19 +1,20 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { OrderStatus, Prisma } from '@prisma/client';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
+import { assertOrderTransition } from '../orders/order-state.js';
+import { PrismaService } from '../prisma/prisma.service.js';
 
 /**
- * TasksService — Tareas programadas del sistema.
- * 
- * Incluye:
- * - Expiración automática de reservas web no confirmadas (cada 15 min)
+ * Tareas programadas del sistema.
+ *
+ * La expiracion de una reserva vuelve a verificar el estado dentro de una
+ * transaccion serializable: un pedido confirmado en paralelo nunca libera
+ * inventario ni regresa a CANCELLED por error.
  */
 @Injectable()
 export class TasksService {
   private readonly logger = new Logger(TasksService.name);
-
-  /** Tiempo máximo (en horas) que una orden PENDING puede existir antes de auto-cancelarse */
   private readonly RESERVATION_EXPIRY_HOURS = 2;
 
   constructor(
@@ -21,76 +22,100 @@ export class TasksService {
     private readonly auditService: AuditService,
   ) {}
 
-  /**
-   * Ejecuta cada 15 minutos: busca órdenes PENDING creadas hace más de X horas
-   * y las cancela, liberando el stock reservado.
-   */
   @Cron(CronExpression.EVERY_10_MINUTES)
   async expireStaleReservations() {
     const cutoff = new Date(Date.now() - this.RESERVATION_EXPIRY_HOURS * 60 * 60 * 1000);
-
-    // Buscar órdenes PENDING más antiguas que el cutoff
     const staleOrders = await this.prisma.order.findMany({
       where: {
-        status: 'PENDING',
+        status: OrderStatus.PENDING,
         createdAt: { lt: cutoff },
       },
-      include: { items: true },
+      select: { id: true, orderNumber: true },
     });
 
     if (staleOrders.length === 0) return;
 
-    this.logger.log(`[Expiración] Encontradas ${staleOrders.length} reservas vencidas (> ${this.RESERVATION_EXPIRY_HOURS}h). Cancelando...`);
-
+    this.logger.log(`[Expiration] ${staleOrders.length} expired reservations found.`);
     let cancelled = 0;
     let errors = 0;
 
-    for (const order of staleOrders) {
+    for (const candidate of staleOrders) {
       try {
-        await this.prisma.$transaction(async (tx) => {
-          // Liberar stock reservado de cada item
-          for (const item of (order as any).items) {
-            if (!order.branchId) continue;
-            const inv = await tx.inventory.findUnique({
-              where: { productId_branchId: { productId: item.productId, branchId: order.branchId } },
-            });
-            if (inv && inv.reserved >= item.quantity) {
-              await tx.inventory.update({
-                where: { id: inv.id },
-                data: { reserved: { decrement: item.quantity } },
-              });
-            }
-          }
-          // Marcar como cancelada
-          await tx.order.update({
-            where: { id: order.id },
-            data: { status: 'CANCELLED' },
+        const cancelledOrder = await this.withSerializableRetry(() => this.prisma.$transaction(async (tx) => {
+          const current = await tx.order.findUnique({
+            where: { id: candidate.id },
+            include: { items: true },
           });
-        });
 
-        // Registrar en auditoría
+          // It may have been confirmed after the initial scan; that is normal.
+          if (!current || current.status !== OrderStatus.PENDING || current.createdAt >= cutoff) return null;
+          if (!current.branchId) throw new Error(`Order ${current.id} has no branch`);
+
+          assertOrderTransition(current.status, OrderStatus.CANCELLED);
+          for (const item of current.items) {
+            const inventory = await tx.inventory.findUnique({
+              where: {
+                productId_branchId: {
+                  productId: item.productId,
+                  branchId: current.branchId,
+                },
+              },
+            });
+            if (!inventory || inventory.reserved < item.quantity) {
+              throw new Error(`Reserved inventory is inconsistent for order ${current.id}`);
+            }
+            await tx.inventory.update({
+              where: { id: inventory.id },
+              data: { reserved: { decrement: item.quantity } },
+            });
+          }
+
+          return tx.order.update({
+            where: { id: current.id },
+            data: { status: OrderStatus.CANCELLED },
+          });
+        }, {
+          isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+          maxWait: 5000,
+          timeout: 10000,
+        }));
+
+        if (!cancelledOrder) continue;
+
         await this.auditService.log({
-          userName: 'Sistema (Auto-Expiración)',
+          userName: 'Sistema (Auto-Expiracion)',
           action: 'UPDATE',
           entity: 'Order',
-          entityId: String(order.id),
-          entityName: order.orderNumber,
+          entityId: String(cancelledOrder.id),
+          entityName: cancelledOrder.orderNumber,
           details: {
             action: 'AUTO_EXPIRE',
-            previousStatus: 'PENDING',
-            newStatus: 'CANCELLED',
+            previousStatus: OrderStatus.PENDING,
+            newStatus: OrderStatus.CANCELLED,
             reason: `Reserva expirada (${this.RESERVATION_EXPIRY_HOURS}h sin confirmar)`,
-            createdAt: order.createdAt.toISOString(),
+            createdAt: cancelledOrder.createdAt.toISOString(),
           },
         });
-
         cancelled++;
-      } catch (err) {
+      } catch (error) {
         errors++;
-        this.logger.error(`[Expiración] Error cancelando orden ${order.orderNumber}:`, err);
+        this.logger.error(`[Expiration] Error cancelling order ${candidate.orderNumber}`, error as string);
       }
     }
 
-    this.logger.log(`[Expiración] Resultado: ${cancelled} canceladas, ${errors} errores.`);
+    this.logger.log(`[Expiration] Result: ${cancelled} cancelled, ${errors} errors.`);
+  }
+
+  private async withSerializableRetry<T>(operation: () => Promise<T>, maxRetries = 3): Promise<T> {
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        return await operation();
+      } catch (error: any) {
+        if (error?.code !== 'P2034' || attempt === maxRetries - 1) throw error;
+        await new Promise((resolve) => setTimeout(resolve, 100 * (attempt + 1)));
+      }
+    }
+
+    throw new Error('Unable to expire reservation consistently');
   }
 }

@@ -5,6 +5,7 @@ import { CreateProductionLogDto } from './dto/production.dto.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/roles.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
+import { BranchScopeService } from '../branch-scope/branch-scope.service.js';
 
 @Controller('production')
 @ApiTags('production')
@@ -12,7 +13,10 @@ import { Roles } from '../auth/roles.decorator.js';
 @Roles('ADMIN', 'MANAGER', 'BAKER')
 @ApiBearerAuth()
 export class ProductionController {
-  constructor(private readonly productionService: ProductionService) {}
+  constructor(
+    private readonly productionService: ProductionService,
+    private readonly branchScope: BranchScopeService,
+  ) {}
 
   @Post()
   @ApiOperation({
@@ -21,21 +25,21 @@ export class ProductionController {
   })
   async registerProduction(@Body() dto: CreateProductionLogDto, @Req() req: any) {
     const userId = req.user.userId || req.user.sub;
-    return this.productionService.registerProduction(dto, userId);
+    const branchId = await this.branchScope.resolveBranchId(req.user, dto.branchId);
+    return this.productionService.registerProduction({ ...dto, branchId }, userId);
   }
 
   @Get('today')
   @ApiOperation({ summary: 'Producción de hoy', description: 'Retorna los registros de producción de HOY.' })
   @ApiQuery({ name: 'branchId', required: false })
-  getTodayProduction(
+  async getTodayProduction(
     @Req() req: any,
     @Query('branchId') branchId?: string,
   ) {
     const userId = req.user.userId || req.user.sub;
-    return this.productionService.getTodayProduction(
-      branchId ? parseInt(branchId) : undefined,
-      userId,
-    );
+    const requestedBranchId = branchId ? parseInt(branchId, 10) : undefined;
+    const scopedBranchId = await this.branchScope.resolveBranchId(req.user, requestedBranchId);
+    return this.productionService.getTodayProduction(scopedBranchId, userId);
   }
 
   @Get()
@@ -43,11 +47,14 @@ export class ProductionController {
   @ApiQuery({ name: 'from', required: false })
   @ApiQuery({ name: 'to', required: false })
   @ApiQuery({ name: 'branchId', required: false })
-  getHistory(
+  async getHistory(
+    @Req() req: any,
     @Query('from') from?: string,
     @Query('to') to?: string,
     @Query('branchId') branchId?: string,
   ) {
-    return this.productionService.getHistory(from, to, branchId ? parseInt(branchId) : undefined);
+    const requestedBranchId = branchId ? parseInt(branchId, 10) : undefined;
+    const scopedBranchId = await this.branchScope.resolveBranchId(req.user, requestedBranchId);
+    return this.productionService.getHistory(from, to, scopedBranchId);
   }
 }

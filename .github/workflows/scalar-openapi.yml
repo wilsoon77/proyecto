@@ -2,6 +2,7 @@ name: Scalar OpenAPI
 
 on:
   pull_request:
+    branches: [main, staging]
     paths:
       - "api/src/**"
       - "api/scripts/**"
@@ -12,6 +13,7 @@ on:
   push:
     branches:
       - main
+      - staging
     paths:
       - "api/src/**"
       - "api/scripts/**"
@@ -44,7 +46,7 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 24
-          cache: npm
+          cache: 'npm'
           cache-dependency-path: api/package-lock.json
 
       - name: Show Node and npm versions
@@ -53,10 +55,17 @@ jobs:
           npm -v
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci || npm install
+
+      - name: Generate Prisma Client
+        run: npm run prisma:generate
 
       - name: Generate OpenAPI
         env:
+          SKIP_DB: '1'
+          DATABASE_URL: 'postgresql://dummy:dummy@localhost:5432/dummy'
+          JWT_SECRET: 'ci-dummy-jwt-secret-key-32-chars-long'
+          JWT_ACCESS_SECRET: 'ci-dummy-jwt-secret-key-32-chars-long'
           OPENAPI_SERVER_URL: ${{ vars.OPENAPI_SERVER_URL }}
         run: npm run openapi:gen:dist
 
@@ -80,7 +89,7 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 24
-          cache: npm
+          cache: 'npm'
           cache-dependency-path: api/package-lock.json
 
       - name: Show Node and npm versions
@@ -89,10 +98,17 @@ jobs:
           npm -v
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci || npm install
+
+      - name: Generate Prisma Client
+        run: npm run prisma:generate
 
       - name: Generate OpenAPI
         env:
+          SKIP_DB: '1'
+          DATABASE_URL: 'postgresql://dummy:dummy@localhost:5432/dummy'
+          JWT_SECRET: 'ci-dummy-jwt-secret-key-32-chars-long'
+          JWT_ACCESS_SECRET: 'ci-dummy-jwt-secret-key-32-chars-long'
           OPENAPI_SERVER_URL: ${{ vars.OPENAPI_SERVER_URL }}
         run: npm run openapi:gen:dist
 

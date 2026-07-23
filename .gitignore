@@ -3,6 +3,9 @@
 # General
 .env
 .env.*
+!.env.example
+!**/.env.example
+/.pnpm-store/
 *.log
 *.tmp
 .DS_Store
@@ -10,7 +13,12 @@ Thumbs.db
 .vscode/
 .idea/
 .agent/
+.agents/
 .context/
+.gemini/
+.codex/
+graphify-out/
+AGENTS.md
 
 # Nested git (avoid accidental submodule linkage)
 api/.git/

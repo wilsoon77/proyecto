@@ -130,11 +130,12 @@ export function Navbar() {
           {/* Logo */}
           <Link href={ROUTES.home} className="flex items-center">
             <Image 
-              src="/images/logo-pan.jpeg" 
-              alt="Panaderia Svetlana Logo" 
-              width={147} 
-              height={84}
-              className="rounded-lg"
+              src="/images/Panaderia_Svetlana_logo.jpeg" 
+              alt="Panadería Svetlana Logo" 
+              width={160} 
+              height={70}
+              className="h-12 w-auto object-contain"
+              priority
             />
           </Link>
 

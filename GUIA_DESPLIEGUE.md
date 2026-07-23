@@ -65,8 +65,8 @@ APPWRITE_BUCKET_ID=product-images
 - **Branch**: `main`
 - **Root Directory**: `api`
 - **Runtime**: Node
-- **Build Command**: `npm ci && npx prisma generate && npm run build`
-- **Start Command**: `npm run start:prod`
+- **Build Command**: `corepack enable && pnpm install --frozen-lockfile && pnpm run prisma:generate && pnpm run build`
+- **Start Command**: `pnpm run start:prod`
 - **Instance Type**: Free (o Starter para mejor rendimiento)
 
 ### Paso 3: Variables de entorno
@@ -80,7 +80,12 @@ En la sección **Environment**, agrega:
 | `JWT_REFRESH_SECRET` | (genera con `openssl rand -base64 32`) |
 | `CORS_ORIGINS` | `https://tu-frontend.vercel.app` |
 | `NODE_ENV` | `production` |
+| `NODE_VERSION` | `24.16.0` |
 | `PORT` | `4000` |
+| `TRUST_PROXY_HOPS` | `1` |
+| `HCAPTCHA_SECRET` | (secret privado de hCaptcha) |
+| `HCAPTCHA_ALLOWED_HOSTNAMES` | `tu-dominio.com` (separar varios con coma) |
+| `SENTRY_DSN` | (opcional) |
 | `APPWRITE_ENDPOINT` | `https://cloud.appwrite.io/v1` |
 | `APPWRITE_PROJECT_ID` | (tu project ID) |
 | `APPWRITE_API_KEY` | (tu API key) |
@@ -94,8 +99,8 @@ En la sección **Environment**, agrega:
 ### Paso 5: Ejecutar migraciones
 Después del primer deploy, ejecuta las migraciones:
 1. Ve a **Shell** en Render
-2. Ejecuta: `npx prisma migrate deploy`
-3. Opcional - Seed: `npx prisma db seed`
+2. Ejecuta: `pnpm run prisma:deploy`
+3. Opcional - Seed: `pnpm run seed`
 
 ---
 
@@ -110,7 +115,8 @@ Después del primer deploy, ejecuta las migraciones:
 - **Project Name**: `panaderia-web`
 - **Framework Preset**: Next.js (auto-detectado)
 - **Root Directory**: `web`
-- **Build Command**: `npm run build` (default)
+- **Install Command**: `corepack enable && pnpm install --frozen-lockfile`
+- **Build Command**: `pnpm run build`
 - **Output Directory**: `.next` (default)
 
 ### Paso 3: Variables de entorno
@@ -119,7 +125,18 @@ Agrega estas variables:
 | Variable | Valor |
 |----------|-------|
 | `NEXT_PUBLIC_API_URL` | `https://panaderia-api.onrender.com` |
+| `API_INTERNAL_URL` | `https://panaderia-api.onrender.com` (la usan BFF y SSR; puede ser una URL interna si existe) |
+| `NEXT_PUBLIC_SITE_URL` | `https://tu-dominio.com` |
 | `NEXT_PUBLIC_GOOGLE_MAPS_KEY` | (tu API key de Google Maps) |
+| `NEXT_PUBLIC_SENTRY_DSN` | (opcional) |
+| `ENABLE_EXPERIMENTAL_COREPACK` | `1` |
+
+### Sesión BFF y catálogo
+
+- El navegador habla con las rutas `/api/auth/*` y `/api/bff/*` del frontend; no configurar cookies de sesión de la API directamente en el navegador.
+- `API_INTERNAL_URL` debe ser alcanzable desde el runtime y durante el build de Vercel, pues el catálogo y las fichas públicas se consultan desde servidor.
+- Mantén `NEXT_PUBLIC_API_URL` para compatibilidad y configuración pública, pero no coloques secretos en variables `NEXT_PUBLIC_*`.
+- Tras el despliegue, valida login, OAuth, refresh de sesión, recuperación de contraseña y un POST protegido por CSRF antes de abrir tráfico.
 
 ### Paso 4: Desplegar
 1. Click en **Deploy**
@@ -194,8 +211,8 @@ openssl rand -base64 32
 # Ver logs en Render (local)
 render logs --tail
 
-# Ejecutar migraciones manualmente
-npx prisma migrate deploy
+# Ejecutar migraciones manualmente (desde api/)
+pnpm run prisma:deploy
 
 # Verificar estado de la API
 curl https://tu-api.onrender.com/health

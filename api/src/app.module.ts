@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -23,9 +24,15 @@ import { RawMaterialsModule } from './raw-materials/raw-materials.module.js';
 import { TasksModule } from './tasks/tasks.module.js';
 import { SystemConfigModule } from './system-config/system-config.module.js';
 import { NotificationsModule } from './notifications/notifications.module.js';
+import { BranchScopeModule } from './branch-scope/branch-scope.module.js';
+import { DailyCloseModule } from './daily-close/daily-close.module.js';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      cache: true,
+    }),
     // Rate Limiting: 100 peticiones por 15 minutos por IP
     ThrottlerModule.forRoot([{
       ttl: 60000, // 1 minuto en ms
@@ -33,6 +40,8 @@ import { NotificationsModule } from './notifications/notifications.module.js';
     }]),
     ScheduleModule.forRoot(), // Tareas programadas (expiración de reservas)
     AuditModule, // Debe estar primero para que esté disponible globalmente
+    BranchScopeModule,
+    DailyCloseModule,
     SystemConfigModule,
     NotificationsModule,
 

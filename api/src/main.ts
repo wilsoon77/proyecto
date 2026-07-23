@@ -1,7 +1,7 @@
+import 'dotenv/config';
 import 'reflect-metadata';
 import { NestFactory, HttpAdapterHost } from '@nestjs/core';
 import { AppModule } from './app.module.js';
-import dotenv from 'dotenv';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { HttpErrorFilter } from './common/filters/http-exception.filter.js';
@@ -9,18 +9,18 @@ import { SentryExceptionFilter } from './common/filters/sentry-exception.filter.
 import helmet from 'helmet';
 import * as Sentry from '@sentry/node';
 
-dotenv.config();
-
 // DSN de Sentry para el backend
-const SENTRY_DSN = process.env.SENTRY_DSN || 'https://9c9acc767212ed9d8eba9b2cfd10b612@o4510354522701824.ingest.us.sentry.io/4510937546227712';
+const sentryDsn = process.env.SENTRY_DSN;
 
 // Inicializar Sentry lo más temprano posible
-Sentry.init({
-  dsn: SENTRY_DSN,
-  environment: process.env.NODE_ENV || 'development',
-  tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.2 : 1.0,
-  sendDefaultPii: true,
-});
+if (sentryDsn) {
+  Sentry.init({
+    dsn: sentryDsn,
+    environment: process.env.NODE_ENV || 'development',
+    tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+    sendDefaultPii: false,
+  });
+}
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -28,7 +28,13 @@ async function bootstrap() {
   // Trust proxy: permite leer la IP real del cliente desde X-Forwarded-For
   // (necesario detrás de proxies como Render, Vercel, Nginx)
   const expressApp = app.getHttpAdapter().getInstance();
-  expressApp.set('trust proxy', true);
+  const configuredProxyHops = Number.parseInt(process.env.TRUST_PROXY_HOPS || '', 10);
+  const trustProxyHops = Number.isInteger(configuredProxyHops) && configuredProxyHops > 0
+    ? configuredProxyHops
+    : process.env.NODE_ENV === 'production' ? 1 : 0;
+  if (trustProxyHops > 0) {
+    expressApp.set('trust proxy', trustProxyHops);
+  }
 
   // Helmet: Encabezados de seguridad HTTP
   app.use(helmet());
@@ -56,7 +62,7 @@ async function bootstrap() {
   
   // Filtros de excepciones: primero Sentry (si está configurado), luego HTTP
   const { httpAdapter } = app.get(HttpAdapterHost);
-  if (process.env.SENTRY_DSN) {
+  if (sentryDsn) {
     app.useGlobalFilters(new SentryExceptionFilter(httpAdapter));
   }
   app.useGlobalFilters(new HttpErrorFilter());

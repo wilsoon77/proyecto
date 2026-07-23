@@ -1,14 +1,18 @@
 import * as Sentry from "@sentry/nextjs";
 
-Sentry.init({
-  dsn: "https://5e37095bde709d45edf2f809f5547beb@o4510354522701824.ingest.us.sentry.io/4510937571328000",
+const sentryDsn = process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN;
+
+if (sentryDsn) {
+  Sentry.init({
+    dsn: sentryDsn,
 
   // Adds request headers and IP for users
-  sendDefaultPii: true,
+    sendDefaultPii: false,
 
   // Capture 100% in dev, 20% in production
-  tracesSampleRate: process.env.NODE_ENV === "development" ? 1.0 : 0.2,
+    tracesSampleRate: process.env.NODE_ENV === "development" ? 1.0 : 0.2,
 
   // Environment
-  environment: process.env.NODE_ENV || "development",
-});
+    environment: process.env.NODE_ENV || "development",
+  });
+}

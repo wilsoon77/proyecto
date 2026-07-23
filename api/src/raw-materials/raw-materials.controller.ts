@@ -5,13 +5,17 @@ import { CreateRawMaterialDto, UpdateRawMaterialDto, PurchaseRawMaterialDto } fr
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/roles.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
+import { BranchScopeService } from '../branch-scope/branch-scope.service.js';
 
 @Controller('raw-materials')
 @ApiTags('raw-materials')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
 export class RawMaterialsController {
-  constructor(private readonly rawMaterialsService: RawMaterialsService) {}
+  constructor(
+    private readonly rawMaterialsService: RawMaterialsService,
+    private readonly branchScope: BranchScopeService,
+  ) {}
 
   @Get()
   @Roles('ADMIN', 'MANAGER')
@@ -24,8 +28,10 @@ export class RawMaterialsController {
   @Roles('ADMIN', 'MANAGER', 'BAKER')
   @ApiOperation({ summary: 'Inventario de materia prima por sucursal' })
   @ApiQuery({ name: 'branchId', required: false })
-  getInventory(@Query('branchId') branchId?: string) {
-    return this.rawMaterialsService.getInventory(branchId ? parseInt(branchId) : undefined);
+  async getInventory(@Req() req: any, @Query('branchId') branchId?: string) {
+    const requestedBranchId = branchId ? parseInt(branchId, 10) : undefined;
+    const scopedBranchId = await this.branchScope.resolveBranchId(req.user, requestedBranchId);
+    return this.rawMaterialsService.getInventory(scopedBranchId);
   }
 
   @Get(':id')
@@ -55,8 +61,9 @@ export class RawMaterialsController {
     summary: 'Registrar compra de materia prima',
     description: 'Convierte la unidad de compra a unidad base y suma al inventario de la sucursal.',
   })
-  registerPurchase(@Body() dto: PurchaseRawMaterialDto, @Req() req: any) {
+  async registerPurchase(@Body() dto: PurchaseRawMaterialDto, @Req() req: any) {
     const userId = req.user?.userId || req.user?.sub;
-    return this.rawMaterialsService.registerPurchase(dto, userId);
+    const branchId = await this.branchScope.resolveBranchId(req.user, dto.branchId);
+    return this.rawMaterialsService.registerPurchase({ ...dto, branchId: branchId ?? dto.branchId }, userId);
   }
 }

@@ -3,7 +3,7 @@
  */
 
 // Cliente HTTP base
-export { api, api as apiClient, ApiClientError, getToken, clearTokens, isAuthenticated, setTokens, syncTokensFromCookies } from './client'
+export { api, api as apiClient, ApiClientError, ensureCsrfToken } from './client'
 
 // Servicios
 export { authService } from './auth'
@@ -25,6 +25,18 @@ export type { AuditLog, AuditListFilters, AuditListResponse, AuditStats, AuditFi
 export { systemConfigService } from './system-config'
 export { notificationsService } from './notifications'
 export type { SystemConfig, Notification, NotificationConfig, SubscribePushDto } from './types'
+export { dailyCloseService } from './daily-close'
+export type {
+  DailyClosePreview,
+  DailyClosePreviewItem,
+  DailyCloseSummary,
+  DailyCloseItem,
+  DailyCloseRecord,
+  DailyCloseDetail,
+  DailyCloseListResponse,
+  DailyCloseListFilters,
+  CreateDailyClosePayload,
+} from './daily-close'
 export type { ProductDetailResponse, CreateProductData, UpdateProductData } from './admin.service'
 export type { User, UserRole, CreateUserData, UpdateUserData } from './users'
 

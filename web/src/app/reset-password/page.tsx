@@ -7,6 +7,7 @@ import { ROUTES } from "@/lib/constants"
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
 import { useToast } from "@/context/ToastContext"
+import { requestAuth } from "@/lib/api/client"
 import type { SupabaseClient } from "@supabase/supabase-js"
 
 export default function ResetPasswordPage() {
@@ -117,29 +118,13 @@ export default function ResetPasswordPage() {
         throw error
       }
       
-      // Paso 2: Actualizar en el backend (tabla User)
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://proyecto-dp81.onrender.com'
-      const backendResponse = await fetch(`${apiUrl}/auth/reset-password/recovery`, {
+      // Paso 2: sincronizar la tabla local a través del BFF. El token de
+      // recuperación nunca se envía directamente desde el navegador a la API.
+      await requestAuth('/api/auth/recovery-password', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${recoveryAccessToken}`,
-        },
-        body: JSON.stringify({
-          newPassword: password,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recoveryAccessToken, newPassword: password }),
       })
-
-      let backendData: any = null
-      try {
-        backendData = await backendResponse.json()
-      } catch {
-        backendData = null
-      }
-      
-      if (!backendResponse.ok) {
-        throw new Error(backendData.message || 'Error al actualizar en el servidor')
-      }
       
       // NO cerrar sesión inmediatamente - mostrar éxito primero
       show("¡Contraseña actualizada exitosamente! Redirigiendo al login...", { variant: "success" })

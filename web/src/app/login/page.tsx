@@ -13,10 +13,18 @@ import { signInWithOAuth } from "@/lib/supabase/oauth"
 import { getDeviceId } from "@/lib/device-fingerprint"
 import { authService } from "@/lib/api/auth"
 
+function getSafeReturnUrl(value: string | null): string {
+  if (!value || !value.startsWith('/') || value.startsWith('//') || value.includes('\\')) {
+    return ROUTES.home
+  }
+
+  return value
+}
+
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const returnUrl = searchParams.get('returnUrl') || ROUTES.home
+  const returnUrl = getSafeReturnUrl(searchParams.get('returnUrl'))
   const oauthError = searchParams.get('error')
   const { login, isLoading } = useAuth()
   const { show } = useToast()
@@ -104,7 +112,7 @@ function LoginForm() {
     setOauthLoading(provider)
     
     try {
-      await signInWithOAuth(provider)
+      await signInWithOAuth(provider, returnUrl)
       // La redirección es automática
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : `Error al iniciar sesión con ${provider}`

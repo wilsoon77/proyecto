@@ -5,6 +5,7 @@ import { SupabaseService } from '../supabase/supabase.service.js';
 import { TokenService } from './token.service.js';
 import { PasswordService } from './password.service.js';
 import { SessionService } from './session.service.js';
+import { CaptchaService } from './captcha.service.js';
 
 /**
  * AuthService — Orquestador de autenticación.
@@ -26,14 +27,19 @@ export class AuthService {
     private readonly tokenService: TokenService,
     private readonly passwordService: PasswordService,
     private readonly sessionService: SessionService,
+    private readonly captcha: CaptchaService,
   ) {}
 
   // ─── Flujo de Registro ─────────────────────────────────────────
 
   async register(
-    input: { email: string; password: string; firstName: string; lastName: string; phone?: string },
+    input: { email: string; password: string; firstName: string; lastName: string; phone?: string; captchaToken?: string },
     metadata?: { userAgent?: string; ip?: string },
   ) {
+    if (this.captcha.isConfigured()) {
+      await this.captcha.verify(input.captchaToken, metadata?.ip);
+    }
+
     const existing = await this.prisma.user.findUnique({ where: { email: input.email } });
     if (existing) throw new BadRequestException('Email ya registrado');
 
@@ -101,7 +107,7 @@ export class AuthService {
   // ─── Flujo de Login ────────────────────────────────────────────
 
   async login(
-    input: { email: string; password: string; rememberMe?: boolean; deviceId?: string },
+    input: { email: string; password: string; rememberMe?: boolean; deviceId?: string; captchaToken?: string },
     metadata?: { userAgent?: string; ip?: string },
   ) {
     const user = await this.prisma.user.findUnique({ where: { email: input.email } });
@@ -112,6 +118,15 @@ export class AuthService {
       deviceId: input.deviceId,
       success: false,
     };
+
+    const captchaRequired = await this.sessionService.requiresCaptcha(
+      input.email,
+      attemptData.ipAddress,
+      input.deviceId,
+    );
+    if (captchaRequired) {
+      await this.captcha.verify(input.captchaToken, metadata?.ip);
+    }
 
     if (!user || !user.isActive) {
       await this.sessionService.recordLoginAttempt(attemptData);
@@ -236,9 +251,31 @@ export class AuthService {
   // ─── OAuth Callback ────────────────────────────────────────────
 
   async handleOAuthCallback(
-    input: { supabaseUserId: string; email: string; firstName: string; lastName?: string; avatarUrl?: string; provider?: string },
+    supabaseAccessToken: string,
     metadata?: { userAgent?: string; ip?: string },
   ) {
+    const supabaseUser = await this.supabase.getUser(supabaseAccessToken);
+    const email = supabaseUser.email;
+    if (!email) {
+      throw new BadRequestException('OAuth provider did not return an email.');
+    }
+
+    const userMetadata = supabaseUser.user_metadata || {};
+    const fullName = String(userMetadata.full_name || userMetadata.name || email.split('@')[0]).trim();
+    const [firstName = 'Usuario', ...lastNameParts] = fullName.split(/\s+/);
+    const provider = typeof supabaseUser.app_metadata.provider === 'string'
+      ? supabaseUser.app_metadata.provider
+      : undefined;
+    // Esta estructura conserva la lógica de sincronización existente, pero
+    // todos sus datos provienen de un JWT verificado por Supabase.
+    const input = {
+      supabaseUserId: supabaseUser.id,
+      email,
+      firstName,
+      lastName: lastNameParts.join(' ') || undefined,
+      provider,
+    };
+
     let user = await this.prisma.user.findUnique({ where: { id: input.supabaseUserId } });
 
     if (!user) {

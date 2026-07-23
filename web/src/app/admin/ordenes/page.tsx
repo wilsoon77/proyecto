@@ -49,10 +49,24 @@ interface Branch {
 const STATUS_OPTIONS: { value: OrderStatus; label: string; icon: React.ElementType; color: string }[] = [
   { value: "PENDING", label: "Pendiente", icon: Clock, color: "bg-yellow-100 text-yellow-700" },
   { value: "CONFIRMED", label: "Confirmada", icon: CheckCircle, color: "bg-blue-100 text-blue-700" },
+  { value: "PREPARING", label: "Preparando", icon: ChefHat, color: "bg-purple-100 text-purple-700" },
   { value: "READY", label: "Lista para recoger", icon: Package, color: "bg-green-100 text-green-700" },
+  { value: "IN_DELIVERY", label: "En camino", icon: Package, color: "bg-indigo-100 text-indigo-700" },
   { value: "DELIVERED", label: "Entregada", icon: CheckCircle, color: "bg-emerald-100 text-emerald-700" },
+  { value: "PICKED_UP", label: "Recogida", icon: CheckCircle, color: "bg-teal-100 text-teal-700" },
   { value: "CANCELLED", label: "Cancelada", icon: XCircle, color: "bg-red-100 text-red-700" },
 ]
+
+const STATUS_FLOW: Record<OrderStatus, OrderStatus[]> = {
+  PENDING: ['CONFIRMED', 'CANCELLED'],
+  CONFIRMED: ['PREPARING', 'CANCELLED'],
+  PREPARING: ['READY', 'CANCELLED'],
+  READY: ['PICKED_UP', 'IN_DELIVERY', 'CANCELLED'],
+  IN_DELIVERY: ['DELIVERED'],
+  DELIVERED: [],
+  PICKED_UP: [],
+  CANCELLED: [],
+}
 
 const STATUS_MAP = STATUS_OPTIONS.reduce((acc, s) => {
   acc[s.value] = s
@@ -116,11 +130,17 @@ export default function OrdenesPage() {
   const handleStatusChange = async (orderId: number, newStatus: OrderStatus) => {
     setProcessingId(orderId)
     try {
-      await ordersService.updateStatus(orderId, newStatus)
+      const updated = newStatus === 'CANCELLED'
+        ? await ordersService.cancel(orderId)
+        : newStatus === 'PICKED_UP'
+          ? await ordersService.pickup(orderId)
+          : newStatus === 'DELIVERED'
+            ? await ordersService.deliver(orderId)
+            : await ordersService.updateStatus(orderId, newStatus)
       setOrders(prev => prev.map(o => 
-        o.id === orderId ? { ...o, status: newStatus } : o
+        o.id === orderId ? { ...o, status: updated.status } : o
       ))
-      showToast(`Estado actualizado a ${STATUS_MAP[newStatus].label}`, "success")
+      showToast(`Estado actualizado a ${STATUS_MAP[updated.status].label}`, "success")
     } catch (error) {
       console.error("Error updating order status:", error)
       const message = error instanceof Error ? error.message : "Error al actualizar estado"
@@ -133,6 +153,8 @@ export default function OrdenesPage() {
   const formatDate = (dateString: string) => formatDateString(dateString, {
     day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
   })
+
+  const getStatusOptions = (status: OrderStatus) => [status, ...STATUS_FLOW[status]]
 
   // Filtro de búsqueda local
   const filteredOrders = orders.filter(order => {
@@ -305,10 +327,10 @@ export default function OrdenesPage() {
                           value={order.status}
                           onChange={(e) => handleStatusChange(order.id, e.target.value as OrderStatus)}
                           className={`text-xs font-medium px-3 py-1.5 rounded-full border-0 focus:ring-2 focus:ring-amber-500 ${statusConfig.color}`}
-                          disabled={order.status === 'CANCELLED' || order.status === 'DELIVERED'}
+                          disabled={getStatusOptions(order.status).length === 1}
                         >
-                          {STATUS_OPTIONS.map(s => (
-                            <option key={s.value} value={s.value}>{s.label}</option>
+                          {getStatusOptions(order.status).map(status => (
+                            <option key={status} value={status}>{STATUS_MAP[status].label}</option>
                           ))}
                         </select>
                       )}
@@ -380,10 +402,10 @@ export default function OrdenesPage() {
                             value={order.status}
                             onChange={(e) => handleStatusChange(order.id, e.target.value as OrderStatus)}
                             className={`text-xs font-medium px-2 py-1 rounded-full border-0 focus:ring-2 focus:ring-amber-500 ${statusConfig.color}`}
-                            disabled={order.status === 'CANCELLED' || order.status === 'DELIVERED'}
+                            disabled={getStatusOptions(order.status).length === 1}
                           >
-                            {STATUS_OPTIONS.map(s => (
-                              <option key={s.value} value={s.value}>{s.label}</option>
+                            {getStatusOptions(order.status).map(status => (
+                              <option key={status} value={status}>{STATUS_MAP[status].label}</option>
                             ))}
                           </select>
                         )}

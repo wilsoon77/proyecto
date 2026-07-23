@@ -7,8 +7,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   // Use direct connection (no pooler) for migrations/introspection
   directUrl = env("DIRECT_URL")
 }
@@ -44,34 +44,34 @@ enum ProductOrigin {
 
 // Unidades base normalizadas para inventario de materia prima
 enum BaseUnit {
-  LB    // Libras (sólidos)
-  ML    // Mililitros (líquidos)
-  UNIT  // Unidades discretas (huevos, paquetes)
+  LB // Libras (sólidos)
+  ML // Mililitros (líquidos)
+  UNIT // Unidades discretas (huevos, paquetes)
 }
 
 // Unidades de compra a proveedores (se convierten a BaseUnit en el backend)
 enum UnitOfPurchase {
   // Sólidos → LB
-  QUINTAL   // 100 LB
-  ARROBA    // 25 LB
-  LIBRA     // 1 LB
+  QUINTAL // 100 LB
+  ARROBA // 25 LB
+  LIBRA // 1 LB
   // Líquidos → ML
-  LITRO     // 1000 ML
-  GALON     // 3785 ML
+  LITRO // 1000 ML
+  GALON // 3785 ML
   // Discretos → UNIT
-  CARTON    // 30 UNIT
-  UNIDAD    // 1 UNIT
+  CARTON // 30 UNIT
+  UNIDAD // 1 UNIT
 }
 
 // Tipos de movimiento de producto terminado (cantidad siempre positiva, tipo define operación)
 enum StockMovementType {
-  PRODUCCION      // Suma (+) — salida de amasijo
-  COMPRA          // Suma (+) — productos de reventa
-  VENTA           // Resta (-)
-  TRANSFERENCIA   // Resta en A, Suma en B
-  MERMA           // Resta (-) conocida
-  PERDIDA_ROBO    // Resta (-) desconocida
-  SOBRANTE        // Suma (+) ajuste positivo
+  PRODUCCION // Suma (+) — salida de amasijo
+  COMPRA // Suma (+) — productos de reventa
+  VENTA // Resta (-)
+  TRANSFERENCIA // Resta en A, Suma en B
+  MERMA // Resta (-) conocida
+  PERDIDA_ROBO // Resta (-) desconocida
+  SOBRANTE // Suma (+) ajuste positivo
 }
 
 // ─────────────────────────────────────────────
@@ -79,48 +79,49 @@ enum StockMovementType {
 // ─────────────────────────────────────────────
 
 model User {
-  id            String   @id @default(cuid())
-  email         String   @unique
-  passwordHash  String
-  firstName     String
-  lastName      String
-  phone         String?  @db.VarChar(32)
-  role          UserRole @default(CUSTOMER)
-  isActive      Boolean  @default(true)
+  id                String             @id @default(cuid())
+  email             String             @unique
+  passwordHash      String
+  firstName         String
+  lastName          String
+  phone             String?            @db.VarChar(32)
+  role              UserRole           @default(CUSTOMER)
+  isActive          Boolean            @default(true)
   // Sucursal asignada (MANAGER, BAKER, CASHIER)
-  branch        Branch?  @relation(fields: [branchId], references: [id])
-  branchId      Int?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  addresses     Address[]
-  orders        Order[]
-  stockMovements StockMovement[]
-  productionLogs ProductionLog[]
-  refreshTokens RefreshToken[]
-  trustedDevices TrustedDevice[]
-  auditLogs     AuditLog[]
-  notifications      Notification[]
-  pushSubscriptions  PushSubscription[]
+  branch            Branch?            @relation(fields: [branchId], references: [id])
+  branchId          Int?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  addresses         Address[]
+  orders            Order[]
+  stockMovements    StockMovement[]
+  productionLogs    ProductionLog[]
+  dailyCloses       DailyClose[]
+  refreshTokens     RefreshToken[]
+  trustedDevices    TrustedDevice[]
+  auditLogs         AuditLog[]
+  notifications     Notification[]
+  pushSubscriptions PushSubscription[]
 }
 
 model Address {
-  id           Int      @id @default(autoincrement())
-  user         User?    @relation(fields: [userId], references: [id])
-  userId       String?
-  street       String
-  city         String
-  state        String?
-  zone         String?
-  reference    String?
-  createdAt    DateTime @default(now())
-  orders       Order[]
+  id        Int      @id @default(autoincrement())
+  user      User?    @relation(fields: [userId], references: [id])
+  userId    String?
+  street    String
+  city      String
+  state     String?
+  zone      String?
+  reference String?
+  createdAt DateTime @default(now())
+  orders    Order[]
 }
 
 model RefreshToken {
   id          String    @id @default(cuid())
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId      String
-  hashedToken String    // Token hasheado con bcrypt
+  hashedToken String // Token hasheado con bcrypt
   expiresAt   DateTime
   revokedAt   DateTime?
   userAgent   String?   @db.VarChar(500)
@@ -133,14 +134,14 @@ model RefreshToken {
 
 // Dispositivos de confianza del usuario
 model TrustedDevice {
-  id          String   @id @default(cuid())
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId      String
-  deviceId    String   // Fingerprint del dispositivo
-  name        String?  // Nombre amigable (ej: "Chrome en Windows")
-  userAgent   String?  @db.VarChar(500)
-  lastUsedAt  DateTime @default(now())
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  deviceId   String // Fingerprint del dispositivo
+  name       String? // Nombre amigable (ej: "Chrome en Windows")
+  userAgent  String?  @db.VarChar(500)
+  lastUsedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
 
   @@unique([userId, deviceId])
   @@index([userId])
@@ -149,10 +150,10 @@ model TrustedDevice {
 // Intentos de login (para implementar captcha inteligente)
 model LoginAttempt {
   id        String   @id @default(cuid())
-  email     String   // Email intentado (puede no existir)
+  email     String // Email intentado (puede no existir)
   ipAddress String   @db.VarChar(45)
   success   Boolean
-  deviceId  String?  // Fingerprint si está disponible
+  deviceId  String? // Fingerprint si está disponible
   createdAt DateTime @default(now())
 
   @@index([email, createdAt])
@@ -172,45 +173,46 @@ model Category {
 }
 
 model Product {
-  id           Int           @id @default(autoincrement())
-  sku          String        @unique
-  name         String
-  slug         String        @unique
-  description  String?
+  id              Int              @id @default(autoincrement())
+  sku             String           @unique
+  name            String
+  slug            String           @unique
+  description     String?
   // ── Precios ──
-  basePrice    Decimal       @db.Decimal(10,2) // Precio unitario (ej: Q0.50)
-  comboQuantity Int?         // Cantidad del combo (ej: 3 para "3x1.25")
-  comboPrice   Decimal?      @db.Decimal(10,2) // Precio del combo (ej: Q1.25)
+  basePrice       Decimal          @db.Decimal(10, 2) // Precio unitario (ej: Q0.50)
+  comboQuantity   Int? // Cantidad del combo (ej: 3 para "3x1.25")
+  comboPrice      Decimal?         @db.Decimal(10, 2) // Precio del combo (ej: Q1.25)
   // ── Producción ──
-  origin       ProductOrigin @default(PRODUCIDO)
-  unitsPerTray Int?          // Unidades por lata (ej: 36). Solo para PRODUCIDO.
+  origin          ProductOrigin    @default(PRODUCIDO)
+  unitsPerTray    Int? // Unidades por lata (ej: 36). Solo para PRODUCIDO.
   // ── Estado ──
-  isNew        Boolean       @default(false)
-  isActive     Boolean       @default(true)
-  isAvailable  Boolean       @default(true)
+  isNew           Boolean          @default(false)
+  isActive        Boolean          @default(true)
+  isAvailable     Boolean          @default(true)
   // ── Relaciones ──
-  category     Category      @relation(fields: [categoryId], references: [id])
-  categoryId   Int
-  images       ProductImage[]
-  recipes      Recipe[]
-  inventories  Inventory[]
-  orderItems   OrderItem[]
-  stockMovements StockMovement[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  category        Category         @relation(fields: [categoryId], references: [id])
+  categoryId      Int
+  images          ProductImage[]
+  recipes         Recipe[]
+  inventories     Inventory[]
+  orderItems      OrderItem[]
+  stockMovements  StockMovement[]
+  dailyCloseItems DailyCloseItem[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 
   // supabase-postgres-best-practices: indexes para queries frecuentes
-  @@index([categoryId])          // Filtro por categoría (catálogo, POS)
-  @@index([origin])              // Filtro PRODUCIDO vs COMPRADO
+  @@index([categoryId]) // Filtro por categoría (catálogo, POS)
+  @@index([origin]) // Filtro PRODUCIDO vs COMPRADO
   @@index([isActive, isAvailable]) // Productos activos y disponibles (POS)
 }
 
 model ProductImage {
-  id        Int      @id @default(autoincrement())
-  product   Product  @relation(fields: [productId], references: [id])
+  id        Int     @id @default(autoincrement())
+  product   Product @relation(fields: [productId], references: [id])
   productId Int
   url       String
-  position  Int      @default(0)
+  position  Int     @default(0)
 }
 
 // ─────────────────────────────────────────────
@@ -219,14 +221,14 @@ model ProductImage {
 
 // Materia prima (harina, levadura, manteca, etc.)
 model RawMaterial {
-  id          Int       @id @default(autoincrement())
-  name        String    @unique
-  baseUnit    BaseUnit  // Unidad normalizada (LB, ML, UNIT)
-  costPerUnit Decimal   @db.Decimal(10,4) // Costo promedio por unidad base
-  minStock    Decimal?  @db.Decimal(10,2) // Nivel mínimo para alerta
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id                Int                    @id @default(autoincrement())
+  name              String                 @unique
+  baseUnit          BaseUnit // Unidad normalizada (LB, ML, UNIT)
+  costPerUnit       Decimal                @db.Decimal(10, 4) // Costo promedio por unidad base
+  minStock          Decimal?               @db.Decimal(10, 2) // Nivel mínimo para alerta
+  isActive          Boolean                @default(true)
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
   // Relaciones
   inventories       RawMaterialInventory[]
   recipeIngredients RecipeIngredient[]
@@ -236,14 +238,14 @@ model RawMaterial {
 
 // Inventario de materia prima por sucursal (siempre en unidad base)
 model RawMaterialInventory {
-  id             Int          @id @default(autoincrement())
-  rawMaterial    RawMaterial  @relation(fields: [rawMaterialId], references: [id])
-  rawMaterialId  Int
-  branch         Branch       @relation(fields: [branchId], references: [id])
-  branchId       Int
-  quantity       Decimal      @db.Decimal(12,4) @default(0) // En unidad base (LB, ML, UNIT)
-  updatedAt      DateTime     @updatedAt
-  createdAt      DateTime     @default(now())
+  id            Int         @id @default(autoincrement())
+  rawMaterial   RawMaterial @relation(fields: [rawMaterialId], references: [id])
+  rawMaterialId Int
+  branch        Branch      @relation(fields: [branchId], references: [id])
+  branchId      Int
+  quantity      Decimal     @default(0) @db.Decimal(12, 4) // En unidad base (LB, ML, UNIT)
+  updatedAt     DateTime    @updatedAt
+  createdAt     DateTime    @default(now())
 
   @@unique([rawMaterialId, branchId])
   @@index([branchId])
@@ -256,14 +258,14 @@ model RawMaterialInventory {
 
 // Receta de un amasijo: define qué ingredientes se necesitan para producir un producto
 model Recipe {
-  id             Int               @id @default(autoincrement())
-  product        Product           @relation(fields: [productId], references: [id])
+  id             Int                @id @default(autoincrement())
+  product        Product            @relation(fields: [productId], references: [id])
   productId      Int
-  name           String            // Ej: "Amasijo Estándar de Francés"
-  standardTrays  Int               // Latas estándar esperadas por amasijo (ej: 33)
-  isActive       Boolean           @default(true)
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  name           String // Ej: "Amasijo Estándar de Francés"
+  standardTrays  Int // Latas estándar esperadas por amasijo (ej: 33)
+  isActive       Boolean            @default(true)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
   // Relaciones
   ingredients    RecipeIngredient[]
   productionLogs ProductionLog[]
@@ -273,12 +275,12 @@ model Recipe {
 
 // Ingrediente de una receta (cantidad por amasijo, en unidad base)
 model RecipeIngredient {
-  id             Int          @id @default(autoincrement())
-  recipe         Recipe       @relation(fields: [recipeId], references: [id], onDelete: Cascade)
-  recipeId       Int
-  rawMaterial    RawMaterial  @relation(fields: [rawMaterialId], references: [id])
-  rawMaterialId  Int
-  quantity       Decimal      @db.Decimal(10,4) // Cantidad por amasijo en unidad base (ej: 50 LB)
+  id            Int         @id @default(autoincrement())
+  recipe        Recipe      @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  recipeId      Int
+  rawMaterial   RawMaterial @relation(fields: [rawMaterialId], references: [id])
+  rawMaterialId Int
+  quantity      Decimal     @db.Decimal(10, 4) // Cantidad por amasijo en unidad base (ej: 50 LB)
 
   @@unique([recipeId, rawMaterialId])
 }
@@ -288,17 +290,17 @@ model RecipeIngredient {
 //   1. RESTAR cada RecipeIngredient.quantity de RawMaterialInventory
 //   2. SUMAR unitsProduced al Inventory del producto terminado
 model ProductionLog {
-  id             Int      @id @default(autoincrement())
-  recipe         Recipe   @relation(fields: [recipeId], references: [id])
+  id             Int             @id @default(autoincrement())
+  recipe         Recipe          @relation(fields: [recipeId], references: [id])
   recipeId       Int
-  branch         Branch   @relation(fields: [branchId], references: [id])
+  branch         Branch          @relation(fields: [branchId], references: [id])
   branchId       Int
-  user           User     @relation(fields: [userId], references: [id])
+  user           User            @relation(fields: [userId], references: [id])
   userId         String
-  traysProduced  Int      // Latas reales producidas (ej: 33)
-  unitsProduced  Int      // Calculado: traysProduced × product.unitsPerTray (ej: 1188)
+  traysProduced  Int // Latas reales producidas (ej: 33)
+  unitsProduced  Int // Calculado: traysProduced × product.unitsPerTray (ej: 1188)
   note           String?
-  createdAt      DateTime @default(now())
+  createdAt      DateTime        @default(now())
   // Relaciones inversas
   stockMovements StockMovement[]
 
@@ -313,15 +315,15 @@ model ProductionLog {
 
 // Inventario de producto terminado por sucursal (disponible = quantity - reserved)
 model Inventory {
-  id         Int      @id @default(autoincrement())
-  product    Product  @relation(fields: [productId], references: [id])
-  productId  Int
-  branch     Branch   @relation(fields: [branchId], references: [id])
-  branchId   Int
-  quantity   Int      @default(0)  // Unidades físicas
-  reserved   Int      @default(0)  // Comprometido (pedidos no retirados)
-  updatedAt  DateTime @updatedAt
-  createdAt  DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  product   Product  @relation(fields: [productId], references: [id])
+  productId Int
+  branch    Branch   @relation(fields: [branchId], references: [id])
+  branchId  Int
+  quantity  Int      @default(0) // Unidades físicas
+  reserved  Int      @default(0) // Comprometido (pedidos no retirados)
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
 
   @@unique([productId, branchId])
   @@index([branchId])
@@ -330,30 +332,33 @@ model Inventory {
 
 // Movimientos de inventario de producto terminado / reventa
 model StockMovement {
-  id             Int               @id @default(autoincrement())
-  product        Product           @relation(fields: [productId], references: [id])
-  productId      Int
-  fromBranch     Branch?           @relation("FromBranch", fields: [fromBranchId], references: [id])
-  fromBranchId   Int?
-  toBranch       Branch?           @relation("ToBranch", fields: [toBranchId], references: [id])
-  toBranchId     Int?
-  type           StockMovementType
-  quantity       Int
+  id              Int               @id @default(autoincrement())
+  product         Product           @relation(fields: [productId], references: [id])
+  productId       Int
+  fromBranch      Branch?           @relation("FromBranch", fields: [fromBranchId], references: [id])
+  fromBranchId    Int?
+  toBranch        Branch?           @relation("ToBranch", fields: [toBranchId], references: [id])
+  toBranchId      Int?
+  type            StockMovementType
+  quantity        Int
   // Vínculo opcional a producción (cuando type = PRODUCCION)
-  productionLog  ProductionLog?    @relation(fields: [productionLogId], references: [id])
+  productionLog   ProductionLog?    @relation(fields: [productionLogId], references: [id])
   productionLogId Int?
   // Caducidad para productos de reventa (type = COMPRA)
-  expiresAt      DateTime?
-  user           User?             @relation(fields: [userId], references: [id])
-  userId         String?
-  referenceId    String?
-  note           String?
-  createdAt      DateTime          @default(now())
+  expiresAt       DateTime?
+  user            User?             @relation(fields: [userId], references: [id])
+  userId          String?
+  dailyClose      DailyClose?       @relation(fields: [dailyCloseId], references: [id], onDelete: SetNull)
+  dailyCloseId    Int?
+  referenceId     String?
+  note            String?
+  createdAt       DateTime          @default(now())
 
   @@index([productId])
   @@index([createdAt])
   @@index([type, createdAt])
   @@index([productionLogId])
+  @@index([dailyCloseId])
 }
 
 // ─────────────────────────────────────────────
@@ -361,14 +366,14 @@ model StockMovement {
 // ─────────────────────────────────────────────
 
 model Branch {
-  id        Int      @id @default(autoincrement())
-  name      String
-  slug      String   @unique
-  address   String
-  phone     String?
-  latitude  Float?
-  longitude Float?
-  createdAt DateTime @default(now())
+  id                     Int                    @id @default(autoincrement())
+  name                   String
+  slug                   String                 @unique
+  address                String
+  phone                  String?
+  latitude               Float?
+  longitude              Float?
+  createdAt              DateTime               @default(now())
   // Relaciones
   inventories            Inventory[]
   rawMaterialInventories RawMaterialInventory[]
@@ -377,6 +382,44 @@ model Branch {
   stockMovementsTo       StockMovement[]        @relation("ToBranch")
   orders                 Order[]
   employees              User[]
+  dailyCloses            DailyClose[]
+}
+
+// Documento auditable del inventario físico y las ventas no registradas de una jornada.
+model DailyClose {
+  id             Int              @id @default(autoincrement())
+  branch         Branch           @relation(fields: [branchId], references: [id])
+  branchId       Int
+  user           User             @relation(fields: [userId], references: [id])
+  userId         String
+  closeDate      DateTime         @db.Date
+  snapshotAt     DateTime
+  note           String?
+  items          DailyCloseItem[]
+  stockMovements StockMovement[]
+  createdAt      DateTime         @default(now())
+
+  @@unique([branchId, closeDate])
+  @@index([closeDate])
+  @@index([branchId, createdAt])
+}
+
+model DailyCloseItem {
+  id           Int        @id @default(autoincrement())
+  dailyClose   DailyClose @relation(fields: [dailyCloseId], references: [id], onDelete: Cascade)
+  dailyCloseId Int
+  product      Product    @relation(fields: [productId], references: [id])
+  productId    Int
+  productName  String
+  systemQty    Int
+  reservedQty  Int
+  countedQty   Int
+  wasteQty     Int        @default(0)
+  soldQty      Int        @default(0)
+  surplusQty   Int        @default(0)
+
+  @@unique([dailyCloseId, productId])
+  @@index([productId])
 }
 
 // ─────────────────────────────────────────────
@@ -384,45 +427,45 @@ model Branch {
 // ─────────────────────────────────────────────
 
 model Order {
-  id             Int          @id @default(autoincrement())
-  orderNumber    String       @unique
-  user           User?        @relation(fields: [userId], references: [id])
+  id             Int         @id @default(autoincrement())
+  orderNumber    String      @unique
+  user           User?       @relation(fields: [userId], references: [id])
   userId         String?
-  status         OrderStatus  @default(PENDING)
-  subtotal       Decimal      @db.Decimal(10,2)
-  deliveryFee    Decimal      @db.Decimal(10,2)
-  discount       Decimal      @db.Decimal(10,2) @default(0)
-  total          Decimal      @db.Decimal(10,2)
+  status         OrderStatus @default(PENDING)
+  subtotal       Decimal     @db.Decimal(10, 2)
+  deliveryFee    Decimal     @db.Decimal(10, 2)
+  discount       Decimal     @default(0) @db.Decimal(10, 2)
+  total          Decimal     @db.Decimal(10, 2)
   paymentMethod  String?
   shippingMethod String?
-  branch         Branch?      @relation(fields: [branchId], references: [id])
+  branch         Branch?     @relation(fields: [branchId], references: [id])
   branchId       Int?
-  customerNotes  String?      @db.Text
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  customerNotes  String?     @db.Text
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
   items          OrderItem[]
-  address        Address?     @relation(fields: [addressId], references: [id])
+  address        Address?    @relation(fields: [addressId], references: [id])
   addressId      Int?
 
   // supabase-postgres-best-practices: indexes para queries frecuentes
-  @@index([userId])            // Historial de pedidos del usuario
-  @@index([status])            // Filtro por estado (dashboard)
-  @@index([branchId])          // Pedidos por sucursal
-  @@index([createdAt])         // Ordenamiento cronológico
+  @@index([userId]) // Historial de pedidos del usuario
+  @@index([status]) // Filtro por estado (dashboard)
+  @@index([branchId]) // Pedidos por sucursal
+  @@index([createdAt]) // Ordenamiento cronológico
 }
 
 model OrderItem {
-  id          Int      @id @default(autoincrement())
-  order       Order    @relation(fields: [orderId], references: [id])
+  id          Int     @id @default(autoincrement())
+  order       Order   @relation(fields: [orderId], references: [id])
   orderId     Int
-  product     Product  @relation(fields: [productId], references: [id])
+  product     Product @relation(fields: [productId], references: [id])
   productId   Int
   productName String
   quantity    Int
-  unitPrice   Decimal  @db.Decimal(10,2)
+  unitPrice   Decimal @db.Decimal(10, 2)
 
-  @@index([orderId])    // JOIN con Order
-  @@index([productId])  // Reportes por producto
+  @@index([orderId]) // JOIN con Order
+  @@index([productId]) // Reportes por producto
 }
 
 // ─────────────────────────────────────────────
@@ -431,18 +474,18 @@ model OrderItem {
 
 // Registro de auditoría para historial de cambios
 model AuditLog {
-  id          String   @id @default(cuid())
-  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  userId      String?
-  userName    String   // Nombre del usuario al momento de la acción (por si se elimina)
-  action      String   // CREATE, UPDATE, DELETE, LOGIN, LOGOUT, etc.
-  entity      String   // Product, Order, User, Category, Branch, Inventory, etc.
-  entityId    String?  // ID del registro afectado
-  entityName  String?  // Nombre descriptivo (ej: "Pan Francés", "Pedido #123")
-  details     String?  @db.Text // JSON con detalles adicionales
-  ipAddress   String?  @db.VarChar(45)
-  userAgent   String?  @db.VarChar(500)
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId     String?
+  userName   String // Nombre del usuario al momento de la acción (por si se elimina)
+  action     String // CREATE, UPDATE, DELETE, LOGIN, LOGOUT, etc.
+  entity     String // Product, Order, User, Category, Branch, Inventory, etc.
+  entityId   String? // ID del registro afectado
+  entityName String? // Nombre descriptivo (ej: "Pan Francés", "Pedido #123")
+  details    String?  @db.Text // JSON con detalles adicionales
+  ipAddress  String?  @db.VarChar(45)
+  userAgent  String?  @db.VarChar(500)
+  createdAt  DateTime @default(now())
 
   @@index([userId])
   @@index([entity, createdAt])
@@ -453,15 +496,15 @@ model AuditLog {
 // Configuración global del sistema (key-value tipado)
 model SystemConfig {
   id          Int      @id @default(autoincrement())
-  key         String   @unique           // Clave única: 'store.name', 'orders.min_amount', etc.
-  value       Json                       // Valor almacenado como JSON (string, number, boolean, object)
+  key         String   @unique // Clave única: 'store.name', 'orders.min_amount', etc.
+  value       Json // Valor almacenado como JSON (string, number, boolean, object)
   type        String   @default("string") // Tipo de dato: 'string', 'number', 'boolean', 'json'
-  category    String                     // Agrupación: 'STORE', 'ORDERS', 'OPERATIONS', 'APPEARANCE'
-  label       String                     // Nombre legible: "Nombre de la tienda"
-  description String?                    // Descripción para el admin
-  isPublic    Boolean  @default(false)   // Si es accesible sin autenticación (ej: nombre tienda, moneda)
-  isReadOnly  Boolean  @default(false)   // Si no es editable desde admin (ej: moneda, timezone)
-  sortOrder   Int      @default(0)       // Orden de presentación en el UI
+  category    String // Agrupación: 'STORE', 'ORDERS', 'OPERATIONS', 'APPEARANCE'
+  label       String // Nombre legible: "Nombre de la tienda"
+  description String? // Descripción para el admin
+  isPublic    Boolean  @default(false) // Si es accesible sin autenticación (ej: nombre tienda, moneda)
+  isReadOnly  Boolean  @default(false) // Si no es editable desde admin (ej: moneda, timezone)
+  sortOrder   Int      @default(0) // Orden de presentación en el UI
   updatedAt   DateTime @updatedAt
   createdAt   DateTime @default(now())
 
@@ -471,19 +514,19 @@ model SystemConfig {
 
 // Configuración administrable de cada tipo de notificación
 model NotificationConfig {
-  id           Int      @id @default(autoincrement())
-  key          String   @unique       // 'order.status_changed', 'inventory.low_stock'
-  name         String                 // "Cambio de estado de orden"
-  description  String?
-  category     String                 // 'ORDERS', 'INVENTORY', 'PRODUCTION', 'SYSTEM'
-  isEnabled    Boolean  @default(true)
-  title        String                 // Título con placeholders: "Tu pedido cambió"
-  message      String                 // Mensaje con placeholders: "#{orderNumber} → {status}"
-  targetRoles  Json                   // ["CUSTOMER"] — array de roles destino
-  thresholds   Json?                  // { "threshold": 50, "unit": "LB" }
-  soundType    String   @default("suave") // 'suave', 'alerta', 'importante'
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          Int      @id @default(autoincrement())
+  key         String   @unique // 'order.status_changed', 'inventory.low_stock'
+  name        String // "Cambio de estado de orden"
+  description String?
+  category    String // 'ORDERS', 'INVENTORY', 'PRODUCTION', 'SYSTEM'
+  isEnabled   Boolean  @default(true)
+  title       String // Título con placeholders: "Tu pedido cambió"
+  message     String // Mensaje con placeholders: "#{orderNumber} → {status}"
+  targetRoles Json // ["CUSTOMER"] — array de roles destino
+  thresholds  Json? // { "threshold": 50, "unit": "LB" }
+  soundType   String   @default("suave") // 'suave', 'alerta', 'importante'
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([category])
   @@index([isEnabled])
@@ -491,18 +534,18 @@ model NotificationConfig {
 
 // Historial de notificaciones por usuario (in-app)
 model Notification {
-  id        Int      @id @default(autoincrement())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        Int       @id @default(autoincrement())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
-  type      String                   // Clave del NotificationConfig
+  type      String // Clave del NotificationConfig
   title     String
   message   String
-  url       String?                  // Ruta de redirección: '/admin/ordenes/123'
-  icon      String?                  // Nombre icono Lucide: 'ShoppingCart', 'AlertTriangle'
-  isRead    Boolean  @default(false)
+  url       String? // Ruta de redirección: '/admin/ordenes/123'
+  icon      String? // Nombre icono Lucide: 'ShoppingCart', 'AlertTriangle'
+  isRead    Boolean   @default(false)
   readAt    DateTime?
   metadata  Json?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   @@index([userId])
   @@index([userId, isRead])
@@ -522,4 +565,3 @@ model PushSubscription {
 
   @@index([userId])
 }
-

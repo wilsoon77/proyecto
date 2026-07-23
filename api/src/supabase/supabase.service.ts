@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { Injectable, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
+import { createClient, type SupabaseClient, type User } from '@supabase/supabase-js';
 
 @Injectable()
 export class SupabaseService {
@@ -32,5 +32,23 @@ export class SupabaseService {
 
   isConfigured(): boolean {
     return !!this.supabase;
+  }
+
+  /**
+   * Obtiene la identidad desde un JWT emitido por Supabase. El JWT se valida
+   * contra Auth; no se aceptan IDs, correos ni metadatos enviados por el
+   * cliente como prueba de identidad.
+   */
+  async getUser(accessToken: string): Promise<User> {
+    if (!this.supabase) {
+      throw new ServiceUnavailableException('Supabase Auth no está configurado.');
+    }
+
+    const { data, error } = await this.supabase.auth.getUser(accessToken);
+    if (error || !data.user) {
+      throw new UnauthorizedException('Access token de Supabase inválido o expirado.');
+    }
+
+    return data.user;
   }
 }

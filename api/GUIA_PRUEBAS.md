@@ -15,7 +15,7 @@ Swagger docs: http://localhost:4000/docs
 Opción A - Usando Prisma Studio:
 ```powershell
 cd api
-npx prisma studio
+pnpm run prisma:studio
 ```
 - Abre el modelo `User`
 - Clic en "Add record"

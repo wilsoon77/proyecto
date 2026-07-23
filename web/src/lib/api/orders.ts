@@ -82,11 +82,14 @@ export const ordersService = {
     return api.post<ApiOrder>(`/orders/${id}/confirm`)
   },
 
-  /**
-   * Marcar como entregada (pickup)
-   */
+  /** Confirmar recogida en sucursal; requiere estado READY. */
   async pickup(id: number): Promise<ApiOrder> {
     return api.post<ApiOrder>(`/orders/${id}/pickup`)
+  },
+
+  /** Confirmar entrega a domicilio; requiere estado IN_DELIVERY. */
+  async deliver(id: number): Promise<ApiOrder> {
+    return api.post<ApiOrder>(`/orders/${id}/deliver`)
   },
 
   /**

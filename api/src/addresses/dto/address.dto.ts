@@ -1,6 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, PartialType } from '@nestjs/swagger';
 import { IsString, IsOptional, MinLength } from 'class-validator';
-import { PartialType } from '@nestjs/mapped-types';
 
 export class CreateAddressDto {
   @ApiProperty({ 

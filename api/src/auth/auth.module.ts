@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AuthService } from './auth.service.js';
@@ -11,13 +12,19 @@ import { JwtStrategy } from './jwt.strategy.js';
 import { RolesGuard } from './roles.guard.js';
 import { LoggerService } from '../common/logger/logger.service.js';
 import { SupabaseService } from '../supabase/supabase.service.js';
+import { CaptchaService } from './captcha.service.js';
+import { getJwtAccessSecret } from './jwt-secret.js';
 
 @Module({
   imports: [
     PassportModule.register({ defaultStrategy: 'jwt' }),
-    JwtModule.register({
-      secret: process.env.JWT_ACCESS_SECRET || 'dev_access_secret_change_me',
-      signOptions: { expiresIn: '15m' },
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        secret: getJwtAccessSecret(config.get<string>('JWT_ACCESS_SECRET')),
+        signOptions: { expiresIn: '15m' },
+      }),
     }),
   ],
   providers: [
@@ -30,6 +37,7 @@ import { SupabaseService } from '../supabase/supabase.service.js';
     RolesGuard,
     LoggerService,
     SupabaseService,
+    CaptchaService,
   ],
   controllers: [AuthController],
   exports: [LoggerService, TokenService],

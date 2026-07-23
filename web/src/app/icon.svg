@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="breadGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE68A" />
+      <stop offset="50%" stop-color="#F59E0B" />
+      <stop offset="100%" stop-color="#D97706" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#000000" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+
+  <!-- Clean Off-White Background (matching original) -->
+  <rect width="512" height="512" rx="128" fill="#FDFBF7"/>
+
+  <!-- STEAM RISING (Above Bread) -->
+  <g stroke="url(#breadGold)" stroke-width="8" stroke-linecap="round" fill="none" opacity="0.85">
+    <path d="M 230 110 C 220 90 240 75 230 55" />
+    <path d="M 256 100 C 246 80 266 65 256 45" />
+    <path d="M 282 110 C 272 90 292 75 282 55" />
+  </g>
+
+  <!-- LOAF OF BREAD (Top Icon) -->
+  <g filter="url(#shadow)">
+    <!-- Bread Body -->
+    <path d="M 180 145 C 180 120 220 115 256 115 C 292 115 332 120 332 145 C 342 165 335 185 320 185 L 192 185 C 177 185 170 165 180 145 Z" fill="url(#breadGold)"/>
+    <!-- Bread Score Marks (Cortes del pan) -->
+    <path d="M 215 130 Q 225 155 220 170 M 250 128 Q 260 155 255 170 M 285 130 Q 295 155 290 170" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" fill="none" opacity="0.9"/>
+  </g>
+
+  <!-- MONOGRAM PS (Central Icon Mark) -->
+  <g filter="url(#shadow)">
+    <!-- Golden Wheat/Flame Curve woven inside P and S -->
+    <path d="M 195 240 C 180 260 180 295 210 305 C 240 315 260 280 240 260 C 220 240 200 280 195 320 C 190 360 215 410 265 410 C 290 410 310 395 315 375 C 290 390 265 385 250 365 C 235 345 240 315 265 310 C 295 305 315 335 310 370 C 305 400 270 425 220 425 C 170 425 145 375 160 320 C 170 280 195 255 195 240 Z" fill="url(#breadGold)" opacity="0.95"/>
+
+    <!-- Letter P (Black Bold Typographic) -->
+    <path d="M 190 205 L 265 205 C 295 205 315 218 315 242 C 315 266 295 280 265 280 L 225 280 L 225 335 L 190 335 Z M 225 232 L 225 253 L 260 253 C 275 253 282 248 282 242 C 282 236 275 232 260 232 Z" fill="#0F172A"/>
+
+    <!-- Letter S (Black Bold Typographic Interlocked) -->
+    <path d="M 320 320 C 305 305 285 295 260 300 C 242 305 235 318 240 330 C 245 342 260 348 278 352 L 292 356 C 315 362 328 372 324 392 C 320 415 292 428 260 428 C 232 428 208 415 195 398 L 218 380 C 228 393 243 402 262 402 C 278 402 290 395 292 385 C 294 374 284 367 266 363 L 252 359 C 230 353 216 341 219 320 C 223 296 250 278 285 278 C 305 278 325 287 338 300 Z" fill="#0F172A"/>
+  </g>
+</svg>

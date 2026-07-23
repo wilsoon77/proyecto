@@ -19,18 +19,19 @@ Sistema ERP/POS para gestión integral de panaderías multi-sucursal. Control de
 | Despliegue | Render (API) + Vercel (Web) |
 
 ## Requisitos
-- Node.js 18+ (recomendado 20+)
-- NPM (incluido con Node)
+- Node.js 24.x
+- pnpm 11.13.1 (habilitado mediante Corepack)
 
 ## Desarrollo local
 
 ### Backend (API):
 ```powershell
 cd api
-npm install
+corepack enable
+pnpm install --frozen-lockfile
 # Copia .env.example a .env y completa variables
-npx prisma generate
-npm run dev
+pnpm run prisma:generate
+pnpm run dev
 ```
 Endpoints útiles:
 - Swagger UI: `http://localhost:4000/docs`
@@ -40,8 +41,9 @@ Endpoints útiles:
 ### Frontend (Web):
 ```powershell
 cd web
-npm install
-npm run dev
+corepack enable
+pnpm install --frozen-lockfile
+pnpm run dev
 ```
 Por defecto: `http://localhost:3000`
 
@@ -55,6 +57,7 @@ DIRECT_URL=postgresql://USER:PASSWORD@HOST:5432/postgres
 # Autenticación (JWT) — generar con: openssl rand -base64 32
 JWT_ACCESS_SECRET=tu_access_secret
 JWT_REFRESH_SECRET=tu_refresh_secret
+HCAPTCHA_SECRET=tu_hcaptcha_secret_privado
 
 # Servidor
 PORT=4000
@@ -76,19 +79,20 @@ APPWRITE_BUCKET_ID=product-images
 Crea un archivo `web/.env.local`:
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:4000
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
 ## Scripts útiles (API)
 ```powershell
-npm run dev              # Servidor de desarrollo
-npm run build            # Compilar TypeScript a dist
-npm start                # Ejecutar desde dist
-npm run prisma:generate  # Generar cliente Prisma
-npm run prisma:migrate   # Crear/aplicar migraciones dev
-npm run prisma:deploy    # Aplicar migraciones en producción
-npm run seed             # Datos iniciales
-npm run openapi:gen:dist # Generar openapi.json
-npm test                 # Ejecutar tests e2e
+pnpm run dev              # Servidor de desarrollo
+pnpm run build            # Compilar TypeScript a dist
+pnpm run start:prod       # Ejecutar desde dist
+pnpm run prisma:generate  # Generar cliente Prisma
+pnpm run prisma:migrate   # Crear/aplicar migraciones dev
+pnpm run prisma:deploy    # Aplicar migraciones en producción
+pnpm run seed             # Datos iniciales
+pnpm run openapi:gen:dist # Generar openapi.json
+pnpm run test             # Ejecutar tests
 ```
 
 ## Módulos del Backend
@@ -109,7 +113,7 @@ Las rutas de listado devuelven `{ data, meta }` y además cabeceras:
 - `Link`: enlaces `first`, `last`, `prev`, `next`
 
 ## Despliegue
-- **API**: Render — Build: `npm ci && npx prisma generate && npm run build`, Start: `npm run start:prod`
+- **API**: Render — Build: `pnpm install --frozen-lockfile && pnpm run prisma:generate && pnpm run build`, Start: `pnpm run start:prod`
 - **Web**: Vercel — Root directory: `web/`, Framework: Next.js
 - **DB**: Supabase PostgreSQL
 - **Storage**: Appwrite (imágenes)

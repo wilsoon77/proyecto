@@ -1,6 +1,0 @@
-# Parches transitivos verificados para la API
-overrides:
-  js-yaml: 4.3.0
-  lodash: 4.18.1
-  multer: 2.2.0
-  qs: 6.15.3

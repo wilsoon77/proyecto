@@ -33,25 +33,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.15.4
-
-      - name: Setup Node.js 20 LTS
+      - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: pnpm
-          cache-dependency-path: './web/pnpm-lock.yaml'
-
-      - name: Show Node and pnpm versions
-        run: |
-          node -v
-          pnpm -v
+          cache: 'npm'
+          cache-dependency-path: './web/package-lock.json'
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: npm ci || npm install
 
       - name: Build frontend
-        run: pnpm run build
+        run: npm run build

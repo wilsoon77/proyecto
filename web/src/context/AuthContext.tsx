@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from "react"
-import { authService, isAuthenticated, clearTokens, syncTokensFromCookies } from "@/lib/api"
+import { authService, ensureCsrfToken } from "@/lib/api"
 import type { ApiUser, LoginDto, RegisterDto, UpdateMeDto } from "@/lib/api/types"
 
 interface AuthContextType {
@@ -22,20 +22,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<ApiUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // Cargar usuario al montar si hay token
+  // La sesión se consulta desde el BFF; el navegador no puede leer tokens.
   useEffect(() => {
     const loadUser = async () => {
-      // Primero, verificar si venimos de OAuth (tokens en cookies)
-      const syncedFromOAuth = syncTokensFromCookies()
-      
-      if (syncedFromOAuth || isAuthenticated()) {
-        try {
-          const userData = await authService.me()
+      try {
+        await ensureCsrfToken()
+        const userData = await authService.me()
+        if (userData) {
           setUser(userData)
-        } catch (error) {
-          console.error('Error cargando usuario:', error)
-          clearTokens()
         }
+      } catch (error) {
+        console.error('Error cargando la sesión:', error)
+        setUser(null)
       }
       setIsLoading(false)
     }
@@ -71,7 +69,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('Error en logout:', error)
     } finally {
       setUser(null)
-      clearTokens()
       setIsLoading(false)
     }
   }, [])
@@ -82,15 +79,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const refreshUser = useCallback(async () => {
-    if (isAuthenticated()) {
-      try {
-        const userData = await authService.me()
+    try {
+      const userData = await authService.me()
+      if (userData) {
         setUser(userData)
-      } catch (error) {
-        console.error('Error refrescando usuario:', error)
-        clearTokens()
+      } else {
         setUser(null)
       }
+    } catch (error) {
+      console.error('Error refrescando usuario:', error)
+      setUser(null)
     }
   }, [])
 

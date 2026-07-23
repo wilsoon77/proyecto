@@ -3,7 +3,7 @@ import { ApiTags, ApiBearerAuth, ApiResponse, ApiBadRequestResponse, ApiUnauthor
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service.js';
 import { JwtAuthGuard } from './jwt-auth.guard.js';
-import { RegisterDto, LoginDto, UpdateMeDto, AuthResponseDto, UserDto, RefreshDto, OAuthCallbackDto, ResetPasswordDto } from './dto/auth.dto.js';
+import { RegisterDto, LoginDto, UpdateMeDto, AuthResponseDto, UserDto, RefreshDto, ResetPasswordDto } from './dto/auth.dto.js';
 import { ErrorResponseDto } from '../common/dto/error-response.dto.js';
 
 @Controller('auth')
@@ -90,12 +90,24 @@ export class AuthController {
 
   @Post('oauth-callback')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Callback OAuth', description: 'Procesa el callback de OAuth y retorna tokens de autenticación.' })
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Callback OAuth', description: 'Valida el access token de Supabase en el servidor y retorna tokens de la aplicación.' })
   @ApiResponse({ status: 200, description: 'OAuth exitoso', type: AuthResponseDto })
+  @ApiUnauthorizedResponse({ description: 'Access token de Supabase inválido o ausente', type: ErrorResponseDto })
   @ApiBadRequestResponse({ description: 'Error en OAuth', type: ErrorResponseDto })
-  oauthCallback(@Body() body: OAuthCallbackDto, @Req() req: any) {
+  oauthCallback(@Req() req: any) {
+    const authorization = String(req.headers?.authorization || '');
+    if (!authorization.toLowerCase().startsWith('bearer ')) {
+      throw new UnauthorizedException('Access token de Supabase requerido');
+    }
+
+    const supabaseAccessToken = authorization.slice(7).trim();
+    if (!supabaseAccessToken) {
+      throw new UnauthorizedException('Access token de Supabase requerido');
+    }
+
     const metadata = { userAgent: req.headers['user-agent'], ip: req.ip };
-    return this.auth.handleOAuthCallback(body, metadata);
+    return this.auth.handleOAuthCallback(supabaseAccessToken, metadata);
   }
 
   @Post('reset-password')

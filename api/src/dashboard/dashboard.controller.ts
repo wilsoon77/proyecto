@@ -4,6 +4,7 @@ import { DashboardService } from './dashboard.service.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
 import { RolesGuard } from '../auth/roles.guard.js';
+import { BranchScopeService } from '../branch-scope/branch-scope.service.js';
 
 @Controller('dashboard')
 @ApiTags('dashboard')
@@ -11,7 +12,10 @@ import { RolesGuard } from '../auth/roles.guard.js';
 @Roles('ADMIN', 'MANAGER')
 @ApiBearerAuth()
 export class DashboardController {
-  constructor(private readonly dashboardService: DashboardService) {}
+  constructor(
+    private readonly dashboardService: DashboardService,
+    private readonly branchScope: BranchScopeService,
+  ) {}
 
   @Get('stats')
   @ApiOperation({
@@ -66,11 +70,9 @@ export class DashboardController {
       },
     },
   })
-  getStats(@Query('branchId') branchId?: string, @Req() req?: any) {
-    // Si el usuario es MANAGER, forzar su sucursal asignada
-    // Por ahora, los empleados deben pasar su branchId desde el frontend
-    // TODO: Implementar relación User -> Branch para asignar sucursal automáticamente
+  async getStats(@Query('branchId') branchId?: string, @Req() req?: any) {
     const parsedBranchId = branchId ? parseInt(branchId, 10) : undefined;
-    return this.dashboardService.getStats(parsedBranchId);
+    const scopedBranchId = await this.branchScope.resolveBranchId(req.user, parsedBranchId);
+    return this.dashboardService.getStats(scopedBranchId);
   }
 }

@@ -2,8 +2,12 @@
  * Servicios de autenticación
  */
 
-import { api, setTokens, clearTokens } from './client'
-import type { AuthResponse, ApiUser, LoginDto, RegisterDto, UpdateMeDto } from './types'
+import { api, requestAuth } from './client'
+import type { ApiUser, LoginDto, RegisterDto, UpdateMeDto } from './types'
+
+interface SessionResponse {
+  user: ApiUser
+}
 
 export const authService = {
   /**
@@ -18,37 +22,38 @@ export const authService = {
   /**
    * Iniciar sesión
    */
-  async login(data: LoginDto): Promise<AuthResponse> {
-    const response = await api.post<AuthResponse>('/auth/login', data, { skipAuth: true })
-    setTokens(response.token, response.refreshToken)
-    return response
+  async login(data: LoginDto): Promise<SessionResponse> {
+    return requestAuth<SessionResponse>('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
   },
 
   /**
    * Registrar nuevo usuario
    */
-  async register(data: RegisterDto): Promise<AuthResponse> {
-    const response = await api.post<AuthResponse>('/auth/register', data, { skipAuth: true })
-    setTokens(response.token, response.refreshToken)
-    return response
+  async register(data: RegisterDto): Promise<SessionResponse> {
+    return requestAuth<SessionResponse>('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
   },
 
   /**
    * Cerrar sesión
    */
-  async logout(refreshToken?: string): Promise<void> {
-    try {
-      await api.post('/auth/logout', refreshToken ? { refreshToken } : undefined)
-    } finally {
-      clearTokens()
-    }
+  async logout(): Promise<void> {
+    await requestAuth('/api/auth/logout', { method: 'POST' })
   },
 
   /**
    * Obtener usuario actual
    */
-  async me(): Promise<ApiUser> {
-    return api.get<ApiUser>('/auth/me')
+  async me(): Promise<ApiUser | null> {
+    const response = await requestAuth<{ user: ApiUser | null }>('/api/auth/session')
+    return response.user
   },
 
   /**
@@ -62,9 +67,7 @@ export const authService = {
    * Desactivar cuenta
    */
   async deactivate(): Promise<{ id: string; email: string; isActive: boolean }> {
-    const response = await api.post<{ id: string; email: string; isActive: boolean }>('/auth/deactivate')
-    clearTokens()
-    return response
+    return api.post<{ id: string; email: string; isActive: boolean }>('/auth/deactivate')
   },
 }
 

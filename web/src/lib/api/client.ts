@@ -1,209 +1,122 @@
 /**
- * Cliente HTTP base para comunicación con la API
- * Maneja tokens JWT, refresh automático y errores
+ * Cliente HTTP del navegador.
+ *
+ * Las credenciales de la API viven exclusivamente en cookies HttpOnly y las
+ * lee el BFF de Next.js. Este módulo no guarda ni recibe access/refresh
+ * tokens, por lo que una inyección de JavaScript no puede extraerlos.
  */
 
-import type { ApiError, AuthResponse } from './types'
+import type { ApiError } from './types'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+const BFF_BASE_URL = '/api/bff'
+const CSRF_ENDPOINT = '/api/auth/csrf'
+const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
 
-// Claves de localStorage para tokens
-const TOKEN_KEY = 'auth_token'
-const REFRESH_TOKEN_KEY = 'auth_refresh_token'
-
-// ==================== GESTIÓN DE TOKENS ====================
-
-// Leer token de cookie (para OAuth callback)
 function getCookie(name: string): string | null {
   if (typeof document === 'undefined') return null
-  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'))
-  return match ? match[2] : null
+  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`))
+  return match ? decodeURIComponent(match[1]) : null
 }
 
-// Sincronizar tokens de cookies a localStorage (después de OAuth)
-export function syncTokensFromCookies(): boolean {
-  if (typeof window === 'undefined') return false
-  
-  const cookieToken = getCookie('auth_token')
-  const cookieRefreshToken = getCookie('auth_refresh_token') || getCookie('refresh_token')
+async function parseResponse<T>(response: Response): Promise<T> {
+  if (response.status === 204) return undefined as T
 
-  if (cookieToken) {
-    localStorage.setItem(TOKEN_KEY, cookieToken)
-  }
-  if (cookieRefreshToken) {
-    localStorage.setItem(REFRESH_TOKEN_KEY, cookieRefreshToken)
-  }
+  const contentType = response.headers.get('content-type') || ''
+  const payload = contentType.includes('application/json')
+    ? await response.json().catch(() => null)
+    : await response.text().catch(() => '')
 
-  const synced = !!cookieToken || !!cookieRefreshToken
-  if (synced) {
-    // Limpiar cookies temporales después de copiarlas a localStorage
-    document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
-    document.cookie = 'auth_refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
-    document.cookie = 'refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
+  if (!response.ok) {
+    const error = payload as ApiError | null
+    const message = error && typeof error === 'object' && 'message' in error
+      ? Array.isArray(error.message) ? error.message.join(', ') : error.message
+      : typeof payload === 'string' && payload
+        ? payload
+        : 'La solicitud no pudo completarse.'
+    throw new ApiClientError(message, response.status, error || undefined)
   }
 
-  return synced
+  return payload as T
 }
 
-export function getToken(): string | null {
-  if (typeof window === 'undefined') return null
-  return localStorage.getItem(TOKEN_KEY)
+export async function ensureCsrfToken(): Promise<void> {
+  if (getCookie('panaderia_csrf')) return
+
+  const response = await fetch(CSRF_ENDPOINT, {
+    method: 'GET',
+    credentials: 'same-origin',
+    cache: 'no-store',
+  })
+
+  if (!response.ok || !getCookie('panaderia_csrf')) {
+    throw new ApiClientError('No fue posible inicializar la protección de sesión.', response.status || 0)
+  }
 }
 
-export function getRefreshToken(): string | null {
-  if (typeof window === 'undefined') return null
-  return localStorage.getItem(REFRESH_TOKEN_KEY)
+async function withCsrfHeaders(headers: Headers, method: string): Promise<void> {
+  if (!MUTATING_METHODS.has(method.toUpperCase())) return
+  await ensureCsrfToken()
+  const token = getCookie('panaderia_csrf')
+  if (!token) throw new ApiClientError('No fue posible validar la protección de sesión.', 0)
+  headers.set('X-CSRF-Token', token)
 }
 
-export function setTokens(token: string, refreshToken: string): void {
-  if (typeof window === 'undefined') return
-  localStorage.setItem(TOKEN_KEY, token)
-  localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken)
-}
+export async function requestAuth<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const method = options.method || 'GET'
+  const headers = new Headers(options.headers)
+  await withCsrfHeaders(headers, method)
 
-export function clearTokens(): void {
-  if (typeof window === 'undefined') return
-  localStorage.removeItem(TOKEN_KEY)
-  localStorage.removeItem(REFRESH_TOKEN_KEY)
-}
+  const response = await fetch(path, {
+    ...options,
+    method,
+    headers,
+    credentials: 'same-origin',
+    cache: 'no-store',
+  })
 
-export function isAuthenticated(): boolean {
-  return !!getToken()
+  return parseResponse<T>(response)
 }
-
-// ==================== CLIENTE HTTP ====================
 
 interface RequestOptions extends Omit<RequestInit, 'body'> {
   body?: unknown
+  /** Conservado para compatibilidad; el BFF decide la sesión desde cookies. */
   skipAuth?: boolean
 }
 
 class ApiClient {
-  private baseUrl: string
-  private isRefreshing: boolean = false
-  private refreshPromise: Promise<boolean> | null = null
-
-  constructor(baseUrl: string) {
-    this.baseUrl = baseUrl
-  }
-
-  private async refreshTokens(): Promise<boolean> {
-    const refreshToken = getRefreshToken()
-    if (!refreshToken) return false
-
-    try {
-      const response = await fetch(`${this.baseUrl}/auth/refresh`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken }),
-      })
-
-      if (!response.ok) {
-        clearTokens()
-        return false
-      }
-
-      const data = await response.json() as { token: string; refreshToken: string }
-      setTokens(data.token, data.refreshToken)
-      return true
-    } catch {
-      clearTokens()
-      return false
-    }
-  }
-
-  private async handleRefresh(): Promise<boolean> {
-    // Si ya está refrescando, esperar el resultado
-    if (this.isRefreshing && this.refreshPromise) {
-      return this.refreshPromise
-    }
-
-    this.isRefreshing = true
-    this.refreshPromise = this.refreshTokens()
-
-    try {
-      return await this.refreshPromise
-    } finally {
-      this.isRefreshing = false
-      this.refreshPromise = null
-    }
-  }
+  constructor(private readonly baseUrl: string) {}
 
   async request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
-    const { body, skipAuth = false, headers: customHeaders, ...restOptions } = options
+    const { body, skipAuth: _skipAuth, headers: customHeaders, ...restOptions } = options
+    void _skipAuth
 
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-      ...customHeaders,
+    const method = restOptions.method || 'GET'
+    const headers = new Headers(customHeaders)
+    if (body !== undefined && !headers.has('Content-Type')) {
+      headers.set('Content-Type', 'application/json')
     }
+    await withCsrfHeaders(headers, method)
 
-    // Agregar token de autorización si existe y no se omite
-    if (!skipAuth) {
-      const token = getToken()
-      if (token) {
-        (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`
-      }
-    }
-
-    const config: RequestInit = {
-      ...restOptions,
-      headers,
-      body: body ? JSON.stringify(body) : undefined,
-    }
-
-    let response: Response;
+    let response: Response
     try {
-      response = await fetch(`${this.baseUrl}${endpoint}`, config)
-    } catch (error: any) {
-      // Usar fallback a producción / render si el servidor local está apagado
-      const fallbackUrl = process.env.NEXT_PUBLIC_FALLBACK_API_URL;
-      if (fallbackUrl && this.baseUrl !== fallbackUrl) {
-        console.warn(`[API] Servidor ${this.baseUrl} caído o inalcanzable. Usando fallback: ${fallbackUrl}`);
-        this.baseUrl = fallbackUrl; // Guardar URL para futuras consultas
-        response = await fetch(`${this.baseUrl}${endpoint}`, config);
-      } else {
-        throw new ApiClientError('Error de conexión con el servidor', 0, { statusCode: 0, message: error.message || 'Error de red' });
-      }
+      response = await fetch(`${this.baseUrl}${endpoint}`, {
+        ...restOptions,
+        method,
+        headers,
+        credentials: 'same-origin',
+        body: body === undefined ? undefined : JSON.stringify(body),
+      })
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Error de red'
+      throw new ApiClientError('Error de conexión con el servidor', 0, {
+        statusCode: 0,
+        message,
+      })
     }
 
-    // Si el token expiró, intentar refrescar
-    if (response.status === 401 && !skipAuth) {
-      const refreshed = await this.handleRefresh()
-      
-      if (refreshed) {
-        // Reintentar la petición con el nuevo token
-        const newToken = getToken()
-        if (newToken) {
-          (headers as Record<string, string>)['Authorization'] = `Bearer ${newToken}`
-        }
-        response = await fetch(`${this.baseUrl}${endpoint}`, { ...config, headers })
-      } else {
-        // No se pudo refrescar, limpiar y lanzar error
-        clearTokens()
-        throw new ApiClientError('Sesión expirada', 401)
-      }
-    }
-
-    // Manejar respuestas sin contenido
-    if (response.status === 204) {
-      return undefined as T
-    }
-
-    const data = await response.json()
-
-    if (!response.ok) {
-      const error = data as ApiError
-      throw new ApiClientError(
-        Array.isArray(error.message) ? error.message.join(', ') : error.message,
-        response.status,
-        error
-      )
-    }
-
-    return data as T
+    return parseResponse<T>(response)
   }
 
-  // Métodos de conveniencia
   get<T>(endpoint: string, options?: RequestOptions): Promise<T> {
     return this.request<T>(endpoint, { ...options, method: 'GET' })
   }
@@ -224,73 +137,29 @@ class ApiClient {
     return this.request<T>(endpoint, { ...options, method: 'DELETE' })
   }
 
-  // Método para subir archivos (FormData)
   async uploadFile<T>(endpoint: string, formData: FormData): Promise<T> {
-    const headers: HeadersInit = {}
-    
-    const token = getToken()
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`
-    }
+    const headers = new Headers()
+    await withCsrfHeaders(headers, 'POST')
 
-    let response: Response;
+    let response: Response
     try {
       response = await fetch(`${this.baseUrl}${endpoint}`, {
         method: 'POST',
         headers,
         body: formData,
+        credentials: 'same-origin',
       })
-    } catch (error: any) {
-      const fallbackUrl = process.env.NEXT_PUBLIC_FALLBACK_API_URL;
-      if (fallbackUrl && this.baseUrl !== fallbackUrl) {
-        console.warn(`[API] Fallback upload: Usando ${fallbackUrl}`);
-        this.baseUrl = fallbackUrl;
-        response = await fetch(`${this.baseUrl}${endpoint}`, {
-          method: 'POST',
-          headers,
-          body: formData,
-        })
-      } else {
-        throw new ApiClientError('Error de conexión con el servidor', 0, { statusCode: 0, message: error.message || 'Error de red' });
-      }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Error de red'
+      throw new ApiClientError('Error de conexión con el servidor', 0, {
+        statusCode: 0,
+        message,
+      })
     }
 
-    // Si el token expiró, intentar refrescar
-    if (response.status === 401) {
-      const refreshed = await this.handleRefresh()
-      
-      if (refreshed) {
-        const newToken = getToken()
-        if (newToken) {
-          headers['Authorization'] = `Bearer ${newToken}`
-        }
-        response = await fetch(`${this.baseUrl}${endpoint}`, {
-          method: 'POST',
-          headers,
-          body: formData,
-        })
-      } else {
-        clearTokens()
-        throw new ApiClientError('Sesión expirada', 401)
-      }
-    }
-
-    const data = await response.json()
-
-    if (!response.ok) {
-      const error = data as ApiError
-      throw new ApiClientError(
-        Array.isArray(error.message) ? error.message.join(', ') : error.message,
-        response.status,
-        error
-      )
-    }
-
-    return data as T
+    return parseResponse<T>(response)
   }
 }
-
-// ==================== ERROR PERSONALIZADO ====================
 
 export class ApiClientError extends Error {
   status: number
@@ -304,8 +173,6 @@ export class ApiClientError extends Error {
   }
 }
 
-// ==================== INSTANCIA SINGLETON ====================
-
-export const api = new ApiClient(API_URL)
+export const api = new ApiClient(BFF_BASE_URL)
 
 export default api

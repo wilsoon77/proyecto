@@ -1,0 +1,12 @@
+allowBuilds:
+  '@nestjs/core': true
+  '@prisma/client': true
+  '@prisma/engines': true
+  prisma: true
+
+# pnpm 11 lee los overrides de seguridad desde el workspace, no package.json.
+overrides:
+  js-yaml: 4.3.0
+  lodash: 4.18.1
+  multer: 2.2.0
+  qs: 6.15.3

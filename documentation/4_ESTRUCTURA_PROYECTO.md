@@ -1,5 +1,7 @@
 # 📁 ESTRUCTURA DEL PROYECTO - Panaderia Svetlana Smart System
 
+> **Nota de vigencia (2026-07-17):** este documento describe una arquitectura objetivo no implementada. El repositorio actual usa `api/`, `web/` y `documentation/`, sin `apps/`, `packages/`, móvil ni servicio IA. La instalación actual se realiza con pnpm por aplicación; consultar `README.md` y `GUIA_DESPLIEGUE.md` para los comandos vigentes.
+
 ## 🗂️ ARQUITECTURA GENERAL
 
 ```

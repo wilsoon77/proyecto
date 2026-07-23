@@ -15,6 +15,14 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/roles.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
 
+const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+]);
+
 // Tipo simplificado para el archivo de multer
 interface MulterFile {
   buffer: Buffer;
@@ -32,7 +40,23 @@ export class StorageController {
 
   @Post('upload')
   @Roles('ADMIN', 'MANAGER')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', {
+    // Los lÃ­mites se aplican antes de que el buffer llegue al servicio, para
+    // evitar reservar memoria por archivos arbitrariamente grandes.
+    limits: {
+      fileSize: MAX_IMAGE_SIZE_BYTES,
+      files: 1,
+      fields: 10,
+      parts: 11,
+    },
+    fileFilter: (_request, file, callback) => {
+      if (!ALLOWED_IMAGE_MIME_TYPES.has(file.mimetype)) {
+        callback(new BadRequestException('Tipo de archivo invÃ¡lido. Permitidos: JPEG, PNG, WebP, GIF.'), false);
+        return;
+      }
+      callback(null, true);
+    },
+  }))
   async uploadImage(@UploadedFile() file: MulterFile) {
     if (!file) {
       throw new BadRequestException('No se proporcionó ningún archivo');

@@ -14,15 +14,17 @@ services:
     rootDir: api
     
     # Comandos de build
-    buildCommand: npm ci && npx prisma generate && npm run build
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm run prisma:generate && pnpm run build
     
     # Comando para iniciar
-    startCommand: npm run start:prod
+    startCommand: pnpm run start:prod
     
     # Variables de entorno (configurar en dashboard de Render)
     envVars:
       - key: NODE_ENV
         value: production
+      - key: NODE_VERSION
+        value: 24.16.0
       - key: PORT
         value: 4000
       - key: DATABASE_URL
@@ -35,6 +37,14 @@ services:
         generateValue: true
       - key: CORS_ORIGINS
         sync: false  # Configurar con tu dominio de Vercel
+      - key: TRUST_PROXY_HOPS
+        value: 1
+      - key: HCAPTCHA_SECRET
+        sync: false
+      - key: HCAPTCHA_ALLOWED_HOSTNAMES
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
       # Appwrite Storage (opcional)
       - key: APPWRITE_ENDPOINT
         sync: false

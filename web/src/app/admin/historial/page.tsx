@@ -18,13 +18,13 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
-  Activity
+  Activity,
+  ClipboardCheck
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/context/ToastContext"
 import { useAuth } from "@/context/AuthContext"
-import { auditService, type AuditLog, type AuditListFilters, type AuditStats, type AuditFilterOptions } from "@/lib/api"
-import { Breadcrumbs } from "@/components/ui/breadcrumbs"
+import { auditService, type AuditLog, type AuditListFilters, type AuditListResponse, type AuditStats, type AuditFilterOptions } from "@/lib/api"
 import { summarizeAudit } from "@/lib/audit-helpers"
 
 import { formatDateShort as formatDate } from "@/lib/utils"
@@ -53,6 +53,7 @@ const ENTITY_ICONS: Record<string, React.ElementType> = {
   Category: Tag,
   Inventory: Package,
   StockMovement: RefreshCcw,
+  DailyClose: ClipboardCheck,
 }
 
 // Colores por acción
@@ -84,6 +85,7 @@ const ENTITY_LABELS: Record<string, string> = {
   Category: "Categoría",
   Inventory: "Inventario",
   StockMovement: "Movimiento de Stock",
+  DailyClose: "Cierre diario",
 }
 
 export default function HistorialPage() {
@@ -128,7 +130,6 @@ export default function HistorialPage() {
   useEffect(() => {
     loadFilterOptions()
     loadStats()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Cargar logs cuando cambian los filtros
@@ -148,9 +149,18 @@ export default function HistorialPage() {
   const loadLogs = async () => {
     try {
       setIsLoading(true)
-      const response: any = await auditService.list(filters)
+      const response = await auditService.list(filters)
       setLogs(response.data)
-      const meta = response.meta || response.pagination || {}
+      const responseWithMeta = response as AuditListResponse & {
+        meta?: AuditListResponse["pagination"] & { pageCount?: number }
+      }
+      const meta = (responseWithMeta.meta || responseWithMeta.pagination) as {
+        total: number
+        page: number
+        pageSize: number
+        totalPages?: number
+        pageCount?: number
+      }
       setPagination({
         total: meta.total || 0,
         page: meta.page || 1,

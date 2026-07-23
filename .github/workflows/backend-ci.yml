@@ -36,26 +36,32 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: '24'
-          cache: npm
-          cache-dependency-path: './api/package-lock.json'
+          cache: pnpm
+          cache-dependency-path: './api/pnpm-lock.yaml'
 
-      - name: Show Node and npm versions
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Show Node and pnpm versions
         run: |
           node -v
-          npm -v
+          pnpm -v
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: pnpm run prisma:generate
 
       - name: Compile backend
-        run: npm run build
+        run: pnpm run build
 
       - name: Generate OpenAPI (smoke check)
-        run: npm run openapi:gen:dist
+        run: pnpm run openapi:gen:dist
 
       - name: Verify OpenAPI artifact
         run: test -s openapi.json
 
       - name: Run backend e2e tests (optional)
         if: ${{ vars.RUN_BACKEND_E2E == 'true' }}
-        run: npm run test -- --runInBand
+        run: pnpm run test -- --runInBand

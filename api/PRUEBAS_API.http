@@ -394,7 +394,7 @@ Authorization: Bearer {{adminToken}}
 ###    i) Reservar orden (7.1)
 ###
 ### 2. CREAR USUARIO ADMIN MANUALMENTE:
-###    - Usa Prisma Studio: npx prisma studio
+###    - Usa Prisma Studio: pnpm run prisma:studio
 ###    - O SQL directo en Supabase
 ###    - Email: admin@panaderia.com
 ###    - Password hash de "Admin123!" usando bcryptjs

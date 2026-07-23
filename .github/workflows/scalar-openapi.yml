@@ -6,7 +6,8 @@ on:
       - "api/src/**"
       - "api/scripts/**"
       - "api/package.json"
-      - "api/package-lock.json"
+      - "api/pnpm-lock.yaml"
+      - "api/pnpm-workspace.yaml"
       - "api/tsconfig.json"
       - ".github/workflows/scalar-openapi.yml"
   push:
@@ -16,7 +17,8 @@ on:
       - "api/src/**"
       - "api/scripts/**"
       - "api/package.json"
-      - "api/package-lock.json"
+      - "api/pnpm-lock.yaml"
+      - "api/pnpm-workspace.yaml"
       - "api/tsconfig.json"
       - ".github/workflows/scalar-openapi.yml"
   workflow_dispatch:
@@ -44,24 +46,30 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 24
-          cache: npm
-          cache-dependency-path: api/package-lock.json
+          cache: pnpm
+          cache-dependency-path: api/pnpm-lock.yaml
 
-      - name: Show Node and npm versions
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Show Node and pnpm versions
         run: |
           node -v
-          npm -v
+          pnpm -v
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: pnpm run prisma:generate
 
       - name: Generate OpenAPI
         env:
           OPENAPI_SERVER_URL: ${{ vars.OPENAPI_SERVER_URL }}
-        run: npm run openapi:gen:dist
+        run: pnpm run openapi:gen:dist
 
       - name: Validate with Scalar CLI
-        run: npx -y @scalar/cli@latest document validate openapi.json
+        run: pnpm dlx @scalar/cli@latest document validate openapi.json
 
   publish-to-scalar:
     name: Publish to Scalar
@@ -80,24 +88,30 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 24
-          cache: npm
-          cache-dependency-path: api/package-lock.json
+          cache: pnpm
+          cache-dependency-path: api/pnpm-lock.yaml
 
-      - name: Show Node and npm versions
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Show Node and pnpm versions
         run: |
           node -v
-          npm -v
+          pnpm -v
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: pnpm run prisma:generate
 
       - name: Generate OpenAPI
         env:
           OPENAPI_SERVER_URL: ${{ vars.OPENAPI_SERVER_URL }}
-        run: npm run openapi:gen:dist
+        run: pnpm run openapi:gen:dist
 
       - name: Validate with Scalar CLI
-        run: npx -y @scalar/cli@latest document validate openapi.json
+        run: pnpm dlx @scalar/cli@latest document validate openapi.json
 
       - name: Check Scalar config
         env:
@@ -127,8 +141,8 @@ jobs:
           SCALAR_NAMESPACE: ${{ vars.SCALAR_NAMESPACE }}
           SCALAR_VERSION: ${{ env.SCALAR_VERSION }}
         run: |
-          npx -y @scalar/cli@latest auth login --token "$SCALAR_API_KEY"
-          npx -y @scalar/cli@latest registry publish openapi.json \
+          pnpm dlx @scalar/cli@latest auth login --token "$SCALAR_API_KEY"
+          pnpm dlx @scalar/cli@latest registry publish openapi.json \
             --namespace "$SCALAR_NAMESPACE" \
             --slug "panaderia-api" \
             --version "$SCALAR_VERSION"

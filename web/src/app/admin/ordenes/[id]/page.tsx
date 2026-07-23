@@ -46,6 +46,7 @@ const STATUS_OPTIONS: { value: OrderStatus; label: string; icon: React.ElementTy
   { value: "CONFIRMED", label: "Confirmada", icon: CheckCircle, color: "text-blue-700", bgColor: "bg-blue-100" },
   { value: "PREPARING", label: "Preparando", icon: ChefHat, color: "text-purple-700", bgColor: "bg-purple-100" },
   { value: "READY", label: "Lista para Recoger", icon: Package, color: "text-green-700", bgColor: "bg-green-100" },
+  { value: "IN_DELIVERY", label: "En camino", icon: Package, color: "text-indigo-700", bgColor: "bg-indigo-100" },
   { value: "DELIVERED", label: "Entregada", icon: CheckCircle, color: "text-emerald-700", bgColor: "bg-emerald-100" },
   { value: "PICKED_UP", label: "Recogida", icon: CheckCircle, color: "text-teal-700", bgColor: "bg-teal-100" },
   { value: "CANCELLED", label: "Cancelada", icon: XCircle, color: "text-red-700", bgColor: "bg-red-100" },
@@ -61,7 +62,7 @@ const STATUS_FLOW: Record<OrderStatus, OrderStatus[]> = {
   PENDING: ['CONFIRMED', 'CANCELLED'],
   CONFIRMED: ['PREPARING', 'CANCELLED'],
   PREPARING: ['READY', 'CANCELLED'],
-  READY: ['PICKED_UP', 'CANCELLED'],
+  READY: ['PICKED_UP', 'IN_DELIVERY', 'CANCELLED'],
   IN_DELIVERY: ['DELIVERED'],
   DELIVERED: [],
   PICKED_UP: [],
@@ -102,8 +103,14 @@ export default function DetalleOrdenPage() {
     
     setIsProcessing(true)
     try {
-      await ordersService.updateStatus(orderId, newStatus)
-      setOrder({ ...order, status: newStatus, updatedAt: new Date().toISOString() })
+      const updated = newStatus === 'CANCELLED'
+        ? await ordersService.cancel(orderId)
+        : newStatus === 'PICKED_UP'
+          ? await ordersService.pickup(orderId)
+          : newStatus === 'DELIVERED'
+            ? await ordersService.deliver(orderId)
+            : await ordersService.updateStatus(orderId, newStatus)
+      setOrder({ ...order, status: updated.status, updatedAt: new Date().toISOString() })
       showToast(`Estado actualizado a ${STATUS_MAP[newStatus].label}`, "success")
     } catch (error) {
       console.error("Error updating status:", error)

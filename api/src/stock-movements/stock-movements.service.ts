@@ -48,11 +48,13 @@ export class StockMovementsService {
           where: { productId_branchId: { productId: product.id, branchId } },
         });
         if (!existing) {
-          await tx.inventory.create({ data: { productId: product.id, branchId, quantity: delta > 0 ? delta : 0 } });
           if (delta < 0) throw new BadRequestException('Inventario insuficiente');
+          await tx.inventory.create({ data: { productId: product.id, branchId, quantity: delta } });
         } else {
           const newQuantity = existing.quantity + delta;
-          if (newQuantity < 0) throw new BadRequestException('Inventario insuficiente');
+          if (newQuantity < existing.reserved) {
+            throw new BadRequestException('Inventario disponible insuficiente; hay unidades reservadas');
+          }
           await tx.inventory.update({ where: { id: existing.id }, data: { quantity: newQuantity } });
         }
       };
@@ -208,6 +210,11 @@ export class StockMovementsService {
         });
 
         const systemQty = inv?.quantity ?? 0;
+        if (inv && item.actualQuantity < inv.reserved) {
+          throw new BadRequestException(
+            `El conteo de ${product.name} no puede ser menor que las ${inv.reserved} unidades reservadas`,
+          );
+        }
         const diff = item.actualQuantity - systemQty;
 
         if (diff === 0) {

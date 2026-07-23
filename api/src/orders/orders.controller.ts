@@ -9,6 +9,9 @@ import { setPaginationHeaders } from '../common/utils/pagination.util.js';
 import { AuditService } from '../audit/audit.service.js';
 import { getClientIp } from '../common/utils/audit.util.js';
 import type { Response } from 'express';
+import { BranchScopeService } from '../branch-scope/branch-scope.service.js';
+
+const ORDER_OPERATOR_ROLES = new Set(['MANAGER', 'CASHIER']);
 
 @Controller('orders')
 @ApiTags('orders')
@@ -16,6 +19,7 @@ export class OrdersController {
   constructor(
     private readonly service: OrdersService,
     private readonly auditService: AuditService,
+    private readonly branchScope: BranchScopeService,
   ) {}
 
   @Post('reserve')
@@ -26,7 +30,12 @@ export class OrdersController {
   @ApiResponse({ status: 201, description: 'Orden creada y reservada', content: { 'application/json': { examples: { ejemplo: { value: { id: 123, orderNumber: 'ORD-000123', status: 'PENDING', subtotal: 100, total: 100 } } } } } })
   @ApiBadRequestResponse({ description: 'Validación o stock insuficiente', schema: { example: { statusCode: 400, error: 'Bad Request', message: 'Stock insuficiente: Concha' } } })
   async reserve(@Req() req: any, @Body() dto: ReserveOrderDto) {
-    const order = await this.service.reserve(dto, req.user?.userId);
+    // El endpoint tambien sirve a clientes, pero un empleado no puede usarlo
+    // para reservar inventario de una sucursal ajena.
+    const branchSlug = ORDER_OPERATOR_ROLES.has(req.user?.role) || req.user?.role === 'BAKER'
+      ? await this.branchScope.resolveBranchSlug(req.user, dto.branchSlug)
+      : dto.branchSlug;
+    const order = await this.service.reserve({ ...dto, branchSlug: branchSlug ?? dto.branchSlug }, req.user?.userId);
     
     // Registrar en auditoría
     const userName = await this.auditService.getUserName(req.user?.userId);
@@ -37,7 +46,7 @@ export class OrdersController {
       entity: 'Order',
       entityId: String(order.id),
       entityName: order.orderNumber,
-      details: { branchSlug: dto.branchSlug, itemsCount: dto.items?.length, total: order.total },
+      details: { branchSlug: branchSlug ?? dto.branchSlug, itemsCount: dto.items?.length, total: order.total },
       ipAddress: getClientIp(req),
       userAgent: req.headers?.['user-agent'],
     });
@@ -54,7 +63,8 @@ export class OrdersController {
   @ApiResponse({ status: 201, description: 'Venta registrada exitosamente' })
   @ApiBadRequestResponse({ description: 'Stock insuficiente' })
   async posSale(@Req() req: any, @Body() dto: POSOrderDto) {
-    const order = await this.service.directSale(dto, req.user?.userId);
+    const branchSlug = await this.branchScope.resolveBranchSlug(req.user, dto.branchSlug);
+    const order = await this.service.directSale({ ...dto, branchSlug: branchSlug ?? dto.branchSlug }, req.user?.userId);
 
     const userName = await this.auditService.getUserName(req.user?.userId);
     await this.auditService.log({
@@ -64,7 +74,7 @@ export class OrdersController {
       entity: 'Order',
       entityId: String(order.id),
       entityName: order.orderNumber,
-      details: { action: 'POS_SALE', branchSlug: dto.branchSlug, itemsCount: dto.items?.length, total: order.total },
+      details: { action: 'POS_SALE', branchSlug: branchSlug ?? dto.branchSlug, itemsCount: dto.items?.length, total: order.total },
       ipAddress: getClientIp(req),
       userAgent: req.headers?.['user-agent'],
     });
@@ -77,10 +87,16 @@ export class OrdersController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Cancelar orden', description: 'Libera las reservas de inventario y marca la orden como CANCELLED. El cliente puede cancelar su propia orden; ADMIN puede cancelar cualquiera.' })
   async cancel(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
-    const orderInfo = await this.service.detail(id);
-    // Verificar que el usuario sea el dueño de la orden o sea ADMIN/MANAGER/CASHIER
     const role = req.user?.role;
-    if (role !== 'ADMIN' && role !== 'MANAGER' && role !== 'CASHIER' && orderInfo?.userId !== req.user?.userId) {
+    if (ORDER_OPERATOR_ROLES.has(role)) {
+      await this.branchScope.assertOrderAccess(req.user, id);
+    }
+
+    const orderInfo: any = await this.service.detail(
+      id,
+      role === 'ADMIN' || ORDER_OPERATOR_ROLES.has(role) ? undefined : req.user?.userId,
+    );
+    if (role !== 'ADMIN' && !ORDER_OPERATOR_ROLES.has(role) && orderInfo?.userId !== req.user?.userId) {
       throw new ForbiddenException('No tienes permiso para cancelar esta orden');
     }
     const result = await this.service.cancel(id, req.user?.userId);
@@ -106,9 +122,9 @@ export class OrdersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN', 'MANAGER', 'CASHIER')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Entregar orden', description: 'Descuenta inventario con movimiento VENTA y marca DELIVERED. Requiere rol ADMIN, MANAGER o CASHIER.' })
+  @ApiOperation({ summary: 'Confirmar recogida', description: 'Descuenta inventario con movimiento VENTA y marca PICKED_UP. La orden debe estar READY.' })
   async pickup(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
-    // Obtener info de la orden antes de entregar
+    await this.branchScope.assertOrderAccess(req.user, id);
     const orderInfo = await this.service.detail(id);
     const result = await this.service.pickup(id, req.user?.userId);
     
@@ -121,11 +137,37 @@ export class OrdersController {
       entity: 'Order',
       entityId: String(id),
       entityName: orderInfo?.orderNumber || `Order #${id}`,
-      details: { action: 'PICKUP', newStatus: 'DELIVERED' },
+      details: { action: 'PICKUP', newStatus: 'PICKED_UP' },
       ipAddress: getClientIp(req),
       userAgent: req.headers?.['user-agent'],
     });
     
+    return result;
+  }
+
+  @Post(':id/deliver')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'MANAGER', 'CASHIER')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Confirmar entrega', description: 'Descuenta inventario con movimiento VENTA y marca DELIVERED. La orden debe estar IN_DELIVERY.' })
+  async deliver(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
+    await this.branchScope.assertOrderAccess(req.user, id);
+    const orderInfo = await this.service.detail(id);
+    const result = await this.service.deliver(id, req.user?.userId);
+
+    const userName = await this.auditService.getUserName(req.user?.userId);
+    await this.auditService.log({
+      userId: req.user?.userId,
+      userName,
+      action: 'UPDATE',
+      entity: 'Order',
+      entityId: String(id),
+      entityName: orderInfo?.orderNumber || `Order #${id}`,
+      details: { action: 'DELIVER', newStatus: 'DELIVERED' },
+      ipAddress: getClientIp(req),
+      userAgent: req.headers?.['user-agent'],
+    });
+
     return result;
   }
 
@@ -157,8 +199,9 @@ export class OrdersController {
       },
     },
   })
-  list(@Req() req: any, @Res({ passthrough: true }) res: Response, @Query('branchSlug') branchSlug?: string, @Query('status') status?: string, @Query('page') page?: string, @Query('pageSize') pageSize?: string) {
-    const result = this.service.list({ branchSlug, status, page: page ? Number(page) : undefined, pageSize: pageSize ? Number(pageSize) : undefined });
+  async list(@Req() req: any, @Res({ passthrough: true }) res: Response, @Query('branchSlug') branchSlug?: string, @Query('status') status?: string, @Query('page') page?: string, @Query('pageSize') pageSize?: string) {
+    const scopedBranchSlug = await this.branchScope.resolveBranchSlug(req.user, branchSlug);
+    const result = this.service.list({ branchSlug: scopedBranchSlug, status, page: page ? Number(page) : undefined, pageSize: pageSize ? Number(pageSize) : undefined });
     return Promise.resolve(result).then((r: any) => {
       setPaginationHeaders({
         res,
@@ -208,10 +251,13 @@ export class OrdersController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Detalle de orden', description: 'Obtiene una orden con items y sucursal. Usuarios solo ven sus órdenes.' })
-  detail(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
-    // Si no es ADMIN, validar que la orden pertenezca al usuario
-    const userId = req.user.role === 'ADMIN' ? undefined : req.user.userId;
-    return this.service.detail(id, userId);
+  async detail(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
+    if (ORDER_OPERATOR_ROLES.has(req.user?.role)) {
+      await this.branchScope.assertOrderAccess(req.user, id);
+      return this.service.detail(id);
+    }
+
+    return this.service.detail(id, req.user?.role === 'ADMIN' ? undefined : req.user?.userId);
   }
 
   @Post(':id/confirm')
@@ -222,6 +268,7 @@ export class OrdersController {
   @ApiResponse({ status: 200, description: 'Orden confirmada' })
   @ApiBadRequestResponse({ description: 'Solo se pueden confirmar órdenes PENDING' })
   async confirmOrder(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
+    await this.branchScope.assertOrderAccess(req.user, id);
     const order = await this.service.confirm(id);
     
     // Registrar en auditoría
@@ -245,11 +292,12 @@ export class OrdersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN', 'MANAGER')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Cambiar estado de orden', description: 'Actualiza el estado de una orden. Requiere rol ADMIN o MANAGER.' })
-  @ApiBody({ schema: { example: { status: 'CONFIRMED' }, properties: { status: { type: 'string', description: 'Nuevo estado (PENDING, CONFIRMED, PREPARING, READY, IN_DELIVERY, DELIVERED, CANCELLED)' } } } })
+  @ApiOperation({ summary: 'Avanzar estado de orden', description: 'Solo permite transiciones no terminales del flujo. Cancelación, recogida y entrega usan comandos propios para mantener inventario consistente.' })
+  @ApiBody({ schema: { example: { status: 'PREPARING' }, properties: { status: { type: 'string', description: 'Siguiente estado no terminal (CONFIRMED, PREPARING, READY, IN_DELIVERY)' } } } })
   @ApiResponse({ status: 200, description: 'Estado actualizado' })
   @ApiBadRequestResponse({ description: 'Estado inválido o error en la actualización' })
   async updateStatus(@Req() req: any, @Param('id', ParseIntPipe) id: number, @Body() { status }: { status: string }) {
+    await this.branchScope.assertOrderAccess(req.user, id);
     const order = await this.service.updateStatus(id, status);
     
     // Registrar en auditoría

@@ -19,6 +19,9 @@ function createMockPrisma() {
     recipe: {
       findUnique: jest.fn(),
     },
+    branch: {
+      findUnique: jest.fn().mockResolvedValue({ id: 1, name: 'Sucursal Central' }),
+    },
     rawMaterialInventory: {
       findUnique: jest.fn(),
       update: jest.fn(),

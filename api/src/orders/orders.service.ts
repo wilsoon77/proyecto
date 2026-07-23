@@ -1,10 +1,11 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { POSOrderDto, ReserveOrderDto } from './dto.js';
-import { StockMovementType } from '@prisma/client';
+import { OrderStatus, Prisma, StockMovementType } from '@prisma/client';
 import { LoggerService } from '../common/logger/logger.service.js';
 import { SystemConfigService } from '../system-config/system-config.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
+import { assertOrderTransition, FULFILLMENT_STATUSES, ORDER_STATUS_LABELS } from './order-state.js';
 
 function formatOrderNumber(id: number) {
   return 'ORD-' + id.toString().padStart(6, '0');
@@ -57,19 +58,33 @@ export class OrdersService {
     if (!branch) throw new NotFoundException('Sucursal no encontrada');
     if (!dto.items?.length) throw new BadRequestException('Sin items');
 
+    // Agrupar líneas repetidas antes de validar y reservar. Sin esta suma, dos
+    // líneas del mismo producto podían superar el disponible de forma conjunta.
+    const quantitiesBySlug = new Map<string, number>();
+    for (const item of dto.items) {
+      quantitiesBySlug.set(item.productSlug, (quantitiesBySlug.get(item.productSlug) ?? 0) + item.quantity);
+    }
+    const items = [...quantitiesBySlug.entries()].map(([productSlug, quantity]) => ({ productSlug, quantity }));
+    const minAmount = await this.systemConfig.getNumber('orders.min_amount');
+
     // Resolve product slugs to IDs before the transaction
-    const products = await this.prisma.product.findMany({ where: { slug: { in: dto.items.map(i => i.productSlug) } } });
+    const products = await this.prisma.product.findMany({ where: { slug: { in: items.map(i => i.productSlug) } } });
     const map = new Map(products.map(p => [p.slug, p]));
 
     // Validate all slugs exist before entering the transaction
-    for (const item of dto.items) {
-      if (!map.get(item.productSlug)) throw new BadRequestException(`Producto no encontrado: ${item.productSlug}`);
+    for (const item of items) {
+      const product = map.get(item.productSlug);
+      if (!product) throw new BadRequestException(`Producto no encontrado: ${item.productSlug}`);
+      if (!product.isActive || !product.isAvailable) {
+        throw new BadRequestException(`Producto no disponible: ${product.name}`);
+      }
     }
 
-    // Create order + validate availability + increase reserved atomically
-    const order = await this.prisma.$transaction(async (tx) => {
+    // Serializable + retry makes concurrent reservations compete correctly for
+    // the same inventory rows instead of silently overselling.
+    const order = await this.withSerializableRetry(() => this.prisma.$transaction(async (tx) => {
       // Re-check availability inside the transaction to prevent race conditions
-      for (const item of dto.items) {
+      for (const item of items) {
         const p = map.get(item.productSlug)!;
         const inv = await tx.inventory.findUnique({
           where: { productId_branchId: { productId: p.id, branchId: branch.id } },
@@ -96,12 +111,11 @@ export class OrdersService {
       });
 
       let subtotal = 0;
-      for (const item of dto.items) {
+      for (const item of items) {
         const p = map.get(item.productSlug)!;
-        await tx.inventory.upsert({
+        await tx.inventory.update({
           where: { productId_branchId: { productId: p.id, branchId: branch.id } },
-          update: { reserved: { increment: item.quantity } },
-          create: { productId: p.id, branchId: branch.id, quantity: 0, reserved: item.quantity },
+          data: { reserved: { increment: item.quantity } },
         });
         const price = Number(p.basePrice);
         subtotal += price * item.quantity;
@@ -109,14 +123,17 @@ export class OrdersService {
       }
 
       // Validar monto mínimo de pedido
-      const minAmount = await this.systemConfig.getNumber('orders.min_amount');
       if (subtotal < minAmount) {
         throw new BadRequestException(`El monto del pedido (Q${subtotal.toFixed(2)}) es menor al pedido mínimo requerido (Q${minAmount.toFixed(2)}).`);
       }
 
       const updated = await tx.order.update({ where: { id: created.id }, data: { orderNumber: formatOrderNumber(created.id), subtotal, total: subtotal } });
       return updated;
-    });
+    }, {
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+      maxWait: 5000,
+      timeout: 10000,
+    }));
 
     // Auditoría
     this.logger.auditOrderCreated(order.id, userId, Number(order.total));
@@ -137,23 +154,33 @@ export class OrdersService {
     if (!branch) throw new NotFoundException('Sucursal no encontrada');
     if (!dto.items?.length) throw new BadRequestException('Sin items');
 
-    const products = await this.prisma.product.findMany({ where: { slug: { in: dto.items.map(i => i.productSlug) } } });
+    // Consolidar líneas repetidas para validar y descontar el stock una sola vez.
+    const quantitiesBySlug = new Map<string, number>();
+    for (const item of dto.items) {
+      quantitiesBySlug.set(item.productSlug, (quantitiesBySlug.get(item.productSlug) ?? 0) + item.quantity);
+    }
+    const items = [...quantitiesBySlug.entries()].map(([productSlug, quantity]) => ({ productSlug, quantity }));
+    const products = await this.prisma.product.findMany({ where: { slug: { in: items.map(i => i.productSlug) } } });
     const map = new Map(products.map(p => [p.slug, p]));
 
-    for (const item of dto.items) {
-      if (!map.get(item.productSlug)) throw new BadRequestException(`Producto no encontrado: ${item.productSlug}`);
+    for (const item of items) {
+      const product = map.get(item.productSlug);
+      if (!product) throw new BadRequestException(`Producto no encontrado: ${item.productSlug}`);
+      if (!product.isActive || !product.isAvailable) {
+        throw new BadRequestException(`Producto no disponible: ${product.name}`);
+      }
     }
 
-    const order = await this.prisma.$transaction(async (tx) => {
+    const order = await this.withSerializableRetry(() => this.prisma.$transaction(async (tx) => {
       // Check availability (physical stock)
-      for (const item of dto.items) {
+      for (const item of items) {
         const p = map.get(item.productSlug)!;
         const inv = await tx.inventory.findUnique({
           where: { productId_branchId: { productId: p.id, branchId: branch.id } },
         });
-        const currentStock = inv?.quantity ?? 0;
-        if (currentStock < item.quantity) {
-          throw new BadRequestException(`Stock físico insuficiente: ${p.name}`);
+        const available = (inv?.quantity ?? 0) - (inv?.reserved ?? 0);
+        if (available < item.quantity) {
+          throw new BadRequestException(`Stock disponible insuficiente: ${p.name}`);
         }
       }
 
@@ -176,7 +203,7 @@ export class OrdersService {
       let subtotal = 0;
       let totalDiscount = 0;
 
-      for (const item of dto.items) {
+      for (const item of items) {
         const p = map.get(item.productSlug)!;
 
         // Calculate combos
@@ -238,11 +265,7 @@ export class OrdersService {
         }
       });
       return updated;
-    }, {
-      isolationLevel: 'Serializable',
-      maxWait: 5000,
-      timeout: 10000,
-    });
+    }, this.serializableOptions()));
 
     this.logger.auditOrderCreated(order.id, userId, Number(order.total));
 
@@ -250,80 +273,110 @@ export class OrdersService {
   }
 
   async cancel(orderId: number, userId?: string) {
-    const order: any = await this.prisma.order.findUnique({ where: { id: orderId }, include: { items: true } as any });
-    if (!order) throw new NotFoundException('Orden no encontrada');
-    if (!order.branchId) throw new BadRequestException('Orden sin sucursal');
+    const order: any = await this.withSerializableRetry(() => this.prisma.$transaction(async (tx) => {
+      const current: any = await tx.order.findUnique({
+        where: { id: orderId },
+        include: { items: true, branch: true },
+      });
+      if (!current) throw new NotFoundException('Orden no encontrada');
+      if (!current.branchId) throw new BadRequestException('Orden sin sucursal');
 
-    await this.prisma.$transaction(async (tx) => {
-      for (const it of order.items) {
-        const inv = await tx.inventory.findUnique({ where: { productId_branchId: { productId: it.productId, branchId: order.branchId } } });
-        if (inv && inv.reserved >= it.quantity) {
-          await tx.inventory.update({ where: { id: inv.id }, data: { reserved: inv.reserved - it.quantity } });
+      assertOrderTransition(current.status, OrderStatus.CANCELLED);
+      for (const item of current.items) {
+        const inventory = await tx.inventory.findUnique({
+          where: { productId_branchId: { productId: item.productId, branchId: current.branchId } },
+        });
+        if (!inventory || inventory.reserved < item.quantity) {
+          throw new BadRequestException('La reserva de inventario no coincide con la orden');
         }
+        await tx.inventory.update({
+          where: { id: inventory.id },
+          data: { reserved: { decrement: item.quantity } },
+        });
       }
-      await tx.order.update({ where: { id: order.id }, data: { status: 'CANCELLED', userId: userId ?? order.userId } });
-    });
 
-    // Auditoría
+      return tx.order.update({
+        where: { id: current.id },
+        data: { status: OrderStatus.CANCELLED },
+        include: { items: true, branch: true },
+      });
+    }, this.serializableOptions()));
+
     this.logger.auditOrderCancelled(orderId, userId);
-
-    // Enviar notificación de pedido cancelado
+    await this.notifyStatusChange(order);
     await this.notificationsService.sendByConfig('order.cancelled', {
       orderNumber: order.orderNumber,
     }, `/admin/ordenes/${order.id}`);
 
-    return { ok: true };
+    return normalizeOrder(order);
   }
 
   async pickup(orderId: number, userId?: string) {
-    const order: any = await this.prisma.order.findUnique({ 
-      where: { id: orderId }, 
-      include: { items: true, branch: true } as any 
-    });
-    if (!order) throw new NotFoundException('Orden no encontrada');
-    if (!order.branchId) throw new BadRequestException('Orden sin sucursal');
+    return this.fulfill(orderId, OrderStatus.READY, OrderStatus.PICKED_UP, userId);
+  }
 
-    await this.prisma.$transaction(async (tx) => {
-      for (const it of order.items) {
-        const inv = await tx.inventory.findUnique({ where: { productId_branchId: { productId: it.productId, branchId: order.branchId } } });
-        if (!inv || inv.reserved < it.quantity) throw new BadRequestException('Reservado insuficiente');
-        if (inv.quantity < it.quantity) throw new BadRequestException('Stock físico insuficiente');
-        // Descontar tanto el reservado como el stock físico
+  async deliver(orderId: number, userId?: string) {
+    return this.fulfill(orderId, OrderStatus.IN_DELIVERY, OrderStatus.DELIVERED, userId);
+  }
+
+  private async fulfill(
+    orderId: number,
+    expectedStatus: OrderStatus,
+    finalStatus: OrderStatus,
+    userId?: string,
+  ) {
+    const order: any = await this.withSerializableRetry(() => this.prisma.$transaction(async (tx) => {
+      const current: any = await tx.order.findUnique({
+        where: { id: orderId },
+        include: { items: true, branch: true },
+      });
+      if (!current) throw new NotFoundException('Orden no encontrada');
+      if (!current.branchId) throw new BadRequestException('Orden sin sucursal');
+      if (current.status !== expectedStatus) {
+        throw new BadRequestException(`La orden debe estar en ${expectedStatus} para completar esta entrega`);
+      }
+      assertOrderTransition(current.status, finalStatus);
+
+      for (const item of current.items) {
+        const inventory = await tx.inventory.findUnique({
+          where: { productId_branchId: { productId: item.productId, branchId: current.branchId } },
+        });
+        if (!inventory || inventory.reserved < item.quantity) {
+          throw new BadRequestException('La reserva de inventario no coincide con la orden');
+        }
+        if (inventory.quantity < item.quantity) {
+          throw new BadRequestException('Stock físico insuficiente');
+        }
+
         await tx.inventory.update({
-          where: { id: inv.id },
+          where: { id: inventory.id },
           data: {
-            reserved: { decrement: it.quantity },
-            quantity: { decrement: it.quantity },
+            reserved: { decrement: item.quantity },
+            quantity: { decrement: item.quantity },
           },
         });
-        await tx.stockMovement.create({ data: { productId: it.productId, fromBranchId: order.branchId, type: StockMovementType.VENTA, quantity: it.quantity, userId } });
-      }
-      await tx.order.update({ where: { id: order.id }, data: { status: 'DELIVERED', userId: userId ?? order.userId } });
-    });
-
-    // Auditoría
-    this.logger.auditOrderPickup(orderId, userId);
-
-    // Verificar si el stock de los productos retirados quedó bajo
-    if (order.branchId) {
-      for (const it of order.items) {
-        const currentInv = await this.prisma.inventory.findUnique({
-          where: { productId_branchId: { productId: it.productId, branchId: order.branchId } },
+        await tx.stockMovement.create({
+          data: {
+            productId: item.productId,
+            fromBranchId: current.branchId,
+            type: StockMovementType.VENTA,
+            quantity: item.quantity,
+            userId,
+          },
         });
-        if (currentInv) {
-          const isLow = await this.notificationsService.checkThreshold('inventory.low_stock', currentInv.quantity);
-          if (isLow) {
-            await this.notificationsService.sendByConfig('inventory.low_stock', {
-              productName: it.productName,
-              current: currentInv.quantity,
-              branchName: order.branch?.name || 'Sucursal',
-            }, `/admin/inventario`);
-          }
-        }
       }
-    }
 
-    return { ok: true };
+      return tx.order.update({
+        where: { id: current.id },
+        data: { status: finalStatus },
+        include: { items: true, branch: true },
+      });
+    }, this.serializableOptions()));
+
+    this.logger.auditOrderPickup(orderId, userId);
+    await this.notifyStatusChange(order);
+    await this.notifyLowStockAfterFulfillment(order);
+    return normalizeOrder(order);
   }
 
   async list(filters: { branchSlug?: string; status?: string; page?: number; pageSize?: number }) {
@@ -384,57 +437,84 @@ export class OrdersService {
   }
 
   async confirm(orderId: number) {
-    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
-    if (!order) throw new NotFoundException('Orden no encontrada');
-    if (order.status !== 'PENDING') throw new BadRequestException('Solo se pueden confirmar órdenes PENDING');
-    
-    const updated = await this.prisma.order.update({
-      where: { id: orderId },
-      data: { status: 'CONFIRMED' },
-    });
-
-    if (updated.userId) {
-      await this.notificationsService.sendToUser(updated.userId, 'order.status_changed', {
-        orderNumber: updated.orderNumber,
-        status: 'CONFIRMADO',
-      }, `/pedidos`);
-    }
-
-    return normalizeOrder(updated);
+    return this.transitionStatus(orderId, OrderStatus.CONFIRMED);
   }
 
   async updateStatus(orderId: number, newStatus: string) {
-    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
-    if (!order) throw new NotFoundException('Orden no encontrada');
-    
-    const validStatuses = ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'IN_DELIVERY', 'DELIVERED', 'CANCELLED', 'PICKED_UP'];
-    if (!validStatuses.includes(newStatus)) {
-      throw new BadRequestException(`Estado inválido. Debe ser uno de: ${validStatuses.join(', ')}`);
-    }
-    
-    const updated = await this.prisma.order.update({
-      where: { id: orderId },
-      data: { status: newStatus as any },
-    });
-
-    if (updated.userId) {
-      const statusLabels: Record<string, string> = {
-        PENDING: 'PENDIENTE',
-        CONFIRMED: 'CONFIRMADO',
-        PREPARING: 'EN PREPARACIÓN',
-        READY: 'LISTO PARA RECOGER',
-        IN_DELIVERY: 'EN CAMINO',
-        DELIVERED: 'ENTREGADO',
-        CANCELLED: 'CANCELADO',
-        PICKED_UP: 'ENTREGADO',
-      };
-      const statusLabel = statusLabels[newStatus] || newStatus;
-      await this.notificationsService.sendToUser(updated.userId, 'order.status_changed', {
-        orderNumber: updated.orderNumber,
-        status: statusLabel,
-      }, `/pedidos`);
+    if (!Object.values(OrderStatus).includes(newStatus as OrderStatus)) {
+      throw new BadRequestException(`Estado inválido. Debe ser uno de: ${Object.values(OrderStatus).join(', ')}`);
     }
 
+    const target = newStatus as OrderStatus;
+    if (target === OrderStatus.CANCELLED) {
+      throw new BadRequestException('Usa la acción de cancelación para liberar la reserva de inventario');
+    }
+    if (FULFILLMENT_STATUSES.has(target)) {
+      throw new BadRequestException('Usa la acción de entrega o recogida para descontar inventario');
+    }
+
+    return this.transitionStatus(orderId, target);
+  }
+
+  private async transitionStatus(orderId: number, target: OrderStatus) {
+    const updated: any = await this.withSerializableRetry(() => this.prisma.$transaction(async (tx) => {
+      const current = await tx.order.findUnique({ where: { id: orderId } });
+      if (!current) throw new NotFoundException('Orden no encontrada');
+      assertOrderTransition(current.status, target);
+      return tx.order.update({ where: { id: current.id }, data: { status: target } });
+    }, this.serializableOptions()));
+
+    await this.notifyStatusChange(updated);
     return normalizeOrder(updated);
+  }
+
+  private async notifyStatusChange(order: { userId?: string | null; orderNumber: string; status: OrderStatus }) {
+    if (!order.userId) return;
+
+    await this.notificationsService.sendToUser(order.userId, 'order.status_changed', {
+      orderNumber: order.orderNumber,
+      status: ORDER_STATUS_LABELS[order.status],
+    }, '/pedidos');
+  }
+
+  private async notifyLowStockAfterFulfillment(order: any) {
+    if (!order.branchId) return;
+
+    for (const item of order.items) {
+      const inventory = await this.prisma.inventory.findUnique({
+        where: { productId_branchId: { productId: item.productId, branchId: order.branchId } },
+      });
+      if (!inventory) continue;
+
+      const isLow = await this.notificationsService.checkThreshold('inventory.low_stock', inventory.quantity);
+      if (isLow) {
+        await this.notificationsService.sendByConfig('inventory.low_stock', {
+          productName: item.productName,
+          current: inventory.quantity,
+          branchName: order.branch?.name || 'Sucursal',
+        }, '/admin/inventario');
+      }
+    }
+  }
+
+  private serializableOptions() {
+    return {
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+      maxWait: 5000,
+      timeout: 10000,
+    };
+  }
+
+  private async withSerializableRetry<T>(operation: () => Promise<T>, maxRetries = 3): Promise<T> {
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        return await operation();
+      } catch (error: any) {
+        if (error?.code !== 'P2034' || attempt === maxRetries - 1) throw error;
+        await new Promise((resolve) => setTimeout(resolve, 100 * (attempt + 1)));
+      }
+    }
+
+    throw new Error('No se pudo completar la transacción de la orden');
   }
 }

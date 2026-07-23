@@ -58,6 +58,7 @@ jobs:
           SKIP_DB: '1'
           DATABASE_URL: 'postgresql://dummy:dummy@localhost:5432/dummy'
           JWT_SECRET: 'ci-dummy-jwt-secret-key-32-chars-long'
+          JWT_ACCESS_SECRET: 'ci-dummy-jwt-secret-key-32-chars-long'
         run: npm run openapi:gen:dist
 
       - name: Verify OpenAPI artifact

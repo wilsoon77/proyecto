@@ -6,6 +6,7 @@ dotenv.config();
 process.env.SKIP_DB = '1';
 process.env.DATABASE_URL = process.env.DATABASE_URL || 'postgresql://dummy:dummy@localhost:5432/dummy';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'ci-dummy-jwt-secret-key-32-chars-long';
+process.env.JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET || 'ci-dummy-jwt-secret-key-32-chars-long';
 process.env.SUPABASE_URL = process.env.SUPABASE_URL || 'https://dummy.supabase.co';
 process.env.SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'dummy-key';
 

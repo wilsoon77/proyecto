@@ -2,23 +2,23 @@ name: Scalar OpenAPI
 
 on:
   pull_request:
+    branches: [main, staging]
     paths:
       - "api/src/**"
       - "api/scripts/**"
       - "api/package.json"
-      - "api/pnpm-lock.yaml"
-      - "api/pnpm-workspace.yaml"
+      - "api/package-lock.json"
       - "api/tsconfig.json"
       - ".github/workflows/scalar-openapi.yml"
   push:
     branches:
       - main
+      - staging
     paths:
       - "api/src/**"
       - "api/scripts/**"
       - "api/package.json"
-      - "api/pnpm-lock.yaml"
-      - "api/pnpm-workspace.yaml"
+      - "api/package-lock.json"
       - "api/tsconfig.json"
       - ".github/workflows/scalar-openapi.yml"
   workflow_dispatch:
@@ -46,30 +46,31 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 24
-          cache: pnpm
-          cache-dependency-path: api/pnpm-lock.yaml
+          cache: 'npm'
+          cache-dependency-path: api/package-lock.json
 
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Show Node and pnpm versions
+      - name: Show Node and npm versions
         run: |
           node -v
-          pnpm -v
+          npm -v
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npm ci || npm install
 
       - name: Generate Prisma Client
-        run: pnpm run prisma:generate
+        run: npm run prisma:generate
 
       - name: Generate OpenAPI
         env:
+          SKIP_DB: '1'
+          DATABASE_URL: 'postgresql://dummy:dummy@localhost:5432/dummy'
+          JWT_SECRET: 'ci-dummy-jwt-secret-key-32-chars-long'
+          JWT_ACCESS_SECRET: 'ci-dummy-jwt-secret-key-32-chars-long'
           OPENAPI_SERVER_URL: ${{ vars.OPENAPI_SERVER_URL }}
-        run: pnpm run openapi:gen:dist
+        run: npm run openapi:gen:dist
 
       - name: Validate with Scalar CLI
-        run: pnpm dlx @scalar/cli@latest document validate openapi.json
+        run: npx -y @scalar/cli@latest document validate openapi.json
 
   publish-to-scalar:
     name: Publish to Scalar
@@ -88,30 +89,31 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 24
-          cache: pnpm
-          cache-dependency-path: api/pnpm-lock.yaml
+          cache: 'npm'
+          cache-dependency-path: api/package-lock.json
 
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Show Node and pnpm versions
+      - name: Show Node and npm versions
         run: |
           node -v
-          pnpm -v
+          npm -v
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npm ci || npm install
 
       - name: Generate Prisma Client
-        run: pnpm run prisma:generate
+        run: npm run prisma:generate
 
       - name: Generate OpenAPI
         env:
+          SKIP_DB: '1'
+          DATABASE_URL: 'postgresql://dummy:dummy@localhost:5432/dummy'
+          JWT_SECRET: 'ci-dummy-jwt-secret-key-32-chars-long'
+          JWT_ACCESS_SECRET: 'ci-dummy-jwt-secret-key-32-chars-long'
           OPENAPI_SERVER_URL: ${{ vars.OPENAPI_SERVER_URL }}
-        run: pnpm run openapi:gen:dist
+        run: npm run openapi:gen:dist
 
       - name: Validate with Scalar CLI
-        run: pnpm dlx @scalar/cli@latest document validate openapi.json
+        run: npx -y @scalar/cli@latest document validate openapi.json
 
       - name: Check Scalar config
         env:
@@ -141,8 +143,8 @@ jobs:
           SCALAR_NAMESPACE: ${{ vars.SCALAR_NAMESPACE }}
           SCALAR_VERSION: ${{ env.SCALAR_VERSION }}
         run: |
-          pnpm dlx @scalar/cli@latest auth login --token "$SCALAR_API_KEY"
-          pnpm dlx @scalar/cli@latest registry publish openapi.json \
+          npx -y @scalar/cli@latest auth login --token "$SCALAR_API_KEY"
+          npx -y @scalar/cli@latest registry publish openapi.json \
             --namespace "$SCALAR_NAMESPACE" \
             --slug "panaderia-api" \
             --version "$SCALAR_VERSION"

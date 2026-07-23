@@ -1,12 +1,13 @@
 import 'reflect-metadata';
-import { NestFactory } from '@nestjs/core';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { AppModule } from '../dist/src/app.module.js';
 import { writeFileSync } from 'fs';
 import dotenv from 'dotenv';
 
 dotenv.config();
 process.env.SKIP_DB = '1';
+process.env.DATABASE_URL = process.env.DATABASE_URL || 'postgresql://dummy:dummy@localhost:5432/dummy';
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'ci-dummy-jwt-secret-key-32-chars-long';
+process.env.SUPABASE_URL = process.env.SUPABASE_URL || 'https://dummy.supabase.co';
+process.env.SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'dummy-key';
 
 const openApiServerUrl =
   process.env.OPENAPI_SERVER_URL ||
@@ -15,6 +16,10 @@ const openApiServerUrl =
 const openApiLocalServerUrl = process.env.OPENAPI_LOCAL_SERVER_URL || 'http://localhost:4000';
 
 (async () => {
+  const { NestFactory } = await import('@nestjs/core');
+  const { DocumentBuilder, SwaggerModule } = await import('@nestjs/swagger');
+  const { AppModule } = await import('../dist/src/app.module.js');
+
   const app = await NestFactory.create(AppModule, { logger: false });
   const config = new DocumentBuilder()
     .setTitle('Panaderia Svetlana API')
@@ -37,4 +42,7 @@ const openApiLocalServerUrl = process.env.OPENAPI_LOCAL_SERVER_URL || 'http://lo
   writeFileSync('openapi.json', JSON.stringify(doc, null, 2));
   await app.close();
   console.log('OpenAPI generado en openapi.json (runtime)');
-})().catch(err => { console.error(err); process.exit(1); });
+})().catch(err => {
+  console.error(err);
+  process.exit(1);
+});

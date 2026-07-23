@@ -14,7 +14,7 @@
     "prisma:studio": "prisma studio",
     "seed": "node --loader ts-node/esm prisma/seed.ts",
     "openapi:gen": "node --loader ts-node/esm scripts/generate-openapi.ts",
-    "openapi:gen:dist": "pnpm run build && node scripts/generate-openapi-runtime.js",
+    "openapi:gen:dist": "npm run build && node scripts/generate-openapi-runtime.js",
     "test": "jest -c jest.config.cjs",
     "test:e2e": "jest -c jest.config.cjs"
   },

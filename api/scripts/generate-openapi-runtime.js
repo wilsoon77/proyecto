@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { writeFileSync } from 'fs';
+import { writeFileSync, statSync } from 'fs';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -16,11 +16,15 @@ const openApiServerUrl =
 const openApiLocalServerUrl = process.env.OPENAPI_LOCAL_SERVER_URL || 'http://localhost:4000';
 
 (async () => {
+  console.log('[OPENAPI_GEN] Importando módulos...');
   const { NestFactory } = await import('@nestjs/core');
   const { DocumentBuilder, SwaggerModule } = await import('@nestjs/swagger');
   const { AppModule } = await import('../dist/src/app.module.js');
 
-  const app = await NestFactory.create(AppModule, { logger: false });
+  console.log('[OPENAPI_GEN] Creando aplicación NestJS en modo SKIP_DB...');
+  const app = await NestFactory.create(AppModule, { logger: ['error', 'warn'] });
+  
+  console.log('[OPENAPI_GEN] Generando documento Swagger...');
   const config = new DocumentBuilder()
     .setTitle('Panaderia Svetlana API')
     .setDescription('Especificación OpenAPI para la panadería')
@@ -40,9 +44,20 @@ const openApiLocalServerUrl = process.env.OPENAPI_LOCAL_SERVER_URL || 'http://lo
     { url: openApiLocalServerUrl, description: 'Local' },
   ];
   writeFileSync('openapi.json', JSON.stringify(doc, null, 2));
-  await app.close();
+  
+  const stats = statSync('openapi.json');
+  console.log(`[OPENAPI_GEN] Archivo openapi.json generado exitosamente (${stats.size} bytes).`);
+
+  try {
+    await app.close();
+  } catch (closeErr) {
+    console.warn('[OPENAPI_GEN] Advertencia al cerrar app:', closeErr?.message || closeErr);
+  }
+  
   console.log('OpenAPI generado en openapi.json (runtime)');
+  process.exit(0);
 })().catch(err => {
-  console.error(err);
+  console.error('[OPENAPI_GEN_ERROR] Fallo al generar OpenAPI:');
+  console.error(err?.stack || err?.message || err);
   process.exit(1);
 });

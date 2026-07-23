@@ -1,12 +1,4 @@
-# Dependencias revisadas que necesitan scripts de instalación para que Next.js
-# y la integración opcional de Sentry funcionen en CI y en Vercel.
-allowBuilds:
-  '@sentry/cli': true
-  sharp: true
-  unrs-resolver: true
-
-# Parches transitivos verificados contra el registro. Se acotan a la versión
-# vulnerable para no sustituir las ramas más nuevas que ya usa Next.js.
+# Parches transitivos verificados contra el registro para el frontend.
 overrides:
   brace-expansion@5.0.3: 5.0.7
   fast-uri@3.1.0: 3.1.2

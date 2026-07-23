@@ -1,10 +1,4 @@
-allowBuilds:
-  '@nestjs/core': true
-  '@prisma/client': true
-  '@prisma/engines': true
-  prisma: true
-
-# pnpm 11 lee los overrides de seguridad desde el workspace, no package.json.
+# Parches transitivos verificados para la API
 overrides:
   js-yaml: 4.3.0
   lodash: 4.18.1

@@ -33,7 +33,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: NODE_VERSION
-        value: 24.16.0
+        value: 20.18.0
       - key: PORT
         value: 4000
       - key: DATABASE_URL

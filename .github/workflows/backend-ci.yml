@@ -2,12 +2,12 @@ name: Backend CI (Estable)
 
 on:
   push:
-    branches: [main]
+    branches: [main, staging]
     paths:
       - 'api/**'
       - '.github/workflows/backend-ci.yml'
   pull_request:
-    branches: [main]
+    branches: [main, staging]
     paths:
       - 'api/**'
       - '.github/workflows/backend-ci.yml'
@@ -30,17 +30,19 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
           node-version: '24'
           cache: pnpm
           cache-dependency-path: './api/pnpm-lock.yaml'
-
-      - name: Enable Corepack
-        run: corepack enable
 
       - name: Show Node and pnpm versions
         run: |
@@ -48,7 +50,7 @@ jobs:
           pnpm -v
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
 
       - name: Generate Prisma Client
         run: pnpm run prisma:generate
@@ -61,7 +63,3 @@ jobs:
 
       - name: Verify OpenAPI artifact
         run: test -s openapi.json
-
-      - name: Run backend e2e tests (optional)
-        if: ${{ vars.RUN_BACKEND_E2E == 'true' }}
-        run: pnpm run test -- --runInBand

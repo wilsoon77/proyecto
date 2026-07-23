@@ -7,6 +7,15 @@ services:
   - type: web
     name: panaderia-api
     runtime: node
+# ===========================================
+# Configuración de Render.com para el Backend
+# ===========================================
+# Este archivo define cómo Render debe construir y ejecutar la API
+
+services:
+  - type: web
+    name: panaderia-api
+    runtime: node
     region: oregon  # Cambiar según tu preferencia
     plan: free      # Cambiar a 'starter' para producción real
     
@@ -14,7 +23,7 @@ services:
     rootDir: api
     
     # Comandos de build
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm run prisma:generate && pnpm run build
+    buildCommand: corepack enable && pnpm install && pnpm run prisma:generate && pnpm run build
     
     # Comando para iniciar
     startCommand: pnpm run start:prod

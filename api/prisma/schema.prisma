@@ -597,6 +597,7 @@ model NotificationConfig {
   title       String // Título con placeholders: "Tu pedido cambió"
   message     String // Mensaje con placeholders: "#{orderNumber} → {status}"
   targetRoles Json // ["CUSTOMER"] — array de roles destino
+  channels    Json? // ["IN_APP", "PUSH", "TELEGRAM"] — canales de despacho habilitados
   thresholds  Json? // { "threshold": 50, "unit": "LB" }
   soundType   String   @default("suave") // 'suave', 'alerta', 'importante'
   createdAt   DateTime @default(now())

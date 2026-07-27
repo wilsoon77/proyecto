@@ -212,7 +212,7 @@ export class NotificationsService {
       },
     });
 
-    // 2. Entregar por Web Push y Telegram de forma independiente.
+    // 2. Entregar por canales seleccionados (Web Push y Telegram de forma independiente).
     const payload = JSON.stringify({
       id: notif.id,
       title: formattedTitle,
@@ -222,10 +222,20 @@ export class NotificationsService {
       soundType: config.soundType,
     });
 
-    const results = await Promise.allSettled([
-      this.sendWebPush(payload, userId),
-      this.telegram.sendToUser(userId, formattedTitle, formattedMessage),
-    ]);
+    const rawChannels = (config as any).channels;
+    const activeChannels = Array.isArray(rawChannels)
+      ? (rawChannels as string[])
+      : ['IN_APP', 'PUSH', 'TELEGRAM'];
+
+    const promises: Promise<void>[] = [];
+    if (activeChannels.includes('PUSH')) {
+      promises.push(this.sendWebPush(payload, userId));
+    }
+    if (activeChannels.includes('TELEGRAM')) {
+      promises.push(this.telegram.sendToUser(userId, formattedTitle, formattedMessage));
+    }
+
+    const results = await Promise.allSettled(promises);
 
     for (const result of results) {
       if (result.status === 'rejected') {

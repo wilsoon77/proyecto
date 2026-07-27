@@ -800,11 +800,45 @@ export default function ConfiguracionPage() {
                                             }}
                                             className={`px-2 py-1 rounded-lg text-xs font-semibold border transition-all ${
                                               isChecked
-                                                ? 'bg-amber-55 text-amber-800 border-amber-300'
+                                                ? 'bg-amber-50 text-amber-800 border-amber-300'
                                                 : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
                                             }`}
                                           >
                                             {role}
+                                          </button>
+                                        )
+                                      })}
+                                    </div>
+                                  </div>
+
+                                  {/* Channels Selection */}
+                                  <div>
+                                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">Canales de Despacho</label>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {[
+                                        { id: 'IN_APP', label: 'In-App' },
+                                        { id: 'PUSH', label: 'Web Push' },
+                                        { id: 'TELEGRAM', label: 'Telegram' },
+                                      ].map((ch) => {
+                                        const currentChannels = configForm.channels ?? ['IN_APP', 'PUSH', 'TELEGRAM']
+                                        const isChecked = currentChannels.includes(ch.id)
+                                        return (
+                                          <button
+                                            key={ch.id}
+                                            type="button"
+                                            onClick={() => {
+                                              const newChannels = isChecked
+                                                ? currentChannels.filter(c => c !== ch.id)
+                                                : [...currentChannels, ch.id]
+                                              setConfigForm(prev => ({ ...prev, channels: newChannels }))
+                                            }}
+                                            className={`px-2 py-1 rounded-lg text-xs font-semibold border transition-all ${
+                                              isChecked
+                                                ? 'bg-sky-50 text-sky-800 border-sky-300'
+                                                : 'bg-white border-gray-200 text-gray-400 hover:border-gray-300'
+                                            }`}
+                                          >
+                                            {isChecked ? '✓ ' : ''}{ch.label}
                                           </button>
                                         )
                                       })}

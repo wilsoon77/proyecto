@@ -2,7 +2,7 @@
 
 > **Objetivo:** permitir que las cuentas autorizadas de la panadería consulten el estado del negocio desde Telegram usando lenguaje natural y reciban en Telegram las mismas alertas relevantes que hoy se entregan mediante notificaciones push.
 
-> **Estado:** plan actualizado después de la contrarrevisión del proyecto. Este documento define la arquitectura; todavía no implementa código.
+> **Estado:** arquitectura implementada en el backend y frontend. Quedan como pasos operativos aplicar la migración, configurar secretos y registrar el webhook.
 
 > **Principio central:** el modelo de IA nunca tendrá acceso directo a Prisma, SQL ni a las credenciales de la base de datos. El modelo únicamente podrá solicitar *tools* de lectura, y cada *tool* será validada y ejecutada por el backend con el usuario y las sucursales autorizadas.
 
@@ -69,16 +69,20 @@ TELEGRAM_BOT_USERNAME=          # nombre público usado para construir el deep l
 TELEGRAM_WEBHOOK_URL=           # URL HTTPS pública en producción
 TELEGRAM_WEBHOOK_SECRET=        # secreto del header X-Telegram-Bot-Api-Secret-Token
 ASSISTANT_MODEL=                # configurable por entorno
-ASSISTANT_API_KEY=              # o AI_GATEWAY_API_KEY, según el proveedor elegido
+GROQ_API_KEY=                   # clave privada de Groq para el asistente
 ASSISTANT_MAX_STEPS=4
+ASSISTANT_TIMEOUT_MS=30000
+ASSISTANT_MAX_OUTPUT_TOKENS=700
 ASSISTANT_MAX_MESSAGES_PER_MINUTE=10
 ASSISTANT_MAX_MESSAGES_PER_DAY=100
+TELEGRAM_LINK_MAX_FAILED_ATTEMPTS=5
+TELEGRAM_LINK_BLOCK_MINUTES=15
 ```
 
 - Los secretos nunca se escriben en el repositorio ni en logs.
 - Si no existe `TELEGRAM_BOT_TOKEN`, el módulo debe quedar deshabilitado y la API debe arrancar normalmente con un warning.
 - La validación de variables debe ocurrir cuando el módulo esté habilitado; no se debe romper el resto de la aplicación por una integración opcional apagada.
-- El proveedor y el modelo se elegirán antes de implementar el módulo, manteniendo el ID del modelo configurable.
+- La implementación usa Groq; el ID del modelo se mantiene configurable mediante `ASSISTANT_MODEL`.
 
 ### 1.3 Modelos Prisma propuestos
 
@@ -400,6 +404,6 @@ Reglas:
 
 1. V1 será de solo lectura y sin memoria conversacional.
 2. Producción usará webhook HTTPS; desarrollo podrá usar un modo local separado si el entorno no tiene URL pública.
-3. El proveedor/modelo de IA se elegirá antes de implementar y se mantendrá configurable por entorno.
+3. Groq será el proveedor de IA y `ASSISTANT_MODEL` se mantendrá configurable por entorno.
 4. El cierre de día no reportará montos históricos hasta que el modelo de datos los pueda respaldar correctamente.
 5. Las dos sucursales se resolverán por configuración/política, no mediante IDs hardcodeados en el prompt o en las tools.

@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateRawMaterialDto, UpdateRawMaterialDto, PurchaseRawMaterialDto } from './dto/raw-material.dto.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 
 // Tabla de conversión: unidad de compra → multiplicador a unidad base
 const UNIT_CONVERSION: Record<string, number> = {
@@ -18,7 +19,10 @@ const UNIT_CONVERSION: Record<string, number> = {
 
 @Injectable()
 export class RawMaterialsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   async findAll(activeOnly = true) {
     return this.prisma.rawMaterial.findMany({
@@ -118,6 +122,32 @@ export class RawMaterialsService {
         quantity: baseQuantity,
       },
     });
+
+    const current = await this.prisma.rawMaterialInventory.findUnique({
+      where: {
+        rawMaterialId_branchId: {
+          rawMaterialId: dto.rawMaterialId,
+          branchId: dto.branchId,
+        },
+      },
+    });
+    if (current) {
+      await this.notificationsService.sendLowStockIfNeeded({
+        alertType: 'RAW_MATERIAL_LOW',
+        branchId: dto.branchId,
+        resourceKey: `raw-material:${dto.rawMaterialId}`,
+        configKey: 'inventory.raw_material_low',
+        currentValue: Number(current.quantity),
+        threshold: material.minStock ? Number(material.minStock) : null,
+        placeholders: {
+          materialName: material.name,
+          current: Number(current.quantity).toFixed(1),
+          unit: material.baseUnit,
+          branchName: (await this.prisma.branch.findUnique({ where: { id: dto.branchId }, select: { name: true } }))?.name || 'Sucursal',
+        },
+        url: '/admin/inventario/materias-primas',
+      });
+    }
 
     return {
       rawMaterial: material.name,

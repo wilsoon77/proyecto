@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
@@ -10,6 +9,7 @@ import { QueryProvider } from "@/components/providers/query-provider";
 
 import { NotificationProvider } from "@/context/NotificationContext";
 import CookieConsent from "@/components/ui/CookieConsent";
+import { Analytics } from "@vercel/analytics/react";
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "");
 
@@ -19,16 +19,6 @@ const organizationJsonLd = {
   name: "Panadería Svetlana",
   url: siteUrl,
 };
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -66,9 +56,10 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   icons: {
     icon: [
+      { url: "/images/icon-panaderia.svg", type: "image/svg+xml" },
       { url: "/icon.svg", type: "image/svg+xml" },
     ],
-    apple: "/icon.svg",
+    apple: "/images/icon-panaderia.svg",
   },
 };
 
@@ -85,9 +76,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd).replace(/</g, "\\u003c") }}
         />
       </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className="antialiased">
         <QueryProvider>
           <ToastProvider>
             <SystemConfigProvider>
@@ -104,6 +93,7 @@ export default function RootLayout({
             </SystemConfigProvider>
           </ToastProvider>
         </QueryProvider>
+        <Analytics />
       </body>
     </html>
   );

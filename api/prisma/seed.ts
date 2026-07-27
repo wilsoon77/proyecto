@@ -452,7 +452,7 @@ async function main() {
       isEnabled: true,
       title: 'Nuevo pedido pendiente',
       message: 'Nueva orden entrante #{orderNumber} pendiente de confirmar',
-      targetRoles: ['CASHIER', 'MANAGER'],
+      targetRoles: ['ADMIN', 'CASHIER', 'MANAGER'],
       thresholds: null,
       soundType: 'alerta',
     },
@@ -464,7 +464,7 @@ async function main() {
       isEnabled: true,
       title: 'Pedido cancelado',
       message: 'La orden #{orderNumber} fue cancelada',
-      targetRoles: ['CASHIER', 'MANAGER'],
+      targetRoles: ['ADMIN', 'CASHIER', 'MANAGER'],
       thresholds: null,
       soundType: 'alerta',
     },
@@ -488,7 +488,7 @@ async function main() {
       isEnabled: true,
       title: 'Materia prima baja',
       message: 'Materia prima baja: {materialName} tiene {current} {unit} en {branchName}',
-      targetRoles: ['BAKER', 'MANAGER'],
+      targetRoles: ['ADMIN', 'MANAGER'],
       thresholds: { threshold: 50, unit: 'LB' },
       soundType: 'importante',
     },
@@ -513,6 +513,42 @@ async function main() {
       title: 'Nueva producción asignada',
       message: 'Nueva producción asignada: {recipeName} en {branchName}',
       targetRoles: ['BAKER'],
+      thresholds: null,
+      soundType: 'suave',
+    },
+    {
+      key: 'forecast.risk',
+      name: 'Riesgo de producción previsto',
+      description: 'Notifica cuando la predicción detecta falta de receta o materia prima para la producción recomendada.',
+      category: 'PRODUCTION',
+      isEnabled: true,
+      title: 'Riesgo en producción prevista',
+      message: '{riskCount} recomendación(es) requieren revisar materia prima o receta en {branchName} para {forecastDate}',
+      targetRoles: ['MANAGER', 'ADMIN'],
+      thresholds: null,
+      soundType: 'importante',
+    },
+    {
+      key: 'telegram.linked',
+      name: 'Telegram vinculado',
+      description: 'Confirma que una cuenta fue vinculada a un chat privado de Telegram.',
+      category: 'SYSTEM',
+      isEnabled: true,
+      title: 'Telegram vinculado',
+      message: 'Tu cuenta se vinculó al bot de Telegram {username}',
+      targetRoles: ['ADMIN', 'MANAGER'],
+      thresholds: null,
+      soundType: 'suave',
+    },
+    {
+      key: 'daily_close.completed',
+      name: 'Cierre de día completado',
+      description: 'Resume las unidades vendidas, merma y sobrantes de un cierre.',
+      category: 'SYSTEM',
+      isEnabled: true,
+      title: 'Cierre de día completado',
+      message: 'Cierre de {branchName}: {totalSold} vendidos, {totalWaste} de merma y {totalSurplus} sobrantes',
+      targetRoles: ['ADMIN', 'MANAGER'],
       thresholds: null,
       soundType: 'suave',
     },
@@ -543,6 +579,19 @@ async function main() {
   }
 
   console.log('🔔 Configuraciones de notificación seedeadas');
+
+  const assistantUsers = await prisma.user.findMany({
+    where: { role: { in: ['ADMIN', 'MANAGER'] }, isActive: true },
+    select: { id: true },
+  });
+  for (const user of assistantUsers) {
+    await prisma.assistantAccess.upsert({
+      where: { userId: user.id },
+      update: {},
+      create: { userId: user.id, enabled: true, scope: 'ALL_BRANCHES' },
+    });
+  }
+  console.log('🤖 Accesos del asistente seedeados');
 }
 
 main().catch(e => {

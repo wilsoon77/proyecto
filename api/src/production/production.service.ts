@@ -170,16 +170,21 @@ export class ProductionService {
 
       if (currentInv) {
         const currentQty = Number(currentInv.quantity);
-        const isLow = await this.notificationsService.checkThreshold('inventory.raw_material_low', currentQty);
-        
-        if (isLow) {
-          await this.notificationsService.sendByConfig('inventory.raw_material_low', {
+        await this.notificationsService.sendLowStockIfNeeded({
+          alertType: 'RAW_MATERIAL_LOW',
+          branchId,
+          resourceKey: `raw-material:${currentInv.rawMaterial.id}`,
+          configKey: 'inventory.raw_material_low',
+          currentValue: currentQty,
+          threshold: currentInv.rawMaterial.minStock ? Number(currentInv.rawMaterial.minStock) : null,
+          placeholders: {
             materialName: currentInv.rawMaterial.name,
             current: currentQty.toFixed(1),
             unit: currentInv.rawMaterial.baseUnit,
             branchName,
-          }, `/admin/inventario/materias-primas`);
-        }
+          },
+          url: `/admin/inventario/materias-primas`,
+        });
       }
     }
 
@@ -187,6 +192,7 @@ export class ProductionService {
     await this.notificationsService.sendByConfig('production.assigned', {
       recipeName: recipe.name,
       branchName,
+      branchId,
     }, `/admin/produccion`);
 
     return {

@@ -24,8 +24,19 @@ export { auditService } from './audit'
 export type { AuditLog, AuditListFilters, AuditListResponse, AuditStats, AuditFilterOptions } from './audit'
 export { systemConfigService } from './system-config'
 export { notificationsService } from './notifications'
+export { telegramService } from './telegram'
 export type { SystemConfig, Notification, NotificationConfig, SubscribePushDto } from './types'
 export { dailyCloseService } from './daily-close'
+export { analyticsService, forecastService } from './analytics'
+export type {
+  AnalyticsFilters,
+  AnalyticsOverview,
+  AnalyticsSeriesPoint,
+  DrilldownResponse,
+  DrilldownRow,
+  ForecastItem,
+  ForecastRun,
+} from './analytics'
 export type {
   DailyClosePreview,
   DailyClosePreviewItem,

@@ -26,6 +26,9 @@ import { SystemConfigModule } from './system-config/system-config.module.js';
 import { NotificationsModule } from './notifications/notifications.module.js';
 import { BranchScopeModule } from './branch-scope/branch-scope.module.js';
 import { DailyCloseModule } from './daily-close/daily-close.module.js';
+import { AnalyticsModule } from './analytics/analytics.module.js';
+import { ForecastModule } from './forecast/forecast.module.js';
+import { TelegramModule } from './telegram/telegram.module.js';
 
 @Module({
   imports: [
@@ -42,8 +45,11 @@ import { DailyCloseModule } from './daily-close/daily-close.module.js';
     AuditModule, // Debe estar primero para que esté disponible globalmente
     BranchScopeModule,
     DailyCloseModule,
+    AnalyticsModule,
+    ForecastModule,
     SystemConfigModule,
     NotificationsModule,
+    TelegramModule,
 
     ProductsModule, 
     InventoryModule, 

@@ -3,10 +3,12 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { Prisma, StockMovementType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateDailyCloseDto } from './dto/create-daily-close.dto.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 
 const BUSINESS_TIMEZONE = process.env.STORE_TIMEZONE || 'America/Guatemala';
 const DEFAULT_MAX_RETRO_DAYS = 3;
@@ -90,7 +92,10 @@ function summarize(items: Array<{ soldQty: number; wasteQty: number; surplusQty:
 
 @Injectable()
 export class DailyCloseService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly notificationsService?: NotificationsService,
+  ) {}
 
   async preview(branchId: number, closeDate?: string) {
     const dateKey = closeDate || businessDateKey();
@@ -335,9 +340,19 @@ export class DailyCloseService {
         }),
       );
 
+      const summary = summarize(created.items);
+      if (this.notificationsService) {
+        const branch = await this.prisma.branch.findUnique({ where: { id: branchId }, select: { name: true } });
+        await this.notificationsService.sendByConfig('daily_close.completed', {
+          branchId,
+          branchName: branch?.name || `Sucursal ${branchId}`,
+          ...summary,
+        }, '/admin/cierre-dia');
+      }
+
       return {
         ...created,
-        summary: summarize(created.items),
+        summary,
         items: created.items,
       };
     } catch (error: any) {

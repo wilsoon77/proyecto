@@ -25,6 +25,10 @@ enum UserRole {
   CASHIER
 }
 
+enum AssistantScope {
+  ALL_BRANCHES
+}
+
 enum OrderStatus {
   PENDING
   CONFIRMED
@@ -79,29 +83,32 @@ enum StockMovementType {
 // ─────────────────────────────────────────────
 
 model User {
-  id                String             @id @default(cuid())
-  email             String             @unique
-  passwordHash      String
-  firstName         String
-  lastName          String
-  phone             String?            @db.VarChar(32)
-  role              UserRole           @default(CUSTOMER)
-  isActive          Boolean            @default(true)
+  id                 String              @id @default(cuid())
+  email              String              @unique
+  passwordHash       String
+  firstName          String
+  lastName           String
+  phone              String?             @db.VarChar(32)
+  role               UserRole            @default(CUSTOMER)
+  isActive           Boolean             @default(true)
   // Sucursal asignada (MANAGER, BAKER, CASHIER)
-  branch            Branch?            @relation(fields: [branchId], references: [id])
-  branchId          Int?
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
-  addresses         Address[]
-  orders            Order[]
-  stockMovements    StockMovement[]
-  productionLogs    ProductionLog[]
-  dailyCloses       DailyClose[]
-  refreshTokens     RefreshToken[]
-  trustedDevices    TrustedDevice[]
-  auditLogs         AuditLog[]
-  notifications     Notification[]
-  pushSubscriptions PushSubscription[]
+  branch             Branch?             @relation(fields: [branchId], references: [id])
+  branchId           Int?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  addresses          Address[]
+  orders             Order[]
+  stockMovements     StockMovement[]
+  productionLogs     ProductionLog[]
+  dailyCloses        DailyClose[]
+  refreshTokens      RefreshToken[]
+  trustedDevices     TrustedDevice[]
+  auditLogs          AuditLog[]
+  notifications      Notification[]
+  pushSubscriptions  PushSubscription[]
+  assistantAccess    AssistantAccess?
+  telegramLink       TelegramLink?
+  telegramLinkTokens TelegramLinkToken[]
 }
 
 model Address {
@@ -198,6 +205,8 @@ model Product {
   orderItems      OrderItem[]
   stockMovements  StockMovement[]
   dailyCloseItems DailyCloseItem[]
+  demandDaily     DemandDaily[]
+  forecastItems   ForecastItem[]
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 
@@ -383,6 +392,9 @@ model Branch {
   orders                 Order[]
   employees              User[]
   dailyCloses            DailyClose[]
+  demandDaily            DemandDaily[]
+  forecastRuns           ForecastRun[]
+  alertStates            AlertState[]
 }
 
 // Documento auditable del inventario físico y las ventas no registradas de una jornada.
@@ -423,6 +435,68 @@ model DailyCloseItem {
 }
 
 // ─────────────────────────────────────────────
+model DemandDaily {
+  id              Int      @id @default(autoincrement())
+  branch          Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  branchId        Int
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId       Int
+  businessDate    DateTime @db.Date
+  orderQty        Int      @default(0)
+  dailyCloseQty   Int      @default(0)
+  totalDemandQty  Int      @default(0)
+  productionQty   Int      @default(0)
+  wasteQty        Int      @default(0)
+  stockout        Boolean  @default(false)
+  dataQuality     String   @default("NO_DATA")
+  sourceBreakdown Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([branchId, productId, businessDate])
+  @@index([branchId, businessDate])
+  @@index([productId, businessDate])
+  @@index([businessDate])
+}
+
+model ForecastRun {
+  id           Int            @id @default(autoincrement())
+  branch       Branch         @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  branchId     Int
+  generatedAt  DateTime       @default(now())
+  periodStart  DateTime       @db.Date
+  periodEnd    DateTime       @db.Date
+  horizonDays  Int
+  modelVersion String
+  status       String         @default("RUNNING")
+  errorMessage String?
+  parameters   Json?
+  items        ForecastItem[]
+
+  @@index([branchId, generatedAt])
+  @@index([branchId, status, generatedAt])
+}
+
+model ForecastItem {
+  id                       Int         @id @default(autoincrement())
+  forecastRun              ForecastRun @relation(fields: [forecastRunId], references: [id], onDelete: Cascade)
+  forecastRunId            Int
+  product                  Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId                Int
+  forecastDate             DateTime    @db.Date
+  predictedQty             Float
+  lowerBound               Float
+  upperBound               Float
+  confidence               Float
+  recommendedProductionQty Int         @default(0)
+  recommendedTrays         Int?
+  rawMaterialRisk          Json?
+
+  @@unique([forecastRunId, productId, forecastDate])
+  @@index([productId, forecastDate])
+  @@index([forecastRunId, forecastDate])
+}
+
 // PEDIDOS Y VENTAS
 // ─────────────────────────────────────────────
 
@@ -564,4 +638,75 @@ model PushSubscription {
   createdAt DateTime @default(now())
 
   @@index([userId])
+}
+
+model AssistantAccess {
+  id        String         @id @default(cuid())
+  userId    String         @unique
+  enabled   Boolean        @default(true)
+  scope     AssistantScope @default(ALL_BRANCHES)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model TelegramLink {
+  id         String    @id @default(cuid())
+  userId     String    @unique
+  chatId     String    @unique
+  username   String?
+  active     Boolean   @default(true)
+  linkedAt   DateTime  @default(now())
+  unlinkedAt DateTime?
+  lastSeenAt DateTime?
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model TelegramLinkToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  userId    String
+  expiresAt DateTime
+  usedAt    DateTime?
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}
+
+model TelegramUpdate {
+  updateId    BigInt    @id
+  receivedAt  DateTime  @default(now())
+  processedAt DateTime?
+}
+
+model TelegramLinkAttempt {
+  id          String   @id @default(cuid())
+  chatId      String
+  attemptedAt DateTime @default(now())
+  reason      String?
+
+  @@index([chatId, attemptedAt])
+}
+
+enum AlertType {
+  RAW_MATERIAL_LOW
+  PRODUCT_LOW
+}
+
+model AlertState {
+  id               String    @id @default(cuid())
+  branchId         Int
+  alertType        AlertType
+  resourceKey      String
+  active           Boolean   @default(false)
+  firstTriggeredAt DateTime  @default(now())
+  lastNotifiedAt   DateTime  @default(now())
+  resolvedAt       DateTime?
+  updatedAt        DateTime  @updatedAt
+  branch           Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([branchId, alertType, resourceKey])
+  @@index([branchId, active])
 }

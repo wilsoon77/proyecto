@@ -2,10 +2,15 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service.js';
 import { SubscribePushDto } from './dto/subscribe-push.dto.js';
 import webpush from 'web-push';
+import { TelegramDeliveryService } from '../telegram/telegram-delivery.service.js';
+import { AlertType } from '@prisma/client';
 
 @Injectable()
 export class NotificationsService {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly telegram: TelegramDeliveryService,
+  ) {
     // Configure VAPID details
     const subject = process.env.VAPID_SUBJECT || 'mailto:soporte@panaderiasvetlana.com';
     const publicKey = process.env.VAPID_PUBLIC_KEY || '';
@@ -207,13 +212,7 @@ export class NotificationsService {
       },
     });
 
-    // 2. Enviar push a todos sus dispositivos
-    const subs = await this.prisma.pushSubscription.findMany({
-      where: { userId },
-    });
-
-    if (subs.length === 0) return;
-
+    // 2. Entregar por Web Push y Telegram de forma independiente.
     const payload = JSON.stringify({
       id: notif.id,
       title: formattedTitle,
@@ -223,29 +222,40 @@ export class NotificationsService {
       soundType: config.soundType,
     });
 
-    const sendPromises = subs.map(async (sub) => {
+    const results = await Promise.allSettled([
+      this.sendWebPush(payload, userId),
+      this.telegram.sendToUser(userId, formattedTitle, formattedMessage),
+    ]);
+
+    for (const result of results) {
+      if (result.status === 'rejected') {
+        console.error('[NOTIFICATIONS] Un canal de entrega falló:', result.reason);
+      }
+    }
+  }
+
+  private async sendWebPush(payload: string, userId: string): Promise<void> {
+    const subs = await this.prisma.pushSubscription.findMany({
+      where: { userId },
+    });
+
+    await Promise.all(subs.map(async (sub) => {
       try {
         console.log(`[PUSH] Intentando enviar notificación a dispositivo (ID: ${sub.id}) del usuario ${userId}`);
         await webpush.sendNotification({
           endpoint: sub.endpoint,
-          keys: {
-            p256dh: sub.p256dh,
-            auth: sub.auth,
-          }
+          keys: { p256dh: sub.p256dh, auth: sub.auth },
         }, payload);
         console.log(`[PUSH] ✅ Éxito al enviar a dispositivo (ID: ${sub.id})`);
       } catch (error: any) {
         if (error.statusCode === 410 || error.statusCode === 404) {
-          // Suscripción inválida o expirada, eliminarla de la BD
           console.warn(`[PUSH] ⚠️ Suscripción expirada o inválida (ID: ${sub.id}). Eliminando de la base de datos.`);
           await this.prisma.pushSubscription.delete({ where: { id: sub.id } }).catch(() => {});
         } else {
           console.error(`[PUSH] ❌ Error al despachar notificación push (ID: ${sub.id}):`, error.statusCode, error.body || error.message);
         }
       }
-    });
-
-    await Promise.all(sendPromises);
+    }));
   }
 
   /**
@@ -258,8 +268,22 @@ export class NotificationsService {
     url?: string,
     icon?: string
   ): Promise<void> {
+    const requestedBranchId = Number(placeholders.branchId);
+    const where: any = {
+      role: { in: roles as any },
+      isActive: true,
+    };
+
+    if (Number.isInteger(requestedBranchId) && requestedBranchId > 0) {
+      where.OR = [
+        { role: 'ADMIN' },
+        { role: 'MANAGER', assistantAccess: { is: { enabled: true, scope: 'ALL_BRANCHES' } } },
+        { branchId: requestedBranchId },
+      ];
+    }
+
     const users = await this.prisma.user.findMany({
-      where: { role: { in: roles as any }, isActive: true },
+      where,
       select: { id: true },
     });
 
@@ -310,7 +334,72 @@ export class NotificationsService {
     
     if (isNaN(threshold)) return false;
 
-    return currentValue < threshold;
+    return currentValue <= threshold;
+  }
+
+  /**
+   * Notifica únicamente cuando un recurso cruza a estado bajo. El mismo
+   * recurso vuelve a notificar después de resolverse y cruzar nuevamente.
+   */
+  async sendLowStockIfNeeded(options: {
+    alertType: 'RAW_MATERIAL_LOW' | 'PRODUCT_LOW';
+    branchId: number;
+    resourceKey: string;
+    configKey: string;
+    currentValue: number;
+    threshold?: number | null;
+    placeholders: Record<string, any>;
+    url?: string;
+    icon?: string;
+  }): Promise<boolean> {
+    const config = await this.prisma.notificationConfig.findUnique({ where: { key: options.configKey } });
+    if (!config || !config.isEnabled) return false;
+
+    const configuredThreshold = Number((config.thresholds as Record<string, any> | null)?.threshold);
+    const threshold = options.threshold ?? configuredThreshold;
+    if (!Number.isFinite(threshold)) return false;
+
+    const where = {
+      branchId_alertType_resourceKey: {
+        branchId: options.branchId,
+        alertType: options.alertType as AlertType,
+        resourceKey: options.resourceKey,
+      },
+    };
+
+    if (options.currentValue > threshold) {
+      await this.prisma.alertState.upsert({
+        where,
+        update: { active: false, resolvedAt: new Date() },
+        create: {
+          branchId: options.branchId,
+          alertType: options.alertType as AlertType,
+          resourceKey: options.resourceKey,
+          active: false,
+          resolvedAt: new Date(),
+        },
+      });
+      return false;
+    }
+
+    const state = await this.prisma.alertState.findUnique({ where });
+    if (state?.active) return false;
+
+    await this.prisma.alertState.upsert({
+      where,
+      update: { active: true, firstTriggeredAt: state?.firstTriggeredAt || new Date(), lastNotifiedAt: new Date(), resolvedAt: null },
+      create: {
+        branchId: options.branchId,
+        alertType: options.alertType as AlertType,
+        resourceKey: options.resourceKey,
+        active: true,
+        firstTriggeredAt: new Date(),
+        lastNotifiedAt: new Date(),
+      },
+    });
+
+    await this.sendByConfig(options.configKey, { ...options.placeholders, branchId: options.branchId }, options.url, options.icon);
+    return true;
   }
 
   /**

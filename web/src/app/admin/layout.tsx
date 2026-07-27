@@ -186,11 +186,11 @@ export default function AdminLayout({
           {!sidebarCollapsed && (
             <Link href="/admin" className="flex items-center">
               <Image 
-                src="/images/logo-pan.jpeg" 
+                src="/images/logo-panaderia.png" 
                 alt="Panaderia Svetlana" 
                 width={40} 
                 height={40}
-                className="rounded-md"
+                className="rounded-md object-contain"
               />
             </Link>
           )}

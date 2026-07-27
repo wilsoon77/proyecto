@@ -53,6 +53,7 @@ interface NavItem {
 
 const adminNavItems: NavItem[] = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true, roles: ["ADMIN", "MANAGER", "BAKER", "CASHIER"] },
+  { href: "/admin/reportes", label: "Reportes y Analítica", icon: BarChart3, roles: ["ADMIN", "MANAGER"] },
   { href: "/admin/pos", label: "Caja (POS)", icon: Store, roles: ["ADMIN", "MANAGER", "CASHIER"] },
   { href: "/admin/productos", label: "Productos", icon: Package, roles: ["ADMIN", "MANAGER"] },
   { href: "/admin/categorias", label: "Categorías", icon: Tag, roles: ["ADMIN"] },

@@ -38,11 +38,11 @@ export function Footer() {
           <div>
             <div className="flex items-center">
               <Image 
-                src="/images/logo.svg" 
+                src="/images/logo-panaderia.png" 
                 alt="Panaderia Svetlana" 
-                width={64} 
-                height={64}
-                className="rounded-lg"
+                width={120} 
+                height={48}
+                className="h-12 w-auto object-contain rounded-lg"
               />
             </div>
             <p className="mt-4 text-sm text-gray-600">

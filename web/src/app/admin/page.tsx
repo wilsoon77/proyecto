@@ -39,6 +39,8 @@ import {
 import { api, branchesService } from "@/lib/api"
 import { useAuth } from "@/context/AuthContext"
 import { formatCurrency, formatDateChart } from "@/lib/utils"
+import AnalyticsPreview from "@/components/admin/AnalyticsPreview"
+import TelegramAssistantButton from "@/components/admin/TelegramAssistantButton"
 
 // Interfaces actualizadas según nuevo backend
 interface DashboardResponse {
@@ -254,6 +256,7 @@ export default function AdminDashboardPage() {
           
           {/* Selector de Vista (Admin) o Badge fijo (Empleado) + Botón actualizar */}
           <div className="flex items-center gap-3">
+            {(user?.role === "ADMIN" || user?.role === "MANAGER") && <TelegramAssistantButton />}
             <button
               onClick={refreshStats}
               disabled={isLoading}
@@ -398,6 +401,8 @@ export default function AdminDashboardPage() {
           </div>
         </div>
       </div>
+
+      <AnalyticsPreview />
 
       {/* Gráficas principales */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">

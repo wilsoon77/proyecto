@@ -111,6 +111,7 @@ export class StockMovementsService {
         quantity: dto.quantity,
         type: typeLabel,
         branchName: fromBranch?.name || 'Sucursal',
+        branchId: fromBranch?.id,
       }, `/admin/inventario/movimiento`);
 
       // Verificar si bajó el stock físico
@@ -119,14 +120,19 @@ export class StockMovementsService {
           where: { productId_branchId: { productId: product.id, branchId: fromBranch.id } },
         });
         if (currentInv) {
-          const isLow = await this.notificationsService.checkThreshold('inventory.low_stock', currentInv.quantity);
-          if (isLow) {
-            await this.notificationsService.sendByConfig('inventory.low_stock', {
+          await this.notificationsService.sendLowStockIfNeeded({
+            alertType: 'PRODUCT_LOW',
+            branchId: fromBranch.id,
+            resourceKey: `product:${product.id}`,
+            configKey: 'inventory.low_stock',
+            currentValue: currentInv.quantity,
+            placeholders: {
               productName: product.name,
               current: currentInv.quantity,
               branchName: fromBranch.name,
-            }, `/admin/inventario`);
-          }
+            },
+            url: `/admin/inventario`,
+          });
         }
       }
     }
@@ -137,14 +143,19 @@ export class StockMovementsService {
         where: { productId_branchId: { productId: product.id, branchId: fromBranch.id } },
       });
       if (currentInv) {
-        const isLow = await this.notificationsService.checkThreshold('inventory.low_stock', currentInv.quantity);
-        if (isLow) {
-          await this.notificationsService.sendByConfig('inventory.low_stock', {
+        await this.notificationsService.sendLowStockIfNeeded({
+          alertType: 'PRODUCT_LOW',
+          branchId: fromBranch.id,
+          resourceKey: `product:${product.id}`,
+          configKey: 'inventory.low_stock',
+          currentValue: currentInv.quantity,
+          placeholders: {
             productName: product.name,
             current: currentInv.quantity,
             branchName: fromBranch.name,
-          }, `/admin/inventario`);
-        }
+          },
+          url: `/admin/inventario`,
+        });
       }
     }
 

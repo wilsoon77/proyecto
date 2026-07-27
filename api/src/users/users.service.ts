@@ -134,6 +134,14 @@ export class UsersService {
       },
     });
 
+    if (user.role === 'ADMIN' || user.role === 'MANAGER') {
+      await this.prisma.assistantAccess.upsert({
+        where: { userId: user.id },
+        update: {},
+        create: { userId: user.id, enabled: true, scope: 'ALL_BRANCHES' },
+      });
+    }
+
     return user;
   }
 
@@ -214,6 +222,19 @@ export class UsersService {
         updatedAt: true,
       },
     });
+
+    if (user.role === 'ADMIN' || user.role === 'MANAGER') {
+      await this.prisma.assistantAccess.upsert({
+        where: { userId: user.id },
+        update: {},
+        create: { userId: user.id, enabled: true, scope: 'ALL_BRANCHES' },
+      });
+    } else if (existingUser.role === 'ADMIN' || existingUser.role === 'MANAGER') {
+      await this.prisma.assistantAccess.updateMany({
+        where: { userId: user.id },
+        data: { enabled: false },
+      });
+    }
 
     return user;
   }

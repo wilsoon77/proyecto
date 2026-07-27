@@ -141,6 +141,7 @@ export class OrdersService {
     // Enviar notificación de nuevo pedido pendiente
     await this.notificationsService.sendByConfig('order.new_pending', {
       orderNumber: order.orderNumber,
+      branchId: order.branchId,
     }, `/admin/ordenes/${order.id}`);
 
     return order;
@@ -306,6 +307,7 @@ export class OrdersService {
     await this.notifyStatusChange(order);
     await this.notificationsService.sendByConfig('order.cancelled', {
       orderNumber: order.orderNumber,
+      branchId: order.branchId,
     }, `/admin/ordenes/${order.id}`);
 
     return normalizeOrder(order);
@@ -486,14 +488,19 @@ export class OrdersService {
       });
       if (!inventory) continue;
 
-      const isLow = await this.notificationsService.checkThreshold('inventory.low_stock', inventory.quantity);
-      if (isLow) {
-        await this.notificationsService.sendByConfig('inventory.low_stock', {
+      await this.notificationsService.sendLowStockIfNeeded({
+        alertType: 'PRODUCT_LOW',
+        branchId: order.branchId,
+        resourceKey: `product:${item.productId}`,
+        configKey: 'inventory.low_stock',
+        currentValue: inventory.quantity,
+        placeholders: {
           productName: item.productName,
           current: inventory.quantity,
           branchName: order.branch?.name || 'Sucursal',
-        }, '/admin/inventario');
-      }
+        },
+        url: '/admin/inventario',
+      });
     }
   }
 

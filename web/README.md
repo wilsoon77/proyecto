@@ -18,9 +18,8 @@ Frontend del sistema ERP/POS para panaderías, construido con Next.js 16 (App Ro
 
 ```powershell
 cd web
-corepack enable
-pnpm install --frozen-lockfile
-pnpm run dev
+npm ci
+npm run dev
 ```
 Abre http://localhost:3000
 
@@ -132,10 +131,10 @@ web/src/
 
 | Comando | Descripción |
 |---------|-------------|
-| `pnpm run dev` | Servidor de desarrollo (localhost:3000) |
-| `pnpm run build` | Build de producción |
-| `pnpm run start` | Ejecutar build de producción |
-| `pnpm run lint` | Ejecutar ESLint |
+| `npm run dev` | Servidor de desarrollo (localhost:3000) |
+| `npm run build` | Build de producción |
+| `npm run start` | Ejecutar build de producción |
+| `npm run lint` | Ejecutar ESLint |
 
 ## Roles y Navegación
 

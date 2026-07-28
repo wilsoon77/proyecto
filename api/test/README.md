@@ -45,12 +45,12 @@ Suite completa de tests de seguridad para el sistema de autenticación:
 ### Prerrequisitos
 ```bash
 cd api
-pnpm install --frozen-lockfile
+npm ci
 ```
 
 ### Ejecutar todos los tests
 ```bash
-pnpm run test:e2e
+npm run test:e2e
 ```
 
 ### Ejecutar tests específicos
@@ -168,8 +168,8 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: '18'
-      - run: cd api && pnpm install --frozen-lockfile
-      - run: cd api && pnpm run test:e2e
+      - run: cd api && npm ci
+      - run: cd api && npm run test:e2e
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}

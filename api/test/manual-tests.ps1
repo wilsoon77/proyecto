@@ -136,5 +136,5 @@ Write-Host "  PRUEBAS COMPLETADAS                   " -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Para pruebas automatizadas completas, ejecuta:" -ForegroundColor Yellow
-Write-Host "  pnpm run test:e2e" -ForegroundColor White
+Write-Host "  npm run test:e2e" -ForegroundColor White
 Write-Host ""

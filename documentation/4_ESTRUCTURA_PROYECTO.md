@@ -1,6 +1,6 @@
 # 📁 ESTRUCTURA DEL PROYECTO - Panaderia Svetlana Smart System
 
-> **Nota de vigencia (2026-07-17):** este documento describe una arquitectura objetivo no implementada. El repositorio actual usa `api/`, `web/` y `documentation/`, sin `apps/`, `packages/`, móvil ni servicio IA. La instalación actual se realiza con pnpm por aplicación; consultar `README.md` y `GUIA_DESPLIEGUE.md` para los comandos vigentes.
+> **Nota de vigencia (2026-07-27):** este documento describe una arquitectura objetivo no implementada. El repositorio actual usa `api/`, `web/` y `documentation/`, sin `apps/`, `packages/`, móvil ni servicio IA. La instalación actual se realiza con npm por aplicación y `package-lock.json`; consultar `README.md` y `GUIA_DESPLIEGUE.md` para los comandos vigentes.
 
 ## 🗂️ ARQUITECTURA GENERAL
 
@@ -655,7 +655,7 @@ proyecto-panaderia/
 ├── .prettierrc
 ├── .eslintrc.json
 ├── turbo.json                        # Si usas Turborepo
-├── pnpm-workspace.yaml               # Si usas pnpm
+├── package-lock.json                 # Lockfile de la aplicación raíz objetivo
 ├── package.json
 ├── README.md
 └── LICENSE

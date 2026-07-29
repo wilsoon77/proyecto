@@ -1,21 +1,21 @@
 import Link from "next/link"
 import Image from "next/image"
-import { Notebook as Facebook, Drama as Instagram, Battery as Twitter, Mail, Phone, MapPin, Apple, Play } from "lucide-react"
+import { Facebook, Instagram, Twitter, Mail, Phone, MapPin } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ROUTES } from "@/lib/constants"
 
 export function Footer() {
   return (
-    <footer className="border-t border-border bg-cream">
+    <footer className="border-t bg-gray-50">
       {/* Newsletter Section */}
-      <div className="border-b border-border bg-card">
+      <div className="border-b bg-white">
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <div className="grid gap-8 md:grid-cols-2 md:items-center">
             <div>
-              <h3 className="font-display text-2xl font-bold text-foreground">
+              <h3 className="text-2xl font-bold text-gray-900">
                 Suscríbete a nuestro Newsletter
               </h3>
-              <p className="mt-2 text-muted-foreground">
+              <p className="mt-2 text-gray-600">
                 Recibe promociones exclusivas y novedades directamente en tu correo.
               </p>
             </div>
@@ -23,9 +23,9 @@ export function Footer() {
               <input
                 type="email"
                 placeholder="tu@email.com"
-                className="h-11 flex-1 rounded-lg border border-input bg-background px-4 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
+                className="h-11 flex-1 rounded-md border border-gray-300 px-4 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
-              <Button size="lg" className="shadow-warm">Suscribirme</Button>
+              <Button size="lg">Suscribirme</Button>
             </div>
           </div>
         </div>
@@ -45,7 +45,7 @@ export function Footer() {
                 className="h-12 w-auto object-contain rounded-lg"
               />
             </div>
-            <p className="mt-4 text-sm text-muted-foreground">
+            <p className="mt-4 text-sm text-gray-600">
               Sistema inteligente de gestión para panaderías en Guatemala. 
               Pan fresco, calidad garantizada.
             </p>
@@ -56,7 +56,7 @@ export function Footer() {
                 href="https://facebook.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex h-11 w-11 items-center justify-center rounded-full bg-accent text-muted-foreground transition-all hover:scale-110 hover:bg-primary hover:text-primary-foreground"
+                className="flex h-11 w-11 items-center justify-center rounded-full bg-gray-200 text-gray-600 transition-colors hover:bg-primary hover:text-white"
               >
                 <Facebook className="h-5 w-5" />
               </a>
@@ -64,7 +64,7 @@ export function Footer() {
                 href="https://instagram.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex h-11 w-11 items-center justify-center rounded-full bg-accent text-muted-foreground transition-all hover:scale-110 hover:bg-primary hover:text-primary-foreground"
+                className="flex h-11 w-11 items-center justify-center rounded-full bg-gray-200 text-gray-600 transition-colors hover:bg-primary hover:text-white"
               >
                 <Instagram className="h-5 w-5" />
               </a>
@@ -72,53 +72,48 @@ export function Footer() {
                 href="https://twitter.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex h-11 w-11 items-center justify-center rounded-full bg-accent text-muted-foreground transition-all hover:scale-110 hover:bg-primary hover:text-primary-foreground"
+                className="flex h-11 w-11 items-center justify-center rounded-full bg-gray-200 text-gray-600 transition-colors hover:bg-primary hover:text-white"
               >
                 <Twitter className="h-5 w-5" />
-              </a>
-            </div>
-
-            {/* App badges */}
-            <div className="mt-6 flex flex-wrap gap-2">
-              <a href="#" className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium text-foreground/70 transition-colors hover:border-primary hover:text-primary">
-                <Apple className="h-4 w-4" />
-                <span>App Store</span>
-              </a>
-              <a href="#" className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium text-foreground/70 transition-colors hover:border-primary hover:text-primary">
-                <Play className="h-4 w-4" />
-                <span>Google Play</span>
               </a>
             </div>
           </div>
 
           {/* Quick Links */}
           <div>
-            <h4 className="mb-4 font-display text-sm font-semibold uppercase tracking-wider text-foreground">
+            <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-900">
               Enlaces Rápidos
             </h4>
             <ul className="space-y-3 text-sm">
               <li>
-                <Link href={ROUTES.products} className="text-muted-foreground transition-colors hover:text-primary">
+                <Link
+                  href={ROUTES.products}
+                  className="text-gray-600 transition-colors hover:text-primary"
+                >
                   Productos
                 </Link>
               </li>
               <li>
-                <Link href="/promociones" className="text-muted-foreground transition-colors hover:text-primary">
-                  Promociones
-                </Link>
-              </li>
-              <li>
-                <Link href="/sobre-nosotros" className="text-muted-foreground transition-colors hover:text-primary">
+                <Link
+                  href="/sobre-nosotros"
+                  className="text-gray-600 transition-colors hover:text-primary"
+                >
                   Sobre Nosotros
                 </Link>
               </li>
               <li>
-                <Link href={ROUTES.contact} className="text-muted-foreground transition-colors hover:text-primary">
+                <Link
+                  href={ROUTES.contact}
+                  className="text-gray-600 transition-colors hover:text-primary"
+                >
                   Contacto
                 </Link>
               </li>
               <li>
-                <Link href={ROUTES.branches} className="text-muted-foreground transition-colors hover:text-primary">
+                <Link
+                  href={ROUTES.branches}
+                  className="text-gray-600 transition-colors hover:text-primary"
+                >
                   Nuestras Sucursales
                 </Link>
               </li>
@@ -127,22 +122,31 @@ export function Footer() {
 
           {/* Customer Service */}
           <div>
-            <h4 className="mb-4 font-display text-sm font-semibold uppercase tracking-wider text-foreground">
+            <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-900">
               Atención al Cliente
             </h4>
             <ul className="space-y-3 text-sm">
               <li>
-                <Link href="/sucursales" className="text-muted-foreground transition-colors hover:text-primary">
+                <Link
+                  href="/sucursales"
+                  className="text-gray-600 transition-colors hover:text-primary"
+                >
                   Sucursales y Retiro
                 </Link>
               </li>
               <li>
-                <Link href={ROUTES.orders} className="text-muted-foreground transition-colors hover:text-primary">
+                <Link
+                  href={ROUTES.orders}
+                  className="text-gray-600 transition-colors hover:text-primary"
+                >
                   Rastrear Pedido
                 </Link>
               </li>
               <li>
-                <Link href={ROUTES.contact} className="text-muted-foreground transition-colors hover:text-primary">
+                <Link
+                  href={ROUTES.contact}
+                  className="text-gray-600 transition-colors hover:text-primary"
+                >
                   Contacto
                 </Link>
               </li>
@@ -151,27 +155,25 @@ export function Footer() {
 
           {/* Contact Info */}
           <div>
-            <h4 className="mb-4 font-display text-sm font-semibold uppercase tracking-wider text-foreground">
+            <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-900">
               Contacto
             </h4>
-            <ul className="space-y-3 text-sm text-muted-foreground">
+            <ul className="space-y-3 text-sm text-gray-600">
               <li className="flex items-start gap-2">
                 <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
                 <span>
-                  Zona 10, Guatemala City
-                  <br />
-                  Guatemala
+                  Chimaltenango, Guatemala
                 </span>
               </li>
               <li className="flex items-center gap-2">
                 <Phone className="h-4 w-4 flex-shrink-0 text-primary" />
-                <a href="tel:+50212345678" className="hover:text-primary transition-colors">
+                <a href="tel:+50212345678" className="hover:text-primary">
                   +502 1234-5678
                 </a>
               </li>
               <li className="flex items-center gap-2">
                 <Mail className="h-4 w-4 flex-shrink-0 text-primary" />
-                <a href="mailto:info@panaderia.gt" className="hover:text-primary transition-colors">
+                <a href="mailto:info@panaderia.gt" className="hover:text-primary">
                   info@panaderia.gt
                 </a>
               </li>
@@ -179,13 +181,9 @@ export function Footer() {
 
             {/* Horarios */}
             <div className="mt-4">
-              <p className="text-xs font-semibold text-foreground">HORARIOS</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Lun - Vie: 6:00 AM - 8:00 PM
-                <br />
-                Sábados: 7:00 AM - 9:00 PM
-                <br />
-                Domingos: 7:00 AM - 6:00 PM
+              <p className="text-xs font-semibold text-gray-900">HORARIOS</p>
+              <p className="mt-1 text-sm text-gray-600">
+                Lunes a Sábado: 7:00 AM - 8:00 PM
               </p>
             </div>
           </div>
@@ -193,21 +191,21 @@ export function Footer() {
       </div>
 
       {/* Bottom Bar */}
-      <div className="border-t border-border">
+      <div className="border-t">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-          <div className="flex flex-col items-center justify-between gap-4 text-sm text-muted-foreground sm:flex-row">
+          <div className="flex flex-col items-center justify-between gap-4 text-sm text-gray-600 sm:flex-row">
             <p>
               &copy; {new Date().getFullYear()} Panaderia Svetlana Smart System. 
               Todos los derechos reservados.
             </p>
             <div className="flex gap-6">
-              <Link href="/privacidad" className="hover:text-primary transition-colors">
+              <Link href="/privacidad" className="hover:text-primary">
                 Privacidad
               </Link>
-              <Link href="/terminos" className="hover:text-primary transition-colors">
+              <Link href="/terminos" className="hover:text-primary">
                 Términos
               </Link>
-              <Link href="/cookies" className="hover:text-primary transition-colors">
+              <Link href="/cookies" className="hover:text-primary">
                 Cookies
               </Link>
             </div>

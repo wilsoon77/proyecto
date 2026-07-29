@@ -19,19 +19,18 @@ Sistema ERP/POS para gestión integral de panaderías multi-sucursal. Control de
 | Despliegue | Render (API) + Vercel (Web) |
 
 ## Requisitos
-- Node.js 24.x
-- pnpm 11.13.1 (habilitado mediante Corepack)
+- Node.js 20.x o superior (Render usa Node 20.18.0)
+- npm incluido con Node.js
 
 ## Desarrollo local
 
 ### Backend (API):
 ```powershell
 cd api
-corepack enable
-pnpm install --frozen-lockfile
+npm ci
 # Copia .env.example a .env y completa variables
-pnpm run prisma:generate
-pnpm run dev
+npm run prisma:generate
+npm run dev
 ```
 Endpoints útiles:
 - Swagger UI: `http://localhost:4000/docs`
@@ -41,9 +40,8 @@ Endpoints útiles:
 ### Frontend (Web):
 ```powershell
 cd web
-corepack enable
-pnpm install --frozen-lockfile
-pnpm run dev
+npm ci
+npm run dev
 ```
 Por defecto: `http://localhost:3000`
 
@@ -84,15 +82,15 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 
 ## Scripts útiles (API)
 ```powershell
-pnpm run dev              # Servidor de desarrollo
-pnpm run build            # Compilar TypeScript a dist
-pnpm run start:prod       # Ejecutar desde dist
-pnpm run prisma:generate  # Generar cliente Prisma
-pnpm run prisma:migrate   # Crear/aplicar migraciones dev
-pnpm run prisma:deploy    # Aplicar migraciones en producción
-pnpm run seed             # Datos iniciales
-pnpm run openapi:gen:dist # Generar openapi.json
-pnpm run test             # Ejecutar tests
+npm run dev              # Servidor de desarrollo
+npm run build            # Compilar TypeScript a dist
+npm run start:prod       # Ejecutar desde dist
+npm run prisma:generate  # Generar cliente Prisma
+npm run prisma:migrate   # Crear/aplicar migraciones dev
+npm run prisma:deploy    # Aplicar migraciones en producción
+npm run seed             # Datos iniciales
+npm run openapi:gen:dist # Generar openapi.json
+npm run test             # Ejecutar tests
 ```
 
 ## Módulos del Backend
@@ -113,7 +111,7 @@ Las rutas de listado devuelven `{ data, meta }` y además cabeceras:
 - `Link`: enlaces `first`, `last`, `prev`, `next`
 
 ## Despliegue
-- **API**: Render — Build: `pnpm install --frozen-lockfile && pnpm run prisma:generate && pnpm run build`, Start: `pnpm run start:prod`
+- **API**: Render — Build: `npm ci && npm run prisma:generate && npm run build`, Start: `npm run start:prod`
 - **Web**: Vercel — Root directory: `web/`, Framework: Next.js
 - **DB**: Supabase PostgreSQL
 - **Storage**: Appwrite (imágenes)

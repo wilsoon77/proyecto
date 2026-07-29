@@ -113,17 +113,16 @@ Backend para el sistema ERP/POS de panaderías multi-sucursal.
 - Endpoints CRUD para recetas, producción y materia prima
 
 ## Requisitos previos
-- Node.js >= 18
+- Node.js >= 20
 - Cuenta en Supabase con base PostgreSQL creada
 
 ## Configuración inicial
 1. Copiar `.env.example` a `.env` y completar valores
-2. Habilitar Corepack: `corepack enable`
-3. Instalar dependencias: `pnpm install --frozen-lockfile`
-4. Generar cliente Prisma: `pnpm run prisma:generate`
-5. Aplicar migraciones: `pnpm run prisma:migrate -- --name init`
-6. Sembrar datos iniciales: `pnpm run seed`
-7. Ejecutar servidor: `pnpm run dev`
+2. Instalar dependencias: `npm ci`
+3. Generar cliente Prisma: `npm run prisma:generate`
+4. Aplicar migraciones: `npm run prisma:migrate -- --name init`
+5. Sembrar datos iniciales: `npm run seed`
+6. Ejecutar servidor: `npm run dev`
 
 ## Scripts
 

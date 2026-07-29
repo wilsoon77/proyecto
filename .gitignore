@@ -5,9 +5,9 @@
 .env.*
 !.env.example
 !**/.env.example
-/.pnpm-store/
 *.log
 *.tmp
+*.tsbuildinfo
 .DS_Store
 Thumbs.db
 .vscode/

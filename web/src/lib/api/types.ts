@@ -302,6 +302,7 @@ export interface NotificationConfig {
   title: string
   message: string
   targetRoles: string[]
+  channels?: string[] | null
   thresholds?: { threshold: number; unit?: string } | null
   soundType: string
   createdAt: string

@@ -65,8 +65,8 @@ APPWRITE_BUCKET_ID=product-images
 - **Branch**: `main`
 - **Root Directory**: `api`
 - **Runtime**: Node
-- **Build Command**: `corepack enable && pnpm install --frozen-lockfile && pnpm run prisma:generate && pnpm run build`
-- **Start Command**: `pnpm run start:prod`
+- **Build Command**: `npm ci && npm run prisma:generate && npm run build`
+- **Start Command**: `npm run start:prod`
 - **Instance Type**: Free (o Starter para mejor rendimiento)
 
 ### Paso 3: Variables de entorno
@@ -80,7 +80,7 @@ En la sección **Environment**, agrega:
 | `JWT_REFRESH_SECRET` | (genera con `openssl rand -base64 32`) |
 | `CORS_ORIGINS` | `https://tu-frontend.vercel.app` |
 | `NODE_ENV` | `production` |
-| `NODE_VERSION` | `24.16.0` |
+| `NODE_VERSION` | `20.18.0` |
 | `PORT` | `4000` |
 | `TRUST_PROXY_HOPS` | `1` |
 | `HCAPTCHA_SECRET` | (secret privado de hCaptcha) |
@@ -99,8 +99,8 @@ En la sección **Environment**, agrega:
 ### Paso 5: Ejecutar migraciones
 Después del primer deploy, ejecuta las migraciones:
 1. Ve a **Shell** en Render
-2. Ejecuta: `pnpm run prisma:deploy`
-3. Opcional - Seed: `pnpm run seed`
+2. Ejecuta: `npm run prisma:deploy`
+3. Opcional - Seed: `npm run seed`
 
 ---
 
@@ -115,8 +115,8 @@ Después del primer deploy, ejecuta las migraciones:
 - **Project Name**: `panaderia-web`
 - **Framework Preset**: Next.js (auto-detectado)
 - **Root Directory**: `web`
-- **Install Command**: `corepack enable && pnpm install --frozen-lockfile`
-- **Build Command**: `pnpm run build`
+- **Install Command**: `npm ci`
+- **Build Command**: `npm run build`
 - **Output Directory**: `.next` (default)
 
 ### Paso 3: Variables de entorno
@@ -129,7 +129,6 @@ Agrega estas variables:
 | `NEXT_PUBLIC_SITE_URL` | `https://tu-dominio.com` |
 | `NEXT_PUBLIC_GOOGLE_MAPS_KEY` | (tu API key de Google Maps) |
 | `NEXT_PUBLIC_SENTRY_DSN` | (opcional) |
-| `ENABLE_EXPERIMENTAL_COREPACK` | `1` |
 
 ### Sesión BFF y catálogo
 
@@ -212,7 +211,7 @@ openssl rand -base64 32
 render logs --tail
 
 # Ejecutar migraciones manualmente (desde api/)
-pnpm run prisma:deploy
+npm run prisma:deploy
 
 # Verificar estado de la API
 curl https://tu-api.onrender.com/health

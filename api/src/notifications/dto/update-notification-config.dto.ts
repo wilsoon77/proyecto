@@ -28,6 +28,12 @@ export class UpdateNotificationConfigDto {
   @IsObject()
   thresholds?: any;
 
+  @ApiProperty({ example: ['IN_APP', 'PUSH', 'TELEGRAM'], required: false })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  channels?: string[];
+
   @ApiProperty({ example: 'suave', required: false })
   @IsOptional()
   @IsString()

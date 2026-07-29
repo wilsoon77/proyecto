@@ -11,9 +11,9 @@ Como continuación de esta auditoría se implementó una primera entrega técnic
 | Área | Estado | Cambio aplicado |
 |---|---|---|
 | SEC-01 OAuth | ✅ Implementado | La API recibe un bearer token y obtiene la identidad con `supabase.auth.getUser`; ya no acepta ID, email o metadatos de identidad desde el body. Incluye dos pruebas unitarias de regresión. |
-| OPS-01 Render | ✅ Implementado | Se añadió `start:prod` y Render usa `pnpm run start:prod`. El build genera Prisma explícitamente antes de compilar. |
-| Gestor de paquetes | ✅ Implementado | API y web pasan a `pnpm@11.13.1`, con lockfiles propios y scripts de instalación aprobados explícitamente. No se creó un workspace raíz para no alterar los directorios raíz actuales de Render (`api/`) y Vercel (`web/`). |
-| CI/CD | ✅ Implementado | GitHub Actions usa cache de pnpm, Corepack, instalación congelada y generación explícita de Prisma. Vercel y Render usan `--frozen-lockfile`; Dependabot revisará dependencias de API, web y workflows periódicamente. |
+| OPS-01 Render | ✅ Implementado | Se añadió `start:prod` y Render usa `npm run start:prod`. El build genera Prisma explícitamente antes de compilar. |
+| Gestor de paquetes | ✅ Implementado | API y web usan npm con `package-lock.json` propio y `npm ci` en despliegues. No se creó un workspace raíz para no alterar los directorios raíz actuales de Render (`api/`) y Vercel (`web/`). |
+| CI/CD | ✅ Implementado | GitHub Actions usa cache de npm, `npm ci` y generación explícita de Prisma. Vercel y Render usan los lockfiles versionados; Dependabot revisará dependencias de API, web y workflows periódicamente. |
 | SEC-03 hCaptcha | ✅ Implementación condicionada | La API verifica el token contra `siteverify`. Registro lo exige cuando `HCAPTCHA_SECRET` está configurado; login lo exige después del umbral de intentos y falla cerrado en producción si falta la configuración. |
 | SEC-04/05 | ✅ Implementado | JWT ya no tiene secreto por defecto, `trust proxy` se limita por saltos y Sentry no inicia sin DSN ni recoge PII/replay sin máscara. |
 | SEC-06 RLS | ⚠️ Pendiente de aplicar | Se agregó una migración para las cuatro tablas omitidas; debe aplicarse en la base productiva. |
@@ -24,18 +24,18 @@ Como continuación de esta auditoría se implementó una primera entrega técnic
 
 | Verificación | Resultado |
 |---|---|
-| `api: pnpm run prisma:generate` | ✅ Genera el cliente Prisma con pnpm. |
-| `api: pnpm run build` | ✅ Correcta después de generación explícita de Prisma. |
-| `api: pnpm run openapi:gen:dist` | ✅ Correcta. |
-| `api: pnpm run test -- auth.service.spec.ts captcha.service.spec.ts --runInBand` | ✅ 5/5 pruebas de OAuth y comportamiento fail-closed de hCaptcha. |
-| `web: pnpm run build` | ✅ Correcta; genera 43 rutas, incluidos `robots.txt` y `sitemap.xml`. |
-| `pnpm audit --prod` | ✅ Mitigación aplicada | El resultado actualizado está en “Actualización final de implementación”: API sin altas y web sin altas ni moderadas. |
+| `api: npm run prisma:generate` | ✅ Genera el cliente Prisma con npm. |
+| `api: npm run build` | ✅ Correcta después de generación explícita de Prisma. |
+| `api: npm run openapi:gen:dist` | ✅ Correcta. |
+| `api: npm run test -- auth.service.spec.ts captcha.service.spec.ts --runInBand` | ✅ 5/5 pruebas de OAuth y comportamiento fail-closed de hCaptcha. |
+| `web: npm run build` | ✅ Correcta; genera 43 rutas, incluidos `robots.txt` y `sitemap.xml`. |
+| `npm audit --omit=dev` | ⚠️ Pendiente de hardening mayor | La ejecución final sobre los lockfiles npm queda registrada en “Actualización final de implementación”; aún hay advisories transitivos que requieren evaluar upgrades mayores. |
 
 ### Acciones manuales antes de producción
 
-1. En Vercel, definir `ENABLE_EXPERIMENTAL_COREPACK=1`, `NEXT_PUBLIC_SITE_URL` con el dominio canónico y las variables de Supabase requeridas.
+1. En Vercel, definir `NEXT_PUBLIC_SITE_URL` con el dominio canónico y las variables de Supabase requeridas.
 2. En Render, configurar `HCAPTCHA_SECRET`, `CORS_ORIGINS`, `SENTRY_DSN` (opcional) y los secretos JWT reales; no usar valores de ejemplo.
-3. Ejecutar desde `api/` una vez contra producción: `pnpm run prisma:deploy`, para aplicar también la migración RLS nueva.
+3. Ejecutar desde `api/` una vez contra producción: `npm run prisma:deploy`, para aplicar también la migración RLS nueva.
 4. Probar login OAuth real, registro con captcha y el comando de arranque de Render después del despliegue.
 
 ### Pendientes que requieren decisión de negocio
@@ -82,7 +82,7 @@ También se identificaron riesgos altos en el almacenamiento de tokens, anti-bot
 | `web: npm run lint` | ⚠️ No terminó en el plazo de verificación | El script ejecuta `eslint` sin acotar el objetivo; conviene limitarlo a código fuente y hacerlo determinista. |
 | `api: jest src --runInBand` | ❌ 7 fallos / 20 éxitos | El mock de producción no contempla `prisma.branch.findUnique`. |
 | `api: npm test -- --runInBand` | ❌ No reproducible | Las e2e intentan conectarse a una base Supabase externa; además hay mocks e inyecciones desactualizados. |
-| `pnpm audit --prod` | ❌ | `api`: 14 vulnerabilidades (5 altas). `web`: 18 (8 altas). Resultado actualizado después de la migración a pnpm. |
+| `npm audit --omit=dev` | ⚠️ | Esta fila conserva el resultado de la auditoría inicial; el resultado ejecutado sobre los `package-lock.json` finales está en “Actualización final de implementación”. |
 
 ## Hallazgos P0 — acción inmediata
 
@@ -152,7 +152,7 @@ También se identificaron riesgos altos en el almacenamiento de tokens, anti-bot
 
 ### SEC-07 — dependencias de producción con vulnerabilidades conocidas
 
-**Evidencia:** la comprobación posterior a la migración con `pnpm audit --prod` reportó 14 vulnerabilidades en `api` (5 altas) y 18 en `web` (8 altas). Entre las cadenas afectadas están Nest/Express/Multer/Lodash en API y Sentry/OpenTelemetry/`ws`/glob tooling en web.
+**Evidencia:** la comprobación final con `npm audit --omit=dev` sobre los lockfiles npm reporta 11 hallazgos de producción en `api` (7 moderados y 4 altos) y 5 en `web` (2 moderados y 3 altos). La mayoría son transitivos y las correcciones sugeridas implican Nest 11, Swagger 11 o una actualización mayor de Next; no se aplicó `--force`.
 
 **Impacto:** exposición a DoS, ReDoS, problemas de parsing y vulnerabilidades transitivas conocidas.
 
@@ -250,7 +250,7 @@ También se identificaron riesgos altos en el almacenamiento de tokens, anti-bot
 
 ## Hallazgos P3 — higiene y evolución
 
-1. **Monorepo sin orquestación raíz.** No hay `package.json` raíz, workspaces ni scripts agregados. Evaluar npm workspaces/pnpm y comandos `dev`, `build`, `test`, `lint` por paquete; no es necesario introducir Turbo hasta que la carga lo justifique.
+1. **Monorepo sin orquestación raíz.** No hay `package.json` raíz, workspaces ni scripts agregados. Evaluar npm workspaces y comandos `dev`, `build`, `test`, `lint` por paquete; no es necesario introducir Turbo hasta que la carga lo justifique.
 2. **Configuración PostCSS duplicada.** `web/postcss.config.js` y `web/postcss.config.mjs` usan plugins distintos; el segundo referencia `@tailwindcss/postcss`, que no figura como dependencia directa. Conservar una sola configuración compatible con Tailwind 3.
 3. **Artefactos generados versionados.** `web/tsconfig.tsbuildinfo`, `api/test-output.txt` y `api/test_output.txt` deberían salir del control de versiones e incorporarse a `.gitignore`. Los logs ya contienen detalles de infraestructura y quedan obsoletos rápidamente.
 4. **Build depende de Google Fonts.** La build pasó con red, pero falla en entornos sin salida a Google. Si se requiere reproducibilidad/offline, autoalojar Geist o definir una fuente local/fallback.
@@ -273,7 +273,7 @@ También se identificaron riesgos altos en el almacenamiento de tokens, anti-bot
 | 2 | Verificación hCaptcha en API | Peticiones automatizadas sin token válido son rechazadas. |
 | 3 | Validación de configuración, JWT y proxy | Producción no inicia sin secretos válidos; IP no puede ser falsificada por headers de cliente. |
 | 4 | RLS y grants de nuevas tablas | Pruebas con roles públicos no pueden leer ni escribir notificaciones, push ni configuración privada. |
-| 5 | Actualizar dependencias vulnerables | `pnpm audit --prod` sin vulnerabilidades altas; builds y smoke tests verdes. |
+| 5 | Actualizar dependencias vulnerables | `npm audit --omit=dev` sin vulnerabilidades altas; builds y smoke tests verdes. |
 
 ### Fase 2 — integridad operativa y calidad (1 sprint)
 
@@ -302,7 +302,7 @@ También se identificaron riesgos altos en el almacenamiento de tokens, anti-bot
 - Añadir Dependabot/Renovate, auditoría de dependencias programada y revisión mensual de observabilidad/privacidad.
 - Mantener un ADR corto por decisiones de auth, multi-sucursal, RLS y cache/SEO.
 
-## Actualización final de implementación — 17 de julio de 2026
+## Actualización final de implementación — 27 de julio de 2026
 
 Esta sección sustituye el estado de los hallazgos marcados originalmente como pendientes cuando se contradiga con el seguimiento inicial. Los cambios fueron compilados y probados en el mismo repositorio; no se ejecutaron contra los servicios productivos.
 
@@ -314,28 +314,30 @@ Esta sección sustituye el estado de los hallazgos marcados originalmente como p
 | DATA-01 — pedidos | ✅ Implementado | Se agregó una máquina de estados explícita: `PENDING → CONFIRMED → PREPARING → READY → PICKED_UP` o `READY → IN_DELIVERY → DELIVERED`, con cancelación sólo desde estados no terminales. Cancelación y cumplimiento liberan/descuentan inventario en transacciones serializables con retry. |
 | Inventario reservado | ✅ Implementado | Reservas y POS agrupan líneas repetidas, verifican disponibilidad real (`quantity - reserved`) y evitan ventas/ajustes/reconciliaciones que dejen inventario por debajo de reservas activas. El cron de expiración vuelve a leer la orden dentro de la transacción antes de cancelarla. |
 | SEO SSR/ISR | ✅ Implementado | `/productos` renderiza el catálogo desde servidor con filtros SSR y fetch revalidado cada 60 s. `/productos/[slug]` genera metadata, JSON-LD `Product`, parámetros estáticos y revalidación de 60 s; incluye `loading` y `error` states. La interacción de carrito permanece en componentes cliente. |
-| Dependencias | ✅ Mitigación controlada | Se actualizaron versiones compatibles de Nest 10, React 19, Sentry, Supabase y herramientas. Los parches transitivos se fijan en los `pnpm-workspace.yaml` de cada aplicación, ubicación requerida por pnpm 11. No se usó `--force` ni se saltó a versiones mayores de framework. |
+| Dependencias | ✅ Mitigación controlada | Se actualizaron versiones compatibles de Nest 10, React 19, Sentry, Supabase y herramientas. Las versiones quedan reproducibles mediante los `package-lock.json` de cada aplicación. No se usó `--force` ni se saltó a versiones mayores de framework. |
 
 ### Auditoría de dependencias posterior
 
 | Comando | Resultado final | Pendiente razonado |
 |---|---|---|
-| `api: pnpm audit --prod` | ⚠️ 3 moderadas, 0 altas | `@nestjs/core` requiere migración mayor a Nest 11 para su corrección; `file-type` requiere una rama mayor incompatible con Nest 10. Se mantienen límites de carga y no se forzó esa sustitución. |
-| `web: pnpm audit --prod` | ⚠️ 1 baja, 0 moderadas/altas | `@babel/core` permanece en una dependencia de Next/Sentry; el advisory pide una versión 7 que no está publicada en el registro actual. No se forzó Babel 8. |
+| `api: npm audit --omit=dev` | ⚠️ 11 hallazgos (7 moderados, 4 altos) | Los fixes automáticos proponen Nest 11/Swagger 11; planificar upgrade mayor con pruebas de regresión. |
+| `web: npm audit --omit=dev` | ⚠️ 5 hallazgos (2 moderados, 3 altos) | Los avisos pasan por Next/PostCSS/Sharp; evaluar una actualización mayor de Next y validar SSR/ISR antes de aplicarla. |
 
 ### Verificación final
 
 | Verificación | Resultado |
 |---|---|
-| `api: pnpm run build` | ✅ Correcta después de alcance por sucursal, transiciones y overrides. |
-| `api: pnpm test -- branch-scope.service.spec.ts order-state.spec.ts auth.service.spec.ts captcha.service.spec.ts` | ✅ 10/10 pruebas. |
-| `web: pnpm run build` | ✅ Correcta; `/productos` aparece como SSR y `/productos/[slug]` como SSG con parámetros estáticos. |
-| `api` y `web`: `pnpm install --frozen-lockfile` | ✅ Correcta en ambos directorios; los lockfiles actualizados son reproducibles para Render y Vercel. |
+| `api: npm run build` | ✅ Correcta después de alcance por sucursal y transiciones. |
+| `api: npm test -- branch-scope.service.spec.ts order-state.spec.ts auth.service.spec.ts captcha.service.spec.ts daily-close.service.spec.ts` | ✅ 14/14 pruebas registradas. |
+| `web: npm run build` | ✅ Correcta; `/productos` aparece como SSR y `/productos/[slug]` como SSG con parámetros estáticos. |
+| `api` y `web`: `npm ci` | ✅ Correcta en ambos directorios; los lockfiles actuales son reproducibles para Render y Vercel. |
+| `api`: `npm run prisma:generate` + `npm run build` | ✅ Correcta después de la instalación npm final. |
+| Pruebas focalizadas (5 suites) | ✅ 14/14 pruebas; sucursal, estados de pedido, auth, captcha y cierre diario. |
 
 ### Requisitos de despliegue de esta entrega
 
 1. En Vercel definir `API_INTERNAL_URL` hacia la API de Render (o una URL privada equivalente), además de `NEXT_PUBLIC_API_URL` y `NEXT_PUBLIC_SITE_URL`.
-2. Ejecutar `pnpm run prisma:deploy` desde `api/` contra producción antes de habilitar operaciones multi-sucursal.
+2. Ejecutar `npm run prisma:deploy` desde `api/` contra producción antes de habilitar operaciones multi-sucursal.
 3. Probar con usuarios reales de dos sucursales: inventario, producción, movimiento, POS, confirmación/cancelación y detalle de orden deben devolver 403 fuera de la sucursal asignada.
 4. Probar login, registro, OAuth, refresh de sesión y recuperación de contraseña en el dominio final, incluida la protección CSRF.
 5. La generación de rutas de producto necesita API accesible durante el build. Si Render está temporalmente inaccesible, `dynamicParams` permite servir la ficha bajo demanda, pero conviene configurar `API_INTERNAL_URL` y evitar cold starts durante el deploy.

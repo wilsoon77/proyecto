@@ -68,6 +68,21 @@ const tools: AssistantTool[] = [
   {
     type: 'function',
     function: {
+      name: 'rawMaterialInventory',
+      description: 'Consulta existencias de materias primas o insumos por nombre parcial (ej. azúcar, harina, levadura) y/o por sucursal.',
+      parameters: {
+        type: 'object',
+        properties: {
+          materialQuery: { type: 'string', description: 'Nombre parcial del insumo o materia prima. Omitir para listar el inventario de insumos.' },
+          branch: { type: 'string', description: 'Nombre o slug de una sucursal autorizada. Omitir para ambas.' },
+        },
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'productInventory',
       description: 'Consulta existencias, reservas y disponibles de productos terminados.',
       parameters: {
@@ -190,6 +205,7 @@ export class AssistantService {
     switch (name) {
       case 'salesSummary': return this.reads.salesSummary(context, args as { date?: string; branch?: string });
       case 'lowRawMaterials': return this.reads.lowRawMaterials(context, args as { branch?: string });
+      case 'rawMaterialInventory': return this.reads.rawMaterialInventory(context, args as { materialQuery?: string; branch?: string });
       case 'productInventory': return this.reads.productInventory(context, args as { productQuery?: string; branch?: string });
       case 'pendingOrders': return this.reads.pendingOrders(context, args as { branch?: string });
       case 'productionSummary': return this.reads.productionSummary(context, args as { date?: string; branch?: string });

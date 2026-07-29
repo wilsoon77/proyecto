@@ -1,4 +1,4 @@
-﻿  console.log
+  console.log
     Ô£à Appwrite Storage configured: {
       endpoint: 'https://nyc.cloud.appwrite.io/v1',
       bucketId: '697941fe00037e684489'

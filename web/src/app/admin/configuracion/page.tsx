@@ -90,7 +90,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   lowStockThreshold: 10,
   acceptOrders: true,
   maintenanceMode: false,
-  operatingHours: "06:00 - 20:00",
+  operatingHours: "Lunes a Sábado: 7:00 AM - 8:00 PM",
 }
 
 export default function ConfiguracionPage() {

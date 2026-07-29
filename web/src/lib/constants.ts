@@ -31,7 +31,6 @@ export const ROUTES = {
   category: (slug: string) => `/categorias/${slug}`,
   cart: '/carrito',
   checkout: '/checkout',
-  promotions: '/promociones',
   about: '/sobre-nosotros',
   contact: '/contacto',
   branches: '/sucursales',

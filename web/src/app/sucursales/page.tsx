@@ -36,16 +36,26 @@ export default function SucursalesPage() {
 
   // Construir URL de Google Maps Embed
   const mapEmbedUrl = useMemo(() => {
-    if (selectedBranch?.latitude && selectedBranch?.longitude) {
-      return `https://www.google.com/maps/embed/v1/place?key=${MAPS_API_KEY}&q=${selectedBranch.latitude},${selectedBranch.longitude}&zoom=15`
+    if (MAPS_API_KEY) {
+      if (selectedBranch?.latitude && selectedBranch?.longitude) {
+        return `https://www.google.com/maps/embed/v1/place?key=${MAPS_API_KEY}&q=${selectedBranch.latitude},${selectedBranch.longitude}&zoom=15`
+      }
+      if (selectedBranch?.address) {
+        const query = encodeURIComponent(`${selectedBranch.name}, ${selectedBranch.address}, Guatemala`)
+        return `https://www.google.com/maps/embed/v1/place?key=${MAPS_API_KEY}&q=${query}&zoom=15`
+      }
+      return `https://www.google.com/maps/embed/v1/view?key=${MAPS_API_KEY}&center=${DEFAULT_CENTER.lat},${DEFAULT_CENTER.lng}&zoom=12`
     }
-    // Fallback a búsqueda por dirección
+
+    // Fallback universal de Google Maps Embed sin necesidad de API Key
+    if (selectedBranch?.latitude && selectedBranch?.longitude) {
+      return `https://maps.google.com/maps?q=${selectedBranch.latitude},${selectedBranch.longitude}&t=&z=15&ie=UTF8&iwloc=&output=embed`
+    }
     if (selectedBranch?.address) {
       const query = encodeURIComponent(`${selectedBranch.name}, ${selectedBranch.address}, Guatemala`)
-      return `https://www.google.com/maps/embed/v1/place?key=${MAPS_API_KEY}&q=${query}&zoom=15`
+      return `https://maps.google.com/maps?q=${query}&t=&z=15&ie=UTF8&iwloc=&output=embed`
     }
-    // Centro de Guatemala por defecto
-    return `https://www.google.com/maps/embed/v1/view?key=${MAPS_API_KEY}&center=${DEFAULT_CENTER.lat},${DEFAULT_CENTER.lng}&zoom=12`
+    return `https://maps.google.com/maps?q=Guatemala+City&t=&z=12&ie=UTF8&iwloc=&output=embed`
   }, [selectedBranch])
 
   // URL para abrir en Google Maps
@@ -121,7 +131,7 @@ export default function SucursalesPage() {
                   )}
                   <li className="flex items-center gap-2">
                     <Clock className="h-4 w-4 flex-shrink-0 text-primary" />
-                    <span>Lun-Dom: 7:00 AM - 8:00 PM</span>
+                    <span>Lunes a Sábado: 7:00 AM - 8:00 PM</span>
                   </li>
                 </ul>
                 <div className="mt-4 flex gap-2">

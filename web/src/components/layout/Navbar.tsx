@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { ShoppingCart, User, Menu, MapPin, Apple, Play, LogOut, Settings, X, Phone, ChevronRight, ChevronDown } from "lucide-react"
+import { ShoppingCart, User, Menu, MapPin, LogOut, Settings, X, Phone, ChevronRight, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ROUTES } from "@/lib/constants"
 import { useState, useEffect } from "react"
@@ -114,12 +114,6 @@ export function Navbar() {
           <div className="flex items-center gap-4 text-gray-600">
             <span className="hidden md:inline">📞 {selectedBranch?.phone || '+502 0000-0000'}</span>
             <span className="hidden lg:inline">Reserva y recoge en sucursal</span>
-            <a href="#" aria-label="App Store (próximamente)" className="hidden sm:inline-flex h-7 w-7 items-center justify-center rounded-full border bg-white hover:border-primary hover:text-primary">
-              <Apple className="h-3.5 w-3.5" />
-            </a>
-            <a href="#" aria-label="Google Play (próximamente)" className="hidden sm:inline-flex h-7 w-7 items-center justify-center rounded-full border bg-white hover:border-primary hover:text-primary">
-              <Play className="h-3.5 w-3.5" />
-            </a>
           </div>
         </div>
       </div>
@@ -146,12 +140,6 @@ export function Navbar() {
               className="text-sm font-medium text-gray-700 transition-colors hover:text-primary"
             >
               Productos
-            </Link>
-            <Link
-              href="/promociones"
-              className="text-sm font-medium text-gray-700 transition-colors hover:text-primary"
-            >
-              Promociones
             </Link>
             <Link
               href="/sobre-nosotros"
@@ -307,15 +295,6 @@ export function Navbar() {
                   className="flex items-center justify-between rounded-lg px-4 py-3 text-base font-medium text-gray-700 hover:bg-gray-100 hover:text-primary transition-colors"
                 >
                   Productos
-                  <ChevronRight className="h-4 w-4 text-gray-400" />
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/promociones"
-                  className="flex items-center justify-between rounded-lg px-4 py-3 text-base font-medium text-gray-700 hover:bg-gray-100 hover:text-primary transition-colors"
-                >
-                  Promociones
                   <ChevronRight className="h-4 w-4 text-gray-400" />
                 </Link>
               </li>

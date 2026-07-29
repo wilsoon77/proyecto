@@ -1,6 +1,6 @@
 import Link from "next/link"
 import Image from "next/image"
-import { Facebook, Instagram, Twitter, Mail, Phone, MapPin, Apple, Play } from "lucide-react"
+import { Facebook, Instagram, Twitter, Mail, Phone, MapPin } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ROUTES } from "@/lib/constants"
 
@@ -77,18 +77,6 @@ export function Footer() {
                 <Twitter className="h-5 w-5" />
               </a>
             </div>
-
-            {/* App badges (placeholder) */}
-            <div className="mt-6 flex flex-wrap gap-2">
-              <a href="#" className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-xs font-medium text-gray-700 hover:border-primary hover:text-primary">
-                <Apple className="h-4 w-4" />
-                <span>App Store</span>
-              </a>
-              <a href="#" className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-xs font-medium text-gray-700 hover:border-primary hover:text-primary">
-                <Play className="h-4 w-4" />
-                <span>Google Play</span>
-              </a>
-            </div>
           </div>
 
           {/* Quick Links */}
@@ -103,14 +91,6 @@ export function Footer() {
                   className="text-gray-600 transition-colors hover:text-primary"
                 >
                   Productos
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/promociones"
-                  className="text-gray-600 transition-colors hover:text-primary"
-                >
-                  Promociones
                 </Link>
               </li>
               <li>
@@ -182,9 +162,7 @@ export function Footer() {
               <li className="flex items-start gap-2">
                 <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
                 <span>
-                  Zona 10, Guatemala City
-                  <br />
-                  Guatemala
+                  Chimaltenango, Guatemala
                 </span>
               </li>
               <li className="flex items-center gap-2">
@@ -205,11 +183,7 @@ export function Footer() {
             <div className="mt-4">
               <p className="text-xs font-semibold text-gray-900">HORARIOS</p>
               <p className="mt-1 text-sm text-gray-600">
-                Lun - Vie: 6:00 AM - 8:00 PM
-                <br />
-                Sábados: 7:00 AM - 9:00 PM
-                <br />
-                Domingos: 7:00 AM - 6:00 PM
+                Lunes a Sábado: 7:00 AM - 8:00 PM
               </p>
             </div>
           </div>

@@ -13,7 +13,7 @@ export function RelatedProducts({ products, currentId, category }: RelatedProduc
 
   return (
     <section className="mt-12">
-      <h2 className="mb-4 text-2xl font-bold text-gray-900">Productos Relacionados</h2>
+      <h2 className="mb-4 font-display text-2xl font-bold text-foreground">Productos Relacionados</h2>
       <ProductGrid products={related} />
     </section>
   )

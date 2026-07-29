@@ -10,12 +10,12 @@ interface ProductGridProps {
 export function ProductGrid({ products, onAddToCart, onToggleFavorite }: ProductGridProps) {
   if (products.length === 0) {
     return (
-      <div className="flex min-h-[400px] flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-12">
-        <div className="text-6xl mb-4">🥖</div>
-        <h3 className="mb-2 text-xl font-semibold text-gray-900">
+      <div className="flex min-h-[400px] flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-cream p-12">
+        <div className="mb-4 text-6xl">🥖</div>
+        <h3 className="mb-2 font-display text-xl font-semibold text-foreground">
           No hay productos disponibles
         </h3>
-        <p className="text-gray-600">
+        <p className="text-muted-foreground">
           Intenta cambiar los filtros o vuelve más tarde
         </p>
       </div>
@@ -23,7 +23,7 @@ export function ProductGrid({ products, onAddToCart, onToggleFavorite }: Product
   }
 
   return (
-    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 stagger-children">
       {products.map((product) => (
         <ProductCard
           key={product.id}

@@ -2,19 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import {
-  AlertTriangle,
-  ArrowLeft,
-  Check,
-  ClipboardCheck,
-  History,
-  Loader2,
-  RefreshCw,
-  Save,
-  Store,
-  TrendingDown,
-  TrendingUp,
-} from "lucide-react"
+import { TriangleAlert as AlertTriangle, ArrowLeft, Check, ClipboardCheck, Factory as History, Loader as Loader2, RefreshCw, Save, Store, TrendingDown, TrendingUp } from "lucide-react"
 import {
   branchesService,
   dailyCloseService,
@@ -228,15 +216,15 @@ export default function DailyClosePage() {
 
   if (result) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+      <div className="min-h-screen bg-cream p-4 sm:p-6 lg:p-8">
         <div className="mx-auto max-w-4xl">
-          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm sm:p-8">
+          <div className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
             <div className="mb-8 text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-                <Check className="h-8 w-8 text-green-600" />
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-success/10">
+                <Check className="h-8 w-8 text-success" />
               </div>
-              <h1 className="text-2xl font-bold text-gray-900">Cierre registrado</h1>
-              <p className="mt-1 text-gray-500">{result.closeDate} · {selectedBranchName}</p>
+              <h1 className="text-2xl font-bold text-foreground">Cierre registrado</h1>
+              <p className="mt-1 text-muted-foreground">{result.closeDate} · {selectedBranchName}</p>
             </div>
 
             <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -246,9 +234,9 @@ export default function DailyClosePage() {
               <SummaryCard label="Productos" value={result.summary.productsClosed} tone="gray" />
             </div>
 
-            <div className="mb-8 overflow-x-auto rounded-xl border border-gray-100">
+            <div className="mb-8 overflow-x-auto rounded-xl border border-border">
               <table className="w-full min-w-[620px] text-sm">
-                <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
+                <thead className="bg-cream text-left text-xs uppercase text-muted-foreground">
                   <tr>
                     <th className="px-4 py-3">Producto</th>
                     <th className="px-4 py-3 text-center">Sistema</th>
@@ -261,12 +249,12 @@ export default function DailyClosePage() {
                 <tbody className="divide-y divide-gray-100">
                   {result.items.map((item) => (
                     <tr key={item.productId}>
-                      <td className="px-4 py-3 font-medium text-gray-900">{item.productName}</td>
-                      <td className="px-4 py-3 text-center text-gray-500">{item.systemQty}</td>
+                      <td className="px-4 py-3 font-medium text-foreground">{item.productName}</td>
+                      <td className="px-4 py-3 text-center text-muted-foreground">{item.systemQty}</td>
                       <td className="px-4 py-3 text-center font-semibold">{item.countedQty}</td>
-                      <td className="px-4 py-3 text-center text-blue-700">{item.soldQty}</td>
-                      <td className="px-4 py-3 text-center text-orange-700">{item.wasteQty}</td>
-                      <td className="px-4 py-3 text-center text-green-700">{item.surplusQty}</td>
+                      <td className="px-4 py-3 text-center text-chart-3">{item.soldQty}</td>
+                      <td className="px-4 py-3 text-center text-primary">{item.wasteQty}</td>
+                      <td className="px-4 py-3 text-center text-success">{item.surplusQty}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -290,17 +278,17 @@ export default function DailyClosePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-cream p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-7xl">
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <Link href="/admin" className="mb-3 inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700">
+            <Link href="/admin" className="mb-3 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
               <ArrowLeft className="h-4 w-4" />Volver al panel
             </Link>
-            <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900">
-              <ClipboardCheck className="h-7 w-7 text-amber-600" />Cierre del día
+            <h1 className="flex items-center gap-2 text-2xl font-bold text-foreground">
+              <ClipboardCheck className="h-7 w-7 text-primary" />Cierre del día
             </h1>
-            <p className="mt-1 max-w-2xl text-gray-500">
+            <p className="mt-1 max-w-2xl text-muted-foreground">
               Registra el conteo físico al final de la jornada. El sistema calcula las ventas que no pasaron por POS o pedidos y mantiene las alertas de inventario.
             </p>
           </div>
@@ -311,22 +299,22 @@ export default function DailyClosePage() {
           )}
         </div>
 
-        <div className="mb-6 grid gap-4 rounded-xl border border-gray-100 bg-white p-4 shadow-sm md:grid-cols-3">
+        <div className="mb-6 grid gap-4 rounded-xl border border-border bg-card p-4 shadow-sm md:grid-cols-3">
           <label className="block">
-            <span className="mb-1 block text-sm font-medium text-gray-700">Sucursal</span>
+            <span className="mb-1 block text-sm font-medium text-foreground">Sucursal</span>
             <div className="relative">
-              <Store className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <Store className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
               {user?.role === "ADMIN" ? (
                 <select
                   value={branchId ?? ""}
                   onChange={(event) => setBranchId(Number(event.target.value) || null)}
-                  className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-3 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="w-full rounded-lg border border-border bg-card py-2 pl-9 pr-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   <option value="">Seleccionar sucursal</option>
                   {branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}
                 </select>
               ) : (
-                <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 pl-9 text-gray-700">
+                <div className="rounded-lg border border-border bg-cream px-3 py-2 pl-9 text-foreground">
                   {selectedBranchName}
                 </div>
               )}
@@ -334,24 +322,24 @@ export default function DailyClosePage() {
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-sm font-medium text-gray-700">Fecha operativa</span>
+            <span className="mb-1 block text-sm font-medium text-foreground">Fecha operativa</span>
             <input
               type="date"
               value={closeDate}
               onChange={(event) => setCloseDate(event.target.value)}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="w-full rounded-lg border border-border px-3 py-2 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </label>
 
-          <div className="flex items-end text-sm text-gray-500">
-            <p className="rounded-lg bg-amber-50 p-3 text-amber-800">
+          <div className="flex items-end text-sm text-muted-foreground">
+            <p className="rounded-lg bg-accent p-3 text-primary">
               Puedes registrar ventas de mostrador al cierre sin alterar los descuentos de materia prima de producción.
             </p>
           </div>
         </div>
 
         {error && (
-          <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-red-800">
+          <div className="mb-6 flex items-start gap-3 rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-destructive">
             <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
             <div>
               <p className="font-medium">No se pudo cargar el cierre</p>
@@ -361,15 +349,15 @@ export default function DailyClosePage() {
         )}
 
         {isLoading ? (
-          <div className="rounded-xl border border-gray-100 bg-white p-16 text-center shadow-sm">
-            <Loader2 className="mx-auto mb-3 h-8 w-8 animate-spin text-amber-600" />
-            <p className="text-gray-500">Capturando inventario del sistema...</p>
+          <div className="rounded-xl border border-border bg-card p-16 text-center shadow-sm">
+            <Loader2 className="mx-auto mb-3 h-8 w-8 animate-spin text-primary" />
+            <p className="text-muted-foreground">Capturando inventario del sistema...</p>
           </div>
         ) : entries.length === 0 ? (
-          <div className="rounded-xl border border-gray-100 bg-white p-16 text-center shadow-sm">
-            <ClipboardCheck className="mx-auto mb-3 h-12 w-12 text-gray-300" />
-            <p className="font-medium text-gray-700">No hay productos con inventario en esta sucursal</p>
-            <p className="mt-1 text-sm text-gray-500">Registra producción o crea el inventario inicial antes de cerrar.</p>
+          <div className="rounded-xl border border-border bg-card p-16 text-center shadow-sm">
+            <ClipboardCheck className="mx-auto mb-3 h-12 w-12 text-muted-foreground/40" />
+            <p className="font-medium text-foreground">No hay productos con inventario en esta sucursal</p>
+            <p className="mt-1 text-sm text-muted-foreground">Registra producción o crea el inventario inicial antes de cerrar.</p>
           </div>
         ) : (
           <>
@@ -379,10 +367,10 @@ export default function DailyClosePage() {
               <SummaryCard label="Sobrante" value={totals.surplusQty} tone="green" icon={<TrendingUp className="h-4 w-4" />} />
             </div>
 
-            <div className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
+            <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[900px] text-sm">
-                  <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
+                  <thead className="border-b bg-cream text-left text-xs uppercase text-muted-foreground">
                     <tr>
                       <th className="px-4 py-3">Producto</th>
                       <th className="px-3 py-3 text-center">Sistema</th>
@@ -398,13 +386,13 @@ export default function DailyClosePage() {
                       const projection = projectionMap.get(entry.productId)!
                       const hasValidationIssue = !projection.valid
                       return (
-                        <tr key={entry.productId} className={hasValidationIssue ? "bg-red-50/60" : "hover:bg-gray-50"}>
+                        <tr key={entry.productId} className={hasValidationIssue ? "bg-destructive/10/60" : "hover:bg-cream"}>
                           <td className="px-4 py-3">
-                            <p className="font-medium text-gray-900">{entry.productName}</p>
-                            <p className="text-xs text-gray-400">{entry.sku}{!entry.isActive && " · Inactivo"}</p>
+                            <p className="font-medium text-foreground">{entry.productName}</p>
+                            <p className="text-xs text-muted-foreground/60">{entry.sku}{!entry.isActive && " · Inactivo"}</p>
                           </td>
-                          <td className="px-3 py-3 text-center font-semibold text-gray-700">{entry.systemQty}</td>
-                          <td className="px-3 py-3 text-center text-amber-700">{entry.reservedQty}</td>
+                          <td className="px-3 py-3 text-center font-semibold text-foreground">{entry.systemQty}</td>
+                          <td className="px-3 py-3 text-center text-primary">{entry.reservedQty}</td>
                           <td className="px-3 py-3">
                             <input
                               type="number"
@@ -412,7 +400,7 @@ export default function DailyClosePage() {
                               step="1"
                               value={entry.countedInput}
                               onChange={(event) => updateEntry(entry.productId, "countedInput", event.target.value)}
-                              className={`w-28 rounded-lg border px-3 py-2 text-center font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 ${hasValidationIssue ? "border-red-300 bg-red-50" : "border-gray-200"}`}
+                              className={`w-28 rounded-lg border px-3 py-2 text-center font-semibold focus:outline-none focus:ring-2 focus:ring-primary ${hasValidationIssue ? "border-destructive/30 bg-destructive/10" : "border-border"}`}
                               aria-label={`Conteo físico de ${entry.productName}`}
                             />
                           </td>
@@ -423,12 +411,12 @@ export default function DailyClosePage() {
                               step="1"
                               value={entry.wasteInput}
                               onChange={(event) => updateEntry(entry.productId, "wasteInput", event.target.value)}
-                              className={`w-24 rounded-lg border px-3 py-2 text-center focus:outline-none focus:ring-2 focus:ring-amber-500 ${hasValidationIssue ? "border-red-300 bg-red-50" : "border-gray-200"}`}
+                              className={`w-24 rounded-lg border px-3 py-2 text-center focus:outline-none focus:ring-2 focus:ring-primary ${hasValidationIssue ? "border-destructive/30 bg-destructive/10" : "border-border"}`}
                               aria-label={`Merma de ${entry.productName}`}
                             />
                           </td>
-                          <td className="px-3 py-3 text-center font-semibold text-blue-700">{projection.soldQty}</td>
-                          <td className="px-3 py-3 text-center font-semibold text-green-700">{projection.surplusQty}</td>
+                          <td className="px-3 py-3 text-center font-semibold text-chart-3">{projection.soldQty}</td>
+                          <td className="px-3 py-3 text-center font-semibold text-success">{projection.surplusQty}</td>
                         </tr>
                       )
                     })}
@@ -437,20 +425,20 @@ export default function DailyClosePage() {
               </div>
             </div>
 
-            <div className="mt-6 rounded-xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
+            <div className="mt-6 rounded-xl border border-border bg-card p-4 shadow-sm sm:p-6">
               <label className="block">
-                <span className="mb-1 block text-sm font-medium text-gray-700">Nota del cierre (opcional)</span>
+                <span className="mb-1 block text-sm font-medium text-foreground">Nota del cierre (opcional)</span>
                 <input
                   value={note}
                   onChange={(event) => setNote(event.target.value)}
                   maxLength={500}
                   placeholder="Ej. Ventas de mostrador y merma del turno de la tarde"
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="w-full rounded-lg border border-border px-3 py-2 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </label>
               <div className="mt-4 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-                <div className="flex items-start gap-2 text-sm text-gray-600">
-                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                   <span>El cierre generará movimientos auditables y actualizará el stock a las cantidades físicas capturadas.</span>
                 </div>
                 <Button onClick={handleSubmit} disabled={isSubmitting || Boolean(invalidEntry)} className="min-w-[190px]">
@@ -477,10 +465,10 @@ function SummaryCard({
   icon?: React.ReactNode
 }) {
   const tones = {
-    blue: "bg-blue-50 text-blue-700",
-    orange: "bg-orange-50 text-orange-700",
-    green: "bg-green-50 text-green-700",
-    gray: "bg-gray-100 text-gray-700",
+    blue: "bg-chart-3/10 text-chart-3",
+    orange: "bg-primary/10 text-primary",
+    green: "bg-success/10 text-success",
+    gray: "bg-muted text-foreground",
   }
   return (
     <div className={`rounded-xl p-3 text-center ${tones[tone]}`}>

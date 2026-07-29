@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { ArrowLeft, Calendar, ClipboardCheck, Eye, Loader2, RefreshCw, Store } from "lucide-react"
+import { ArrowLeft, Calendar, ClipboardCheck, Eye, Loader as Loader2, RefreshCw, Store } from "lucide-react"
 import { branchesService, dailyCloseService, type ApiBranch, type DailyCloseRecord } from "@/lib/api"
 import { useAuth } from "@/context/AuthContext"
 import { useToast } from "@/components/ui/toast"
@@ -65,33 +65,33 @@ export default function DailyCloseHistoryPage() {
   if (user && user.role !== "ADMIN" && user.role !== "MANAGER") return null
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-cream p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-7xl">
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <Link href="/admin/cierre-dia" className="mb-3 inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700">
+            <Link href="/admin/cierre-dia" className="mb-3 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
               <ArrowLeft className="h-4 w-4" />Volver al cierre
             </Link>
-            <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900">
-              <ClipboardCheck className="h-7 w-7 text-amber-600" />Historial de cierres
+            <h1 className="flex items-center gap-2 text-2xl font-bold text-foreground">
+              <ClipboardCheck className="h-7 w-7 text-primary" />Historial de cierres
             </h1>
-            <p className="mt-1 text-gray-500">Consulta las ventas calculadas, mermas y sobrantes de cada jornada.</p>
+            <p className="mt-1 text-muted-foreground">Consulta las ventas calculadas, mermas y sobrantes de cada jornada.</p>
           </div>
           <Link href="/admin/cierre-dia">
             <Button><ClipboardCheck className="h-4 w-4" />Nuevo cierre</Button>
           </Link>
         </div>
 
-        <div className="mb-6 grid gap-4 rounded-xl border border-gray-100 bg-white p-4 shadow-sm md:grid-cols-3">
+        <div className="mb-6 grid gap-4 rounded-xl border border-border bg-card p-4 shadow-sm md:grid-cols-3">
           {user?.role === "ADMIN" && (
             <label className="block">
-              <span className="mb-1 block text-sm font-medium text-gray-700">Sucursal</span>
+              <span className="mb-1 block text-sm font-medium text-foreground">Sucursal</span>
               <div className="relative">
-                <Store className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <Store className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
                 <select
                   value={branchId ?? ""}
                   onChange={(event) => { setBranchId(Number(event.target.value) || undefined); setPage(1) }}
-                  className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-3 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="w-full rounded-lg border border-border bg-card py-2 pl-9 pr-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   <option value="">Todas las sucursales</option>
                   {branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}
@@ -100,34 +100,34 @@ export default function DailyCloseHistoryPage() {
             </label>
           )}
           <label className="block">
-            <span className="mb-1 block text-sm font-medium text-gray-700">Desde</span>
+            <span className="mb-1 block text-sm font-medium text-foreground">Desde</span>
             <div className="relative">
-              <Calendar className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              <input type="date" value={from} onChange={(event) => { setFrom(event.target.value); setPage(1) }} className="w-full rounded-lg border border-gray-200 py-2 pl-9 pr-3 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+              <Calendar className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
+              <input type="date" value={from} onChange={(event) => { setFrom(event.target.value); setPage(1) }} className="w-full rounded-lg border border-border py-2 pl-9 pr-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary" />
             </div>
           </label>
           <label className="block">
-            <span className="mb-1 block text-sm font-medium text-gray-700">Hasta</span>
+            <span className="mb-1 block text-sm font-medium text-foreground">Hasta</span>
             <div className="relative">
-              <Calendar className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              <input type="date" value={to} onChange={(event) => { setTo(event.target.value); setPage(1) }} className="w-full rounded-lg border border-gray-200 py-2 pl-9 pr-3 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+              <Calendar className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
+              <input type="date" value={to} onChange={(event) => { setTo(event.target.value); setPage(1) }} className="w-full rounded-lg border border-border py-2 pl-9 pr-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary" />
             </div>
           </label>
         </div>
 
-        <div className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
+        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
           {isLoading ? (
-            <div className="p-16 text-center"><Loader2 className="mx-auto mb-3 h-8 w-8 animate-spin text-amber-600" /><p className="text-gray-500">Cargando historial...</p></div>
+            <div className="p-16 text-center"><Loader2 className="mx-auto mb-3 h-8 w-8 animate-spin text-primary" /><p className="text-muted-foreground">Cargando historial...</p></div>
           ) : records.length === 0 ? (
-            <div className="p-16 text-center text-gray-500">
-              <ClipboardCheck className="mx-auto mb-3 h-12 w-12 text-gray-300" />
+            <div className="p-16 text-center text-muted-foreground">
+              <ClipboardCheck className="mx-auto mb-3 h-12 w-12 text-muted-foreground/40" />
               <p className="font-medium">No hay cierres para los filtros seleccionados</p>
             </div>
           ) : (
             <>
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[800px] text-sm">
-                  <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
+                  <thead className="border-b bg-cream text-left text-xs uppercase text-muted-foreground">
                     <tr>
                       <th className="px-4 py-3">Fecha</th>
                       <th className="px-4 py-3">Sucursal</th>
@@ -140,15 +140,15 @@ export default function DailyCloseHistoryPage() {
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {records.map((record) => (
-                      <tr key={record.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 font-medium text-gray-900">{displayDate(record.closeDate)}</td>
-                        <td className="px-4 py-3 text-gray-600">{record.branch.name}</td>
-                        <td className="px-4 py-3 text-gray-600">{record.user.firstName} {record.user.lastName}</td>
-                        <td className="px-3 py-3 text-center font-semibold text-blue-700">{record.summary.totalSold}</td>
-                        <td className="px-3 py-3 text-center font-semibold text-orange-700">{record.summary.totalWaste}</td>
-                        <td className="px-3 py-3 text-center font-semibold text-green-700">{record.summary.totalSurplus}</td>
+                      <tr key={record.id} className="hover:bg-cream">
+                        <td className="px-4 py-3 font-medium text-foreground">{displayDate(record.closeDate)}</td>
+                        <td className="px-4 py-3 text-muted-foreground">{record.branch.name}</td>
+                        <td className="px-4 py-3 text-muted-foreground">{record.user.firstName} {record.user.lastName}</td>
+                        <td className="px-3 py-3 text-center font-semibold text-chart-3">{record.summary.totalSold}</td>
+                        <td className="px-3 py-3 text-center font-semibold text-primary">{record.summary.totalWaste}</td>
+                        <td className="px-3 py-3 text-center font-semibold text-success">{record.summary.totalSurplus}</td>
                         <td className="px-4 py-3 text-right">
-                          <Link href={`/admin/cierre-dia/${record.id}`} className="inline-flex items-center gap-1 text-amber-700 hover:text-amber-900">
+                          <Link href={`/admin/cierre-dia/${record.id}`} className="inline-flex items-center gap-1 text-primary hover:text-primary">
                             <Eye className="h-4 w-4" />Ver
                           </Link>
                         </td>
@@ -157,7 +157,7 @@ export default function DailyCloseHistoryPage() {
                   </tbody>
                 </table>
               </div>
-              <div className="flex flex-col gap-3 border-t border-gray-100 px-4 py-3 text-sm text-gray-500 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-3 border-t border-border px-4 py-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
                 <span>{total} cierre{total === 1 ? "" : "s"} encontrado{total === 1 ? "" : "s"}</span>
                 <div className="flex items-center gap-2">
                   <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((current) => current - 1)}>Anterior</Button>

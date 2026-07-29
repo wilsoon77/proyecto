@@ -189,27 +189,27 @@ export default function PosPage() {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row h-[calc(100vh-64px)] overflow-hidden bg-gray-50">
+    <div className="flex flex-col lg:flex-row h-[calc(100vh-64px)] overflow-hidden bg-cream">
 
       {/* LEFT: PRODUCTS LISTING */}
-      <div className={`flex-1 flex flex-col h-full border-r border-gray-200 ${showCartOnMobile ? 'hidden lg:flex' : 'flex'}`}>
+      <div className={`flex-1 flex flex-col h-full border-r border-border ${showCartOnMobile ? 'hidden lg:flex' : 'flex'}`}>
 
         {/* HEADER: Branches & Search */}
-        <div className="p-4 bg-white border-b flex flex-wrap gap-4 items-center shadow-sm z-10">
+        <div className="p-4 bg-card border-b flex flex-wrap gap-4 items-center shadow-sm z-10">
           <div className="flex-1 min-w-[200px] relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
             <Input
               placeholder="Buscar productos (nombre o SKU)..."
-              className="pl-9 bg-gray-50"
+              className="pl-9 bg-cream"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
 
           <div className="flex items-center gap-2">
-            <Store className="h-5 w-5 text-gray-500" />
+            <Store className="h-5 w-5 text-muted-foreground" />
             <select
-              className="border border-gray-300 rounded-md text-sm p-2 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="border border-input rounded-md text-sm p-2 bg-card focus:outline-none focus:ring-2 focus:ring-primary"
               value={selectedBranch}
               onChange={(e) => setSelectedBranch(e.target.value)}
               disabled={user?.role !== 'ADMIN'}
@@ -223,12 +223,12 @@ export default function PosPage() {
         </div>
 
         {/* CATEGORIES TABS */}
-        <div className="bg-white border-b px-2 overflow-x-auto no-scrollbar shadow-sm">
+        <div className="bg-card border-b px-2 overflow-x-auto no-scrollbar shadow-sm">
           <div className="flex gap-2 p-2">
             <button
               onClick={() => setSelectedCategory('ALL')}
               className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors
-                ${selectedCategory === 'ALL' ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                ${selectedCategory === 'ALL' ? 'bg-primary/10 text-primary border border-primary/30' : 'bg-muted text-foreground hover:bg-border'}`}
             >
               Todos
             </button>
@@ -237,7 +237,7 @@ export default function PosPage() {
                 key={c.id}
                 onClick={() => setSelectedCategory(c.slug)}
                 className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors
-                  ${selectedCategory === c.slug ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                  ${selectedCategory === c.slug ? 'bg-primary/10 text-primary border border-primary/30' : 'bg-muted text-foreground hover:bg-border'}`}
               >
                 {c.name}
               </button>
@@ -246,13 +246,13 @@ export default function PosPage() {
         </div>
 
         {/* PRODUCT GRID */}
-        <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+        <div className="flex-1 overflow-y-auto p-4 bg-cream">
           {!selectedBranch ? (
-            <div className="flex h-full items-center justify-center text-gray-400">
+            <div className="flex h-full items-center justify-center text-muted-foreground/60">
               <p>Selecciona una sucursal para ver los productos</p>
             </div>
           ) : filteredProducts.length === 0 ? (
-            <div className="flex h-full items-center justify-center text-gray-400">
+            <div className="flex h-full items-center justify-center text-muted-foreground/60">
               <p>No se encontraron productos disponibles</p>
             </div>
           ) : (
@@ -266,68 +266,68 @@ export default function PosPage() {
                   <div
                     key={p.id}
                     className={`
-                      relative group bg-white border rounded-xl overflow-hidden shadow-sm transition-all h-full flex flex-col
-                      ${isOutOfStock ? 'opacity-50' : qtyInCart > 0 ? 'border-amber-400 ring-1 ring-amber-200 shadow-md' : 'hover:shadow-md hover:border-amber-400 cursor-pointer'}
+                      relative group bg-card border rounded-xl overflow-hidden shadow-sm transition-all h-full flex flex-col
+                      ${isOutOfStock ? 'opacity-50' : qtyInCart > 0 ? 'border-primary/40 ring-1 ring-primary/20 shadow-md' : 'hover:shadow-md hover:border-primary/40 cursor-pointer'}
                     `}
                     onClick={() => { if (!isOutOfStock && qtyInCart === 0) addToCart(p) }}
                   >
                     {/* Stock badge */}
-                    <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-0.5 rounded text-xs font-bold text-gray-700 shadow-sm z-10">
+                    <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-0.5 rounded text-xs font-bold text-foreground shadow-sm z-10">
                       {p.available !== undefined ? p.available : '∞'}
                     </div>
 
                     {/* Combo badge */}
                     {p.comboQuantity && p.comboPrice && (
-                      <div className="absolute top-2 left-0 bg-blue-500 text-white text-[10px] font-bold px-2 py-1 rounded-r-md shadow-sm z-10">
+                      <div className="absolute top-2 left-0 bg-chart-3/100 text-white text-[10px] font-bold px-2 py-1 rounded-r-md shadow-sm z-10">
                         {p.comboQuantity} x Q{Number(p.comboPrice).toFixed(2)}
                       </div>
                     )}
 
                     {/* Cart quantity badge */}
                     {qtyInCart > 0 && (
-                      <div className="absolute top-2 left-2 bg-amber-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shadow-sm z-10">
+                      <div className="absolute top-2 left-2 bg-accent0 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shadow-sm z-10">
                         {qtyInCart}
                       </div>
                     )}
 
-                    <div className="h-28 bg-gray-100 flex items-center justify-center">
+                    <div className="h-28 bg-muted flex items-center justify-center">
                       {p.images?.[0] ? (
                         <img src={p.images[0].url} alt={p.name} className="h-full w-full object-cover" />
                       ) : (
-                        <Cookie className="h-12 w-12 text-gray-300 stroke-[1.5]" />
+                        <Cookie className="h-12 w-12 text-muted-foreground/40 stroke-[1.5]" />
                       )}
                     </div>
 
                     <div className="p-3 flex flex-col flex-1 justify-between">
                       <div>
-                        <h3 className="text-sm font-medium text-gray-900 line-clamp-2 leading-tight">{p.name}</h3>
-                        <p className="text-xs text-gray-500 mt-1">{p.sku}</p>
+                        <h3 className="text-sm font-medium text-foreground line-clamp-2 leading-tight">{p.name}</h3>
+                        <p className="text-xs text-muted-foreground mt-1">{p.sku}</p>
                       </div>
 
                       {/* Price + inline quantity controls */}
                       <div className="mt-2 flex flex-wrap items-center justify-between gap-1">
-                        <span className="text-amber-600 font-bold">Q{Number(p.basePrice).toFixed(2)}</span>
+                        <span className="text-primary font-bold">Q{Number(p.basePrice).toFixed(2)}</span>
 
                         {qtyInCart > 0 ? (
-                          <div className="flex items-center border border-gray-200 rounded-lg bg-gray-50 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center border border-border rounded-lg bg-cream overflow-hidden" onClick={(e) => e.stopPropagation()}>
                             <button
                               onClick={() => updateQuantity(p.id, -1)}
-                              className="px-1.5 py-1 text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+                              className="px-1.5 py-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
                             >
                               <Minus className="h-3.5 w-3.5" />
                             </button>
-                            <span className="w-5 text-center text-sm font-bold text-gray-800">{qtyInCart}</span>
+                            <span className="w-5 text-center text-sm font-bold text-foreground">{qtyInCart}</span>
                             <button
                               onClick={() => addToCart(p)}
-                              className="px-1.5 py-1 text-gray-500 hover:bg-green-50 hover:text-green-600 transition-colors"
+                              className="px-1.5 py-1 text-muted-foreground hover:bg-success/10 hover:text-success transition-colors"
                             >
                               <Plus className="h-3.5 w-3.5" />
                             </button>
                           </div>
                         ) : !isOutOfStock ? (
-                          <span className="text-xs text-gray-400 group-hover:text-amber-600 transition-colors font-medium">+ Agregar</span>
+                          <span className="text-xs text-muted-foreground/60 group-hover:text-primary transition-colors font-medium">+ Agregar</span>
                         ) : (
-                          <span className="text-xs text-red-400 font-medium">Agotado</span>
+                          <span className="text-xs text-destructive/60 font-medium">Agotado</span>
                         )}
                       </div>
                     </div>
@@ -340,14 +340,14 @@ export default function PosPage() {
 
         {/* Mobile Floating Cart Summary Button */}
         {cart.length > 0 && (
-          <div className="lg:hidden p-3 bg-white border-t border-gray-200">
+          <div className="lg:hidden p-3 bg-card border-t border-border">
             <Button
               onClick={() => setShowCartOnMobile(true)}
-              className="w-full bg-amber-600 hover:bg-amber-700 text-white h-12 rounded-xl flex items-center justify-between px-4 font-bold shadow-lg transition-transform active:scale-[0.98]"
+              className="w-full bg-primary hover:bg-primary/90 text-white h-12 rounded-xl flex items-center justify-between px-4 font-bold shadow-lg transition-transform active:scale-[0.98]"
             >
               <div className="flex items-center gap-2">
                 <ShoppingCart className="h-5 w-5" />
-                <span className="bg-amber-700 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                <span className="bg-primary text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
                   {cart.reduce((sum, item) => sum + item.quantity, 0)}
                 </span>
                 <span>Ver Carrito</span>
@@ -359,66 +359,66 @@ export default function PosPage() {
       </div>
 
       {/* RIGHT: CART & CHECKOUT (Width: 380px fixed on Desktop) */}
-      <div className={`w-full lg:w-[380px] flex flex-col h-full bg-white border-l shadow-2xl z-20 ${showCartOnMobile ? 'flex' : 'hidden lg:flex'}`}>
+      <div className={`w-full lg:w-[380px] flex flex-col h-full bg-card border-l shadow-2xl z-20 ${showCartOnMobile ? 'flex' : 'hidden lg:flex'}`}>
 
         {/* Cart Header */}
-        <div className="p-4 border-b bg-gray-50 flex items-center gap-2">
+        <div className="p-4 border-b bg-cream flex items-center gap-2">
           <button
             type="button"
             onClick={() => setShowCartOnMobile(false)}
-            className="lg:hidden p-1 mr-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+            className="lg:hidden p-1 mr-1 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <ShoppingCart className="h-5 w-5 text-gray-600" />
-          <h2 className="text-lg font-bold text-gray-800">Orden Actual</h2>
-          <span className="ml-auto bg-amber-100 text-amber-800 text-xs font-bold px-2 py-1 rounded-full">
+          <ShoppingCart className="h-5 w-5 text-muted-foreground" />
+          <h2 className="text-lg font-bold text-foreground">Orden Actual</h2>
+          <span className="ml-auto bg-primary/10 text-primary text-xs font-bold px-2 py-1 rounded-full">
             {cart.reduce((a, b) => a + b.quantity, 0)} items
           </span>
         </div>
 
         {/* Cart Items List */}
-        <div className="flex-1 overflow-y-auto p-4 bg-white relative">
+        <div className="flex-1 overflow-y-auto p-4 bg-card relative">
           {cart.length === 0 ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground/60">
               <ShoppingCart className="h-12 w-12 mb-4 opacity-20" />
               <p>El carrito está vacío</p>
             </div>
           ) : (
             <div className="space-y-3">
               {cart.map((item) => (
-                <div key={item.product.id} className="flex flex-col gap-2 p-3 bg-gray-50 border border-gray-100 rounded-lg">
+                <div key={item.product.id} className="flex flex-col gap-2 p-3 bg-cream border border-border rounded-lg">
                   <div className="flex justify-between items-start">
                     <div className="flex-1 pr-2">
-                      <p className="font-semibold text-gray-800 leading-tight">{item.product.name}</p>
-                      <p className="text-xs text-gray-500">Q{Number(item.product.basePrice).toFixed(2)} c/u</p>
+                      <p className="font-semibold text-foreground leading-tight">{item.product.name}</p>
+                      <p className="text-xs text-muted-foreground">Q{Number(item.product.basePrice).toFixed(2)} c/u</p>
                     </div>
                     <button
                       onClick={() => removeFromCart(item.product.id)}
-                      className="text-red-400 hover:text-red-600 p-1"
+                      className="text-destructive/60 hover:text-destructive p-1"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
 
                   <div className="flex items-center justify-between mt-1">
-                    <div className="flex items-center border rounded-md bg-white">
+                    <div className="flex items-center border rounded-md bg-card">
                       <button
                         onClick={() => updateQuantity(item.product.id, -1)}
-                        className="px-2 py-1 flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-red-500"
+                        className="px-2 py-1 flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-destructive"
                       >
                         <Minus className="h-4 w-4" />
                       </button>
                       <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
                       <button
                         onClick={() => updateQuantity(item.product.id, 1)}
-                        className="px-2 py-1 flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-amber-500"
+                        className="px-2 py-1 flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-primary"
                       >
                         <Plus className="h-4 w-4" />
                       </button>
                     </div>
 
-                    <div className="font-bold text-gray-800">
+                    <div className="font-bold text-foreground">
                       Q{(Number(item.product.basePrice) * item.quantity).toFixed(2)}
                     </div>
                   </div>
@@ -429,34 +429,34 @@ export default function PosPage() {
         </div>
 
         {/* Totals & Checkout Panel */}
-        <div className="border-t bg-gray-50 p-4 shrink-0">
+        <div className="border-t bg-cream p-4 shrink-0">
 
           <div className="space-y-2 mb-4">
-            <div className="flex justify-between text-sm text-gray-600">
+            <div className="flex justify-between text-sm text-muted-foreground">
               <span>Subtotal</span>
               <span>Q{cartTotals.subtotal.toFixed(2)}</span>
             </div>
             {cartTotals.discount > 0 && (
-              <div className="flex justify-between text-sm text-green-600 font-medium">
+              <div className="flex justify-between text-sm text-success font-medium">
                 <span>Descuento (Combos)</span>
                 <span>- Q{cartTotals.discount.toFixed(2)}</span>
               </div>
             )}
-            <div className="flex justify-between text-xl font-black text-gray-900 border-t border-gray-200 border-dashed pt-2 mt-2 pb-1">
+            <div className="flex justify-between text-xl font-black text-foreground border-t border-border border-dashed pt-2 mt-2 pb-1">
               <span>Total a Cobrar</span>
               <span>Q{cartTotals.total.toFixed(2)}</span>
             </div>
           </div>
 
           {/* Efectivo Recibido y Vuelto simplificado */}
-          <div className="mb-4 bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+          <div className="mb-4 bg-card p-3 rounded-lg border border-border shadow-sm">
             <div className="flex justify-between items-center mb-1.5">
-              <label className="text-xs text-gray-500 font-medium">Efectivo Recibido (Q)</label>
+              <label className="text-xs text-muted-foreground font-medium">Efectivo Recibido (Q)</label>
               {amountTendered !== "" && (
                 <button
                   type="button"
                   onClick={() => setAmountTendered("")}
-                  className="text-[10px] text-amber-600 hover:text-amber-700 font-bold"
+                  className="text-[10px] text-primary hover:text-primary font-bold"
                 >
                   Usar Pago Exacto
                 </button>
@@ -465,7 +465,7 @@ export default function PosPage() {
             <Input
               type="number"
               placeholder={`Q${cartTotals.total.toFixed(2)} (Pago Exacto)`}
-              className="text-lg font-bold h-10 mb-2 border-gray-300 focus-visible:ring-amber-500"
+              className="text-lg font-bold h-10 mb-2 border-input focus-visible:ring-amber-500"
               value={amountTendered}
               onChange={(e) => setAmountTendered(e.target.value)}
               min={cartTotals.total}
@@ -482,10 +482,10 @@ export default function PosPage() {
                   disabled={bill < cartTotals.total}
                   className={`text-[11px] px-2 py-0.5 rounded border font-medium transition-all ${
                     bill < cartTotals.total
-                      ? 'opacity-40 bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed'
+                      ? 'opacity-40 bg-cream text-muted-foreground/60 border-border cursor-not-allowed'
                       : amountTendered === bill.toString()
-                        ? 'bg-amber-100 border-amber-400 text-amber-800'
-                        : 'bg-white hover:bg-gray-50 border-gray-200 text-gray-700'
+                        ? 'bg-primary/10 border-primary/40 text-primary'
+                        : 'bg-card hover:bg-cream border-border text-foreground'
                   }`}
                 >
                   Q{bill}
@@ -496,17 +496,17 @@ export default function PosPage() {
                 onClick={() => setAmountTendered("")}
                 className={`text-[11px] px-2 py-0.5 rounded border font-medium transition-all ${
                   amountTendered === ""
-                    ? 'bg-amber-100 border-amber-400 text-amber-800'
-                    : 'bg-white hover:bg-gray-50 border-gray-200 text-gray-700'
+                    ? 'bg-primary/10 border-primary/40 text-primary'
+                    : 'bg-card hover:bg-cream border-border text-foreground'
                 }`}
               >
                 Exacto
               </button>
             </div>
 
-            <div className="flex justify-between items-center text-sm border-t border-gray-100 pt-2">
-              <span className="text-gray-500">Cambio:</span>
-              <span className={`font-black text-lg ${isTenderedInsufficient ? 'text-red-500 animate-pulse' : 'text-green-600'}`}>
+            <div className="flex justify-between items-center text-sm border-t border-border pt-2">
+              <span className="text-muted-foreground">Cambio:</span>
+              <span className={`font-black text-lg ${isTenderedInsufficient ? 'text-destructive animate-pulse' : 'text-success'}`}>
                 {isTenderedInsufficient
                   ? 'Monto insuficiente'
                   : amountTendered === ""
@@ -526,7 +526,7 @@ export default function PosPage() {
               <Trash2 className="h-4 w-4" />
             </Button>
             <Button
-              className="flex-1 bg-amber-600 hover:bg-amber-700 text-white h-12 text-lg font-bold shadow-lg"
+              className="flex-1 bg-primary hover:bg-primary/90 text-white h-12 text-lg font-bold shadow-lg"
               onClick={handleCheckout}
               disabled={cart.length === 0 || isProcessing || isTenderedInsufficient}
             >

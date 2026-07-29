@@ -82,10 +82,10 @@ export default function RegistroPage() {
   return (
     <div className="mx-auto max-w-md px-4 py-16">
       <h1 className="mb-2 text-3xl font-bold">Crear Cuenta</h1>
-      <p className="mb-8 text-gray-600">Únete a Panaderia Svetlana y disfruta de pan fresco.</p>
+      <p className="mb-8 text-muted-foreground">Únete a Panaderia Svetlana y disfruta de pan fresco.</p>
       
       {error && (
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        <div className="mb-4 rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
         </div>
       )}
@@ -93,7 +93,7 @@ export default function RegistroPage() {
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
+            <label className="mb-1 block text-sm font-medium text-foreground">
               Nombre *
             </label>
             <input 
@@ -106,7 +106,7 @@ export default function RegistroPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
+            <label className="mb-1 block text-sm font-medium text-foreground">
               Apellido *
             </label>
             <input 
@@ -121,7 +121,7 @@ export default function RegistroPage() {
         </div>
         
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">
+          <label className="mb-1 block text-sm font-medium text-foreground">
             Correo electrónico *
           </label>
           <input 
@@ -136,7 +136,7 @@ export default function RegistroPage() {
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">
+          <label className="mb-1 block text-sm font-medium text-foreground">
             Teléfono (opcional)
           </label>
           <input 
@@ -151,7 +151,7 @@ export default function RegistroPage() {
         </div>
         
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">
+          <label className="mb-1 block text-sm font-medium text-foreground">
             Contraseña *
           </label>
           <div className="relative">
@@ -167,7 +167,7 @@ export default function RegistroPage() {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
               tabIndex={-1}
             >
               {showPassword ? (
@@ -185,7 +185,7 @@ export default function RegistroPage() {
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">
+          <label className="mb-1 block text-sm font-medium text-foreground">
             Confirmar contraseña *
           </label>
           <div className="relative">
@@ -201,7 +201,7 @@ export default function RegistroPage() {
             <button
               type="button"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
               tabIndex={-1}
             >
               {showConfirmPassword ? (
@@ -233,7 +233,7 @@ export default function RegistroPage() {
         </Button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-gray-700">
+      <p className="mt-6 text-center text-sm text-foreground">
         ¿Ya tienes cuenta?{" "}
         <Link href={ROUTES.login} className="text-primary hover:underline font-medium">
           Inicia sesión

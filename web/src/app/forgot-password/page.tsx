@@ -64,17 +64,17 @@ export default function ForgotPasswordPage() {
     return (
       <div className="mx-auto max-w-md px-4 py-16">
         <div className="text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-            <svg className="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-success/10">
+            <svg className="h-8 w-8 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
           </div>
-          <h1 className="mb-2 text-2xl font-bold text-gray-900">Revisa tu correo</h1>
-          <p className="mb-6 text-gray-600">
+          <h1 className="mb-2 text-2xl font-bold text-foreground">Revisa tu correo</h1>
+          <p className="mb-6 text-muted-foreground">
             Hemos enviado un enlace de recuperación a <strong>{email}</strong>. 
             Haz clic en el enlace del correo para restablecer tu contraseña.
           </p>
-          <p className="text-sm text-gray-500 mb-6">
+          <p className="text-sm text-muted-foreground mb-6">
             ¿No recibiste el correo? Revisa tu carpeta de spam o{" "}
             <button 
               onClick={() => setSuccess(false)}
@@ -96,19 +96,19 @@ export default function ForgotPasswordPage() {
   return (
     <div className="mx-auto max-w-md px-4 py-16">
       <h1 className="mb-2 text-3xl font-bold">Recuperar contraseña</h1>
-      <p className="mb-8 text-gray-600">
+      <p className="mb-8 text-muted-foreground">
         Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.
       </p>
 
       {error && (
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        <div className="mb-4 rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
         </div>
       )}
 
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">
+          <label className="mb-1 block text-sm font-medium text-foreground">
             Correo electrónico
           </label>
           <input
@@ -136,7 +136,7 @@ export default function ForgotPasswordPage() {
         </Button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-gray-700">
+      <p className="mt-6 text-center text-sm text-foreground">
         ¿Recordaste tu contraseña?{" "}
         <Link href={ROUTES.login} className="text-primary hover:underline font-medium">
           Iniciar sesión

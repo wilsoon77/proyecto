@@ -42,7 +42,7 @@ export function ImageGallery({ images, alt, category }: ImageGalleryProps) {
   }
 
   const renderFallback = () => (
-    <div className="flex h-full w-full items-center justify-center bg-gray-100">
+    <div className="flex h-full w-full items-center justify-center bg-muted">
       <span className="text-8xl">{getCategoryEmoji(category)}</span>
     </div>
   )
@@ -50,7 +50,7 @@ export function ImageGallery({ images, alt, category }: ImageGalleryProps) {
   // Si no hay imágenes válidas, mostrar fallback
   if (!hasImages) {
     return (
-      <div className="relative aspect-square overflow-hidden rounded-lg border bg-gray-100">
+      <div className="relative aspect-square overflow-hidden rounded-lg border border-border bg-muted">
         {renderFallback()}
       </div>
     )
@@ -58,7 +58,7 @@ export function ImageGallery({ images, alt, category }: ImageGalleryProps) {
 
   return (
     <div>
-      <div className="relative aspect-square overflow-hidden rounded-lg border bg-white">
+      <div className="relative aspect-square overflow-hidden rounded-lg border border-border bg-card">
         {imageErrors.has(current) ? (
           renderFallback()
         ) : (
@@ -82,7 +82,7 @@ export function ImageGallery({ images, alt, category }: ImageGalleryProps) {
               aria-label={`Ver imagen ${idx + 1}`}
             >
               {imageErrors.has(idx) ? (
-                <div className="flex h-full w-full items-center justify-center bg-gray-100">
+                <div className="flex h-full w-full items-center justify-center bg-muted">
                   <span className="text-xl">{getCategoryEmoji(category)}</span>
                 </div>
               ) : (

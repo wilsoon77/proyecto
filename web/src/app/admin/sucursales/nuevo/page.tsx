@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Save, Loader2, MapPin } from "lucide-react"
+import { ArrowLeft, Save, Loader as Loader2, MapPin } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { branchesService, ApiClientError } from "@/lib/api"
@@ -88,30 +88,30 @@ export default function NuevaSucursalPage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Nueva Sucursal</h1>
-          <p className="text-gray-500">Registra una nueva ubicación</p>
+          <h1 className="text-2xl lg:text-3xl font-bold text-foreground">Nueva Sucursal</h1>
+          <p className="text-muted-foreground">Registra una nueva ubicación</p>
         </div>
       </div>
 
       {/* Form */}
       <form onSubmit={handleSubmit}>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-6">
+        <div className="bg-card rounded-xl shadow-sm border border-border p-6 space-y-6">
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+            <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg">
               {error}
             </div>
           )}
 
           {/* Icon Preview */}
           <div className="flex justify-center">
-            <div className="h-20 w-20 bg-amber-100 rounded-2xl flex items-center justify-center">
-              <MapPin className="h-10 w-10 text-amber-600" />
+            <div className="h-20 w-20 bg-primary/10 rounded-2xl flex items-center justify-center">
+              <MapPin className="h-10 w-10 text-primary" />
             </div>
           </div>
 
           {/* Name */}
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="name" className="block text-sm font-medium text-foreground mb-2">
               Nombre *
             </label>
             <input
@@ -120,13 +120,13 @@ export default function NuevaSucursalPage() {
               value={name}
               onChange={(e) => handleNameChange(e.target.value)}
               placeholder="Ej: Sucursal Centro"
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
 
           {/* Slug */}
           <div>
-            <label htmlFor="slug" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="slug" className="block text-sm font-medium text-foreground mb-2">
               Slug (URL) *
               {slugManuallyEdited && (
                 <button
@@ -135,7 +135,7 @@ export default function NuevaSucursalPage() {
                     setSlugManuallyEdited(false)
                     setSlug(generateSlug(name))
                   }}
-                  className="ml-2 text-xs text-amber-600 hover:text-amber-700"
+                  className="ml-2 text-xs text-primary hover:text-primary"
                 >
                   Regenerar
                 </button>
@@ -150,13 +150,13 @@ export default function NuevaSucursalPage() {
                 setSlug(e.target.value)
               }}
               placeholder="ej: sucursal-centro"
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
 
           {/* Address */}
           <div>
-            <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="address" className="block text-sm font-medium text-foreground mb-2">
               Dirección *
             </label>
             <input
@@ -165,13 +165,13 @@ export default function NuevaSucursalPage() {
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               placeholder="Ej: Av. Principal #123, Centro"
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
 
           {/* Phone */}
           <div>
-            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="phone" className="block text-sm font-medium text-foreground mb-2">
               Teléfono
             </label>
             <input
@@ -180,16 +180,16 @@ export default function NuevaSucursalPage() {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="Ej: +52 123 456 7890"
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-4 border-t border-gray-100">
+          <div className="flex gap-3 pt-4 border-t border-border">
             <Button
               type="submit"
               disabled={isLoading}
-              className="flex-1 bg-amber-600 hover:bg-amber-700"
+              className="flex-1 bg-primary hover:bg-primary/90"
             >
               {isLoading ? (
                 <>

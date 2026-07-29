@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Loader2, Save, Eye, EyeOff, Building2 } from "lucide-react"
+import { ArrowLeft, Loader as Loader2, Save, Eye, EyeOff, Building2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { usersService, branchesService, type UserRole, ApiClientError } from "@/lib/api"
@@ -117,17 +117,17 @@ export default function NuevoUsuarioPage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Nuevo Usuario</h1>
-          <p className="text-gray-500">Completa la información del usuario</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Nuevo Usuario</h1>
+          <p className="text-muted-foreground">Completa la información del usuario</p>
         </div>
       </div>
 
       {/* Form */}
       <form onSubmit={handleSubmit}>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-6">
+        <div className="bg-card rounded-xl shadow-sm border border-border p-6 space-y-6">
           {/* Error Message */}
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+            <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg">
               {error}
             </div>
           )}
@@ -135,7 +135,7 @@ export default function NuevoUsuarioPage() {
           {/* Name Row */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="firstName" className="block text-sm font-medium text-foreground mb-2">
                 Nombre *
               </label>
               <input
@@ -144,11 +144,11 @@ export default function NuevoUsuarioPage() {
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 placeholder="Juan"
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
             </div>
             <div>
-              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="lastName" className="block text-sm font-medium text-foreground mb-2">
                 Apellido *
               </label>
               <input
@@ -157,14 +157,14 @@ export default function NuevoUsuarioPage() {
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 placeholder="Pérez"
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
             </div>
           </div>
 
           {/* Email */}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">
               Email *
             </label>
             <input
@@ -173,13 +173,13 @@ export default function NuevoUsuarioPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="usuario@ejemplo.com"
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
 
           {/* Phone */}
           <div>
-            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="phone" className="block text-sm font-medium text-foreground mb-2">
               Teléfono
             </label>
             <input
@@ -188,13 +188,13 @@ export default function NuevoUsuarioPage() {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="+502 1234-5678"
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
 
           {/* Role */}
           <div>
-            <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="role" className="block text-sm font-medium text-foreground mb-2">
               Rol *
             </label>
             <select
@@ -206,7 +206,7 @@ export default function NuevoUsuarioPage() {
                   setBranchId(undefined)
                 }
               }}
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white"
+              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card"
             >
               <option value="CUSTOMER">Cliente</option>
               <option value="MANAGER">Gerente</option>
@@ -214,7 +214,7 @@ export default function NuevoUsuarioPage() {
               <option value="CASHIER">Cajero</option>
               <option value="ADMIN">Administrador</option>
             </select>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               {role === 'CUSTOMER' && 'Puede ver productos y realizar pedidos'}
               {role === 'MANAGER' && 'Acceso total a operaciones de su sucursal'}
               {role === 'BAKER' && 'Solo ve producción y materia prima'}
@@ -226,7 +226,7 @@ export default function NuevoUsuarioPage() {
           {/* Branch (solo para roles operativos) */}
           {['MANAGER', 'BAKER', 'CASHIER'].includes(role) && (
             <div>
-              <label htmlFor="branch" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="branch" className="block text-sm font-medium text-foreground mb-2">
                 <Building2 className="inline-block h-4 w-4 mr-1" />
                 Sucursal Asignada *
               </label>
@@ -234,14 +234,14 @@ export default function NuevoUsuarioPage() {
                 id="branch"
                 value={branchId || ""}
                 onChange={(e) => setBranchId(e.target.value ? Number(e.target.value) : undefined)}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white"
+                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card"
               >
                 <option value="">Seleccionar sucursal...</option>
                 {branches.map(branch => (
                   <option key={branch.id} value={branch.id}>{branch.name}</option>
                 ))}
               </select>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 El empleado solo podrá ver y gestionar el inventario de esta sucursal
               </p>
             </div>
@@ -249,7 +249,7 @@ export default function NuevoUsuarioPage() {
 
           {/* Password */}
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="password" className="block text-sm font-medium text-foreground mb-2">
               Contraseña *
             </label>
             <div className="relative">
@@ -259,12 +259,12 @@ export default function NuevoUsuarioPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Mínimo 8 caracteres"
-                className="w-full px-4 py-2 pr-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                className="w-full px-4 py-2 pr-10 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/60 hover:text-muted-foreground"
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
@@ -273,7 +273,7 @@ export default function NuevoUsuarioPage() {
 
           {/* Confirm Password */}
           <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="confirmPassword" className="block text-sm font-medium text-foreground mb-2">
               Confirmar Contraseña *
             </label>
             <input
@@ -282,7 +282,7 @@ export default function NuevoUsuarioPage() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Repite la contraseña"
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
         </div>
@@ -296,7 +296,7 @@ export default function NuevoUsuarioPage() {
           </Link>
           <Button 
             type="submit" 
-            className="bg-amber-600 hover:bg-amber-700"
+            className="bg-primary hover:bg-primary/90"
             disabled={isLoading}
           >
             {isLoading ? (

@@ -4,57 +4,82 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    --radius: 0.5rem
+    /* Panadería Svetlana — Warm Bakery Palette */
+    --background: 40 38% 98%;
+    --foreground: 20 14% 12%;
+    --card: 40 40% 100%;
+    --card-foreground: 20 14% 12%;
+    --popover: 40 40% 100%;
+    --popover-foreground: 20 14% 12%;
+    --primary: 32 85% 48%;
+    --primary-foreground: 40 40% 100%;
+    --secondary: 38 30% 92%;
+    --secondary-foreground: 20 14% 20%;
+    --muted: 38 20% 93%;
+    --muted-foreground: 20 8% 42%;
+    --accent: 38 60% 88%;
+    --accent-foreground: 20 14% 20%;
+    --destructive: 0 72% 52%;
+    --destructive-foreground: 40 40% 100%;
+    --border: 35 20% 87%;
+    --input: 35 20% 87%;
+    --ring: 32 85% 48%;
+    --chart-1: 32 85% 48%;
+    --chart-2: 140 50% 42%;
+    --chart-3: 195 60% 44%;
+    --chart-4: 45 80% 55%;
+    --chart-5: 340 65% 55%;
+    --radius: 0.625rem;
+
+    /* Category accent colors */
+    --cat-pan: 32 85% 48%;
+    --cat-pasteles: 340 65% 55%;
+    --cat-galletas: 28 65% 48%;
+    --cat-dulces: 45 85% 52%;
+    --cat-bebidas: 195 60% 44%;
+
+    /* Semantic warm tones */
+    --cream: 40 45% 96%;
+    --crust: 28 40% 88%;
+    --success: 140 52% 40%;
+    --warning: 38 85% 48%;
   }
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%
+    --background: 20 14% 8%;
+    --foreground: 40 30% 92%;
+    --card: 20 14% 12%;
+    --card-foreground: 40 30% 92%;
+    --popover: 20 14% 12%;
+    --popover-foreground: 40 30% 92%;
+    --primary: 32 85% 55%;
+    --primary-foreground: 20 14% 8%;
+    --secondary: 20 10% 18%;
+    --secondary-foreground: 40 30% 92%;
+    --muted: 20 10% 16%;
+    --muted-foreground: 40 15% 60%;
+    --accent: 28 30% 22%;
+    --accent-foreground: 40 30% 92%;
+    --destructive: 0 62% 48%;
+    --destructive-foreground: 40 30% 92%;
+    --border: 20 10% 20%;
+    --input: 20 10% 20%;
+    --ring: 32 85% 55%;
+    --chart-1: 32 85% 55%;
+    --chart-2: 140 50% 48%;
+    --chart-3: 195 60% 52%;
+    --chart-4: 45 80% 58%;
+    --chart-5: 340 65% 58%;
+
+    --cat-pan: 32 85% 55%;
+    --cat-pasteles: 340 65% 58%;
+    --cat-galletas: 28 65% 55%;
+    --cat-dulces: 45 85% 58%;
+    --cat-bebidas: 195 60% 52%;
+
+    --cream: 20 14% 12%;
+    --crust: 28 20% 18%;
+    --success: 140 52% 48%;
+    --warning: 38 85% 55%;
   }
 }
 
@@ -64,59 +89,113 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply tracking-tight;
   }
 }
 
-/* Custom animations for Toast and Modal */
+/* ========================================
+   Animations & Keyframes
+   ======================================== */
+
 @keyframes slide-in {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
 }
 
 @keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes scale-in {
-  from {
-    transform: scale(0.95);
-    opacity: 0;
-  }
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }
 
-.animate-slide-in {
-  animation: slide-in 0.3s ease-out;
+@keyframes fade-up {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
-.animate-fade-in {
-  animation: fade-in 0.2s ease-out;
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
 }
 
-.animate-scale-in {
-  animation: scale-in 0.2s ease-out;
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes bounce-in {
+  0% { transform: scale(0.3); opacity: 0; }
+  50% { transform: scale(1.05); }
+  70% { transform: scale(0.9); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes cart-bounce {
+  0%, 100% { transform: scale(1); }
+  30% { transform: scale(1.3); }
+  60% { transform: scale(0.9); }
+}
+
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.4); }
+  70% { box-shadow: 0 0 0 8px hsl(var(--primary) / 0); }
+  100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0); }
+}
+
+.animate-slide-in { animation: slide-in 0.3s ease-out; }
+.animate-fade-in { animation: fade-in 0.2s ease-out; }
+.animate-scale-in { animation: scale-in 0.2s ease-out; }
+.animate-fade-up { animation: fade-up 0.5s ease-out both; }
+.animate-float { animation: float 3s ease-in-out infinite; }
+.animate-bounce-in { animation: bounce-in 0.5s ease-out both; }
+.animate-cart-bounce { animation: cart-bounce 0.4s ease-out; }
+.animate-pulse-ring { animation: pulse-ring 1.5s ease-out infinite; }
+
+/* Staggered children entrance */
+.stagger-children > * {
+  opacity: 0;
+  animation: fade-up 0.5s ease-out forwards;
+}
+.stagger-children > *:nth-child(1) { animation-delay: 0.05s; }
+.stagger-children > *:nth-child(2) { animation-delay: 0.1s; }
+.stagger-children > *:nth-child(3) { animation-delay: 0.15s; }
+.stagger-children > *:nth-child(4) { animation-delay: 0.2s; }
+.stagger-children > *:nth-child(5) { animation-delay: 0.25s; }
+.stagger-children > *:nth-child(6) { animation-delay: 0.3s; }
+.stagger-children > *:nth-child(7) { animation-delay: 0.35s; }
+.stagger-children > *:nth-child(8) { animation-delay: 0.4s; }
+
+/* Shimmer skeleton */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 0%,
+    hsl(var(--muted) / 0.5) 50%,
+    hsl(var(--muted)) 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 1.8s infinite linear;
 }
 
 /* Hide scrollbar for mobile horizontal tabs */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+/* Smooth scrollbar styling */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: hsl(var(--muted)); }
+::-webkit-scrollbar-thumb { background: hsl(var(--primary) / 0.4); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: hsl(var(--primary) / 0.6); }
+
+/* Selection color */
+::selection {
+  background: hsl(var(--primary) / 0.2);
+  color: hsl(var(--foreground));
+}

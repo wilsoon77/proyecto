@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { AlertTriangle, X } from "lucide-react"
+import { TriangleAlert as AlertTriangle, X } from "lucide-react"
 import { Button } from "./button"
 
 interface ConfirmDialogProps {
@@ -29,7 +29,6 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null)
 
-  // Close on escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isOpen && !isLoading) {
@@ -40,7 +39,6 @@ export function ConfirmDialog({
     return () => document.removeEventListener("keydown", handleEscape)
   }, [isOpen, isLoading, onCancel])
 
-  // Focus trap and body scroll lock
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden"
@@ -57,16 +55,16 @@ export function ConfirmDialog({
 
   const variantStyles = {
     danger: {
-      icon: "bg-red-100 text-red-600",
-      button: "bg-red-600 hover:bg-red-700 text-white",
+      icon: "bg-destructive/10 text-destructive",
+      button: "bg-destructive hover:bg-destructive/90 text-destructive-foreground",
     },
     warning: {
-      icon: "bg-yellow-100 text-yellow-600",
-      button: "bg-yellow-600 hover:bg-yellow-700 text-white",
+      icon: "bg-warning/10 text-warning",
+      button: "bg-warning hover:bg-warning/90 text-white",
     },
     default: {
-      icon: "bg-amber-100 text-amber-600",
-      button: "bg-amber-600 hover:bg-amber-700 text-white",
+      icon: "bg-primary/10 text-primary",
+      button: "bg-primary hover:bg-primary/90 text-primary-foreground",
     },
   }
 
@@ -74,48 +72,41 @@ export function ConfirmDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in"
         onClick={!isLoading ? onCancel : undefined}
       />
-
-      {/* Dialog */}
       <div
         ref={dialogRef}
         tabIndex={-1}
-        className="relative bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 animate-scale-in"
+        className="relative bg-card rounded-xl shadow-card-hover max-w-md w-full mx-4 animate-scale-in border border-border"
         role="dialog"
         aria-modal="true"
         aria-labelledby="dialog-title"
       >
-        {/* Close button */}
         <button
           onClick={onCancel}
           disabled={isLoading}
-          className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors disabled:opacity-50"
+          className="absolute top-4 right-4 p-1 text-muted-foreground hover:text-foreground hover:bg-accent rounded-full transition-colors disabled:opacity-50"
           aria-label="Cerrar"
         >
           <X className="h-5 w-5" />
         </button>
 
         <div className="p-6">
-          {/* Icon */}
           <div className={`mx-auto w-12 h-12 rounded-full flex items-center justify-center ${styles.icon}`}>
             <AlertTriangle className="h-6 w-6" />
           </div>
 
-          {/* Content */}
           <div className="mt-4 text-center">
-            <h3 id="dialog-title" className="text-lg font-semibold text-gray-900">
+            <h3 id="dialog-title" className="text-lg font-semibold text-card-foreground">
               {title}
             </h3>
-            <p className="mt-2 text-sm text-gray-500">
+            <p className="mt-2 text-sm text-muted-foreground">
               {message}
             </p>
           </div>
 
-          {/* Actions */}
           <div className="mt-6 flex gap-3 justify-center">
             <Button
               variant="outline"

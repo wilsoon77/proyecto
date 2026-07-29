@@ -6,31 +6,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useAuth } from "@/context/AuthContext"
 import { ToastProvider } from "@/components/ui/toast"
-import { 
-  LayoutDashboard, 
-  Package, 
-  ShoppingCart, 
-  Users, 
-  Settings,
-  LogOut,
-  ChevronLeft,
-  ChevronRight,
-  Menu,
-  Bell,
-  User,
-  Warehouse,
-  Tag,
-  Building2,
-  X,
-  History,
-  Flame,
-  Store,
-  BookOpen,
-  BarChart3,
-  ArrowRightLeft,
-  ChevronDown,
-  ClipboardCheck
-} from "lucide-react"
+import { LayoutDashboard, Package, ShoppingCart, Users, Settings, LogOut, ChevronLeft, ChevronRight, Menu, Bell, User, Warehouse, Tag, Building2, X, Factory as History, Flame, Store, BookOpen, ChartBar as BarChart3, ArrowRightLeft, ChevronDown, ClipboardCheck } from "lucide-react"
 import { GlobalSearch } from "@/components/ui/global-search"
 import NotificationBell from "@/components/layout/NotificationBell"
 
@@ -131,10 +107,10 @@ export default function AdminLayout({
   // Loading state
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-50">
+      <div className="flex h-screen items-center justify-center bg-cream">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto"></div>
-          <p className="mt-4 text-gray-500">Cargando...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Cargando...</p>
         </div>
       </div>
     )
@@ -143,14 +119,14 @@ export default function AdminLayout({
   // Unauthorized
   if (!isAuthenticated || !OPERATIONAL_ROLES.includes(user?.role || '')) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-50">
-        <p className="text-gray-500">Verificando permisos...</p>
+      <div className="flex h-screen items-center justify-center bg-cream">
+        <p className="text-muted-foreground">Verificando permisos...</p>
       </div>
     )
   }
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen bg-cream">
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
         <div 
@@ -165,16 +141,16 @@ export default function AdminLayout({
           fixed lg:static inset-y-0 left-0 z-50
           ${sidebarCollapsed ? 'w-20' : 'w-64'} 
           ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-          bg-white border-r border-gray-200 flex flex-col
+          bg-card border-r border-border flex flex-col
           transition-all duration-300 ease-in-out
         `}
       >
         {/* Logo Header with Collapse Button */}
-        <div className={`h-16 flex items-center border-b border-gray-200 ${sidebarCollapsed ? 'justify-center px-2' : 'justify-between px-4'}`}>
+        <div className={`h-16 flex items-center border-b border-border ${sidebarCollapsed ? 'justify-center px-2' : 'justify-between px-4'}`}>
           {/* Collapse Toggle Button - Desktop only */}
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="hidden lg:flex items-center justify-center h-8 w-8 rounded-full bg-amber-500 text-white hover:bg-amber-600 transition-colors shadow-sm"
+            className="hidden lg:flex items-center justify-center h-8 w-8 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm"
             title={sidebarCollapsed ? "Expandir menú" : "Colapsar menú"}
           >
             {sidebarCollapsed ? (
@@ -199,7 +175,7 @@ export default function AdminLayout({
           {/* Close button for mobile */}
           <button 
             onClick={() => setMobileMenuOpen(false)}
-            className="lg:hidden absolute right-2 top-4 p-2 text-gray-500 hover:text-gray-700"
+            className="lg:hidden absolute right-2 top-4 p-2 text-muted-foreground hover:text-foreground"
           >
             <X className="h-5 w-5" />
           </button>
@@ -233,8 +209,8 @@ export default function AdminLayout({
                           w-full flex items-center justify-between px-3 py-2.5 rounded-lg
                           transition-all duration-200
                           ${isActive && !isGroupExpanded 
-                            ? 'bg-amber-500 text-white shadow-md' 
-                            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                            ? 'bg-primary text-primary-foreground shadow-md' 
+                            : 'text-muted-foreground hover:bg-accent hover:text-foreground'
                           }
                           ${sidebarCollapsed ? 'justify-center' : ''}
                         `}
@@ -257,7 +233,7 @@ export default function AdminLayout({
 
                       {/* Children Items (Expanded Mode) */}
                       {!sidebarCollapsed && isGroupExpanded && (
-                        <ul className="mt-1 ml-6 space-y-1 border-l border-gray-100 pl-2">
+                        <ul className="mt-1 ml-6 space-y-1 border-l border-border pl-2">
                           {filteredChildren.map((child) => {
                             const isChildActive = isActiveRoute(child.href, child.exact)
                             return (
@@ -268,12 +244,12 @@ export default function AdminLayout({
                                     flex items-center gap-3 px-3 py-2 rounded-lg text-sm
                                     transition-all duration-200
                                     ${isChildActive 
-                                      ? 'bg-amber-50 text-amber-700 font-medium' 
-                                      : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                                      ? 'bg-accent text-primary font-medium' 
+                                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                                     }
                                   `}
                                 >
-                                  <child.icon className={`h-4 w-4 flex-shrink-0 ${isChildActive ? 'text-amber-600' : ''}`} />
+                                  <child.icon className={`h-4 w-4 flex-shrink-0 ${isChildActive ? 'text-primary' : ''}`} />
                                   <span>{child.label}</span>
                                 </Link>
                               </li>
@@ -284,8 +260,8 @@ export default function AdminLayout({
 
                       {/* Children Items (Collapsed Popover Mode) */}
                       {sidebarCollapsed && (
-                        <div className="invisible opacity-0 group-hover/menu-item:visible group-hover/menu-item:opacity-100 absolute left-full top-0 ml-2 w-48 bg-white border border-gray-200 rounded-lg shadow-xl py-2 z-50 transition-all duration-200">
-                          <div className="px-3 py-1.5 border-b border-gray-100 font-semibold text-xs text-gray-400 uppercase tracking-wider">
+                        <div className="invisible opacity-0 group-hover/menu-item:visible group-hover/menu-item:opacity-100 absolute left-full top-0 ml-2 w-48 bg-card border border-border rounded-lg shadow-xl py-2 z-50 transition-all duration-200">
+                          <div className="px-3 py-1.5 border-b border-border font-semibold text-xs text-muted-foreground/60 uppercase tracking-wider">
                             {item.label}
                           </div>
                           <ul className="mt-1 space-y-1 px-2">
@@ -299,12 +275,12 @@ export default function AdminLayout({
                                       flex items-center gap-2 px-2 py-1.5 rounded-md text-sm
                                       transition-all duration-200
                                       ${isChildActive 
-                                        ? 'bg-amber-50 text-amber-700 font-medium' 
-                                        : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                                        ? 'bg-accent text-primary font-medium' 
+                                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                                       }
                                     `}
                                   >
-                                    <child.icon className={`h-4 w-4 flex-shrink-0 ${isChildActive ? 'text-amber-600' : ''}`} />
+                                    <child.icon className={`h-4 w-4 flex-shrink-0 ${isChildActive ? 'text-primary' : ''}`} />
                                     <span>{child.label}</span>
                                   </Link>
                                 </li>
@@ -326,8 +302,8 @@ export default function AdminLayout({
                         flex items-center gap-3 px-3 py-2.5 rounded-lg
                         transition-all duration-200
                         ${isActive 
-                          ? 'bg-amber-500 text-white shadow-md' 
-                          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                          ? 'bg-primary text-primary-foreground shadow-md' 
+                          : 'text-muted-foreground hover:bg-accent hover:text-foreground'
                         }
                         ${sidebarCollapsed ? 'justify-center' : ''}
                       `}
@@ -345,12 +321,12 @@ export default function AdminLayout({
         </nav>
 
         {/* User Section */}
-        <div className={`border-t border-gray-200 p-3 ${sidebarCollapsed ? 'px-2' : ''}`}>
+        <div className={`border-t border-border p-3 ${sidebarCollapsed ? 'px-2' : ''}`}>
           <Link
             href="/"
             className={`
               flex items-center gap-2 px-3 py-2 rounded-lg
-              text-gray-500 hover:bg-gray-100 hover:text-gray-700
+              text-muted-foreground hover:bg-accent hover:text-foreground
               transition-colors mb-1
               ${sidebarCollapsed ? 'justify-center' : ''}
             `}
@@ -366,7 +342,7 @@ export default function AdminLayout({
             }}
             className={`
               flex items-center gap-2 w-full px-3 py-2 rounded-lg
-              text-red-500 hover:bg-red-50 hover:text-red-600
+              text-destructive hover:bg-destructive/10 hover:text-destructive
               transition-colors
               ${sidebarCollapsed ? 'justify-center' : ''}
             `}
@@ -381,12 +357,12 @@ export default function AdminLayout({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header */}
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 lg:px-6">
+        <header className="h-16 bg-card/80 backdrop-blur-md border-b border-border flex items-center justify-between px-4 lg:px-6">
           {/* Left: Mobile menu button + Search */}
           <div className="flex items-center gap-4">
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+              className="lg:hidden p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg"
             >
               <Menu className="h-6 w-6" />
             </button>
@@ -403,15 +379,15 @@ export default function AdminLayout({
             <NotificationBell />
 
             {/* User Menu */}
-            <div className="flex items-center gap-3 pl-3 border-l border-gray-200">
+            <div className="flex items-center gap-3 pl-3 border-l border-border">
               <div className="hidden sm:block text-right">
-                <p className="text-sm font-medium text-gray-900">
+                <p className="text-sm font-medium text-foreground">
                   {user?.firstName} {user?.lastName}
                 </p>
-                <p className="text-xs text-gray-500">{user?.role}</p>
+                <p className="text-xs text-muted-foreground">{user?.role}</p>
               </div>
-              <div className="h-9 w-9 bg-amber-100 rounded-full flex items-center justify-center">
-                <User className="h-5 w-5 text-amber-600" />
+              <div className="h-9 w-9 bg-primary/10 rounded-full flex items-center justify-center">
+                <User className="h-5 w-5 text-primary" />
               </div>
             </div>
           </div>

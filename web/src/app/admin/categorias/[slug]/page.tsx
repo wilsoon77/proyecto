@@ -3,7 +3,7 @@
 import { useState, useEffect, use } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Save, Loader2, Tag } from "lucide-react"
+import { ArrowLeft, Save, Loader as Loader2, Tag } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { categoriesService, ApiClientError } from "@/lib/api"
@@ -91,7 +91,7 @@ export default function EditarCategoriaPage({ params }: { params: Promise<{ slug
   if (isLoading) {
     return (
       <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-[50vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-amber-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -99,7 +99,7 @@ export default function EditarCategoriaPage({ params }: { params: Promise<{ slug
   if (error && !name) {
     return (
       <div className="p-4 sm:p-6 lg:p-8">
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+        <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg">
           {error}
         </div>
         <Link href="/admin/categorias" className="mt-4 inline-block">
@@ -123,30 +123,30 @@ export default function EditarCategoriaPage({ params }: { params: Promise<{ slug
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Editar Categoría</h1>
-          <p className="text-gray-500">Modifica los datos de la categoría</p>
+          <h1 className="text-2xl lg:text-3xl font-bold text-foreground">Editar Categoría</h1>
+          <p className="text-muted-foreground">Modifica los datos de la categoría</p>
         </div>
       </div>
 
       {/* Form */}
       <form onSubmit={handleSubmit}>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-6">
+        <div className="bg-card rounded-xl shadow-sm border border-border p-6 space-y-6">
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+            <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg">
               {error}
             </div>
           )}
 
           {/* Icon Preview */}
           <div className="flex justify-center">
-            <div className="h-20 w-20 bg-amber-100 rounded-2xl flex items-center justify-center">
-              <Tag className="h-10 w-10 text-amber-600" />
+            <div className="h-20 w-20 bg-primary/10 rounded-2xl flex items-center justify-center">
+              <Tag className="h-10 w-10 text-primary" />
             </div>
           </div>
 
           {/* Name */}
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="name" className="block text-sm font-medium text-foreground mb-2">
               Nombre *
             </label>
             <input
@@ -155,18 +155,18 @@ export default function EditarCategoriaPage({ params }: { params: Promise<{ slug
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Ej: Panes Dulces"
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
 
           {/* Slug */}
           <div>
-            <label htmlFor="slug" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="slug" className="block text-sm font-medium text-foreground mb-2">
               Slug (URL) *
               <button
                 type="button"
                 onClick={() => setSlug(generateSlug(name))}
-                className="ml-2 text-xs text-amber-600 hover:text-amber-700"
+                className="ml-2 text-xs text-primary hover:text-primary"
               >
                 Regenerar desde nombre
               </button>
@@ -177,13 +177,13 @@ export default function EditarCategoriaPage({ params }: { params: Promise<{ slug
               value={slug}
               onChange={(e) => setSlug(e.target.value)}
               placeholder="ej: panes-dulces"
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Se usa en la URL: /productos?categoria={slug || "slug"}
             </p>
             {slug !== originalSlug && (
-              <p className="text-xs text-amber-600 mt-1">
+              <p className="text-xs text-primary mt-1">
                 ⚠️ Cambiar el slug puede romper enlaces existentes
               </p>
             )}
@@ -191,7 +191,7 @@ export default function EditarCategoriaPage({ params }: { params: Promise<{ slug
 
           {/* Description */}
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="description" className="block text-sm font-medium text-foreground mb-2">
               Descripción
             </label>
             <textarea
@@ -200,16 +200,16 @@ export default function EditarCategoriaPage({ params }: { params: Promise<{ slug
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Descripción de la categoría..."
               rows={3}
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
+              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
             />
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-4 border-t border-gray-100">
+          <div className="flex gap-3 pt-4 border-t border-border">
             <Button
               type="submit"
               disabled={isSaving}
-              className="flex-1 bg-amber-600 hover:bg-amber-700"
+              className="flex-1 bg-primary hover:bg-primary/90"
             >
               {isSaving ? (
                 <>

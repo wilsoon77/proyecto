@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Mail, Phone, MapPin, Facebook, Instagram, Twitter, MessageCircle } from "lucide-react"
+import { Mail, Phone, MapPin, Notebook as Facebook, Drama as Instagram, Battery as Twitter, MessageCircle } from "lucide-react"
 
 export default function ContactoPage() {
   const [name, setName] = useState("")
@@ -29,15 +29,15 @@ export default function ContactoPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      <h1 className="mb-2 text-3xl font-bold text-gray-900">Contacto</h1>
-      <p className="mb-8 text-gray-600">Estamos para ayudarte. Escríbenos por el formulario o por WhatsApp.</p>
+      <h1 className="mb-2 text-3xl font-bold text-foreground">Contacto</h1>
+      <p className="mb-8 text-muted-foreground">Estamos para ayudarte. Escríbenos por el formulario o por WhatsApp.</p>
 
       <div className="grid gap-8 lg:grid-cols-3">
         {/* Información de contacto */}
         <div className="space-y-6 lg:col-span-1">
-          <div className="rounded-lg border bg-white p-6">
+          <div className="rounded-lg border bg-card p-6">
             <h2 className="mb-3 text-xl font-semibold">Datos</h2>
-            <ul className="space-y-3 text-sm text-gray-700">
+            <ul className="space-y-3 text-sm text-foreground">
               <li className="flex items-start gap-2">
                 <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
                 <span>Zona 10, Guatemala City, Guatemala</span>
@@ -56,27 +56,27 @@ export default function ContactoPage() {
               </li>
             </ul>
             <div className="mt-4 flex gap-3">
-              <a href="https://facebook.com" target="_blank" rel="noreferrer" className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-200 text-gray-600 transition-colors hover:bg-primary hover:text-white"><Facebook className="h-4 w-4" /></a>
-              <a href="https://instagram.com" target="_blank" rel="noreferrer" className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-200 text-gray-600 transition-colors hover:bg-primary hover:text-white"><Instagram className="h-4 w-4" /></a>
-              <a href="https://twitter.com" target="_blank" rel="noreferrer" className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-200 text-gray-600 transition-colors hover:bg-primary hover:text-white"><Twitter className="h-4 w-4" /></a>
+              <a href="https://facebook.com" target="_blank" rel="noreferrer" className="flex h-9 w-9 items-center justify-center rounded-full bg-border text-muted-foreground transition-colors hover:bg-primary hover:text-white"><Facebook className="h-4 w-4" /></a>
+              <a href="https://instagram.com" target="_blank" rel="noreferrer" className="flex h-9 w-9 items-center justify-center rounded-full bg-border text-muted-foreground transition-colors hover:bg-primary hover:text-white"><Instagram className="h-4 w-4" /></a>
+              <a href="https://twitter.com" target="_blank" rel="noreferrer" className="flex h-9 w-9 items-center justify-center rounded-full bg-border text-muted-foreground transition-colors hover:bg-primary hover:text-white"><Twitter className="h-4 w-4" /></a>
             </div>
           </div>
 
           {/* FAQs */}
-          <div className="rounded-lg border bg-white p-6">
+          <div className="rounded-lg border bg-card p-6">
             <h2 className="mb-3 text-xl font-semibold">Preguntas Frecuentes</h2>
             <div className="space-y-3">
               <details className="rounded-md border p-3">
                 <summary className="cursor-pointer font-medium">¿Cómo funciona el sistema de pedidos?</summary>
-                <p className="mt-2 text-sm text-gray-700">Agregas productos al carrito, confirmas tu pedido y lo recoges en la sucursal que elijas. Pago al recoger.</p>
+                <p className="mt-2 text-sm text-foreground">Agregas productos al carrito, confirmas tu pedido y lo recoges en la sucursal que elijas. Pago al recoger.</p>
               </details>
               <details className="rounded-md border p-3">
                 <summary className="cursor-pointer font-medium">¿Con cuánta anticipación pido un pastel?</summary>
-                <p className="mt-2 text-sm text-gray-700">Idealmente 24-48 horas antes para personalizaciones.</p>
+                <p className="mt-2 text-sm text-foreground">Idealmente 24-48 horas antes para personalizaciones.</p>
               </details>
               <details className="rounded-md border p-3">
                 <summary className="cursor-pointer font-medium">¿Cuál es el pedido mínimo?</summary>
-                <p className="mt-2 text-sm text-gray-700">El pedido mínimo es de Q15. Pago al recoger en sucursal (efectivo o tarjeta).</p>
+                <p className="mt-2 text-sm text-foreground">El pedido mínimo es de Q15. Pago al recoger en sucursal (efectivo o tarjeta).</p>
               </details>
             </div>
           </div>
@@ -84,7 +84,7 @@ export default function ContactoPage() {
 
         {/* Formulario */}
         <div className="lg:col-span-2">
-          <div className="rounded-lg border bg-white p-6">
+          <div className="rounded-lg border bg-card p-6">
             <h2 className="mb-4 text-xl font-semibold">Escríbenos</h2>
             {sent ? (
               <div className="rounded-md border border-emerald-200 bg-emerald-50 p-4 text-emerald-800">
@@ -115,7 +115,7 @@ export default function ContactoPage() {
                     onChange={e=>setMessage(e.target.value)}
                     required
                     placeholder="¿Cómo podemos ayudarte?"
-                    className="min-h-[120px] w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="min-h-[120px] w-full rounded-md border border-input px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 </div>
                 <div className="sm:col-span-2">

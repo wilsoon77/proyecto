@@ -2,18 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react"
 import Link from "next/link"
-import { 
-  Package, 
-  RefreshCw, 
-  Plus, 
-  Search,
-  AlertTriangle,
-  Building2,
-  ChevronLeft,
-  ChevronRight,
-  Warehouse,
-  Loader2
-} from "lucide-react"
+import { Package, RefreshCw, Plus, Search, TriangleAlert as AlertTriangle, Building2, ChevronLeft, ChevronRight, Warehouse, Loader as Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { 
   branchesService,
@@ -145,30 +134,30 @@ export default function MateriasPrimasPage() {
   )
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen">
+    <div className="p-4 sm:p-6 lg:p-8 bg-cream min-h-screen">
       {/* Breadcrumb & Header */}
       <div className="mb-6">
-        <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-          <Link href="/admin/inventario" className="hover:text-amber-600 transition-colors flex items-center gap-1">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+          <Link href="/admin/inventario" className="hover:text-primary transition-colors flex items-center gap-1">
             <Warehouse className="h-3.5 w-3.5" />
             Inventario
           </Link>
           <span>/</span>
-          <span className="text-gray-900 font-medium">Materias Primas</span>
+          <span className="text-foreground font-medium">Materias Primas</span>
         </div>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-3">
-              <Warehouse className="h-7 w-7 sm:h-8 sm:w-8 text-amber-600" />
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-3">
+              <Warehouse className="h-7 w-7 sm:h-8 sm:w-8 text-primary" />
               Materias Primas
             </h1>
-            <p className="text-gray-500 mt-1">Control de insumos, harinas, levaduras y compras registradas</p>
+            <p className="text-muted-foreground mt-1">Control de insumos, harinas, levaduras y compras registradas</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={loadRawMaterials}
               disabled={isRawLoading}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 w-full sm:w-auto justify-center shadow-sm text-sm font-medium"
+              className="flex items-center gap-2 px-4 py-2 bg-card border border-border rounded-lg text-foreground hover:bg-cream disabled:opacity-50 w-full sm:w-auto justify-center shadow-sm text-sm font-medium"
             >
               <RefreshCw className={`h-4 w-4 ${isRawLoading ? 'animate-spin' : ''}`} />
               Actualizar
@@ -180,14 +169,14 @@ export default function MateriasPrimasPage() {
                 setPurchaseQuantity(0)
                 setShowPurchaseModal(true)
               }}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors w-full sm:w-auto justify-center shadow-sm text-sm font-bold animate-pulse-subtle"
+              className="flex items-center gap-2 px-4 py-2 bg-success hover:bg-success/90 text-white rounded-lg transition-colors w-full sm:w-auto justify-center shadow-sm text-sm font-bold animate-pulse-subtle"
             >
               <Plus className="h-4 w-4" />
               Registrar Compra
             </button>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors w-full sm:w-auto justify-center shadow-sm text-sm font-bold"
+              className="flex items-center gap-2 px-4 py-2 bg-chart-3 hover:bg-chart-3/90 text-white rounded-lg transition-colors w-full sm:w-auto justify-center shadow-sm text-sm font-bold"
             >
               <Plus className="h-4 w-4" />
               Nuevo Insumo
@@ -197,26 +186,26 @@ export default function MateriasPrimasPage() {
       </div>
 
       {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 flex items-center gap-2">
+        <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive flex items-center gap-2">
           <AlertTriangle className="h-5 w-5" />
           {error}
         </div>
       )}
 
       {/* Tabla e info */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
         {/* Filtros */}
-        <div className="p-4 bg-gray-50/50 border-b border-gray-100">
+        <div className="p-4 bg-cream/50 border-b border-border">
           <div className="flex flex-wrap items-center gap-4">
             {/* Búsqueda */}
             <div className="relative flex-1 min-w-[240px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
               <input
                 type="text"
                 placeholder="Buscar insumo..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white text-sm"
+                className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-card text-sm"
               />
             </div>
 
@@ -224,7 +213,7 @@ export default function MateriasPrimasPage() {
             <select
               value={selectedBranch}
               onChange={(e) => setSelectedBranch(e.target.value)}
-              className="border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white text-sm"
+              className="border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary bg-card text-sm"
             >
               <option value="all">Todas las sucursales</option>
               {branches.map(branch => (
@@ -238,23 +227,23 @@ export default function MateriasPrimasPage() {
                 type="checkbox"
                 checked={showLowStock}
                 onChange={(e) => setShowLowStock(e.target.checked)}
-                className="w-4 h-4 text-amber-600 rounded focus:ring-amber-500"
+                className="w-4 h-4 text-primary rounded focus:ring-primary"
               />
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-muted-foreground">
                 Solo alertas de stock mínimo
               </span>
             </label>
 
             {/* Contador */}
-            <div className="text-sm text-gray-500 ml-auto font-medium">
+            <div className="text-sm text-muted-foreground ml-auto font-medium">
               {filteredRawInventory.length} de {rawInventory.length} registros
             </div>
           </div>
         </div>
 
         {isLoading ? (
-          <div className="py-20 text-center text-gray-400">
-            <RefreshCw className="h-10 w-10 animate-spin text-amber-600 mx-auto mb-3" />
+          <div className="py-20 text-center text-muted-foreground/60">
+            <RefreshCw className="h-10 w-10 animate-spin text-primary mx-auto mb-3" />
             <p>Cargando inventario de materias primas...</p>
           </div>
         ) : (
@@ -262,34 +251,34 @@ export default function MateriasPrimasPage() {
             {/* Vista Mobile Cards */}
             <div className="md:hidden divide-y divide-gray-100">
               {paginatedRawInventory.length === 0 ? (
-                <div className="py-12 text-center text-gray-400">
-                  <Package className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                <div className="py-12 text-center text-muted-foreground/60">
+                  <Package className="h-12 w-12 mx-auto mb-3 text-muted-foreground/40" />
                   <p>No se encontraron registros de materia prima</p>
                 </div>
               ) : (
                 paginatedRawInventory.map((item) => (
-                  <div key={`m-raw-${item.id}`} className="p-4 hover:bg-gray-50">
+                  <div key={`m-raw-${item.id}`} className="p-4 hover:bg-cream">
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <Package className="h-5 w-5 text-amber-600" />
+                        <div className="h-10 w-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <Package className="h-5 w-5 text-primary" />
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">{item.rawMaterial.name}</p>
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mt-1">
+                          <p className="font-medium text-foreground">{item.rawMaterial.name}</p>
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-chart-3/10 text-chart-3 mt-1">
                             {item.branch.name}
                           </span>
                         </div>
                       </div>
                       <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-sm font-bold ${
-                        item.isLow ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
+                        item.isLow ? 'bg-warning/10 text-warning' : 'bg-success/10 text-success'
                       }`}>
                         {Number(item.quantity).toFixed(1)} {item.rawMaterial.baseUnit}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between mt-3 border-t border-gray-50 pt-2 text-xs">
-                      <span className="text-gray-500">
-                        Mínimo: <strong className="text-gray-700">{item.rawMaterial.minStock ? `${Number(item.rawMaterial.minStock).toFixed(0)} ${item.rawMaterial.baseUnit}` : "N/A"}</strong>
+                    <div className="flex items-center justify-between mt-3 border-t border-border pt-2 text-xs">
+                      <span className="text-muted-foreground">
+                        Mínimo: <strong className="text-foreground">{item.rawMaterial.minStock ? `${Number(item.rawMaterial.minStock).toFixed(0)} ${item.rawMaterial.baseUnit}` : "N/A"}</strong>
                       </span>
                       <button
                         onClick={() => {
@@ -299,7 +288,7 @@ export default function MateriasPrimasPage() {
                           setPurchaseQuantity(0)
                           setShowPurchaseModal(true)
                         }}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors font-medium text-xs shadow-sm"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-success/10 text-success rounded-lg hover:bg-success/10 transition-colors font-medium text-xs shadow-sm"
                       >
                         <Plus className="h-3.5 w-3.5" />
                         Ingresar Compra
@@ -313,21 +302,21 @@ export default function MateriasPrimasPage() {
             {/* Vista Desktop Tabla */}
             <div className="overflow-x-auto hidden md:block">
               <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead className="bg-cream border-b border-border">
                   <tr>
-                    <th className="text-left py-4 px-6 font-semibold text-gray-600 text-sm">Insumo</th>
-                    <th className="text-left py-4 px-6 font-semibold text-gray-600 text-sm">Sucursal</th>
-                    <th className="text-center py-4 px-6 font-semibold text-gray-600 text-sm">Existencia</th>
-                    <th className="text-center py-4 px-6 font-semibold text-gray-600 text-sm hidden lg:table-cell">Alerta Mínima</th>
-                    <th className="text-center py-4 px-6 font-semibold text-gray-600 text-sm">Estado</th>
-                    <th className="text-center py-4 px-6 font-semibold text-gray-600 text-sm">Acciones</th>
+                    <th className="text-left py-4 px-6 font-semibold text-muted-foreground text-sm">Insumo</th>
+                    <th className="text-left py-4 px-6 font-semibold text-muted-foreground text-sm">Sucursal</th>
+                    <th className="text-center py-4 px-6 font-semibold text-muted-foreground text-sm">Existencia</th>
+                    <th className="text-center py-4 px-6 font-semibold text-muted-foreground text-sm hidden lg:table-cell">Alerta Mínima</th>
+                    <th className="text-center py-4 px-6 font-semibold text-muted-foreground text-sm">Estado</th>
+                    <th className="text-center py-4 px-6 font-semibold text-muted-foreground text-sm">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
                   {paginatedRawInventory.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="py-12 text-center text-gray-400">
-                        <Package className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                      <td colSpan={6} className="py-12 text-center text-muted-foreground/60">
+                        <Package className="h-12 w-12 mx-auto mb-3 text-muted-foreground/40" />
                         <p>No se encontraron registros de materias primas</p>
                       </td>
                     </tr>
@@ -335,33 +324,33 @@ export default function MateriasPrimasPage() {
                     paginatedRawInventory.map((item, index) => (
                       <tr 
                         key={`raw-${item.id}`}
-                        className={`border-b border-gray-100 hover:bg-gray-50 ${index % 2 === 0 ? '' : 'bg-gray-50/50'}`}
+                        className={`border-b border-border hover:bg-cream ${index % 2 === 0 ? '' : 'bg-cream/50'}`}
                       >
                         <td className="py-4 px-6">
                           <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 bg-amber-100 rounded-lg flex items-center justify-center">
-                              <Package className="h-5 w-5 text-amber-600" />
+                            <div className="h-10 w-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                              <Package className="h-5 w-5 text-primary" />
                             </div>
                             <div>
-                              <p className="font-medium text-gray-900">{item.rawMaterial.name}</p>
-                              <p className="text-xs text-gray-400">Unidad de medida: {item.rawMaterial.baseUnit}</p>
+                              <p className="font-medium text-foreground">{item.rawMaterial.name}</p>
+                              <p className="text-xs text-muted-foreground/60">Unidad de medida: {item.rawMaterial.baseUnit}</p>
                             </div>
                           </div>
                         </td>
                         <td className="py-4 px-6">
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-chart-3/10 text-chart-3">
                             {item.branch.name}
                           </span>
                         </td>
-                        <td className="py-4 px-6 text-center font-bold text-gray-900">
+                        <td className="py-4 px-6 text-center font-bold text-foreground">
                           {Number(item.quantity).toFixed(2)} {item.rawMaterial.baseUnit}
                         </td>
-                        <td className="py-4 px-6 text-center text-gray-500 hidden lg:table-cell font-medium">
+                        <td className="py-4 px-6 text-center text-muted-foreground hidden lg:table-cell font-medium">
                           {item.rawMaterial.minStock ? `${Number(item.rawMaterial.minStock).toFixed(0)} ${item.rawMaterial.baseUnit}` : "N/A"}
                         </td>
                         <td className="py-4 px-6 text-center">
                           <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
-                            item.isLow ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
+                            item.isLow ? 'bg-warning/10 text-warning' : 'bg-success/10 text-success'
                           }`}>
                             {item.isLow ? 'Stock Bajo' : 'Suficiente'}
                           </span>
@@ -375,7 +364,7 @@ export default function MateriasPrimasPage() {
                               setPurchaseQuantity(0)
                               setShowPurchaseModal(true)
                             }}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors font-medium text-sm shadow-sm"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-success/10 text-success rounded-lg hover:bg-success/10 transition-colors font-medium text-sm shadow-sm"
                           >
                             <Plus className="h-4 w-4" />
                             Ingresar Compra
@@ -390,8 +379,8 @@ export default function MateriasPrimasPage() {
 
             {/* Paginación */}
             {totalRawPages > 1 && (
-              <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-t border-gray-100">
-                <p className="text-sm text-gray-500">
+              <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-t border-border">
+                <p className="text-sm text-muted-foreground">
                   Página {currentPage} de {totalRawPages} ({filteredRawInventory.length} registros)
                 </p>
                 <div className="flex items-center gap-2">
@@ -421,9 +410,9 @@ export default function MateriasPrimasPage() {
       {/* MODAL 1: Registrar Compra de Materia Prima */}
       {showPurchaseModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 max-w-md w-full p-6 relative overflow-hidden">
-            <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <Plus className="h-5 w-5 text-green-600" />
+          <div className="bg-card rounded-2xl shadow-xl border border-border max-w-md w-full p-6 relative overflow-hidden">
+            <h3 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+              <Plus className="h-5 w-5 text-success" />
               Registrar Compra / Entrada de Insumo
             </h3>
             
@@ -451,7 +440,7 @@ export default function MateriasPrimasPage() {
               }
             }} className="space-y-4">
               <div>
-                <label className="text-xs text-gray-500 font-bold block mb-1">Materia Prima</label>
+                <label className="text-xs text-muted-foreground font-bold block mb-1">Materia Prima</label>
                 <select
                   value={purchaseMaterialId}
                   onChange={(e) => {
@@ -462,7 +451,7 @@ export default function MateriasPrimasPage() {
                       setPurchaseUnit(m.baseUnit === "LB" ? "LIBRA" : m.baseUnit === "ML" ? "LITRO" : "UNIDAD")
                     }
                   }}
-                  className="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
+                  className="w-full border border-border rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-card"
                   required
                 >
                   <option value="" disabled>Seleccione materia prima...</option>
@@ -474,23 +463,23 @@ export default function MateriasPrimasPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs text-gray-500 font-bold block mb-1">Cantidad Comprada</label>
+                  <label className="text-xs text-muted-foreground font-bold block mb-1">Cantidad Comprada</label>
                   <input
                     type="number"
                     min="0.01"
                     step="0.01"
-                    className="w-full border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white h-10 px-3"
+                    className="w-full border border-border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-card h-10 px-3"
                     value={purchaseQuantity || ""}
                     onChange={(e) => setPurchaseQuantity(Number(e.target.value))}
                     required
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 font-bold block mb-1">Unidad de Compra</label>
+                  <label className="text-xs text-muted-foreground font-bold block mb-1">Unidad de Compra</label>
                   <select
                     value={purchaseUnit}
                     onChange={(e) => setPurchaseUnit(e.target.value)}
-                    className="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white h-10"
+                    className="w-full border border-border rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-card h-10"
                     required
                   >
                     {/* Sólidos */}
@@ -508,11 +497,11 @@ export default function MateriasPrimasPage() {
               </div>
 
               <div>
-                <label className="text-xs text-gray-500 font-bold block mb-1">Sucursal de Destino</label>
+                <label className="text-xs text-muted-foreground font-bold block mb-1">Sucursal de Destino</label>
                 <select
                   value={purchaseBranchId}
                   onChange={(e) => setPurchaseBranchId(Number(e.target.value))}
-                  className="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
+                  className="w-full border border-border rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-card"
                   required
                 >
                   <option value="" disabled>Seleccione sucursal...</option>
@@ -533,7 +522,7 @@ export default function MateriasPrimasPage() {
                 </Button>
                 <Button
                   type="submit"
-                  className="bg-green-600 hover:bg-green-700 text-white font-bold"
+                  className="bg-success hover:bg-success/90 text-white font-bold"
                   disabled={isPurchaseSubmitting}
                 >
                   {isPurchaseSubmitting ? "Registrando..." : "Registrar Compra"}
@@ -547,9 +536,9 @@ export default function MateriasPrimasPage() {
       {/* MODAL 2: Crear Nueva Materia Prima */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 max-w-md w-full p-6 relative overflow-hidden">
-            <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <Package className="h-5 w-5 text-blue-600" />
+          <div className="bg-card rounded-2xl shadow-xl border border-border max-w-md w-full p-6 relative overflow-hidden">
+            <h3 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+              <Package className="h-5 w-5 text-chart-3" />
               Nueva Materia Prima
             </h3>
             
@@ -579,10 +568,10 @@ export default function MateriasPrimasPage() {
               }
             }} className="space-y-4">
               <div>
-                <label className="text-xs text-gray-500 font-bold block mb-1">Nombre del Insumo</label>
+                <label className="text-xs text-muted-foreground font-bold block mb-1">Nombre del Insumo</label>
                 <input
                   placeholder="Ej: Harina de Trigo, Levadura Seca, Azúcar..."
-                  className="w-full border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white h-10 px-3"
+                  className="w-full border border-border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-card h-10 px-3"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   required
@@ -591,11 +580,11 @@ export default function MateriasPrimasPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs text-gray-500 font-bold block mb-1">Unidad Base</label>
+                  <label className="text-xs text-muted-foreground font-bold block mb-1">Unidad Base</label>
                   <select
                     value={newBaseUnit}
                     onChange={(e) => setNewBaseUnit(e.target.value as any)}
-                    className="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white h-10"
+                    className="w-full border border-border rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-card h-10"
                     required
                   >
                     <option value="LB">Libra (LB)</option>
@@ -604,12 +593,12 @@ export default function MateriasPrimasPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 font-bold block mb-1">Costo Unitario Promedio (Q)</label>
+                  <label className="text-xs text-muted-foreground font-bold block mb-1">Costo Unitario Promedio (Q)</label>
                   <input
                     type="number"
                     min="0"
                     step="0.0001"
-                    className="w-full border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white h-10 px-3"
+                    className="w-full border border-border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-card h-10 px-3"
                     value={newCost || ""}
                     onChange={(e) => setNewCost(Number(e.target.value))}
                     required
@@ -618,17 +607,17 @@ export default function MateriasPrimasPage() {
               </div>
 
               <div>
-                <label className="text-xs text-gray-500 font-bold block mb-1">Stock de Alerta Mínima</label>
+                <label className="text-xs text-muted-foreground font-bold block mb-1">Stock de Alerta Mínima</label>
                 <input
                   type="number"
                   min="0"
                   step="0.1"
-                  className="w-full border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white h-10 px-3"
+                  className="w-full border border-border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-card h-10 px-3"
                   value={newMinStock || ""}
                   onChange={(e) => setNewMinStock(Number(e.target.value))}
                   required
                 />
-                <p className="text-[10px] text-gray-400 mt-1">El sistema emitirá una alerta si el stock baja de esta cantidad en la sucursal.</p>
+                <p className="text-[10px] text-muted-foreground/60 mt-1">El sistema emitirá una alerta si el stock baja de esta cantidad en la sucursal.</p>
               </div>
 
               <div className="flex gap-3 justify-end pt-4">
@@ -642,7 +631,7 @@ export default function MateriasPrimasPage() {
                 </Button>
                 <Button
                   type="submit"
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold"
+                  className="bg-chart-3 hover:bg-chart-3/90 text-white font-bold"
                   disabled={isCreateSubmitting}
                 >
                   {isCreateSubmitting ? "Creando..." : "Crear Insumo"}

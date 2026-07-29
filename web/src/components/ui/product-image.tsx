@@ -58,7 +58,7 @@ export function ProductImage({
   if (!src || hasError) {
     return (
       <div 
-        className={`flex items-center justify-center bg-gray-100 ${className}`}
+        className={`flex items-center justify-center bg-muted ${className}`}
         style={!fill ? { width, height } : undefined}
       >
         <span className="text-4xl">{getCategoryEmoji(category)}</span>
@@ -69,7 +69,7 @@ export function ProductImage({
   return (
     <div className={`relative ${fill ? '' : ''}`} style={!fill ? { width, height } : undefined}>
       {isLoading && (
-        <div className="absolute inset-0 bg-gray-100 animate-pulse rounded-lg" />
+        <div className="absolute inset-0 bg-muted animate-pulse rounded-lg" />
       )}
       <Image
         src={src}
@@ -110,7 +110,7 @@ export function ProductThumbnail({
   if (!src || hasError) {
     return (
       <div 
-        className="flex items-center justify-center bg-gray-100 rounded-lg"
+        className="flex items-center justify-center bg-muted rounded-lg"
         style={{ width: size, height: size }}
       >
         <span className="text-2xl">{getCategoryEmoji(category)}</span>

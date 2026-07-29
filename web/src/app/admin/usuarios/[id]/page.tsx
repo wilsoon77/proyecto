@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Loader2, Save, Eye, EyeOff, Trash2, Building2 } from "lucide-react"
+import { ArrowLeft, Loader as Loader2, Save, Eye, EyeOff, Trash2, Building2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { useToast } from "@/components/ui/toast"
@@ -161,7 +161,7 @@ export default function EditarUsuarioPage() {
     return (
       <div className="p-4 sm:p-6 lg:p-8 max-w-2xl mx-auto">
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 text-amber-600 animate-spin" />
+          <Loader2 className="h-8 w-8 text-primary animate-spin" />
         </div>
       </div>
     )
@@ -170,7 +170,7 @@ export default function EditarUsuarioPage() {
   if (!user) {
     return (
       <div className="p-4 sm:p-6 lg:p-8 max-w-2xl mx-auto">
-        <p className="text-center text-gray-500">Usuario no encontrado</p>
+        <p className="text-center text-muted-foreground">Usuario no encontrado</p>
       </div>
     )
   }
@@ -187,14 +187,14 @@ export default function EditarUsuarioPage() {
             </Button>
           </Link>
           <div className="min-w-0">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Editar Usuario</h1>
-            <p className="text-sm text-gray-500 truncate">{user.email}</p>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Editar Usuario</h1>
+            <p className="text-sm text-muted-foreground truncate">{user.email}</p>
           </div>
         </div>
         {user.isActive && (
           <Button 
             variant="outline" 
-            className="text-red-600 border-red-200 hover:bg-red-50 self-start sm:self-auto"
+            className="text-destructive border-destructive/20 hover:bg-destructive/10 self-start sm:self-auto"
             onClick={() => setShowDeactivateDialog(true)}
           >
             <Trash2 className="h-4 w-4 mr-2" />
@@ -205,12 +205,12 @@ export default function EditarUsuarioPage() {
 
       {/* Status Badge */}
       {!user.isActive && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
-          <p className="text-red-700">Este usuario está desactivado</p>
+        <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg flex items-center justify-between">
+          <p className="text-destructive">Este usuario está desactivado</p>
           <Button 
             variant="outline"
             size="sm"
-            className="text-green-600 border-green-200 hover:bg-green-50"
+            className="text-success border-success/20 hover:bg-success/10"
             onClick={async () => {
               await usersService.reactivate(userId)
               showToast("Usuario reactivado", "success")
@@ -224,10 +224,10 @@ export default function EditarUsuarioPage() {
 
       {/* Form */}
       <form onSubmit={handleSubmit}>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-6">
+        <div className="bg-card rounded-xl shadow-sm border border-border p-6 space-y-6">
           {/* Error Message */}
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+            <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg">
               {error}
             </div>
           )}
@@ -235,7 +235,7 @@ export default function EditarUsuarioPage() {
           {/* Name Row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="firstName" className="block text-sm font-medium text-foreground mb-2">
                 Nombre *
               </label>
               <input
@@ -244,11 +244,11 @@ export default function EditarUsuarioPage() {
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 placeholder="Juan"
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
             </div>
             <div>
-              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="lastName" className="block text-sm font-medium text-foreground mb-2">
                 Apellido *
               </label>
               <input
@@ -257,14 +257,14 @@ export default function EditarUsuarioPage() {
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 placeholder="Pérez"
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
             </div>
           </div>
 
           {/* Email */}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">
               Email *
             </label>
             <input
@@ -273,13 +273,13 @@ export default function EditarUsuarioPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="usuario@ejemplo.com"
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
 
           {/* Phone */}
           <div>
-            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="phone" className="block text-sm font-medium text-foreground mb-2">
               Teléfono
             </label>
             <input
@@ -288,13 +288,13 @@ export default function EditarUsuarioPage() {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="+502 1234-5678"
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
 
           {/* Role */}
           <div>
-            <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="role" className="block text-sm font-medium text-foreground mb-2">
               Rol *
             </label>
             <select
@@ -306,7 +306,7 @@ export default function EditarUsuarioPage() {
                   setBranchId(undefined)
                 }
               }}
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white"
+              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card"
             >
               <option value="CUSTOMER">Cliente</option>
               <option value="MANAGER">Gerente</option>
@@ -314,7 +314,7 @@ export default function EditarUsuarioPage() {
               <option value="CASHIER">Cajero</option>
               <option value="ADMIN">Administrador</option>
             </select>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               {role === 'CUSTOMER' && 'Puede ver productos y realizar pedidos'}
               {role === 'MANAGER' && 'Acceso total a operaciones de su sucursal'}
               {role === 'BAKER' && 'Solo ve producción y materia prima'}
@@ -326,7 +326,7 @@ export default function EditarUsuarioPage() {
           {/* Branch (solo para roles operativos) */}
           {['MANAGER', 'BAKER', 'CASHIER'].includes(role) && (
             <div>
-              <label htmlFor="branch" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="branch" className="block text-sm font-medium text-foreground mb-2">
                 <Building2 className="inline-block h-4 w-4 mr-1" />
                 Sucursal Asignada *
               </label>
@@ -334,28 +334,28 @@ export default function EditarUsuarioPage() {
                 id="branch"
                 value={branchId || ""}
                 onChange={(e) => setBranchId(e.target.value ? Number(e.target.value) : undefined)}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white"
+                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card"
               >
                 <option value="">Seleccionar sucursal...</option>
                 {branches.map(branch => (
                   <option key={branch.id} value={branch.id}>{branch.name}</option>
                 ))}
               </select>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 El empleado solo podrá ver y gestionar el inventario de esta sucursal
               </p>
             </div>
           )}
 
           {/* Divider */}
-          <div className="border-t border-gray-200 pt-6">
-            <h3 className="text-sm font-medium text-gray-700 mb-4">Cambiar Contraseña</h3>
-            <p className="text-xs text-gray-500 mb-4">Deja en blanco si no deseas cambiar la contraseña</p>
+          <div className="border-t border-border pt-6">
+            <h3 className="text-sm font-medium text-foreground mb-4">Cambiar Contraseña</h3>
+            <p className="text-xs text-muted-foreground mb-4">Deja en blanco si no deseas cambiar la contraseña</p>
           </div>
 
           {/* Password */}
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="password" className="block text-sm font-medium text-foreground mb-2">
               Nueva Contraseña
             </label>
             <div className="relative">
@@ -365,12 +365,12 @@ export default function EditarUsuarioPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Mínimo 8 caracteres"
-                className="w-full px-4 py-2 pr-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                className="w-full px-4 py-2 pr-10 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/60 hover:text-muted-foreground"
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
@@ -380,7 +380,7 @@ export default function EditarUsuarioPage() {
           {/* Confirm Password */}
           {password && (
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-foreground mb-2">
                 Confirmar Nueva Contraseña
               </label>
               <input
@@ -389,7 +389,7 @@ export default function EditarUsuarioPage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Repite la contraseña"
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
             </div>
           )}
@@ -404,7 +404,7 @@ export default function EditarUsuarioPage() {
           </Link>
           <Button 
             type="submit" 
-            className="bg-amber-600 hover:bg-amber-700"
+            className="bg-primary hover:bg-primary/90"
             disabled={isSaving}
           >
             {isSaving ? (

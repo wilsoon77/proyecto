@@ -41,7 +41,7 @@ export function ProtectedRoute({
       <div className="flex min-h-[50vh] items-center justify-center">
         <div className="text-center">
           <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="text-gray-600">{loadingMessage}</p>
+          <p className="text-muted-foreground">{loadingMessage}</p>
         </div>
       </div>
     )
@@ -53,7 +53,7 @@ export function ProtectedRoute({
       <div className="flex min-h-[50vh] items-center justify-center">
         <div className="text-center">
           <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="text-gray-600">Redirigiendo...</p>
+          <p className="text-muted-foreground">Redirigiendo...</p>
         </div>
       </div>
     )

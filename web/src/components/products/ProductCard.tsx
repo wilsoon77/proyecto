@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { ShoppingCart, Heart, ImageOff } from "lucide-react"
+import { ShoppingCart, Heart, Star } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { formatPrice } from "@/lib/utils"
 import { Product } from "@/types"
@@ -15,7 +15,6 @@ interface ProductCardProps {
   onToggleFavorite?: (productId: number) => void
 }
 
-// Emoji fallback basado en categoría
 function getCategoryEmoji(category: string): string {
   const categoryMap: Record<string, string> = {
     pan: '🥖',
@@ -36,44 +35,60 @@ export function ProductCard({ product, onAddToCart, onToggleFavorite }: ProductC
   const isOutOfStock = product.stock === 0
   const isLowStock = product.stock > 0 && product.stock <= 5
   const [imageError, setImageError] = useState(false)
+  const [isFavorite, setIsFavorite] = useState(false)
+  const [cartAnimating, setCartAnimating] = useState(false)
 
   const hasValidImage = product.imageUrl && !imageError
 
+  const handleAddToCart = () => {
+    setCartAnimating(true)
+    onAddToCart?.(product.id)
+    setTimeout(() => setCartAnimating(false), 400)
+  }
+
+  const handleFavorite = (e: React.MouseEvent) => {
+    e.preventDefault()
+    setIsFavorite(!isFavorite)
+    onToggleFavorite?.(product.id)
+  }
+
   return (
-    <div className="group relative overflow-hidden rounded-lg border bg-white shadow-sm transition-all hover:shadow-lg">
-      {/* Product Image */}
+    <div className="group relative overflow-hidden rounded-xl border border-border bg-card shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover">
       <Link href={`/productos/${product.slug}`}>
-        <div className="relative aspect-square overflow-hidden bg-gray-100">
+        <div className="relative aspect-square overflow-hidden bg-muted">
           {hasValidImage ? (
             <Image
               src={product.imageUrl!}
               alt={product.name}
               fill
               sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-              className="object-cover transition-transform duration-300 group-hover:scale-105"
+              className="object-cover transition-transform duration-500 ease-out group-hover:scale-110"
               onError={() => setImageError(true)}
             />
           ) : (
-            <div className="flex h-full items-center justify-center flex-col gap-2 text-gray-400">
-              <span className="text-6xl">{getCategoryEmoji(product.category)}</span>
+            <div className="flex h-full items-center justify-center flex-col gap-2 bg-bakery-gradient">
+              <span className="text-6xl transition-transform duration-300 group-hover:scale-110">{getCategoryEmoji(product.category)}</span>
             </div>
           )}
 
+          {/* Gradient overlay on hover */}
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+
           {/* Badges */}
-          <div className="absolute left-2 top-2 flex flex-col gap-1">
+          <div className="absolute left-3 top-3 flex flex-col gap-1.5">
             {product.isNew && (
-              <Badge className="bg-green-500 text-white">Nuevo</Badge>
+              <Badge className="bg-success text-white shadow-sm">Nuevo</Badge>
             )}
             {product.comboQuantity && product.comboPrice ? (
-              <Badge className="bg-amber-500 text-white">
+              <Badge className="bg-primary text-primary-foreground shadow-sm">
                 {product.comboQuantity}x Q{Number(product.comboPrice).toFixed(2)}
               </Badge>
             ) : null}
             {isOutOfStock && (
-              <Badge variant="destructive">Agotado</Badge>
+              <Badge variant="destructive" className="shadow-sm">Agotado</Badge>
             )}
             {isLowStock && (
-              <Badge className="bg-orange-500 text-white">
+              <Badge className="bg-warning text-white shadow-sm">
                 ¡Últimas {product.stock}!
               </Badge>
             )}
@@ -81,50 +96,61 @@ export function ProductCard({ product, onAddToCart, onToggleFavorite }: ProductC
 
           {/* Favorite Button */}
           <button
-            onClick={(e) => {
-              e.preventDefault()
-              onToggleFavorite?.(product.id)
-            }}
-            className="absolute right-2 top-2 rounded-full bg-white/90 p-2 opacity-0 shadow-md transition-opacity hover:bg-white group-hover:opacity-100"
+            onClick={handleFavorite}
+            className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-card/90 shadow-md backdrop-blur-sm transition-all duration-300 hover:scale-110 hover:bg-card group-hover:translate-y-0 group-hover:opacity-100 sm:translate-y-2 sm:opacity-0"
             aria-label="Agregar a favoritos"
           >
-            <Heart className="h-4 w-4 text-gray-600 hover:fill-red-500 hover:text-red-500" />
+            <Heart
+              className={`h-4 w-4 transition-colors ${
+                isFavorite
+                  ? 'fill-destructive text-destructive'
+                  : 'text-muted-foreground hover:text-destructive'
+              }`}
+            />
           </button>
+
+          {/* Low stock progress bar */}
+          {isLowStock && (
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-muted">
+              <div
+                className="h-full bg-warning transition-all duration-500"
+                style={{ width: `${(product.stock / 5) * 100}%` }}
+              />
+            </div>
+          )}
         </div>
       </Link>
 
       {/* Product Info */}
       <div className="p-4">
-  <Link href={`/productos/${product.slug}`}>
-          <h3 className="mb-1 font-semibold text-gray-900 line-clamp-1 hover:text-primary">
+        <Link href={`/productos/${product.slug}`}>
+          <h3 className="mb-1 font-display text-base font-semibold text-card-foreground line-clamp-1 transition-colors hover:text-primary">
             {product.name}
           </h3>
         </Link>
-        
+
         {product.description && (
-          <p className="mb-2 text-sm text-gray-500 line-clamp-2">
+          <p className="mb-2 text-sm text-muted-foreground line-clamp-2">
             {product.description}
           </p>
         )}
 
         {/* Rating */}
         {product.rating && (
-          <div className="mb-2 flex items-center gap-1">
+          <div className="mb-2 flex items-center gap-1.5">
             <div className="flex">
               {[...Array(5)].map((_, i) => (
-                <span
+                <Star
                   key={i}
-                  className={`text-sm ${
+                  className={`h-3.5 w-3.5 transition-colors ${
                     i < Math.floor(product.rating!)
-                      ? 'text-yellow-400'
-                      : 'text-gray-300'
+                      ? 'fill-warning text-warning'
+                      : 'text-muted-foreground/30'
                   }`}
-                >
-                  ★
-                </span>
+                />
               ))}
             </div>
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-muted-foreground">
               ({product.reviewCount || 0})
             </span>
           </div>
@@ -136,7 +162,7 @@ export function ProductCard({ product, onAddToCart, onToggleFavorite }: ProductC
             {formatPrice(product.price)}
           </span>
           {product.comboQuantity && product.comboPrice ? (
-            <span className="text-xs text-amber-600 font-medium">
+            <span className="text-xs text-primary/70 font-medium">
               {product.comboQuantity}x Q{Number(product.comboPrice).toFixed(2)}
             </span>
           ) : null}
@@ -144,9 +170,9 @@ export function ProductCard({ product, onAddToCart, onToggleFavorite }: ProductC
 
         {/* Add to Cart Button */}
         <Button
-          onClick={() => onAddToCart?.(product.id)}
+          onClick={handleAddToCart}
           disabled={isOutOfStock}
-          className="w-full"
+          className={`w-full transition-all ${cartAnimating ? 'animate-cart-bounce' : ''}`}
           size="sm"
         >
           <ShoppingCart className="mr-2 h-4 w-4" />

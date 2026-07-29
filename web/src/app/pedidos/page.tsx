@@ -12,7 +12,7 @@ import { ROUTES } from "@/lib/constants"
 import { getOrderStatusLabel } from "@/lib/constants"
 import { formatDate, formatPrice } from "@/lib/utils"
 
-import { Clock, Check, Wrench, Package, CheckCircle2, XCircle, Home, Lightbulb } from "lucide-react"
+import { Clock, Check, Wrench, Package, CircleCheck as CheckCircle2, Circle as XCircle, Hop as Home, Lightbulb } from "lucide-react"
 
 // Iconos de estado para accesibilidad (#69)
 const STATUS_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -72,12 +72,12 @@ export default function PedidosPage() {
   if (authLoading || isLoading) {
     return (
       <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
-        <h1 className="mb-6 text-3xl font-bold text-gray-900">Tus pedidos</h1>
+        <h1 className="mb-6 text-3xl font-bold text-foreground">Tus pedidos</h1>
         <div className="space-y-4">
           {[1, 2].map(i => (
-            <div key={i} className="animate-pulse rounded-lg border bg-white p-6">
-              <div className="h-6 w-48 rounded bg-gray-200" />
-              <div className="mt-2 h-4 w-32 rounded bg-gray-200" />
+            <div key={i} className="animate-pulse rounded-lg border bg-card p-6">
+              <div className="h-6 w-48 rounded bg-border" />
+              <div className="mt-2 h-4 w-32 rounded bg-border" />
             </div>
           ))}
         </div>
@@ -89,13 +89,13 @@ export default function PedidosPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
-      <h1 className="mb-6 text-3xl font-bold text-gray-900">Tus pedidos</h1>
+      <h1 className="mb-6 text-3xl font-bold text-foreground">Tus pedidos</h1>
 
       {/* Mensaje para usuarios no autenticados */}
       {!isAuthenticated && (
-        <div className="mb-6 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
+        <div className="mb-6 rounded-lg border border-primary/30 bg-accent p-4 text-sm text-primary">
           <p className="font-medium flex items-center gap-1.5 mb-1">
-            <Lightbulb className="h-4 w-4 text-amber-600" />
+            <Lightbulb className="h-4 w-4 text-primary" />
             ¿Ya tienes cuenta?
           </p>
           <p>
@@ -105,33 +105,33 @@ export default function PedidosPage() {
       )}
 
       {error && (
-        <div className="mb-6 rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-800">
+        <div className="mb-6 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
           <p>{error}</p>
         </div>
       )}
 
       {!hasOrders ? (
-        <div className="rounded-lg border bg-white p-8 text-center">
-          <p className="mb-4 text-gray-700">Aún no tienes pedidos.</p>
+        <div className="rounded-lg border bg-card p-8 text-center">
+          <p className="mb-4 text-foreground">Aún no tienes pedidos.</p>
           <Link href={ROUTES.products}><Button>Ver productos</Button></Link>
         </div>
       ) : isAuthenticated && orders.length > 0 ? (
         // Pedidos desde API
         <div className="space-y-6">
           {orders.map(order => (
-            <div key={order.id} className="rounded-lg border bg-white p-6">
+            <div key={order.id} className="rounded-lg border bg-card p-6">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <p className="text-sm text-gray-500">Pedido</p>
+                  <p className="text-sm text-muted-foreground">Pedido</p>
                   <p className="text-lg font-semibold">{order.orderNumber}</p>
                 </div>
                 <div>
                   <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium ${
                     order.status === 'DELIVERED' || order.status === 'PICKED_UP' 
-                      ? 'bg-green-100 text-green-800' 
+                      ? 'bg-success/10 text-success' 
                       : order.status === 'CANCELLED' 
-                        ? 'bg-red-100 text-red-800' 
-                        : 'bg-amber-100 text-amber-800'
+                        ? 'bg-destructive/10 text-destructive' 
+                        : 'bg-primary/10 text-primary'
                   }`}>
                     {(() => {
                       const Icon = STATUS_ICONS[order.status] || Clock
@@ -142,7 +142,7 @@ export default function PedidosPage() {
                 </div>
               </div>
 
-              <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm text-gray-600">
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
                 <div>
                   <span className="font-medium">Sucursal:</span> {order.branch?.name || 'N/A'}
                 </div>
@@ -164,7 +164,7 @@ export default function PedidosPage() {
               )}
 
               <div className="mt-4 flex items-center justify-between border-t pt-3">
-                <span className="text-gray-600">Total</span>
+                <span className="text-muted-foreground">Total</span>
                 <span className="text-lg font-bold text-primary">{formatPrice(Number(order.total))}</span>
               </div>
 
@@ -212,18 +212,18 @@ export default function PedidosPage() {
       ) : localOrder ? (
         // Pedido local (usuario no autenticado)
         <div className="space-y-6">
-          <div className="rounded-lg border bg-white p-6">
+          <div className="rounded-lg border bg-card p-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <p className="text-sm text-gray-500">Pedido</p>
+                <p className="text-sm text-muted-foreground">Pedido</p>
                 <p className="text-lg font-semibold">{(localOrder as { orderNumber?: string }).orderNumber}</p>
               </div>
               <div className="text-right">
-                <p className="text-sm text-gray-500">Fecha</p>
+                <p className="text-sm text-muted-foreground">Fecha</p>
                 <p className="font-medium">{formatDate(new Date((localOrder as { createdAt?: string }).createdAt || ''))}</p>
               </div>
             </div>
-            <div className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700">
+            <div className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-sm font-medium text-foreground">
               {(() => {
                 const Icon = STATUS_ICONS[(localOrder as { status?: string }).status || 'PENDING'] || Clock
                 return <Icon className="h-3.5 w-3.5" />
@@ -232,11 +232,11 @@ export default function PedidosPage() {
             </div>
           </div>
 
-          <div className="rounded-lg border bg-white p-6">
+          <div className="rounded-lg border bg-card p-6">
             <h2 className="mb-4 text-xl font-semibold">Resumen</h2>
             <div className="space-y-2 text-sm">
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">Subtotal</span>
+                <span className="text-muted-foreground">Subtotal</span>
                 <span className="font-medium">{formatPrice((localOrder as { subtotal?: number }).subtotal || 0)}</span>
               </div>
               <div className="flex items-center justify-between border-t pt-2 text-base">

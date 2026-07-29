@@ -3,21 +3,7 @@
 import { useEffect, useState, Suspense, useCallback, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { 
-  ArrowLeft,
-  Package, 
-  RefreshCw, 
-  Plus, 
-  AlertTriangle,
-  TrendingUp,
-  TrendingDown,
-  ArrowRightLeft,
-  Truck,
-  Factory,
-  AlertCircle,
-  Check,
-  Save
-} from "lucide-react"
+import { ArrowLeft, Package, RefreshCw, Plus, TriangleAlert as AlertTriangle, TrendingUp, TrendingDown, ArrowRightLeft, Truck, Factory, CircleAlert as AlertCircle, Check, Save } from "lucide-react"
 import { 
   inventoryService, 
   branchesService, 
@@ -82,8 +68,8 @@ const MOVEMENT_TYPES: Record<StockMovementType, {
   PRODUCCION: {
     label: "Producción",
     icon: <Factory className="h-5 w-5" />,
-    color: "text-green-700",
-    bgColor: "bg-green-100",
+    color: "text-success",
+    bgColor: "bg-success/10",
     description: "Producto fabricado o producido internamente",
     requiresFromBranch: false,
     requiresToBranch: true
@@ -91,8 +77,8 @@ const MOVEMENT_TYPES: Record<StockMovementType, {
   COMPRA: {
     label: "Compra",
     icon: <Truck className="h-5 w-5" />,
-    color: "text-blue-700",
-    bgColor: "bg-blue-100",
+    color: "text-chart-3",
+    bgColor: "bg-chart-3/10",
     description: "Compra a proveedor externo",
     requiresFromBranch: false,
     requiresToBranch: true
@@ -100,8 +86,8 @@ const MOVEMENT_TYPES: Record<StockMovementType, {
   VENTA: {
     label: "Venta",
     icon: <TrendingDown className="h-5 w-5" />,
-    color: "text-purple-700",
-    bgColor: "bg-purple-100",
+    color: "text-chart-5",
+    bgColor: "bg-chart-5/10",
     description: "Venta a cliente (reducción de stock)",
     requiresFromBranch: true,
     requiresToBranch: false
@@ -109,8 +95,8 @@ const MOVEMENT_TYPES: Record<StockMovementType, {
   MERMA: {
     label: "Merma",
     icon: <AlertCircle className="h-5 w-5" />,
-    color: "text-orange-700",
-    bgColor: "bg-orange-100",
+    color: "text-primary",
+    bgColor: "bg-primary/10",
     description: "Producto dañado, caducado o defectuoso",
     requiresFromBranch: true,
     requiresToBranch: false
@@ -118,8 +104,8 @@ const MOVEMENT_TYPES: Record<StockMovementType, {
   PERDIDA_ROBO: {
     label: "Pérdida / Robo",
     icon: <AlertTriangle className="h-5 w-5" />,
-    color: "text-red-700",
-    bgColor: "bg-red-100",
+    color: "text-destructive",
+    bgColor: "bg-destructive/10",
     description: "Producto perdido o robado",
     requiresFromBranch: true,
     requiresToBranch: false
@@ -399,8 +385,8 @@ function MovimientoForm() {
     return (
       <div className="p-4 sm:p-6 lg:p-8">
         <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-gray-200 rounded w-64"></div>
-          <div className="bg-white rounded-xl h-[600px]"></div>
+          <div className="h-8 bg-border rounded w-64"></div>
+          <div className="bg-card rounded-xl h-[600px]"></div>
         </div>
       </div>
     )
@@ -410,13 +396,13 @@ function MovimientoForm() {
     return (
       <div className="p-4 sm:p-6 lg:p-8">
         <div className="max-w-2xl mx-auto">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
-            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Check className="h-10 w-10 text-green-600" />
+          <div className="bg-card rounded-2xl shadow-sm border border-border p-12 text-center">
+            <div className="w-20 h-20 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Check className="h-10 w-10 text-success" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">¡Movimiento registrado!</h2>
-            <p className="text-gray-500 mb-6">El inventario ha sido actualizado correctamente.</p>
-            <p className="text-sm text-gray-400">Redirigiendo al inventario...</p>
+            <h2 className="text-2xl font-bold text-foreground mb-3">¡Movimiento registrado!</h2>
+            <p className="text-muted-foreground mb-6">El inventario ha sido actualizado correctamente.</p>
+            <p className="text-sm text-muted-foreground/60">Redirigiendo al inventario...</p>
           </div>
         </div>
       </div>
@@ -424,32 +410,32 @@ function MovimientoForm() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen">
+    <div className="p-4 sm:p-6 lg:p-8 bg-cream min-h-screen">
       {/* Header */}
       <div className="mb-8">
         <Link 
           href="/admin/inventario"
-          className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-4"
+          className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4"
         >
           <ArrowLeft className="h-4 w-4" />
           Volver al inventario
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900">Registrar Movimiento de Stock</h1>
-        <p className="text-gray-500 mt-1">Complete el formulario para registrar un movimiento de inventario</p>
+        <h1 className="text-2xl font-bold text-foreground">Registrar Movimiento de Stock</h1>
+        <p className="text-muted-foreground mt-1">Complete el formulario para registrar un movimiento de inventario</p>
       </div>
 
       <div className="max-w-4xl">
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Producto */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <Package className="h-5 w-5 text-amber-600" />
+          <div className="bg-card rounded-xl shadow-sm border border-border p-6">
+            <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+              <Package className="h-5 w-5 text-primary" />
               Producto
             </h3>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Seleccionar producto *
                 </label>
                 <div ref={comboboxRef} className="relative">
@@ -459,20 +445,20 @@ function MovimientoForm() {
                     onChange={handleInputChange}
                     onFocus={() => setIsDropdownOpen(true)}
                     placeholder="Escribe para buscar un producto..."
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-base"
+                    className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-base"
                     required
                   />
                   {isDropdownOpen && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    <div className="absolute z-10 w-full mt-1 bg-card border border-border rounded-lg shadow-lg max-h-60 overflow-y-auto">
                       {isSearchingProducts && (
-                        <div className="px-4 py-2 text-sm text-gray-400">Buscando productos...</div>
+                        <div className="px-4 py-2 text-sm text-muted-foreground/60">Buscando productos...</div>
                       )}
                       {products.filter(p => 
                         !productSearch.trim() || 
                         p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
                         p.slug.toLowerCase().includes(productSearch.toLowerCase())
                       ).length === 0 ? (
-                        <div className="px-4 py-2 text-sm text-gray-500">No se encontraron productos</div>
+                        <div className="px-4 py-2 text-sm text-muted-foreground">No se encontraron productos</div>
                       ) : (
                         products
                           .filter(p => 
@@ -485,12 +471,12 @@ function MovimientoForm() {
                               key={product.id}
                               type="button"
                               onClick={() => handleSelectProduct(product)}
-                              className={`w-full text-left px-4 py-2 text-sm hover:bg-amber-50 hover:text-amber-900 transition-colors flex items-center justify-between ${
-                                selectedProduct === product.slug ? "bg-amber-100 text-amber-900 font-medium" : "text-gray-700"
+                              className={`w-full text-left px-4 py-2 text-sm hover:bg-accent hover:text-primary transition-colors flex items-center justify-between ${
+                                selectedProduct === product.slug ? "bg-primary/10 text-primary font-medium" : "text-foreground"
                               }`}
                             >
                               <span>{product.name}</span>
-                              {selectedProduct === product.slug && <Check className="h-4 w-4 text-amber-600" />}
+                              {selectedProduct === product.slug && <Check className="h-4 w-4 text-primary" />}
                             </button>
                           ))
                       )}
@@ -501,12 +487,12 @@ function MovimientoForm() {
               </div>
 
               {currentStock && (
-                <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
-                  <p className="text-sm text-amber-800">
+                <div className="p-4 bg-accent rounded-lg border border-primary/20">
+                  <p className="text-sm text-primary">
                     <span className="font-medium">Stock actual:</span>{" "}
                     <span className="text-lg font-bold">{currentStock.available}</span> {getProductUnit(currentProduct)} disponibles
                     {currentStock.reserved > 0 && (
-                      <span className="text-amber-600"> ({currentStock.reserved} reservadas)</span>
+                      <span className="text-primary"> ({currentStock.reserved} reservadas)</span>
                     )}
                   </p>
                 </div>
@@ -515,8 +501,8 @@ function MovimientoForm() {
           </div>
 
           {/* Tipo de movimiento */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          <div className="bg-card rounded-xl shadow-sm border border-border p-6">
+            <h3 className="text-lg font-semibold text-foreground mb-4">
               Tipo de movimiento
             </h3>
             
@@ -530,16 +516,16 @@ function MovimientoForm() {
                     onClick={() => setMovementType(type)}
                     className={`flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all ${
                       movementType === type 
-                        ? 'border-amber-500 bg-amber-50 shadow-sm' 
-                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                        ? 'border-primary bg-accent shadow-sm' 
+                        : 'border-border hover:border-input hover:bg-cream'
                     }`}
                   >
                     <span className={`p-2 rounded-lg ${config.bgColor} ${config.color}`}>
                       {config.icon}
                     </span>
                     <div className="flex-1">
-                      <p className="font-semibold text-gray-900">{config.label}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">{config.description}</p>
+                      <p className="font-semibold text-foreground">{config.label}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{config.description}</p>
                     </div>
                   </button>
                 ))
@@ -548,15 +534,15 @@ function MovimientoForm() {
           </div>
 
           {/* Cantidad y sucursales */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          <div className="bg-card rounded-xl shadow-sm border border-border p-6">
+            <h3 className="text-lg font-semibold text-foreground mb-4">
               Detalles del movimiento
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Cantidad */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Cantidad *
                 </label>
                 <div className="relative flex items-center">
@@ -565,10 +551,10 @@ function MovimientoForm() {
                     min="1"
                     value={movementQuantity}
                     onChange={(e) => setMovementQuantity(parseInt(e.target.value) || 0)}
-                    className="w-full pr-24 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-lg font-semibold"
+                    className="w-full pr-24 px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-lg font-semibold"
                     required
                   />
-                  <div className="absolute right-3 px-3 py-1 bg-gray-100 text-gray-600 rounded text-sm font-medium border border-gray-200">
+                  <div className="absolute right-3 px-3 py-1 bg-muted text-muted-foreground rounded text-sm font-medium border border-border">
                     {getProductUnit(currentProduct)}
                   </div>
                 </div>
@@ -577,14 +563,14 @@ function MovimientoForm() {
               {/* Sucursal origen */}
               {MOVEMENT_TYPES[movementType].requiresFromBranch && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Sucursal origen *
                   </label>
                   <select
                     value={movementFromBranch}
                     onChange={(e) => setMovementFromBranch(e.target.value)}
                     disabled={isManager}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:bg-gray-100 disabled:text-gray-500"
+                    className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:text-muted-foreground"
                     required
                   >
                     <option value="">-- Seleccionar --</option>
@@ -598,14 +584,14 @@ function MovimientoForm() {
               {/* Sucursal destino */}
               {MOVEMENT_TYPES[movementType].requiresToBranch && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     {movementType === 'TRANSFERENCIA' ? 'Sucursal destino *' : 'Sucursal *'}
                   </label>
                   <select
                     value={movementToBranch}
                     onChange={(e) => setMovementToBranch(e.target.value)}
                     disabled={isManager && movementType !== 'TRANSFERENCIA'}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:bg-gray-100 disabled:text-gray-500"
+                    className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:text-muted-foreground"
                     required
                   >
                     <option value="">-- Seleccionar --</option>
@@ -622,14 +608,14 @@ function MovimientoForm() {
           </div>
 
           {/* Información adicional */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          <div className="bg-card rounded-xl shadow-sm border border-border p-6">
+            <h3 className="text-lg font-semibold text-foreground mb-4">
               Información adicional
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Referencia (opcional)
                 </label>
                 <input
@@ -637,13 +623,13 @@ function MovimientoForm() {
                   value={movementReference}
                   onChange={(e) => setMovementReference(e.target.value)}
                   placeholder="Ej: FAC-12345, Lote-A001"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                 />
-                <p className="text-xs text-gray-400 mt-1">Número de factura, orden de compra, etc.</p>
+                <p className="text-xs text-muted-foreground/60 mt-1">Número de factura, orden de compra, etc.</p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Nota (opcional)
                 </label>
                 <textarea
@@ -651,7 +637,7 @@ function MovimientoForm() {
                   onChange={(e) => setMovementNote(e.target.value)}
                   placeholder="Observaciones adicionales..."
                   rows={3}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
+                  className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none"
                 />
               </div>
             </div>
@@ -659,7 +645,7 @@ function MovimientoForm() {
 
           {/* Error */}
           {submitError && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 flex items-center gap-3">
+            <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive flex items-center gap-3">
               <AlertTriangle className="h-5 w-5 flex-shrink-0" />
               <span>{submitError}</span>
             </div>
@@ -722,8 +708,8 @@ export default function MovimientoPage() {
     <Suspense fallback={
       <div className="p-8">
         <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-gray-200 rounded w-64"></div>
-          <div className="bg-white rounded-xl h-[600px]"></div>
+          <div className="h-8 bg-border rounded w-64"></div>
+          <div className="bg-card rounded-xl h-[600px]"></div>
         </div>
       </div>
     }>

@@ -3,17 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { 
-  Plus, 
-  Search, 
-  Edit, 
-  Trash2,
-  Tag,
-  Package,
-  Loader2,
-  ChevronLeft,
-  ChevronRight
-} from "lucide-react"
+import { Plus, Search, CreditCard as Edit, Trash2, Tag, Package, Loader as Loader2, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { useToast } from "@/components/ui/toast"
@@ -104,14 +94,14 @@ export default function AdminCategoriasPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 flex items-center gap-3">
-            <Tag className="h-7 w-7 text-amber-600" />
+          <h1 className="text-2xl lg:text-3xl font-bold text-foreground flex items-center gap-3">
+            <Tag className="h-7 w-7 text-primary" />
             Categorías
           </h1>
-          <p className="text-gray-500 mt-1">Gestiona las categorías de productos</p>
+          <p className="text-muted-foreground mt-1">Gestiona las categorías de productos</p>
         </div>
         <Link href="/admin/categorias/nuevo">
-          <Button className="bg-amber-600 hover:bg-amber-700">
+          <Button className="bg-primary hover:bg-primary/90">
             <Plus className="h-4 w-4 mr-2" />
             Nueva Categoría
           </Button>
@@ -119,15 +109,15 @@ export default function AdminCategoriasPage() {
       </div>
 
       {/* Search */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+      <div className="bg-card rounded-xl shadow-sm border border-border p-4 mb-6">
         <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
           <input
             type="text"
             placeholder="Buscar categorías..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
           />
         </div>
       </div>
@@ -135,15 +125,15 @@ export default function AdminCategoriasPage() {
       {/* Content */}
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-amber-600" />
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : filteredCategories.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
-          <Tag className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
+        <div className="bg-card rounded-xl shadow-sm border border-border p-12 text-center">
+          <Tag className="h-12 w-12 text-muted-foreground/40 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-foreground mb-2">
             {searchTerm ? "No se encontraron categorías" : "No hay categorías"}
           </h3>
-          <p className="text-gray-500 mb-4">
+          <p className="text-muted-foreground mb-4">
             {searchTerm 
               ? "Intenta con otro término de búsqueda" 
               : "Crea tu primera categoría para organizar los productos"
@@ -151,7 +141,7 @@ export default function AdminCategoriasPage() {
           </p>
           {!searchTerm && (
             <Link href="/admin/categorias/nuevo">
-              <Button className="bg-amber-600 hover:bg-amber-700">
+              <Button className="bg-primary hover:bg-primary/90">
                 <Plus className="h-4 w-4 mr-2" />
                 Nueva Categoría
               </Button>
@@ -163,11 +153,11 @@ export default function AdminCategoriasPage() {
           {paginatedCategories.map((category) => (
             <div 
               key={category.id}
-              className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow"
+              className="bg-card rounded-xl shadow-sm border border-border p-5 hover:shadow-md transition-shadow"
             >
               <div className="flex items-start justify-between mb-3">
-                <div className="h-10 w-10 bg-amber-100 rounded-lg flex items-center justify-center">
-                  <Package className="h-5 w-5 text-amber-600" />
+                <div className="h-10 w-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <Package className="h-5 w-5 text-primary" />
                 </div>
                 <div className="flex gap-1">
                   <Link href={`/admin/categorias/${category.slug}`}>
@@ -179,18 +169,18 @@ export default function AdminCategoriasPage() {
                     variant="ghost" 
                     size="sm"
                     onClick={() => setDeleteTarget(category)}
-                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
               
-              <h3 className="font-semibold text-gray-900 mb-1">{category.name}</h3>
-              <p className="text-sm text-gray-500 mb-2 font-mono">/{category.slug}</p>
+              <h3 className="font-semibold text-foreground mb-1">{category.name}</h3>
+              <p className="text-sm text-muted-foreground mb-2 font-mono">/{category.slug}</p>
               
               {category.description && (
-                <p className="text-sm text-gray-600 line-clamp-2">{category.description}</p>
+                <p className="text-sm text-muted-foreground line-clamp-2">{category.description}</p>
               )}
             </div>
           ))}
@@ -199,8 +189,8 @@ export default function AdminCategoriasPage() {
 
       {/* Pagination */}
       {!isLoading && totalPages > 1 && (
-        <div className="flex items-center justify-between mt-6 bg-white rounded-xl shadow-sm border border-gray-100 px-4 sm:px-6 py-4">
-          <p className="text-sm text-gray-500">
+        <div className="flex items-center justify-between mt-6 bg-card rounded-xl shadow-sm border border-border px-4 sm:px-6 py-4">
+          <p className="text-sm text-muted-foreground">
             Página {currentPage} de {totalPages} ({filteredCategories.length} categorías)
           </p>
           <div className="flex items-center gap-2">

@@ -2,26 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { 
-  Package, 
-  ShoppingCart, 
-  Users, 
-  Banknote,
-  Clock,
-  AlertTriangle,
-  ArrowUpRight,
-  BarChart3,
-  PieChart as PieChartIcon,
-  TrendingDown,
-  Store,
-  MapPin,
-  LineChart as LineChartIcon,
-  RefreshCw,
-  Calendar,
-  Boxes,
-  Tag,
-  FileText
-} from "lucide-react"
+import { Package, ShoppingCart, Users, Banknote, Clock, TriangleAlert as AlertTriangle, ArrowUpRight, ChartBar as BarChart3, ChartPie as PieChartIcon, TrendingDown, Store, MapPin, ChartLine as LineChartIcon, RefreshCw, Calendar, Boxes, Tag, FileText } from "lucide-react"
 import {
   BarChart,
   Bar,
@@ -193,12 +174,12 @@ export default function AdminDashboardPage() {
     return (
       <div className="p-4 sm:p-6 lg:p-8">
         <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-gray-200 rounded w-48"></div>
+          <div className="h-8 bg-border rounded w-48"></div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-white rounded-xl p-6 h-32">
-                <div className="h-4 bg-gray-200 rounded w-24 mb-4"></div>
-                <div className="h-8 bg-gray-200 rounded w-16"></div>
+              <div key={i} className="bg-card rounded-xl p-6 h-32">
+                <div className="h-4 bg-border rounded w-24 mb-4"></div>
+                <div className="h-8 bg-border rounded w-16"></div>
               </div>
             ))}
           </div>
@@ -232,15 +213,15 @@ export default function AdminDashboardPage() {
   })) || []
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen">
+    <div className="p-4 sm:p-6 lg:p-8 bg-cream min-h-screen">
       {/* Header con saludo y fecha */}
       <div className="mb-8">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
-            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
+            <h1 className="text-2xl lg:text-3xl font-bold text-foreground">
               {getGreeting()}, {user?.firstName || "Usuario"}
             </h1>
-            <div className="flex items-center gap-3 mt-2 text-gray-500">
+            <div className="flex items-center gap-3 mt-2 text-muted-foreground">
               <div className="flex items-center gap-1.5">
                 <Calendar className="h-4 w-4" />
                 <span className="text-sm capitalize">{getCurrentDate()}</span>
@@ -260,19 +241,19 @@ export default function AdminDashboardPage() {
             <button
               onClick={refreshStats}
               disabled={isLoading}
-              className="flex items-center gap-2 bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-2 hover:bg-gray-50 transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 bg-card rounded-lg shadow-sm border border-border px-4 py-2 hover:bg-cream transition-colors disabled:opacity-50"
             >
-              <RefreshCw className={`h-4 w-4 text-gray-500 ${isLoading ? "animate-spin" : ""}`} />
-              <span className="text-sm text-gray-600 font-medium hidden sm:inline">Actualizar</span>
+              <RefreshCw className={`h-4 w-4 text-muted-foreground ${isLoading ? "animate-spin" : ""}`} />
+              <span className="text-sm text-muted-foreground font-medium hidden sm:inline">Actualizar</span>
             </button>
             {isAdmin ? (
-              <div className="flex items-center gap-2 bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-2">
-                <Store className="h-4 w-4 text-gray-400" />
-                <span className="text-sm text-gray-500 hidden sm:inline">Vista:</span>
+              <div className="flex items-center gap-2 bg-card rounded-lg shadow-sm border border-border px-4 py-2">
+                <Store className="h-4 w-4 text-muted-foreground/60" />
+                <span className="text-sm text-muted-foreground hidden sm:inline">Vista:</span>
                 <select
                   value={selectedBranch}
                   onChange={(e) => setSelectedBranch(e.target.value)}
-                  className="border-0 bg-transparent font-medium text-gray-900 focus:outline-none focus:ring-0 pr-8"
+                  className="border-0 bg-transparent font-medium text-foreground focus:outline-none focus:ring-0 pr-8"
                 >
                   <option value="global">Global (Todas)</option>
                   {branches.map(branch => (
@@ -283,7 +264,7 @@ export default function AdminDashboardPage() {
                 </select>
               </div>
             ) : (
-              <div className="flex items-center gap-2 bg-amber-100 text-amber-800 rounded-lg px-4 py-2">
+              <div className="flex items-center gap-2 bg-primary/10 text-primary rounded-lg px-4 py-2">
                 <MapPin className="h-4 w-4" />
                 <span className="text-sm font-medium">
                   {user?.branch?.name || branches.find(b => b.id.toString() === selectedBranch)?.name || "Sin asignar"}
@@ -295,7 +276,7 @@ export default function AdminDashboardPage() {
       </div>
 
       {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+        <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive">
           {error}
         </div>
       )}
@@ -303,12 +284,12 @@ export default function AdminDashboardPage() {
       {/* KPIs Principales (3 tarjetas grandes) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {/* Ventas del Día */}
-        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white">
+        <div className="bg-gradient-to-br from-success to-success rounded-xl shadow-lg p-6 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-green-100 text-sm font-medium">Ventas del Día</p>
+              <p className="text-white/80 text-sm font-medium">Ventas del Día</p>
               <p className="text-3xl font-bold mt-2">{formatCurrency(stats?.kpis.todaySales || 0)}</p>
-              <p className="text-green-100 text-sm mt-1">{stats?.kpis.todayOrdersCount || 0} órdenes completadas</p>
+              <p className="text-white/80 text-sm mt-1">{stats?.kpis.todayOrdersCount || 0} órdenes completadas</p>
             </div>
             <div className="h-16 w-16 bg-white/20 rounded-xl flex items-center justify-center">
               <Banknote className="h-8 w-8" />
@@ -317,12 +298,12 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Mermas del Mes */}
-        <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-6 text-white">
+        <div className="bg-gradient-to-br from-destructive to-destructive rounded-xl shadow-lg p-6 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-red-100 text-sm font-medium">Mermas del Mes</p>
+              <p className="text-white/80 text-sm font-medium">Mermas del Mes</p>
               <p className="text-3xl font-bold mt-2">{stats?.kpis.monthlyLossesQty || 0} uds</p>
-              <p className="text-red-100 text-sm mt-1">{stats?.kpis.monthlyLossesCount || 0} movimientos registrados</p>
+              <p className="text-white/80 text-sm mt-1">{stats?.kpis.monthlyLossesCount || 0} movimientos registrados</p>
             </div>
             <div className="h-16 w-16 bg-white/20 rounded-xl flex items-center justify-center">
               <TrendingDown className="h-8 w-8" />
@@ -333,8 +314,8 @@ export default function AdminDashboardPage() {
         {/* Alertas de Stock */}
         <div className={`rounded-xl shadow-lg p-6 text-white ${
           (stats?.kpis.lowStockAlerts || 0) > 0 
-            ? 'bg-gradient-to-br from-amber-500 to-amber-600' 
-            : 'bg-gradient-to-br from-blue-500 to-blue-600'
+            ? 'bg-gradient-to-br from-warning to-warning' 
+            : 'bg-gradient-to-br from-chart-3 to-chart-3'
         }`}>
           <div className="flex items-center justify-between">
             <div>
@@ -356,47 +337,47 @@ export default function AdminDashboardPage() {
 
       {/* Stats secundarias */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+        <div className="bg-card rounded-xl shadow-sm p-4 border border-border">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
-              <ShoppingCart className="h-5 w-5 text-blue-600" />
+            <div className="h-10 w-10 bg-chart-3/10 rounded-lg flex items-center justify-center">
+              <ShoppingCart className="h-5 w-5 text-chart-3" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{stats?.summary.totalOrders || 0}</p>
-              <p className="text-xs text-gray-500">Órdenes totales</p>
+              <p className="text-2xl font-bold text-foreground">{stats?.summary.totalOrders || 0}</p>
+              <p className="text-xs text-muted-foreground">Órdenes totales</p>
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+        <div className="bg-card rounded-xl shadow-sm p-4 border border-border">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 bg-yellow-100 rounded-lg flex items-center justify-center">
-              <Clock className="h-5 w-5 text-yellow-600" />
+            <div className="h-10 w-10 bg-warning/10 rounded-lg flex items-center justify-center">
+              <Clock className="h-5 w-5 text-warning" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{stats?.summary.pendingOrders || 0}</p>
-              <p className="text-xs text-gray-500">Pendientes</p>
+              <p className="text-2xl font-bold text-foreground">{stats?.summary.pendingOrders || 0}</p>
+              <p className="text-xs text-muted-foreground">Pendientes</p>
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+        <div className="bg-card rounded-xl shadow-sm p-4 border border-border">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 bg-amber-100 rounded-lg flex items-center justify-center">
-              <Package className="h-5 w-5 text-amber-600" />
+            <div className="h-10 w-10 bg-primary/10 rounded-lg flex items-center justify-center">
+              <Package className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{stats?.summary.activeProducts || 0}</p>
-              <p className="text-xs text-gray-500">Productos</p>
+              <p className="text-2xl font-bold text-foreground">{stats?.summary.activeProducts || 0}</p>
+              <p className="text-xs text-muted-foreground">Productos</p>
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+        <div className="bg-card rounded-xl shadow-sm p-4 border border-border">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 bg-purple-100 rounded-lg flex items-center justify-center">
-              <Users className="h-5 w-5 text-purple-600" />
+            <div className="h-10 w-10 bg-chart-5/10 rounded-lg flex items-center justify-center">
+              <Users className="h-5 w-5 text-chart-5" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{stats?.summary.totalUsers || 0}</p>
-              <p className="text-xs text-gray-500">Usuarios</p>
+              <p className="text-2xl font-bold text-foreground">{stats?.summary.totalUsers || 0}</p>
+              <p className="text-xs text-muted-foreground">Usuarios</p>
             </div>
           </div>
         </div>
@@ -407,17 +388,17 @@ export default function AdminDashboardPage() {
       {/* Gráficas principales */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Gráfica principal - depende del rol y selección */}
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <div className="bg-card rounded-xl shadow-sm p-6 border border-border">
           <div className="flex items-center gap-2 mb-6">
             {selectedBranch === "global" ? (
               <>
-                <BarChart3 className="h-5 w-5 text-gray-400" />
-                <h3 className="font-semibold text-gray-900">Ventas por Sucursal</h3>
+                <BarChart3 className="h-5 w-5 text-muted-foreground/60" />
+                <h3 className="font-semibold text-foreground">Ventas por Sucursal</h3>
               </>
             ) : (
               <>
-                <LineChartIcon className="h-5 w-5 text-gray-400" />
-                <h3 className="font-semibold text-gray-900">Ventas de la Semana</h3>
+                <LineChartIcon className="h-5 w-5 text-muted-foreground/60" />
+                <h3 className="font-semibold text-foreground">Ventas de la Semana</h3>
               </>
             )}
           </div>
@@ -452,17 +433,17 @@ export default function AdminDashboardPage() {
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-64 flex items-center justify-center text-gray-400">
+            <div className="h-64 flex items-center justify-center text-muted-foreground/60">
               <p>No hay datos de ventas disponibles</p>
             </div>
           )}
         </div>
 
         {/* Gráfico circular - órdenes por estado */}
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <div className="bg-card rounded-xl shadow-sm p-6 border border-border">
           <div className="flex items-center gap-2 mb-6">
-            <PieChartIcon className="h-5 w-5 text-gray-400" />
-            <h3 className="font-semibold text-gray-900">Órdenes por Estado</h3>
+            <PieChartIcon className="h-5 w-5 text-muted-foreground/60" />
+            <h3 className="font-semibold text-foreground">Órdenes por Estado</h3>
           </div>
           {orderStatusData.length > 0 ? (
             <ResponsiveContainer width="100%" height={280}>
@@ -489,7 +470,7 @@ export default function AdminDashboardPage() {
               </PieChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-64 flex items-center justify-center text-gray-400">
+            <div className="h-64 flex items-center justify-center text-muted-foreground/60">
               <p>No hay órdenes registradas</p>
             </div>
           )}
@@ -499,10 +480,10 @@ export default function AdminDashboardPage() {
       {/* Segunda fila de gráficas */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Top productos */}
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <div className="bg-card rounded-xl shadow-sm p-6 border border-border">
           <div className="flex items-center gap-2 mb-6">
-            <BarChart3 className="h-5 w-5 text-gray-400" />
-            <h3 className="font-semibold text-gray-900">Productos Más Vendidos</h3>
+            <BarChart3 className="h-5 w-5 text-muted-foreground/60" />
+            <h3 className="font-semibold text-foreground">Productos Más Vendidos</h3>
           </div>
           {topProductsData.length > 0 ? (
             <ResponsiveContainer width="100%" height={250}>
@@ -518,20 +499,20 @@ export default function AdminDashboardPage() {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-64 flex items-center justify-center text-gray-400">
+            <div className="h-64 flex items-center justify-center text-muted-foreground/60">
               <p>No hay datos de ventas disponibles</p>
             </div>
           )}
         </div>
 
         {/* Alerta de Stock Bajo */}
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <div className="bg-card rounded-xl shadow-sm p-6 border border-border">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-red-500" />
-              <h3 className="font-semibold text-gray-900">Stock Bajo</h3>
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              <h3 className="font-semibold text-foreground">Stock Bajo</h3>
             </div>
-            <Link href="/admin/inventario" className="text-sm text-amber-600 hover:text-amber-700 font-medium">
+            <Link href="/admin/inventario" className="text-sm text-primary hover:text-primary font-medium">
               Ver inventario
             </Link>
           </div>
@@ -539,7 +520,7 @@ export default function AdminDashboardPage() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="text-left text-sm text-gray-500 border-b">
+                  <tr className="text-left text-sm text-muted-foreground border-b">
                     <th className="pb-3 font-medium">Producto</th>
                     <th className="pb-3 font-medium">Sucursal</th>
                     <th className="pb-3 font-medium text-right">Stock</th>
@@ -548,11 +529,11 @@ export default function AdminDashboardPage() {
                 <tbody>
                   {stats.lowStockProducts.slice(0, 5).map((item, index) => (
                     <tr key={index} className="border-b last:border-0">
-                      <td className="py-3 font-medium text-gray-900">{item.productName}</td>
-                      <td className="py-3 text-gray-600">{item.branchName}</td>
+                      <td className="py-3 font-medium text-foreground">{item.productName}</td>
+                      <td className="py-3 text-muted-foreground">{item.branchName}</td>
                       <td className="py-3 text-right">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          item.available === 0 ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
+                          item.available === 0 ? 'bg-destructive/10 text-destructive' : 'bg-warning/10 text-warning'
                         }`}>
                           {item.available} uds
                         </span>
@@ -563,9 +544,9 @@ export default function AdminDashboardPage() {
               </table>
             </div>
           ) : (
-            <div className="h-48 flex items-center justify-center text-gray-400">
+            <div className="h-48 flex items-center justify-center text-muted-foreground/60">
               <div className="text-center">
-                <Package className="h-12 w-12 mx-auto mb-2 text-green-300" />
+                <Package className="h-12 w-12 mx-auto mb-2 text-success/40" />
                 <p>Todos los productos tienen stock suficiente</p>
               </div>
             </div>
@@ -574,53 +555,53 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Acciones Rápidas - Estilo OrangeHRM */}
-      <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-        <h3 className="font-semibold text-gray-900 mb-6">Accesos Rápidos</h3>
+      <div className="bg-card rounded-xl shadow-sm p-6 border border-border">
+        <h3 className="font-semibold text-foreground mb-6">Accesos Rápidos</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
           <Link
             href="/admin/inventario"
-            className="flex flex-col items-center gap-3 p-4 rounded-xl bg-green-50 hover:bg-green-100 transition-all group"
+            className="flex flex-col items-center gap-3 p-4 rounded-xl bg-success/10 hover:bg-success/10 transition-all group"
           >
-            <div className="h-12 w-12 bg-green-500 rounded-xl flex items-center justify-center">
+            <div className="h-12 w-12 bg-success/100 rounded-xl flex items-center justify-center">
               <Boxes className="h-6 w-6 text-white" />
             </div>
-            <span className="text-sm font-medium text-gray-700 text-center">Inventario</span>
+            <span className="text-sm font-medium text-foreground text-center">Inventario</span>
           </Link>
           <Link
             href="/admin/productos/nuevo"
-            className="flex flex-col items-center gap-3 p-4 rounded-xl bg-amber-50 hover:bg-amber-100 transition-all group"
+            className="flex flex-col items-center gap-3 p-4 rounded-xl bg-accent hover:bg-primary/10 transition-all group"
           >
-            <div className="h-12 w-12 bg-amber-500 rounded-xl flex items-center justify-center">
+            <div className="h-12 w-12 bg-accent0 rounded-xl flex items-center justify-center">
               <Package className="h-6 w-6 text-white" />
             </div>
-            <span className="text-sm font-medium text-gray-700 text-center">Nuevo Producto</span>
+            <span className="text-sm font-medium text-foreground text-center">Nuevo Producto</span>
           </Link>
           <Link
             href="/admin/ordenes?status=PENDING"
-            className="flex flex-col items-center gap-3 p-4 rounded-xl bg-blue-50 hover:bg-blue-100 transition-all group"
+            className="flex flex-col items-center gap-3 p-4 rounded-xl bg-chart-3/10 hover:bg-chart-3/10 transition-all group"
           >
-            <div className="h-12 w-12 bg-blue-500 rounded-xl flex items-center justify-center">
+            <div className="h-12 w-12 bg-chart-3/100 rounded-xl flex items-center justify-center">
               <Clock className="h-6 w-6 text-white" />
             </div>
-            <span className="text-sm font-medium text-gray-700 text-center">Pendientes</span>
+            <span className="text-sm font-medium text-foreground text-center">Pendientes</span>
           </Link>
           <Link
             href="/admin/ordenes"
-            className="flex flex-col items-center gap-3 p-4 rounded-xl bg-purple-50 hover:bg-purple-100 transition-all group"
+            className="flex flex-col items-center gap-3 p-4 rounded-xl bg-chart-5/10 hover:bg-chart-5/10 transition-all group"
           >
-            <div className="h-12 w-12 bg-purple-500 rounded-xl flex items-center justify-center">
+            <div className="h-12 w-12 bg-chart-5/100 rounded-xl flex items-center justify-center">
               <ShoppingCart className="h-6 w-6 text-white" />
             </div>
-            <span className="text-sm font-medium text-gray-700 text-center">Órdenes</span>
+            <span className="text-sm font-medium text-foreground text-center">Órdenes</span>
           </Link>
           <Link
             href="/admin/categorias"
-            className="flex flex-col items-center gap-3 p-4 rounded-xl bg-pink-50 hover:bg-pink-100 transition-all group"
+            className="flex flex-col items-center gap-3 p-4 rounded-xl bg-chart-5/10 hover:bg-chart-5/10 transition-all group"
           >
-            <div className="h-12 w-12 bg-pink-500 rounded-xl flex items-center justify-center">
+            <div className="h-12 w-12 bg-chart-5/100 rounded-xl flex items-center justify-center">
               <Tag className="h-6 w-6 text-white" />
             </div>
-            <span className="text-sm font-medium text-gray-700 text-center">Categorías</span>
+            <span className="text-sm font-medium text-foreground text-center">Categorías</span>
           </Link>
           <Link
             href="/admin/usuarios"
@@ -629,7 +610,7 @@ export default function AdminDashboardPage() {
             <div className="h-12 w-12 bg-indigo-500 rounded-xl flex items-center justify-center">
               <Users className="h-6 w-6 text-white" />
             </div>
-            <span className="text-sm font-medium text-gray-700 text-center">Usuarios</span>
+            <span className="text-sm font-medium text-foreground text-center">Usuarios</span>
           </Link>
         </div>
       </div>

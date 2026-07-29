@@ -3,19 +3,7 @@
 import { useEffect, useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import {
-  ArrowLeft,
-  ClipboardCheck,
-  Search,
-  RefreshCw,
-  Save,
-  Check,
-  AlertTriangle,
-  TrendingUp,
-  TrendingDown,
-  Minus,
-  Store
-} from "lucide-react"
+import { ArrowLeft, ClipboardCheck, Search, RefreshCw, Save, Check, TriangleAlert as AlertTriangle, TrendingUp, TrendingDown, Minus, Store } from "lucide-react"
 import {
   inventoryService,
   branchesService,
@@ -189,71 +177,71 @@ export default function ConteoPage() {
   // Pantalla de resultado
   if (result) {
     return (
-      <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen">
+      <div className="p-4 sm:p-6 lg:p-8 bg-cream min-h-screen">
         <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+          <div className="bg-card rounded-2xl shadow-sm border border-border p-8">
             {/* Header */}
             <div className="text-center mb-8">
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Check className="h-10 w-10 text-green-600" />
+              <div className="w-20 h-20 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Check className="h-10 w-10 text-success" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900">Reconciliación completada</h2>
-              <p className="text-gray-500 mt-1">{result.branchName}</p>
+              <h2 className="text-2xl font-bold text-foreground">Reconciliación completada</h2>
+              <p className="text-muted-foreground mt-1">{result.branchName}</p>
             </div>
 
             {/* Resumen en cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-              <div className="bg-blue-50 rounded-xl p-4 text-center">
-                <p className="text-2xl font-bold text-blue-700">{result.totalReviewed}</p>
-                <p className="text-xs text-blue-600 font-medium">Revisados</p>
+              <div className="bg-chart-3/10 rounded-xl p-4 text-center">
+                <p className="text-2xl font-bold text-chart-3">{result.totalReviewed}</p>
+                <p className="text-xs text-chart-3 font-medium">Revisados</p>
               </div>
-              <div className="bg-green-50 rounded-xl p-4 text-center">
-                <p className="text-2xl font-bold text-green-700">{result.sobrantes}</p>
-                <p className="text-xs text-green-600 font-medium">Sobrantes</p>
+              <div className="bg-success/10 rounded-xl p-4 text-center">
+                <p className="text-2xl font-bold text-success">{result.sobrantes}</p>
+                <p className="text-xs text-success font-medium">Sobrantes</p>
               </div>
-              <div className="bg-orange-50 rounded-xl p-4 text-center">
-                <p className="text-2xl font-bold text-orange-700">{result.mermas}</p>
-                <p className="text-xs text-orange-600 font-medium">Mermas</p>
+              <div className="bg-primary/10 rounded-xl p-4 text-center">
+                <p className="text-2xl font-bold text-primary">{result.mermas}</p>
+                <p className="text-xs text-primary font-medium">Mermas</p>
               </div>
-              <div className="bg-gray-50 rounded-xl p-4 text-center border">
-                <p className="text-2xl font-bold text-gray-700">{result.sinCambio}</p>
-                <p className="text-xs text-gray-500 font-medium">Sin cambio</p>
+              <div className="bg-cream rounded-xl p-4 text-center border">
+                <p className="text-2xl font-bold text-foreground">{result.sinCambio}</p>
+                <p className="text-xs text-muted-foreground font-medium">Sin cambio</p>
               </div>
             </div>
 
             {/* Detalle de ajustes */}
             {result.details.filter(d => d.adjustmentType !== 'SIN_CAMBIO').length > 0 && (
               <div className="mb-8">
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">Detalle de ajustes</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-3">Detalle de ajustes</h3>
                 <div className="border rounded-xl overflow-hidden">
                   <table className="w-full text-sm">
-                    <thead className="bg-gray-50">
+                    <thead className="bg-cream">
                       <tr>
-                        <th className="text-left px-4 py-3 font-medium text-gray-600">Producto</th>
-                        <th className="text-center px-4 py-3 font-medium text-gray-600">Sistema</th>
-                        <th className="text-center px-4 py-3 font-medium text-gray-600">Conteo</th>
-                        <th className="text-center px-4 py-3 font-medium text-gray-600">Diferencia</th>
-                        <th className="text-center px-4 py-3 font-medium text-gray-600">Tipo</th>
+                        <th className="text-left px-4 py-3 font-medium text-muted-foreground">Producto</th>
+                        <th className="text-center px-4 py-3 font-medium text-muted-foreground">Sistema</th>
+                        <th className="text-center px-4 py-3 font-medium text-muted-foreground">Conteo</th>
+                        <th className="text-center px-4 py-3 font-medium text-muted-foreground">Diferencia</th>
+                        <th className="text-center px-4 py-3 font-medium text-muted-foreground">Tipo</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                       {result.details
                         .filter(d => d.adjustmentType !== 'SIN_CAMBIO')
                         .map(d => (
-                          <tr key={d.productId} className="hover:bg-gray-50">
-                            <td className="px-4 py-3 font-medium text-gray-900">{d.productName}</td>
-                            <td className="px-4 py-3 text-center text-gray-500">{d.systemQuantity}</td>
+                          <tr key={d.productId} className="hover:bg-cream">
+                            <td className="px-4 py-3 font-medium text-foreground">{d.productName}</td>
+                            <td className="px-4 py-3 text-center text-muted-foreground">{d.systemQuantity}</td>
                             <td className="px-4 py-3 text-center font-medium">{d.actualQuantity}</td>
                             <td className="px-4 py-3 text-center">
-                              <span className={`font-bold ${d.difference > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              <span className={`font-bold ${d.difference > 0 ? 'text-success' : 'text-destructive'}`}>
                                 {d.difference > 0 ? '+' : ''}{d.difference}
                               </span>
                             </td>
                             <td className="px-4 py-3 text-center">
                               <span className={`px-2 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1 ${
                                 d.adjustmentType === 'SOBRANTE'
-                                  ? 'bg-green-100 text-green-700'
-                                  : 'bg-orange-100 text-orange-700'
+                                  ? 'bg-success/10 text-success'
+                                  : 'bg-primary/10 text-primary'
                               }`}>
                                 {d.adjustmentType === 'SOBRANTE' ? (
                                   <>
@@ -291,34 +279,34 @@ export default function ConteoPage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen">
+    <div className="p-4 sm:p-6 lg:p-8 bg-cream min-h-screen">
       {/* Header */}
       <div className="mb-6">
         <Link
           href="/admin/inventario"
-          className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-4"
+          className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4"
         >
           <ArrowLeft className="h-4 w-4" />
           Volver al inventario
         </Link>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <ClipboardCheck className="h-7 w-7 text-amber-600" />
+            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+              <ClipboardCheck className="h-7 w-7 text-primary" />
               Conteo de Inventario
             </h1>
-            <p className="text-gray-500 mt-1">Ingresa las cantidades físicas reales y el sistema calculará los ajustes automáticamente</p>
+            <p className="text-muted-foreground mt-1">Ingresa las cantidades físicas reales y el sistema calculará los ajustes automáticamente</p>
           </div>
         </div>
       </div>
 
       {/* Controles: Sucursal + Búsqueda */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+      <div className="bg-card rounded-xl shadow-sm border border-border p-4 mb-6">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2 min-w-[200px]">
-            <Store className="h-5 w-5 text-gray-500" />
+            <Store className="h-5 w-5 text-muted-foreground" />
             <select
-              className="flex-1 border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white font-medium"
+              className="flex-1 border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary bg-card font-medium"
               value={selectedBranch}
               onChange={(e) => setSelectedBranch(e.target.value)}
               disabled={user?.role !== 'ADMIN'}
@@ -331,17 +319,17 @@ export default function ConteoPage() {
           </div>
 
           <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
             <input
               type="text"
               placeholder="Buscar producto..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
 
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-muted-foreground">
             {stats.touched} de {stats.total} modificados
           </div>
         </div>
@@ -350,25 +338,25 @@ export default function ConteoPage() {
       {/* Stats en tiempo real */}
       {stats.touched > 0 && (
         <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="bg-green-50 rounded-xl p-3 flex items-center gap-3 border border-green-200">
-            <TrendingUp className="h-5 w-5 text-green-600" />
+          <div className="bg-success/10 rounded-xl p-3 flex items-center gap-3 border border-success/20">
+            <TrendingUp className="h-5 w-5 text-success" />
             <div>
-              <p className="text-lg font-bold text-green-700">{stats.sobrantes}</p>
-              <p className="text-xs text-green-600">Sobrantes</p>
+              <p className="text-lg font-bold text-success">{stats.sobrantes}</p>
+              <p className="text-xs text-success">Sobrantes</p>
             </div>
           </div>
-          <div className="bg-orange-50 rounded-xl p-3 flex items-center gap-3 border border-orange-200">
-            <TrendingDown className="h-5 w-5 text-orange-600" />
+          <div className="bg-primary/10 rounded-xl p-3 flex items-center gap-3 border border-primary/20">
+            <TrendingDown className="h-5 w-5 text-primary" />
             <div>
-              <p className="text-lg font-bold text-orange-700">{stats.mermas}</p>
-              <p className="text-xs text-orange-600">Mermas</p>
+              <p className="text-lg font-bold text-primary">{stats.mermas}</p>
+              <p className="text-xs text-primary">Mermas</p>
             </div>
           </div>
-          <div className="bg-gray-50 rounded-xl p-3 flex items-center gap-3 border border-gray-200">
-            <Minus className="h-5 w-5 text-gray-500" />
+          <div className="bg-cream rounded-xl p-3 flex items-center gap-3 border border-border">
+            <Minus className="h-5 w-5 text-muted-foreground" />
             <div>
-              <p className="text-lg font-bold text-gray-700">{stats.sinCambio}</p>
-              <p className="text-xs text-gray-500">Sin cambio</p>
+              <p className="text-lg font-bold text-foreground">{stats.sinCambio}</p>
+              <p className="text-xs text-muted-foreground">Sin cambio</p>
             </div>
           </div>
         </div>
@@ -376,41 +364,41 @@ export default function ConteoPage() {
 
       {/* Tabla de conteo */}
       {isLoading ? (
-        <div className="bg-white rounded-xl shadow-sm border p-12 text-center">
-          <RefreshCw className="h-8 w-8 text-amber-600 animate-spin mx-auto mb-3" />
-          <p className="text-gray-500">Cargando inventario...</p>
+        <div className="bg-card rounded-xl shadow-sm border p-12 text-center">
+          <RefreshCw className="h-8 w-8 text-primary animate-spin mx-auto mb-3" />
+          <p className="text-muted-foreground">Cargando inventario...</p>
         </div>
       ) : !selectedBranch ? (
-        <div className="bg-white rounded-xl shadow-sm border p-12 text-center">
-          <Store className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-400">Selecciona una sucursal para empezar el conteo</p>
+        <div className="bg-card rounded-xl shadow-sm border p-12 text-center">
+          <Store className="h-12 w-12 text-muted-foreground/40 mx-auto mb-3" />
+          <p className="text-muted-foreground/60">Selecciona una sucursal para empezar el conteo</p>
         </div>
       ) : filteredEntries.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm border p-12 text-center">
-          <ClipboardCheck className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-400">No hay productos en esta sucursal</p>
+        <div className="bg-card rounded-xl shadow-sm border p-12 text-center">
+          <ClipboardCheck className="h-12 w-12 text-muted-foreground/40 mx-auto mb-3" />
+          <p className="text-muted-foreground/60">No hay productos en esta sucursal</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
           {/* Mobile Cards */}
           <div className="md:hidden divide-y divide-gray-100">
             {filteredEntries.map(entry => {
               const actual = parseInt(entry.actualQuantity) || 0
               const diff = entry.touched ? actual - entry.systemQuantity : 0
               return (
-                <div key={entry.productId} className={`p-4 ${entry.touched && diff !== 0 ? (diff > 0 ? 'bg-green-50/50' : 'bg-orange-50/50') : ''}`}>
+                <div key={entry.productId} className={`p-4 ${entry.touched && diff !== 0 ? (diff > 0 ? 'bg-success/10/50' : 'bg-primary/10/50') : ''}`}>
                   <div className="flex items-center justify-between mb-2">
-                    <p className="font-medium text-gray-900">{entry.productName}</p>
+                    <p className="font-medium text-foreground">{entry.productName}</p>
                     {entry.touched && diff !== 0 && (
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${diff > 0 ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${diff > 0 ? 'bg-success/10 text-success' : 'bg-primary/10 text-primary'}`}>
                         {diff > 0 ? '+' : ''}{diff}
                       </span>
                     )}
                   </div>
                   <div className="flex items-center gap-4">
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-muted-foreground">
                       Sistema: <strong>{entry.systemQuantity}</strong>
-                      {entry.reserved > 0 && <span className="text-amber-600 ml-1">({entry.reserved} res.)</span>}
+                      {entry.reserved > 0 && <span className="text-primary ml-1">({entry.reserved} res.)</span>}
                     </div>
                     <div className="flex-1">
                       <input
@@ -418,10 +406,10 @@ export default function ConteoPage() {
                         min="0"
                         value={entry.actualQuantity}
                         onChange={(e) => updateEntry(entry.productId, e.target.value)}
-                        className={`w-full px-3 py-2 border rounded-lg text-center font-bold text-lg focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+                        className={`w-full px-3 py-2 border rounded-lg text-center font-bold text-lg focus:outline-none focus:ring-2 focus:ring-primary ${
                           entry.touched && diff !== 0
-                            ? diff > 0 ? 'border-green-300 bg-green-50' : 'border-orange-300 bg-orange-50'
-                            : 'border-gray-200'
+                            ? diff > 0 ? 'border-success/30 bg-success/10' : 'border-primary/30 bg-primary/10'
+                            : 'border-border'
                         }`}
                       />
                     </div>
@@ -434,15 +422,15 @@ export default function ConteoPage() {
           {/* Desktop Table */}
           <div className="overflow-x-auto hidden md:block">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b">
+              <thead className="bg-cream border-b">
                 <tr>
-                  <th className="text-left py-3 px-6 font-semibold text-gray-600 text-sm">Producto</th>
-                  <th className="text-center py-3 px-4 font-semibold text-gray-600 text-sm">Stock Sistema</th>
-                  <th className="text-center py-3 px-4 font-semibold text-gray-600 text-sm">Reservado</th>
-                  <th className="text-center py-3 px-4 font-semibold text-gray-600 text-sm w-40">
-                    <span className="text-amber-600">Conteo Físico</span>
+                  <th className="text-left py-3 px-6 font-semibold text-muted-foreground text-sm">Producto</th>
+                  <th className="text-center py-3 px-4 font-semibold text-muted-foreground text-sm">Stock Sistema</th>
+                  <th className="text-center py-3 px-4 font-semibold text-muted-foreground text-sm">Reservado</th>
+                  <th className="text-center py-3 px-4 font-semibold text-muted-foreground text-sm w-40">
+                    <span className="text-primary">Conteo Físico</span>
                   </th>
-                  <th className="text-center py-3 px-4 font-semibold text-gray-600 text-sm">Diferencia</th>
+                  <th className="text-center py-3 px-4 font-semibold text-muted-foreground text-sm">Diferencia</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -454,18 +442,18 @@ export default function ConteoPage() {
                       key={entry.productId}
                       className={`transition-colors ${
                         entry.touched && diff !== 0
-                          ? diff > 0 ? 'bg-green-50/50 hover:bg-green-50' : 'bg-orange-50/50 hover:bg-orange-50'
-                          : 'hover:bg-gray-50'
+                          ? diff > 0 ? 'bg-success/10/50 hover:bg-success/10' : 'bg-primary/10/50 hover:bg-primary/10'
+                          : 'hover:bg-cream'
                       }`}
                     >
                       <td className="py-3 px-6">
-                        <p className="font-medium text-gray-900">{entry.productName}</p>
+                        <p className="font-medium text-foreground">{entry.productName}</p>
                       </td>
                       <td className="py-3 px-4 text-center">
-                        <span className="font-semibold text-gray-700">{entry.systemQuantity}</span>
+                        <span className="font-semibold text-foreground">{entry.systemQuantity}</span>
                       </td>
                       <td className="py-3 px-4 text-center">
-                        <span className={entry.reserved > 0 ? 'text-amber-600 font-medium' : 'text-gray-400'}>
+                        <span className={entry.reserved > 0 ? 'text-primary font-medium' : 'text-muted-foreground/60'}>
                           {entry.reserved}
                         </span>
                       </td>
@@ -475,23 +463,23 @@ export default function ConteoPage() {
                           min="0"
                           value={entry.actualQuantity}
                           onChange={(e) => updateEntry(entry.productId, e.target.value)}
-                          className={`w-full px-3 py-2 border rounded-lg text-center font-bold text-lg focus:outline-none focus:ring-2 focus:ring-amber-500 transition-colors ${
+                          className={`w-full px-3 py-2 border rounded-lg text-center font-bold text-lg focus:outline-none focus:ring-2 focus:ring-primary transition-colors ${
                             entry.touched && diff !== 0
-                              ? diff > 0 ? 'border-green-400 bg-green-50 text-green-800' : 'border-orange-400 bg-orange-50 text-orange-800'
-                              : 'border-gray-200'
+                              ? diff > 0 ? 'border-success/40 bg-success/10 text-success' : 'border-primary/40 bg-primary/10 text-primary'
+                              : 'border-border'
                           }`}
                         />
                       </td>
                       <td className="py-3 px-4 text-center">
                         {entry.touched && diff !== 0 ? (
                           <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-sm font-bold ${
-                            diff > 0 ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
+                            diff > 0 ? 'bg-success/10 text-success' : 'bg-primary/10 text-primary'
                           }`}>
                             {diff > 0 ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
                             {diff > 0 ? '+' : ''}{diff}
                           </span>
                         ) : (
-                          <span className="text-gray-300">—</span>
+                          <span className="text-muted-foreground/40">—</span>
                         )}
                       </td>
                     </tr>
@@ -505,10 +493,10 @@ export default function ConteoPage() {
 
       {/* Footer: Nota + Botón de envío */}
       {entries.length > 0 && (
-        <div className="mt-6 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="mt-6 bg-card rounded-xl shadow-sm border border-border p-6">
           <div className="flex flex-col md:flex-row gap-4 items-end">
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 Nota del conteo (opcional)
               </label>
               <input
@@ -516,7 +504,7 @@ export default function ConteoPage() {
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 placeholder="Ej: Conteo cierre de día 13/04/2026"
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
             <div className="flex gap-3">
@@ -545,9 +533,9 @@ export default function ConteoPage() {
           </div>
 
           {stats.touched > 0 && (
-            <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200 flex items-start gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-amber-800">
+            <div className="mt-4 p-3 bg-accent rounded-lg border border-primary/20 flex items-start gap-2">
+              <AlertTriangle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-primary">
                 Al guardar, se generarán movimientos de tipo <strong>Sobrante</strong> o <strong>Merma</strong> automáticamente
                 para los {stats.touched} productos modificados. Esta acción no se puede deshacer.
               </p>

@@ -3,20 +3,7 @@
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
-import { 
-  ArrowLeft, 
-  Loader2,
-  Clock,
-  CheckCircle,
-  XCircle,
-  Package,
-  ChefHat,
-  Phone,
-  FileText,
-  Store,
-  Calendar,
-  User
-} from "lucide-react"
+import { ArrowLeft, Loader as Loader2, Clock, CircleCheck as CheckCircle, Circle as XCircle, Package, ChefHat, Phone, FileText, Store, Calendar, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { ordersService, type OrderStatus } from "@/lib/api"
@@ -42,14 +29,14 @@ interface OrderDetail {
 }
 
 const STATUS_OPTIONS: { value: OrderStatus; label: string; icon: React.ElementType; color: string; bgColor: string }[] = [
-  { value: "PENDING", label: "Pendiente", icon: Clock, color: "text-yellow-700", bgColor: "bg-yellow-100" },
-  { value: "CONFIRMED", label: "Confirmada", icon: CheckCircle, color: "text-blue-700", bgColor: "bg-blue-100" },
-  { value: "PREPARING", label: "Preparando", icon: ChefHat, color: "text-purple-700", bgColor: "bg-purple-100" },
-  { value: "READY", label: "Lista para Recoger", icon: Package, color: "text-green-700", bgColor: "bg-green-100" },
+  { value: "PENDING", label: "Pendiente", icon: Clock, color: "text-warning", bgColor: "bg-warning/10" },
+  { value: "CONFIRMED", label: "Confirmada", icon: CheckCircle, color: "text-chart-3", bgColor: "bg-chart-3/10" },
+  { value: "PREPARING", label: "Preparando", icon: ChefHat, color: "text-chart-5", bgColor: "bg-chart-5/10" },
+  { value: "READY", label: "Lista para Recoger", icon: Package, color: "text-success", bgColor: "bg-success/10" },
   { value: "IN_DELIVERY", label: "En camino", icon: Package, color: "text-indigo-700", bgColor: "bg-indigo-100" },
   { value: "DELIVERED", label: "Entregada", icon: CheckCircle, color: "text-emerald-700", bgColor: "bg-emerald-100" },
   { value: "PICKED_UP", label: "Recogida", icon: CheckCircle, color: "text-teal-700", bgColor: "bg-teal-100" },
-  { value: "CANCELLED", label: "Cancelada", icon: XCircle, color: "text-red-700", bgColor: "bg-red-100" },
+  { value: "CANCELLED", label: "Cancelada", icon: XCircle, color: "text-destructive", bgColor: "bg-destructive/10" },
 ]
 
 const STATUS_MAP = STATUS_OPTIONS.reduce((acc, s) => {
@@ -129,7 +116,7 @@ export default function DetalleOrdenPage() {
     return (
       <div className="p-4 sm:p-6 lg:p-8">
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 text-amber-600 animate-spin" />
+          <Loader2 className="h-8 w-8 text-primary animate-spin" />
         </div>
       </div>
     )
@@ -138,7 +125,7 @@ export default function DetalleOrdenPage() {
   if (!order) {
     return (
       <div className="p-4 sm:p-6 lg:p-8">
-        <p className="text-center text-gray-500">Orden no encontrada</p>
+        <p className="text-center text-muted-foreground">Orden no encontrada</p>
       </div>
     )
   }
@@ -159,8 +146,8 @@ export default function DetalleOrdenPage() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Orden {order.orderNumber}</h1>
-            <p className="text-sm text-gray-500">Creada el {formatDate(order.createdAt)}</p>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Orden {order.orderNumber}</h1>
+            <p className="text-sm text-muted-foreground">Creada el {formatDate(order.createdAt)}</p>
           </div>
         </div>
         
@@ -175,35 +162,35 @@ export default function DetalleOrdenPage() {
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Products — Desktop Table */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="px-4 sm:px-6 py-4 border-b border-gray-100">
-              <h2 className="font-semibold text-gray-900">Productos</h2>
+          <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
+            <div className="px-4 sm:px-6 py-4 border-b border-border">
+              <h2 className="font-semibold text-foreground">Productos</h2>
             </div>
 
             {/* Desktop table */}
             <div className="hidden sm:block">
               <table className="w-full">
-                <thead className="bg-gray-50">
+                <thead className="bg-cream">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Producto</th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Cant.</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Precio</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Subtotal</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Producto</th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-muted-foreground uppercase">Cant.</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase">Precio</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase">Subtotal</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {order.items.map((item) => (
                     <tr key={item.id}>
                       <td className="px-6 py-4">
-                        <p className="font-medium text-gray-900">{item.productName}</p>
+                        <p className="font-medium text-foreground">{item.productName}</p>
                       </td>
-                      <td className="px-6 py-4 text-center text-gray-600">
+                      <td className="px-6 py-4 text-center text-muted-foreground">
                         {item.quantity}
                       </td>
-                      <td className="px-6 py-4 text-right text-gray-600">
+                      <td className="px-6 py-4 text-right text-muted-foreground">
                         {formatCurrency(item.unitPrice)}
                       </td>
-                      <td className="px-6 py-4 text-right font-medium text-gray-900">
+                      <td className="px-6 py-4 text-right font-medium text-foreground">
                         {formatCurrency(item.unitPrice * item.quantity)}
                       </td>
                     </tr>
@@ -217,10 +204,10 @@ export default function DetalleOrdenPage() {
               {order.items.map((item) => (
                 <div key={item.id} className="px-4 py-3 flex items-center justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium text-gray-900 truncate">{item.productName}</p>
-                    <p className="text-sm text-gray-500">{item.quantity} × {formatCurrency(item.unitPrice)}</p>
+                    <p className="font-medium text-foreground truncate">{item.productName}</p>
+                    <p className="text-sm text-muted-foreground">{item.quantity} × {formatCurrency(item.unitPrice)}</p>
                   </div>
-                  <p className="text-sm font-semibold text-gray-900 whitespace-nowrap">
+                  <p className="text-sm font-semibold text-foreground whitespace-nowrap">
                     {formatCurrency(item.unitPrice * item.quantity)}
                   </p>
                 </div>
@@ -228,27 +215,27 @@ export default function DetalleOrdenPage() {
             </div>
             
             {/* Totals */}
-            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
+            <div className="px-6 py-4 bg-cream border-t border-border">
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Subtotal</span>
-                  <span className="text-gray-900">{formatCurrency(order.subtotal)}</span>
+                  <span className="text-muted-foreground">Subtotal</span>
+                  <span className="text-foreground">{formatCurrency(order.subtotal)}</span>
                 </div>
                 {order.deliveryFee > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Envío</span>
-                    <span className="text-gray-900">{formatCurrency(order.deliveryFee)}</span>
+                    <span className="text-muted-foreground">Envío</span>
+                    <span className="text-foreground">{formatCurrency(order.deliveryFee)}</span>
                   </div>
                 )}
                 {order.discount > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Descuento</span>
-                    <span className="text-green-600">-{formatCurrency(order.discount)}</span>
+                    <span className="text-muted-foreground">Descuento</span>
+                    <span className="text-success">-{formatCurrency(order.discount)}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-200">
+                <div className="flex justify-between text-lg font-bold pt-2 border-t border-border">
                   <span>Total</span>
-                  <span className="text-amber-600">{formatCurrency(order.total)}</span>
+                  <span className="text-primary">{formatCurrency(order.total)}</span>
                 </div>
               </div>
             </div>
@@ -256,19 +243,19 @@ export default function DetalleOrdenPage() {
 
           {/* Customer Notes */}
           {order.customerNotes && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="bg-card rounded-xl shadow-sm border border-border p-6">
               <div className="flex items-center gap-2 mb-3">
-                <FileText className="h-5 w-5 text-gray-400" />
-                <h3 className="font-medium text-gray-900">Notas del Cliente</h3>
+                <FileText className="h-5 w-5 text-muted-foreground/60" />
+                <h3 className="font-medium text-foreground">Notas del Cliente</h3>
               </div>
-              <p className="text-gray-600">{order.customerNotes}</p>
+              <p className="text-muted-foreground">{order.customerNotes}</p>
             </div>
           )}
 
           {/* Status Actions */}
           {availableTransitions.length > 0 && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <h3 className="font-medium text-gray-900 mb-4">Cambiar Estado</h3>
+            <div className="bg-card rounded-xl shadow-sm border border-border p-6">
+              <h3 className="font-medium text-foreground mb-4">Cambiar Estado</h3>
               <div className="flex flex-wrap gap-3">
                 {availableTransitions.map((status) => {
                   const config = STATUS_MAP[status]
@@ -299,16 +286,16 @@ export default function DetalleOrdenPage() {
         <div className="space-y-6">
           {/* Customer Info */}
           {order.user && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="bg-card rounded-xl shadow-sm border border-border p-6">
               <div className="flex items-center gap-2 mb-4">
-                <User className="h-5 w-5 text-gray-400" />
-                <h3 className="font-medium text-gray-900">Cliente</h3>
+                <User className="h-5 w-5 text-muted-foreground/60" />
+                <h3 className="font-medium text-foreground">Cliente</h3>
               </div>
               <div className="space-y-3">
-                <p className="font-medium text-gray-900">{order.user.firstName} {order.user.lastName}</p>
-                <p className="text-sm text-gray-600">{order.user.email}</p>
+                <p className="font-medium text-foreground">{order.user.firstName} {order.user.lastName}</p>
+                <p className="text-sm text-muted-foreground">{order.user.email}</p>
                 {order.user.phone && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Phone className="h-4 w-4" />
                     <span>{order.user.phone}</span>
                   </div>
@@ -319,16 +306,16 @@ export default function DetalleOrdenPage() {
 
           {/* Branch Info */}
           {order.branch && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="bg-card rounded-xl shadow-sm border border-border p-6">
               <div className="flex items-center gap-2 mb-4">
-                <Store className="h-5 w-5 text-gray-400" />
-                <h3 className="font-medium text-gray-900">Sucursal</h3>
+                <Store className="h-5 w-5 text-muted-foreground/60" />
+                <h3 className="font-medium text-foreground">Sucursal</h3>
               </div>
               <div className="space-y-2">
-                <p className="font-medium text-gray-900">{order.branch.name}</p>
-                <p className="text-sm text-gray-600">{order.branch.address}</p>
+                <p className="font-medium text-foreground">{order.branch.name}</p>
+                <p className="text-sm text-muted-foreground">{order.branch.address}</p>
                 {order.branch.phone && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Phone className="h-4 w-4" />
                     <span>{order.branch.phone}</span>
                   </div>
@@ -338,28 +325,28 @@ export default function DetalleOrdenPage() {
           )}
 
           {/* Payment Info */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="bg-card rounded-xl shadow-sm border border-border p-6">
             <div className="flex items-center gap-2 mb-4">
-              <Store className="h-5 w-5 text-gray-400" />
-              <h3 className="font-medium text-gray-900">Retiro</h3>
+              <Store className="h-5 w-5 text-muted-foreground/60" />
+              <h3 className="font-medium text-foreground">Retiro</h3>
             </div>
-            <p className="text-sm text-gray-600">Pago al recoger en sucursal</p>
+            <p className="text-sm text-muted-foreground">Pago al recoger en sucursal</p>
           </div>
 
           {/* Timeline */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="bg-card rounded-xl shadow-sm border border-border p-6">
             <div className="flex items-center gap-2 mb-4">
-              <Calendar className="h-5 w-5 text-gray-400" />
-              <h3 className="font-medium text-gray-900">Historial</h3>
+              <Calendar className="h-5 w-5 text-muted-foreground/60" />
+              <h3 className="font-medium text-foreground">Historial</h3>
             </div>
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-500">Creada</span>
-                <span className="text-gray-600">{formatDate(order.createdAt)}</span>
+                <span className="text-muted-foreground">Creada</span>
+                <span className="text-muted-foreground">{formatDate(order.createdAt)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">Actualizada</span>
-                <span className="text-gray-600">{formatDate(order.updatedAt)}</span>
+                <span className="text-muted-foreground">Actualizada</span>
+                <span className="text-muted-foreground">{formatDate(order.updatedAt)}</span>
               </div>
             </div>
           </div>

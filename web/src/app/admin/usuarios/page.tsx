@@ -3,21 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { 
-  Users as UsersIcon, 
-  Plus, 
-  Search, 
-  Loader2,
-  Edit,
-  UserX,
-  UserCheck,
-  Shield,
-  ShieldCheck,
-  User as UserIcon,
-  Building2,
-  ChevronLeft,
-  ChevronRight
-} from "lucide-react"
+import { Users as UsersIcon, Plus, Search, Loader as Loader2, CreditCard as Edit, UserX, UserCheck, Shield, ShieldCheck, User as UserIcon, Building2, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { useToast } from "@/components/ui/toast"
@@ -34,11 +20,11 @@ const ROLE_LABELS: Record<UserRole, string> = {
 }
 
 const ROLE_COLORS: Record<UserRole, { bg: string; text: string; icon: React.ElementType }> = {
-  ADMIN: { bg: "bg-purple-100", text: "text-purple-700", icon: Shield },
-  MANAGER: { bg: "bg-blue-100", text: "text-blue-700", icon: Shield },
-  BAKER: { bg: "bg-amber-100", text: "text-amber-700", icon: Shield },
-  CASHIER: { bg: "bg-green-100", text: "text-green-700", icon: Shield },
-  CUSTOMER: { bg: "bg-gray-100", text: "text-gray-700", icon: Shield },
+  ADMIN: { bg: "bg-chart-5/10", text: "text-chart-5", icon: Shield },
+  MANAGER: { bg: "bg-chart-3/10", text: "text-chart-3", icon: Shield },
+  BAKER: { bg: "bg-primary/10", text: "text-primary", icon: Shield },
+  CASHIER: { bg: "bg-success/10", text: "text-success", icon: Shield },
+  CUSTOMER: { bg: "bg-muted", text: "text-foreground", icon: Shield },
 }
 
 export default function UsuariosPage() {
@@ -166,14 +152,14 @@ export default function UsuariosPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-3">
-            <UsersIcon className="h-7 w-7 sm:h-8 sm:w-8 text-amber-600" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-3">
+            <UsersIcon className="h-7 w-7 sm:h-8 sm:w-8 text-primary" />
             Gestión de Usuarios
           </h1>
-          <p className="text-gray-500 mt-1">Administra los usuarios del sistema</p>
+          <p className="text-muted-foreground mt-1">Administra los usuarios del sistema</p>
         </div>
         <Link href="/admin/usuarios/nuevo">
-          <Button className="bg-amber-600 hover:bg-amber-700 w-full sm:w-auto">
+          <Button className="bg-primary hover:bg-primary/90 w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             Nuevo Usuario
           </Button>
@@ -181,17 +167,17 @@ export default function UsuariosPage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+      <div className="bg-card rounded-xl shadow-sm border border-border p-4 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {/* Search */}
           <div className="relative md:col-span-2">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
             <input
               type="text"
               placeholder="Buscar por nombre, email o teléfono..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
           
@@ -199,7 +185,7 @@ export default function UsuariosPage() {
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value as UserRole | "ALL")}
-            className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white"
+            className="px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card"
           >
             <option value="ALL">Todos los roles</option>
             <option value="CUSTOMER">Clientes</option>
@@ -213,7 +199,7 @@ export default function UsuariosPage() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as "ALL" | "ACTIVE" | "INACTIVE")}
-            className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white"
+            className="px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card"
           >
             <option value="ALL">Todos</option>
             <option value="ACTIVE">Activos</option>
@@ -224,34 +210,34 @@ export default function UsuariosPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-lg p-4 border border-gray-100">
-          <p className="text-sm text-gray-500">Total</p>
-          <p className="text-2xl font-bold text-gray-900">{users.length}</p>
+        <div className="bg-card rounded-lg p-4 border border-border">
+          <p className="text-sm text-muted-foreground">Total</p>
+          <p className="text-2xl font-bold text-foreground">{users.length}</p>
         </div>
-        <div className="bg-white rounded-lg p-4 border border-gray-100">
-          <p className="text-sm text-gray-500">Clientes</p>
-          <p className="text-2xl font-bold text-gray-600">{users.filter(u => u.role === 'CUSTOMER').length}</p>
+        <div className="bg-card rounded-lg p-4 border border-border">
+          <p className="text-sm text-muted-foreground">Clientes</p>
+          <p className="text-2xl font-bold text-muted-foreground">{users.filter(u => u.role === 'CUSTOMER').length}</p>
         </div>
-        <div className="bg-white rounded-lg p-4 border border-gray-100">
-          <p className="text-sm text-gray-500">Empleados</p>
-          <p className="text-2xl font-bold text-blue-600">{users.filter(u => ['MANAGER', 'BAKER', 'CASHIER'].includes(u.role)).length}</p>
+        <div className="bg-card rounded-lg p-4 border border-border">
+          <p className="text-sm text-muted-foreground">Empleados</p>
+          <p className="text-2xl font-bold text-chart-3">{users.filter(u => ['MANAGER', 'BAKER', 'CASHIER'].includes(u.role)).length}</p>
         </div>
-        <div className="bg-white rounded-lg p-4 border border-gray-100">
-          <p className="text-sm text-gray-500">Admins</p>
-          <p className="text-2xl font-bold text-purple-600">{users.filter(u => u.role === 'ADMIN').length}</p>
+        <div className="bg-card rounded-lg p-4 border border-border">
+          <p className="text-sm text-muted-foreground">Admins</p>
+          <p className="text-2xl font-bold text-chart-5">{users.filter(u => u.role === 'ADMIN').length}</p>
         </div>
       </div>
 
       {/* Users Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 text-amber-600 animate-spin" />
+            <Loader2 className="h-8 w-8 text-primary animate-spin" />
           </div>
         ) : filteredUsers.length === 0 ? (
           <div className="text-center py-12">
-            <UsersIcon className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500">No se encontraron usuarios</p>
+            <UsersIcon className="h-12 w-12 text-muted-foreground/40 mx-auto mb-4" />
+            <p className="text-muted-foreground">No se encontraron usuarios</p>
           </div>
         ) : (
           <>
@@ -261,22 +247,22 @@ export default function UsuariosPage() {
               const roleStyle = ROLE_COLORS[user.role]
               const RoleIcon = roleStyle.icon
               return (
-                <div key={`m-${user.id}`} className={`p-4 hover:bg-gray-50 ${!user.isActive ? 'opacity-60' : ''}`}>
+                <div key={`m-${user.id}`} className={`p-4 hover:bg-cream ${!user.isActive ? 'opacity-60' : ''}`}>
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
-                        <span className="text-amber-700 font-semibold text-sm">
+                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <span className="text-primary font-semibold text-sm">
                           {user.firstName[0]}{user.lastName[0]}
                         </span>
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900">{user.firstName} {user.lastName}</p>
-                        <p className="text-xs text-gray-500">{user.email}</p>
+                        <p className="font-medium text-foreground">{user.firstName} {user.lastName}</p>
+                        <p className="text-xs text-muted-foreground">{user.email}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
                       <Link href={`/admin/usuarios/${user.id}`}>
-                        <Button variant="ghost" size="sm" className="h-9 w-9 p-0 text-gray-600 hover:text-amber-600">
+                        <Button variant="ghost" size="sm" className="h-9 w-9 p-0 text-muted-foreground hover:text-primary">
                           <Edit className="h-4 w-4" />
                         </Button>
                       </Link>
@@ -284,7 +270,7 @@ export default function UsuariosPage() {
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          className="h-9 w-9 p-0 text-gray-600 hover:text-red-600"
+                          className="h-9 w-9 p-0 text-muted-foreground hover:text-destructive"
                           onClick={() => setDeactivateTarget(user)}
                           disabled={processingId === user.id}
                         >
@@ -294,7 +280,7 @@ export default function UsuariosPage() {
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          className="h-9 w-9 p-0 text-gray-600 hover:text-green-600"
+                          className="h-9 w-9 p-0 text-muted-foreground hover:text-success"
                           onClick={() => handleReactivate(user.id)}
                           disabled={processingId === user.id}
                         >
@@ -309,7 +295,7 @@ export default function UsuariosPage() {
                       {ROLE_LABELS[user.role]}
                     </span>
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                      user.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                      user.isActive ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
                     }`}>
                       {user.isActive ? 'Activo' : 'Inactivo'}
                     </span>
@@ -328,16 +314,16 @@ export default function UsuariosPage() {
           {/* Desktop Table */}
           <div className="overflow-x-auto hidden md:block">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-100">
+            <thead className="bg-cream border-b border-border">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">Email</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden xl:table-cell">Teléfono</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rol</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">Sucursal</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Registro</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Usuario</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Email</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider hidden xl:table-cell">Teléfono</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Rol</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Sucursal</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Estado</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider hidden md:table-cell">Registro</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -345,28 +331,28 @@ export default function UsuariosPage() {
                 const roleStyle = ROLE_COLORS[user.role]
                 const RoleIcon = roleStyle.icon
                 return (
-                  <tr key={user.id} className={`hover:bg-gray-50 ${!user.isActive ? 'opacity-60' : ''}`}>
+                  <tr key={user.id} className={`hover:bg-cream ${!user.isActive ? 'opacity-60' : ''}`}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center">
-                          <span className="text-amber-700 font-semibold">
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                          <span className="text-primary font-semibold">
                             {user.firstName[0]}{user.lastName[0]}
                           </span>
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">
+                          <p className="font-medium text-foreground">
                             {user.firstName} {user.lastName}
                           </p>
                           {user.orderCount !== undefined && (
-                            <p className="text-xs text-gray-400">{user.orderCount} órdenes</p>
+                            <p className="text-xs text-muted-foreground/60">{user.orderCount} órdenes</p>
                           )}
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 hidden lg:table-cell">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground hidden lg:table-cell">
                       {user.email}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 hidden xl:table-cell">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground hidden xl:table-cell">
                       {user.phone || "-"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -382,25 +368,25 @@ export default function UsuariosPage() {
                           {user.branch.name}
                         </span>
                       ) : (
-                        <span className="text-gray-400 text-xs">-</span>
+                        <span className="text-muted-foreground/60 text-xs">-</span>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
                         user.isActive 
-                          ? 'bg-green-100 text-green-700' 
-                          : 'bg-red-100 text-red-700'
+                          ? 'bg-success/10 text-success' 
+                          : 'bg-destructive/10 text-destructive'
                       }`}>
                         {user.isActive ? 'Activo' : 'Inactivo'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 hidden md:table-cell">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground hidden md:table-cell">
                       {formatDate(user.createdAt)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <div className="flex items-center justify-end gap-2">
                         <Link href={`/admin/usuarios/${user.id}`}>
-                          <Button variant="ghost" size="sm" className="text-gray-600 hover:text-amber-600">
+                          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
                             <Edit className="h-4 w-4" />
                           </Button>
                         </Link>
@@ -408,7 +394,7 @@ export default function UsuariosPage() {
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            className="text-gray-600 hover:text-red-600"
+                            className="text-muted-foreground hover:text-destructive"
                             onClick={() => setDeactivateTarget(user)}
                             disabled={processingId === user.id}
                           >
@@ -422,7 +408,7 @@ export default function UsuariosPage() {
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            className="text-gray-600 hover:text-green-600"
+                            className="text-muted-foreground hover:text-success"
                             onClick={() => handleReactivate(user.id)}
                             disabled={processingId === user.id}
                           >
@@ -446,8 +432,8 @@ export default function UsuariosPage() {
 
         {/* Pagination */}
         {!isLoading && totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-t border-gray-100">
-            <p className="text-sm text-gray-500">
+          <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-t border-border">
+            <p className="text-sm text-muted-foreground">
               Página {currentPage} de {totalPages} ({filteredUsers.length} usuarios)
             </p>
             <div className="flex items-center gap-2">

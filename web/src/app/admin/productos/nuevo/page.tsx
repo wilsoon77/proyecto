@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import { ArrowLeft, Upload, X, Loader2, Save, ImageIcon } from "lucide-react"
+import { ArrowLeft, Upload, X, Loader as Loader2, Save, Image as ImageIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { adminService, categoriesService, ApiClientError } from "@/lib/api"
@@ -202,30 +202,30 @@ export default function NuevoProductoPage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Nuevo Producto</h1>
-          <p className="text-gray-500">Completa la información del producto</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Nuevo Producto</h1>
+          <p className="text-muted-foreground">Completa la información del producto</p>
         </div>
       </div>
 
       {/* Form */}
       <form onSubmit={handleSubmit}>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-6">
+        <div className="bg-card rounded-xl shadow-sm border border-border p-6 space-y-6">
           {/* Error Message */}
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+            <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg">
               {error}
             </div>
           )}
 
           {/* Image Upload */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               Imagen del producto
             </label>
             <div className="flex items-start gap-4">
               <div 
                 className={`relative h-40 w-40 border-2 border-dashed rounded-xl overflow-hidden transition-colors ${
-                  imagePreview ? "border-amber-300 bg-amber-50" : "border-gray-200 hover:border-amber-400"
+                  imagePreview ? "border-primary/30 bg-accent" : "border-border hover:border-primary/40"
                 }`}
               >
                 {imagePreview ? (
@@ -245,7 +245,7 @@ export default function NuevoProductoPage() {
                       <button
                         type="button"
                         onClick={removeImage}
-                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                        className="absolute top-2 right-2 bg-destructive/100 text-white rounded-full p-1 hover:bg-destructive transition-colors"
                       >
                         <X className="h-4 w-4" />
                       </button>
@@ -255,14 +255,14 @@ export default function NuevoProductoPage() {
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="h-full w-full flex flex-col items-center justify-center text-gray-400 hover:text-amber-600 transition-colors"
+                    className="h-full w-full flex flex-col items-center justify-center text-muted-foreground/60 hover:text-primary transition-colors"
                   >
                     <Upload className="h-8 w-8 mb-2" />
                     <span className="text-sm">Subir imagen</span>
                   </button>
                 )}
               </div>
-              <div className="flex-1 text-sm text-gray-500">
+              <div className="flex-1 text-sm text-muted-foreground">
                 <p>Formatos: JPG, PNG, WebP</p>
                 <p>Tamaño máximo: 5MB</p>
                 <p>Recomendado: 800x800 px</p>
@@ -279,7 +279,7 @@ export default function NuevoProductoPage() {
 
           {/* Name */}
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="name" className="block text-sm font-medium text-foreground mb-2">
               Nombre del producto *
             </label>
             <input
@@ -288,13 +288,13 @@ export default function NuevoProductoPage() {
               value={name}
               onChange={(e) => handleNameChange(e.target.value)}
               placeholder="Ej: Pan Francés"
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
 
           {/* Slug */}
           <div>
-            <label htmlFor="slug" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="slug" className="block text-sm font-medium text-foreground mb-2">
               Slug (URL) *
               {slugManuallyEdited && (
                 <button
@@ -303,7 +303,7 @@ export default function NuevoProductoPage() {
                     setSlugManuallyEdited(false)
                     setSlug(generateSlug(name))
                   }}
-                  className="ml-2 text-xs text-amber-600 hover:text-amber-700"
+                  className="ml-2 text-xs text-primary hover:text-primary"
                 >
                   Regenerar
                 </button>
@@ -315,16 +315,16 @@ export default function NuevoProductoPage() {
               value={slug}
               onChange={(e) => handleSlugChange(e.target.value)}
               placeholder="ej: pan-frances"
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Se genera automáticamente del nombre. Debe ser único.
             </p>
           </div>
 
           {/* Description */}
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="description" className="block text-sm font-medium text-foreground mb-2">
               Descripción
             </label>
             <textarea
@@ -333,18 +333,18 @@ export default function NuevoProductoPage() {
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Descripción del producto..."
               rows={3}
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
+              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
             />
           </div>
 
           {/* Price & Category */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="price" className="block text-sm font-medium text-foreground mb-2">
                 Precio *
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">Q</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">Q</span>
                 <input
                   id="price"
                   type="number"
@@ -353,19 +353,19 @@ export default function NuevoProductoPage() {
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
                   placeholder="0.00"
-                  className="w-full pl-8 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  className="w-full pl-8 pr-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                 />
               </div>
             </div>
             <div>
-              <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="category" className="block text-sm font-medium text-foreground mb-2">
                 Categoría *
               </label>
               <select
                 id="category"
                 value={categoryId}
                 onChange={(e) => setCategoryId(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white"
+                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card"
               >
                 {categories.map((cat) => (
                   <option key={cat.id} value={cat.id}>
@@ -383,31 +383,31 @@ export default function NuevoProductoPage() {
               type="checkbox"
               checked={isNew}
               onChange={(e) => setIsNew(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+              className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
             />
-            <label htmlFor="isNew" className="text-sm font-medium text-gray-700">
+            <label htmlFor="isNew" className="text-sm font-medium text-foreground">
               Marcar como producto nuevo
             </label>
           </div>
 
           {/* Combo Pricing */}
-          <div className="bg-amber-50 rounded-lg p-4 space-y-4">
-            <h3 className="text-sm font-semibold text-amber-800">Precio por Volumen (Combo)</h3>
-            <p className="text-xs text-amber-600">Opcional. Ej: "3 por Q1.25"</p>
+          <div className="bg-accent rounded-lg p-4 space-y-4">
+            <h3 className="text-sm font-semibold text-primary">Precio por Volumen (Combo)</h3>
+            <p className="text-xs text-primary">Opcional. Ej: "3 por Q1.25"</p>
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Cantidad combo</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Cantidad combo</label>
                 <input
                   type="number"
                   min="0"
                   value={comboQuantity}
                   onChange={(e) => setComboQuantity(e.target.value)}
                   placeholder="Ej: 3"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Precio combo (Q)</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Precio combo (Q)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -415,18 +415,18 @@ export default function NuevoProductoPage() {
                   value={comboPrice}
                   onChange={(e) => setComboPrice(e.target.value)}
                   placeholder="Ej: 1.25"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Unidades/Lata</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Unidades/Lata</label>
                 <input
                   type="number"
                   min="0"
                   value={unitsPerTray}
                   onChange={(e) => setUnitsPerTray(e.target.value)}
                   placeholder="Ej: 36"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
             </div>
@@ -442,7 +442,7 @@ export default function NuevoProductoPage() {
           </Link>
           <Button 
             type="submit" 
-            className="bg-amber-600 hover:bg-amber-700"
+            className="bg-primary hover:bg-primary/90"
             disabled={isLoading || isUploading}
           >
             {isLoading ? (

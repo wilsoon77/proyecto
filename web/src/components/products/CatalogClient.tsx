@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2 } from 'lucide-react'
+import { Loader as Loader2 } from 'lucide-react'
 import { ProductGrid } from '@/components/products/ProductGrid'
 import { CategoryBadge } from '@/components/products/CategoryBadge'
 import { Button } from '@/components/ui/button'
@@ -85,29 +85,29 @@ export function CatalogClient({ initialCatalog, categories, filters }: CatalogCl
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Productos</h1>
-        <p className="mt-1 text-gray-600">{totalProducts} productos encontrados</p>
+        <h1 className="font-display text-3xl font-bold text-foreground">Productos</h1>
+        <p className="mt-1 text-muted-foreground">{totalProducts} productos encontrados</p>
       </div>
 
-      <form action="/productos" method="get" className="mb-8 grid items-end gap-4 rounded-lg border bg-white p-4 sm:grid-cols-2 lg:grid-cols-4">
+      <form action="/productos" method="get" className="mb-8 grid items-end gap-4 rounded-xl border border-border bg-card p-4 shadow-card sm:grid-cols-2 lg:grid-cols-4">
         {filters.branch && <input type="hidden" name="branch" value={filters.branch} />}
         <div>
-          <label htmlFor="catalog-search" className="mb-1 block text-sm font-medium text-gray-700">Buscar</label>
+          <label htmlFor="catalog-search" className="mb-1 block text-sm font-medium text-foreground">Buscar</label>
           <input
             id="catalog-search"
             name="q"
             defaultValue={filters.search ?? ''}
             placeholder="Buscar productos..."
-            className="h-10 w-full rounded-md border border-gray-300 px-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
           />
         </div>
         <div>
-          <label htmlFor="catalog-category" className="mb-1 block text-sm font-medium text-gray-700">Categoría</label>
+          <label htmlFor="catalog-category" className="mb-1 block text-sm font-medium text-foreground">Categoría</label>
           <select
             id="catalog-category"
             name="cat"
             defaultValue={filters.category ?? ''}
-            className="h-10 w-full rounded-md border border-gray-300 px-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
           >
             <option value="">Todas</option>
             {categories.map((category) => (
@@ -117,20 +117,20 @@ export function CatalogClient({ initialCatalog, categories, filters }: CatalogCl
         </div>
         <div className="flex gap-2">
           <div className="flex-1">
-            <label htmlFor="catalog-min" className="mb-1 block text-sm font-medium text-gray-700">Precio mín.</label>
-            <input id="catalog-min" name="min" defaultValue={filters.min ?? ''} placeholder="0" type="number" min="0" step="0.01" className="h-10 w-full rounded-md border border-gray-300 px-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
+            <label htmlFor="catalog-min" className="mb-1 block text-sm font-medium text-foreground">Precio mín.</label>
+            <input id="catalog-min" name="min" defaultValue={filters.min ?? ''} placeholder="0" type="number" min="0" step="0.01" className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors" />
           </div>
           <div className="flex-1">
-            <label htmlFor="catalog-max" className="mb-1 block text-sm font-medium text-gray-700">Precio máx.</label>
-            <input id="catalog-max" name="max" defaultValue={filters.max ?? ''} placeholder="100" type="number" min="0" step="0.01" className="h-10 w-full rounded-md border border-gray-300 px-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
+            <label htmlFor="catalog-max" className="mb-1 block text-sm font-medium text-foreground">Precio máx.</label>
+            <input id="catalog-max" name="max" defaultValue={filters.max ?? ''} placeholder="100" type="number" min="0" step="0.01" className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors" />
           </div>
         </div>
         <div>
           <div className="mb-1 flex items-center justify-between">
-            <label htmlFor="catalog-sort" className="block text-sm font-medium text-gray-700">Ordenar</label>
+            <label htmlFor="catalog-sort" className="block text-sm font-medium text-foreground">Ordenar</label>
             <Button type="button" variant="link" size="sm" className="px-0" onClick={() => router.push('/productos')}>Limpiar filtros</Button>
           </div>
-          <select id="catalog-sort" name="sort" defaultValue={filters.sort ?? ''} className="h-10 w-full rounded-md border border-gray-300 px-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary">
+          <select id="catalog-sort" name="sort" defaultValue={filters.sort ?? ''} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors">
             <option value="">Relevancia</option>
             <option value="precio-asc">Precio: menor a mayor</option>
             <option value="precio-desc">Precio: mayor a menor</option>
@@ -138,7 +138,7 @@ export function CatalogClient({ initialCatalog, categories, filters }: CatalogCl
           </select>
         </div>
         <div className="sm:col-span-2 lg:col-span-4 flex justify-end">
-          <Button type="submit">Aplicar filtros</Button>
+          <Button type="submit" className="shadow-warm">Aplicar filtros</Button>
         </div>
       </form>
 
@@ -155,8 +155,8 @@ export function CatalogClient({ initialCatalog, categories, filters }: CatalogCl
 
       {products.length > 0 && (
         <div className="mt-8 flex flex-col items-center gap-4">
-          <p className="text-sm text-gray-500">Mostrando {displayCount} de {totalProducts} productos</p>
-          <div className="h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-gray-200">
+          <p className="text-sm text-muted-foreground">Mostrando {displayCount} de {totalProducts} productos</p>
+          <div className="h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-muted">
             <div className="h-full rounded-full bg-primary transition-all duration-300" style={{ width: `${progress}%` }} />
           </div>
           {currentPage < totalPages && (

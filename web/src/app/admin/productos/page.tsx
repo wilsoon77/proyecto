@@ -3,18 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { 
-  Plus, 
-  Search, 
-  Edit, 
-  Trash2,
-  ChevronLeft,
-  ChevronRight,
-  ImageIcon,
-  X,
-  Eye,
-  EyeOff
-} from "lucide-react"
+import { Plus, Search, CreditCard as Edit, Trash2, ChevronLeft, ChevronRight, Image as ImageIcon, X, Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { ProductThumbnail } from "@/components/ui/product-image"
@@ -148,11 +137,11 @@ export default function AdminProductosPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Productos</h1>
-          <p className="text-gray-500 mt-1">Gestiona el catálogo de productos</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Productos</h1>
+          <p className="text-muted-foreground mt-1">Gestiona el catálogo de productos</p>
         </div>
         <Link href="/admin/productos/nuevo">
-          <Button className="bg-amber-600 hover:bg-amber-700 w-full sm:w-auto">
+          <Button className="bg-primary hover:bg-primary/90 w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             Nuevo Producto
           </Button>
@@ -160,22 +149,22 @@ export default function AdminProductosPage() {
       </div>
 
       {/* Search and Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="bg-card rounded-xl shadow-sm border border-border p-4 mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <form onSubmit={handleSearch} className="flex-1 flex gap-2 w-full">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground/60" />
             <input
               type="text"
               placeholder="Buscar productos... (búsqueda automática)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-10 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              className="w-full pl-10 pr-10 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={handleClearSearch}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/60 hover:text-muted-foreground transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -187,13 +176,13 @@ export default function AdminProductosPage() {
         </form>
 
         {/* State filters tabs */}
-        <div className="flex bg-gray-100 p-1 rounded-lg w-full sm:w-auto justify-center sm:justify-start">
+        <div className="flex bg-muted p-1 rounded-lg w-full sm:w-auto justify-center sm:justify-start">
           <button
             onClick={() => setStatusFilter('all')}
             className={`flex-1 sm:flex-initial px-4 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-all ${
               statusFilter === 'all'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-card text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             Todos
@@ -202,8 +191,8 @@ export default function AdminProductosPage() {
             onClick={() => setStatusFilter('active')}
             className={`flex-1 sm:flex-initial px-4 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-all ${
               statusFilter === 'active'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-card text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             Activos
@@ -212,8 +201,8 @@ export default function AdminProductosPage() {
             onClick={() => setStatusFilter('inactive')}
             className={`flex-1 sm:flex-initial px-4 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-all ${
               statusFilter === 'inactive'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-card text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             Ocultos
@@ -222,16 +211,16 @@ export default function AdminProductosPage() {
       </div>
 
       {/* Products Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
         {isLoading ? (
           <div className="p-8">
             <div className="animate-pulse space-y-4">
               {[1, 2, 3, 4, 5].map((i) => (
                 <div key={i} className="flex items-center gap-4">
-                  <div className="h-16 w-16 bg-gray-200 rounded-lg"></div>
+                  <div className="h-16 w-16 bg-border rounded-lg"></div>
                   <div className="flex-1 space-y-2">
-                    <div className="h-4 bg-gray-200 rounded w-1/3"></div>
-                    <div className="h-3 bg-gray-200 rounded w-1/4"></div>
+                    <div className="h-4 bg-border rounded w-1/3"></div>
+                    <div className="h-3 bg-border rounded w-1/4"></div>
                   </div>
                 </div>
               ))}
@@ -239,8 +228,8 @@ export default function AdminProductosPage() {
           </div>
         ) : products.length === 0 ? (
           <div className="p-8 text-center">
-            <ImageIcon className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500">
+            <ImageIcon className="h-12 w-12 text-muted-foreground/40 mx-auto mb-4" />
+            <p className="text-muted-foreground">
               {searchQuery 
                 ? "No se encontraron productos para esta búsqueda" 
                 : statusFilter === 'inactive' 
@@ -249,7 +238,7 @@ export default function AdminProductosPage() {
             </p>
             {!searchQuery && statusFilter === 'all' && (
               <Link href="/admin/productos/nuevo">
-                <Button className="mt-4 bg-amber-600 hover:bg-amber-700">
+                <Button className="mt-4 bg-primary hover:bg-primary/90">
                   <Plus className="h-4 w-4 mr-2" />
                   Crear primer producto
                 </Button>
@@ -261,7 +250,7 @@ export default function AdminProductosPage() {
             {/* Mobile Card Layout */}
             <div className="md:hidden divide-y divide-gray-100">
               {products.map((product) => (
-                <div key={product.id} className="p-4 hover:bg-gray-50 transition-colors">
+                <div key={product.id} className="p-4 hover:bg-cream transition-colors">
                   <div className="flex items-start gap-3">
                     <ProductThumbnail
                       src={product.images?.[0]?.url}
@@ -271,24 +260,24 @@ export default function AdminProductosPage() {
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <p className="font-medium text-gray-900 truncate max-w-[120px]">{product.name}</p>
+                        <p className="font-medium text-foreground truncate max-w-[120px]">{product.name}</p>
                         {!product.isActive && (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-red-100 text-red-800">
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-destructive/10 text-destructive">
                             Oculto
                           </span>
                         )}
                         {product.isNew && (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-800">
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-success/10 text-success">
                             Nuevo
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-gray-500 mt-0.5">{product.category}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{product.category}</p>
                       <div className="flex items-center gap-3 mt-2">
-                        <span className="font-medium text-gray-900 text-sm">{formatPrice(product.basePrice)}</span>
+                        <span className="font-medium text-foreground text-sm">{formatPrice(product.basePrice)}</span>
                         <span className={`text-xs font-medium ${
-                          (product.available || 0) > 10 ? "text-green-600" : 
-                          (product.available || 0) > 0 ? "text-yellow-600" : "text-red-600"
+                          (product.available || 0) > 10 ? "text-success" : 
+                          (product.available || 0) > 0 ? "text-warning" : "text-destructive"
                         }`}>
                           Stock: {product.available || 0}
                         </span>
@@ -303,7 +292,7 @@ export default function AdminProductosPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className={`h-9 w-9 ${product.isActive ? 'text-gray-500 hover:text-gray-700' : 'text-amber-600 hover:text-amber-700 hover:bg-amber-50'}`}
+                        className={`h-9 w-9 ${product.isActive ? 'text-muted-foreground hover:text-foreground' : 'text-primary hover:text-primary hover:bg-accent'}`}
                         onClick={() => handleToggleActive(product)}
                         title={product.isActive ? 'Ocultar producto' : 'Mostrar producto'}
                       >
@@ -312,7 +301,7 @@ export default function AdminProductosPage() {
                       <Button 
                         variant="ghost" 
                         size="icon"
-                        className="h-9 w-9 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        className="h-9 w-9 text-destructive hover:text-destructive hover:bg-destructive/10"
                         onClick={() => openDeleteModal(product)}
                         title="Eliminar"
                       >
@@ -327,19 +316,19 @@ export default function AdminProductosPage() {
             {/* Desktop Table Layout */}
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-100">
+                <thead className="bg-cream border-b border-border">
                   <tr>
-                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Producto</th>
-                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Categoría</th>
-                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Precio</th>
-                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Stock</th>
-                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Estado</th>
-                    <th className="text-right px-6 py-4 text-sm font-medium text-gray-500">Acciones</th>
+                    <th className="text-left px-6 py-4 text-sm font-medium text-muted-foreground">Producto</th>
+                    <th className="text-left px-6 py-4 text-sm font-medium text-muted-foreground">Categoría</th>
+                    <th className="text-left px-6 py-4 text-sm font-medium text-muted-foreground">Precio</th>
+                    <th className="text-left px-6 py-4 text-sm font-medium text-muted-foreground">Stock</th>
+                    <th className="text-left px-6 py-4 text-sm font-medium text-muted-foreground">Estado</th>
+                    <th className="text-right px-6 py-4 text-sm font-medium text-muted-foreground">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {products.map((product) => (
-                    <tr key={product.id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={product.id} className="hover:bg-cream transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-4">
                           <ProductThumbnail
@@ -349,45 +338,45 @@ export default function AdminProductosPage() {
                             size={56}
                           />
                           <div>
-                            <p className="font-medium text-gray-900">{product.name}</p>
-                            <p className="text-sm text-gray-500">{product.slug}</p>
+                            <p className="font-medium text-foreground">{product.name}</p>
+                            <p className="text-sm text-muted-foreground">{product.slug}</p>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-muted text-foreground">
                           {product.category}
                         </span>
                       </td>
-                      <td className="px-6 py-4 font-medium text-gray-900">
+                      <td className="px-6 py-4 font-medium text-foreground">
                         {formatPrice(product.basePrice)}
                         {product.comboQuantity && product.comboPrice ? (
-                          <span className="block text-xs text-amber-600">{product.comboQuantity}x Q{Number(product.comboPrice).toFixed(2)}</span>
+                          <span className="block text-xs text-primary">{product.comboQuantity}x Q{Number(product.comboPrice).toFixed(2)}</span>
                         ) : null}
                       </td>
                       <td className="px-6 py-4">
                         <span className={`font-medium ${
-                          (product.available || 0) > 10 ? "text-green-600" : 
-                          (product.available || 0) > 0 ? "text-yellow-600" : "text-red-600"
+                          (product.available || 0) > 10 ? "text-success" : 
+                          (product.available || 0) > 0 ? "text-warning" : "text-destructive"
                         }`}>
                           {product.available || 0}
                         </span>
                       </td>
                       <td className="px-6 py-4">
                         {!product.isActive ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-destructive/10 text-destructive">
                             Oculto
                           </span>
                         ) : !product.isAvailable ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-warning/10 text-warning">
                             No disponible
                           </span>
                         ) : product.isNew ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-success/10 text-success">
                             Nuevo
                           </span>
                         ) : (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-success/10 text-success">
                             Activo
                           </span>
                         )}
@@ -402,7 +391,7 @@ export default function AdminProductosPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className={product.isActive ? 'text-gray-500 hover:text-gray-700' : 'text-amber-600 hover:text-amber-700'}
+                            className={product.isActive ? 'text-muted-foreground hover:text-foreground' : 'text-primary hover:text-primary'}
                             onClick={() => handleToggleActive(product)}
                             title={product.isActive ? 'Ocultar producto' : 'Mostrar producto'}
                           >
@@ -411,7 +400,7 @@ export default function AdminProductosPage() {
                           <Button 
                             variant="ghost" 
                             size="sm"
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
                             onClick={() => openDeleteModal(product)}
                             title="Eliminar producto"
                           >
@@ -427,8 +416,8 @@ export default function AdminProductosPage() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100">
-                <p className="text-sm text-gray-500">
+              <div className="flex items-center justify-between px-6 py-4 border-t border-border">
+                <p className="text-sm text-muted-foreground">
                   Página {currentPage} de {totalPages}
                 </p>
                 <div className="flex items-center gap-2">

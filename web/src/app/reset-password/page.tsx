@@ -160,13 +160,13 @@ export default function ResetPasswordPage() {
     return (
       <div className="mx-auto max-w-md px-4 py-16">
         <div className="text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
-            <svg className="h-8 w-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
+            <svg className="h-8 w-8 text-destructive" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           </div>
-          <h1 className="mb-2 text-2xl font-bold text-gray-900">Enlace inválido o expirado</h1>
-          <p className="mb-6 text-gray-600">
+          <h1 className="mb-2 text-2xl font-bold text-foreground">Enlace inválido o expirado</h1>
+          <p className="mb-6 text-muted-foreground">
             El enlace de recuperación de contraseña no es válido o ha expirado. 
             Por favor, solicita uno nuevo.
           </p>
@@ -191,19 +191,19 @@ export default function ResetPasswordPage() {
   return (
     <div className="mx-auto max-w-md px-4 py-16">
       <h1 className="mb-2 text-3xl font-bold">Nueva contraseña</h1>
-      <p className="mb-8 text-gray-600">
+      <p className="mb-8 text-muted-foreground">
         Ingresa tu nueva contraseña. Asegúrate de que sea segura y fácil de recordar.
       </p>
 
       {error && (
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        <div className="mb-4 rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
         </div>
       )}
 
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">
+          <label className="mb-1 block text-sm font-medium text-foreground">
             Nueva contraseña
           </label>
           <div className="relative">
@@ -219,7 +219,7 @@ export default function ResetPasswordPage() {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
               tabIndex={-1}
             >
               {showPassword ? (
@@ -237,7 +237,7 @@ export default function ResetPasswordPage() {
         </div>
         
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">
+          <label className="mb-1 block text-sm font-medium text-foreground">
             Confirmar contraseña
           </label>
           <div className="relative">
@@ -253,7 +253,7 @@ export default function ResetPasswordPage() {
             <button
               type="button"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
               tabIndex={-1}
             >
               {showConfirmPassword ? (

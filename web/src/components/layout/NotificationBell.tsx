@@ -2,17 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { 
-  Bell, 
-  ShoppingCart, 
-  AlertTriangle, 
-  Flame, 
-  Shield, 
-  Check, 
-  Settings, 
-  CheckSquare,
-  Circle
-} from "lucide-react"
+import { Bell, ShoppingCart, TriangleAlert as AlertTriangle, Flame, Shield, Check, Settings, SquareCheck as CheckSquare, Circle } from "lucide-react"
 import { useNotifications } from "@/context/NotificationContext"
 
 export default function NotificationBell() {
@@ -77,14 +67,14 @@ export default function NotificationBell() {
       case 'ORDERS':
         return {
           icon: ShoppingCart,
-          bgColor: 'bg-blue-50 border-blue-100',
-          textColor: 'text-blue-600'
+          bgColor: 'bg-chart-3/10 border-chart-3/10',
+          textColor: 'text-chart-3'
         }
       case 'INVENTORY':
         return {
           icon: AlertTriangle,
-          bgColor: 'bg-amber-50 border-amber-100',
-          textColor: 'text-amber-600'
+          bgColor: 'bg-accent border-primary/10',
+          textColor: 'text-primary'
         }
       case 'PRODUCTION':
         return {
@@ -118,15 +108,15 @@ export default function NotificationBell() {
       {/* Bell Button with shake animation on hover */}
       <button
         onClick={toggleDropdown}
-        className="p-2 text-gray-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg relative transition-all duration-200 focus:outline-none group"
+        className="p-2 text-muted-foreground hover:text-primary hover:bg-accent rounded-lg relative transition-all duration-200 focus:outline-none group"
         aria-label="Campana de notificaciones"
       >
         <Bell className="h-5 w-5 transition-transform duration-300 group-hover:rotate-12" />
         
         {unreadCount > 0 && (
           <span className="absolute top-1 right-1 flex h-4 w-4">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 text-[10px] font-bold text-white items-center justify-center">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive/60 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-4 w-4 bg-destructive/100 text-[10px] font-bold text-white items-center justify-center">
               {unreadCount > 99 ? '99+' : unreadCount}
             </span>
           </span>
@@ -135,16 +125,16 @@ export default function NotificationBell() {
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute right-0 mt-3 w-80 sm:w-96 bg-white rounded-xl shadow-xl border border-gray-100 py-1 z-50 animate-in fade-in slide-in-from-top-3 duration-200">
+        <div className="absolute right-0 mt-3 w-80 sm:w-96 bg-card rounded-xl shadow-xl border border-border py-1 z-50 animate-in fade-in slide-in-from-top-3 duration-200">
           
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-50">
-            <h3 className="font-semibold text-gray-800 text-sm sm:text-base">Notificaciones</h3>
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-border">
+            <h3 className="font-semibold text-foreground text-sm sm:text-base">Notificaciones</h3>
             <div className="flex items-center gap-2">
               {unreadCount > 0 && (
                 <button
                   onClick={markAllAsRead}
-                  className="text-xs text-amber-600 hover:text-amber-700 hover:underline flex items-center gap-1 font-medium transition-colors"
+                  className="text-xs text-primary hover:text-primary hover:underline flex items-center gap-1 font-medium transition-colors"
                 >
                   <CheckSquare className="h-3.5 w-3.5" />
                   Marcar todo
@@ -155,7 +145,7 @@ export default function NotificationBell() {
                   setIsOpen(false)
                   router.push('/admin/configuracion')
                 }}
-                className="p-1 text-gray-400 hover:text-gray-600 rounded-md transition-colors"
+                className="p-1 text-muted-foreground/60 hover:text-muted-foreground rounded-md transition-colors"
                 title="Configuración"
               >
                 <Settings className="h-4 w-4" />
@@ -167,11 +157,11 @@ export default function NotificationBell() {
           <div className="max-h-80 overflow-y-auto divide-y divide-gray-50">
             {notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
-                <div className="h-12 w-12 rounded-full bg-gray-50 flex items-center justify-center mb-3">
-                  <Bell className="h-6 w-6 text-gray-300" />
+                <div className="h-12 w-12 rounded-full bg-cream flex items-center justify-center mb-3">
+                  <Bell className="h-6 w-6 text-muted-foreground/40" />
                 </div>
-                <p className="text-sm font-medium text-gray-500">Sin notificaciones nuevas</p>
-                <p className="text-xs text-gray-400 mt-1">Te avisaremos cuando ocurra algo importante.</p>
+                <p className="text-sm font-medium text-muted-foreground">Sin notificaciones nuevas</p>
+                <p className="text-xs text-muted-foreground/60 mt-1">Te avisaremos cuando ocurra algo importante.</p>
               </div>
             ) : (
               notifications.map((item) => {
@@ -184,7 +174,7 @@ export default function NotificationBell() {
                     key={item.id}
                     onClick={() => handleItemClick(item.id, item.url, item.isRead)}
                     className={`flex gap-3 px-4 py-3 cursor-pointer transition-colors relative ${
-                      item.isRead ? 'hover:bg-gray-50 bg-white' : 'bg-amber-50/30 hover:bg-amber-50/50'
+                      item.isRead ? 'hover:bg-cream bg-card' : 'bg-accent/30 hover:bg-accent/50'
                     }`}
                   >
                     {/* Icon Container */}
@@ -195,14 +185,14 @@ export default function NotificationBell() {
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start gap-1">
-                        <p className={`text-xs font-semibold truncate ${item.isRead ? 'text-gray-700' : 'text-gray-900'}`}>
+                        <p className={`text-xs font-semibold truncate ${item.isRead ? 'text-foreground' : 'text-foreground'}`}>
                           {item.title}
                         </p>
-                        <span className="text-[10px] text-gray-400 whitespace-nowrap">
+                        <span className="text-[10px] text-muted-foreground/60 whitespace-nowrap">
                           {getRelativeTime(item.createdAt)}
                         </span>
                       </div>
-                      <p className={`text-xs mt-0.5 line-clamp-2 ${item.isRead ? 'text-gray-500' : 'text-gray-600 font-medium'}`}>
+                      <p className={`text-xs mt-0.5 line-clamp-2 ${item.isRead ? 'text-muted-foreground' : 'text-muted-foreground font-medium'}`}>
                         {item.message}
                       </p>
                     </div>
@@ -210,7 +200,7 @@ export default function NotificationBell() {
                     {/* Unread indicator dot */}
                     {!item.isRead && (
                       <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
-                        <Circle className="h-2 w-2 text-amber-500 fill-amber-500" />
+                        <Circle className="h-2 w-2 text-primary fill-amber-500" />
                       </div>
                     )}
                   </div>
@@ -220,13 +210,13 @@ export default function NotificationBell() {
           </div>
 
           {/* Footer */}
-          <div className="px-4 py-2 border-t border-gray-50 bg-gray-50/50 rounded-b-xl text-center">
+          <div className="px-4 py-2 border-t border-border bg-cream/50 rounded-b-xl text-center">
             <button
               onClick={() => {
                 setIsOpen(false)
                 router.push('/admin/configuracion?tab=notificaciones')
               }}
-              className="text-xs font-semibold text-gray-600 hover:text-amber-600 transition-colors"
+              className="text-xs font-semibold text-muted-foreground hover:text-primary transition-colors"
             >
               Ver configuración de alertas
             </button>

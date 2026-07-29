@@ -2,9 +2,8 @@
 
 import { usePathname } from "next/navigation"
 import Link from "next/link"
-import { ChevronRight, Home } from "lucide-react"
+import { ChevronRight, Hop as Home } from "lucide-react"
 
-// Mapeo de rutas a nombres legibles
 const PATH_NAMES: Record<string, string> = {
   admin: "Admin",
   productos: "Productos",
@@ -28,66 +27,25 @@ interface BreadcrumbItem {
   isCurrent: boolean
 }
 
-export function Breadcrumbs() {
-  const pathname = usePathname()
-
-  // No mostrar breadcrumbs en la página principal
-  if (pathname === "/" || pathname === "/admin" || pathname === "/empleado") {
-    return null
-  }
-
-  const segments = pathname.split("/").filter(Boolean)
-  
-  const breadcrumbs: BreadcrumbItem[] = segments.map((segment, index) => {
-    const href = "/" + segments.slice(0, index + 1).join("/")
-    const isCurrent = index === segments.length - 1
-    
-    // Detectar si es un ID (UUID o número)
-    const isId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(segment) || 
-                 /^\d+$/.test(segment)
-    
-    let label = PATH_NAMES[segment] || segment
-    
-    if (isId) {
-      // Si es un ID, usar "Detalle" o el nombre del padre
-      const parentSegment = segments[index - 1]
-      if (parentSegment === "productos") label = "Detalle"
-      else if (parentSegment === "usuarios") label = "Detalle"
-      else if (parentSegment === "ordenes") label = "Pedido"
-      else if (parentSegment === "sucursales") label = "Detalle"
-      else if (parentSegment === "categorias") label = "Detalle"
-      else label = "Detalle"
-    }
-    
-    return { label, href, isCurrent }
-  })
-
+function BreadcrumbList({ breadcrumbs, homeHref }: { breadcrumbs: BreadcrumbItem[]; homeHref: string }) {
   return (
     <nav aria-label="Breadcrumb" className="mb-4">
       <ol className="flex items-center gap-1 text-sm flex-wrap">
-        {/* Home link */}
         <li>
-          <Link 
-            href={pathname.startsWith("/empleado") ? "/empleado" : "/admin"}
-            className="flex items-center gap-1 text-gray-500 hover:text-amber-600 transition-colors"
-          >
+          <Link href={homeHref} className="flex items-center gap-1 text-muted-foreground hover:text-primary transition-colors">
             <Home className="h-4 w-4" />
             <span className="sr-only">Inicio</span>
           </Link>
         </li>
-        
         {breadcrumbs.map((crumb, index) => (
           <li key={crumb.href} className="flex items-center gap-1">
-            <ChevronRight className="h-4 w-4 text-gray-400" />
+            <ChevronRight className="h-4 w-4 text-muted-foreground/40" />
             {crumb.isCurrent ? (
-              <span className="font-medium text-gray-900" aria-current="page">
+              <span className="font-medium text-foreground" aria-current="page">
                 {crumb.label}
               </span>
             ) : (
-              <Link 
-                href={crumb.href}
-                className="text-gray-500 hover:text-amber-600 transition-colors"
-              >
+              <Link href={crumb.href} className="text-muted-foreground hover:text-primary transition-colors">
                 {crumb.label}
               </Link>
             )}
@@ -98,7 +56,40 @@ export function Breadcrumbs() {
   )
 }
 
-// Versión con override manual del nombre actual
+export function Breadcrumbs() {
+  const pathname = usePathname()
+
+  if (pathname === "/" || pathname === "/admin" || pathname === "/empleado") {
+    return null
+  }
+
+  const segments = pathname.split("/").filter(Boolean)
+
+  const breadcrumbs: BreadcrumbItem[] = segments.map((segment, index) => {
+    const href = "/" + segments.slice(0, index + 1).join("/")
+    const isCurrent = index === segments.length - 1
+
+    const isId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(segment) ||
+                 /^\d+$/.test(segment)
+
+    let label = PATH_NAMES[segment] || segment
+
+    if (isId) {
+      const parentSegment = segments[index - 1]
+      if (parentSegment === "productos") label = "Detalle"
+      else if (parentSegment === "usuarios") label = "Detalle"
+      else if (parentSegment === "ordenes") label = "Pedido"
+      else if (parentSegment === "sucursales") label = "Detalle"
+      else if (parentSegment === "categorias") label = "Detalle"
+      else label = "Detalle"
+    }
+
+    return { label, href, isCurrent }
+  })
+
+  return <BreadcrumbList breadcrumbs={breadcrumbs} homeHref={pathname.startsWith("/empleado") ? "/empleado" : "/admin"} />
+}
+
 interface BreadcrumbsWithTitleProps {
   currentPageTitle?: string
 }
@@ -106,24 +97,21 @@ interface BreadcrumbsWithTitleProps {
 export function BreadcrumbsWithTitle({ currentPageTitle }: BreadcrumbsWithTitleProps) {
   const pathname = usePathname()
 
-  // No mostrar breadcrumbs en la página principal
   if (pathname === "/" || pathname === "/admin" || pathname === "/empleado") {
     return null
   }
 
   const segments = pathname.split("/").filter(Boolean)
-  
+
   const breadcrumbs: BreadcrumbItem[] = segments.map((segment, index) => {
     const href = "/" + segments.slice(0, index + 1).join("/")
     const isCurrent = index === segments.length - 1
-    
-    // Detectar si es un ID
-    const isId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(segment) || 
+
+    const isId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(segment) ||
                  /^\d+$/.test(segment)
-    
+
     let label = PATH_NAMES[segment] || segment
-    
-    // Si es el último elemento y tenemos un título custom, usarlo
+
     if (isCurrent && currentPageTitle) {
       label = currentPageTitle
     } else if (isId) {
@@ -135,42 +123,9 @@ export function BreadcrumbsWithTitle({ currentPageTitle }: BreadcrumbsWithTitleP
       else if (parentSegment === "categorias") label = "Detalle"
       else label = "Detalle"
     }
-    
+
     return { label, href, isCurrent }
   })
 
-  return (
-    <nav aria-label="Breadcrumb" className="mb-4">
-      <ol className="flex items-center gap-1 text-sm flex-wrap">
-        {/* Home link */}
-        <li>
-          <Link 
-            href={pathname.startsWith("/empleado") ? "/empleado" : "/admin"}
-            className="flex items-center gap-1 text-gray-500 hover:text-amber-600 transition-colors"
-          >
-            <Home className="h-4 w-4" />
-            <span className="sr-only">Inicio</span>
-          </Link>
-        </li>
-        
-        {breadcrumbs.map((crumb, index) => (
-          <li key={crumb.href} className="flex items-center gap-1">
-            <ChevronRight className="h-4 w-4 text-gray-400" />
-            {crumb.isCurrent ? (
-              <span className="font-medium text-gray-900" aria-current="page">
-                {crumb.label}
-              </span>
-            ) : (
-              <Link 
-                href={crumb.href}
-                className="text-gray-500 hover:text-amber-600 transition-colors"
-              >
-                {crumb.label}
-              </Link>
-            )}
-          </li>
-        ))}
-      </ol>
-    </nav>
-  )
+  return <BreadcrumbList breadcrumbs={breadcrumbs} homeHref={pathname.startsWith("/empleado") ? "/empleado" : "/admin"} />
 }

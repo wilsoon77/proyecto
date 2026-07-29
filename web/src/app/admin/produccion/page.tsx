@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { Flame, Plus, Minus, Loader2, Clock, ChefHat } from "lucide-react"
+import { Flame, Plus, Minus, Loader as Loader2, Clock, ChefHat } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { useAuth } from "@/context/AuthContext"
@@ -96,7 +96,7 @@ export default function ProduccionPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-amber-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -106,48 +106,48 @@ export default function ProduccionPage() {
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
-          <div className="h-12 w-12 rounded-xl bg-amber-100 flex items-center justify-center">
-            <Flame className="h-6 w-6 text-amber-600" />
+          <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
+            <Flame className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Producción</h1>
-            <p className="text-gray-500">Registra los amasijos del día</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Producción</h1>
+            <p className="text-muted-foreground">Registra los amasijos del día</p>
           </div>
         </div>
       </div>
 
       {/* ─── PASO 1: Seleccionar Receta ─── */}
       <div className="mb-6">
-        <h2 className="text-lg font-semibold text-gray-800 mb-3">1. Selecciona el amasijo</h2>
+        <h2 className="text-lg font-semibold text-foreground mb-3">1. Selecciona el amasijo</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {recipes.map((recipe) => (
             <button
               key={recipe.id}
               onClick={() => handleSelectRecipe(recipe)}
               className={`text-left p-5 rounded-xl border-2 transition-all duration-200 ${selectedRecipeId === recipe.id
-                  ? 'border-amber-500 bg-amber-50 shadow-md ring-2 ring-amber-200'
-                  : 'border-gray-200 bg-white hover:border-amber-300 hover:shadow-sm'
+                  ? 'border-primary bg-accent shadow-md ring-2 ring-primary/20'
+                  : 'border-border bg-card hover:border-primary/30 hover:shadow-sm'
                 }`}
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="font-bold text-gray-900 text-lg">{recipe.name}</p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Producto: <span className="font-medium text-gray-700">{recipe.product.name}</span>
+                  <p className="font-bold text-foreground text-lg">{recipe.name}</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Producto: <span className="font-medium text-foreground">{recipe.product.name}</span>
                   </p>
-                  <p className="text-sm text-gray-500">
-                    Rinde: <span className="font-medium text-gray-700">{recipe.standardTrays} latas</span>
+                  <p className="text-sm text-muted-foreground">
+                    Rinde: <span className="font-medium text-foreground">{recipe.standardTrays} latas</span>
                     {recipe.product.unitsPerTray && (
-                      <span className="text-amber-600"> ({recipe.standardTrays * recipe.product.unitsPerTray} uds)</span>
+                      <span className="text-primary"> ({recipe.standardTrays * recipe.product.unitsPerTray} uds)</span>
                     )}
                   </p>
                 </div>
-                <ChefHat className={`h-6 w-6 ${selectedRecipeId === recipe.id ? 'text-amber-600' : 'text-gray-300'}`} />
+                <ChefHat className={`h-6 w-6 ${selectedRecipeId === recipe.id ? 'text-primary' : 'text-muted-foreground/40'}`} />
               </div>
               {/* Ingredientes mini */}
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {recipe.ingredients.map((ing) => (
-                  <span key={ing.rawMaterialId} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                  <span key={ing.rawMaterialId} className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
                     {ing.rawMaterial.name}: {Number(ing.quantity)} {ing.rawMaterial.baseUnit}
                   </span>
                 ))}
@@ -156,8 +156,8 @@ export default function ProduccionPage() {
           ))}
         </div>
         {recipes.length === 0 && (
-          <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
-            <ChefHat className="h-10 w-10 text-gray-300 mx-auto mb-2" />
+          <div className="text-center py-8 text-muted-foreground bg-cream rounded-xl border-2 border-dashed border-border">
+            <ChefHat className="h-10 w-10 text-muted-foreground/40 mx-auto mb-2" />
             <p>No hay recetas configuradas.</p>
             <p className="text-sm">Un Manager o Admin debe crear las recetas primero.</p>
           </div>
@@ -166,34 +166,34 @@ export default function ProduccionPage() {
 
       {/* ─── PASO 2: Latas Producidas ─── */}
       {selectedRecipe && (
-        <div className="mb-6 bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">2. ¿Cuántas latas salieron?</h2>
+        <div className="mb-6 bg-card rounded-xl border border-border p-6">
+          <h2 className="text-lg font-semibold text-foreground mb-4">2. ¿Cuántas latas salieron?</h2>
           <div className="flex items-center justify-center gap-6">
             <button
               onClick={() => setTraysProduced(Math.max(0, traysProduced - 1))}
-              className="h-16 w-16 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors active:scale-95"
+              className="h-16 w-16 rounded-full bg-muted hover:bg-border flex items-center justify-center transition-colors active:scale-95"
             >
-              <Minus className="h-8 w-8 text-gray-600" />
+              <Minus className="h-8 w-8 text-muted-foreground" />
             </button>
             <div className="text-center">
               <input
                 type="number"
                 value={traysProduced}
                 onChange={(e) => setTraysProduced(Math.max(0, parseInt(e.target.value) || 0))}
-                className="text-5xl font-bold text-amber-600 w-28 text-center bg-transparent border-b-2 border-amber-300 focus:outline-none focus:border-amber-500"
+                className="text-5xl font-bold text-primary w-28 text-center bg-transparent border-b-2 border-primary/30 focus:outline-none focus:border-primary"
               />
-              <p className="text-sm text-gray-500 mt-1">latas</p>
+              <p className="text-sm text-muted-foreground mt-1">latas</p>
               {selectedRecipe.product.unitsPerTray && (
-                <p className="text-lg font-medium text-amber-700 mt-2">
+                <p className="text-lg font-medium text-primary mt-2">
                   = {(traysProduced * selectedRecipe.product.unitsPerTray).toLocaleString()} unidades
                 </p>
               )}
             </div>
             <button
               onClick={() => setTraysProduced(traysProduced + 1)}
-              className="h-16 w-16 rounded-full bg-amber-100 hover:bg-amber-200 flex items-center justify-center transition-colors active:scale-95"
+              className="h-16 w-16 rounded-full bg-primary/10 hover:bg-primary/20 flex items-center justify-center transition-colors active:scale-95"
             >
-              <Plus className="h-8 w-8 text-amber-600" />
+              <Plus className="h-8 w-8 text-primary" />
             </button>
           </div>
           {/* Nota opcional */}
@@ -203,7 +203,7 @@ export default function ProduccionPage() {
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="Nota opcional (ej: Amasijo extra de la tarde)"
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="w-full px-4 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
         </div>
@@ -215,7 +215,7 @@ export default function ProduccionPage() {
           <Button
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="w-full h-16 text-xl font-bold bg-amber-600 hover:bg-amber-700 rounded-xl shadow-lg active:scale-[0.98] transition-transform"
+            className="w-full h-16 text-xl font-bold bg-primary hover:bg-primary/90 rounded-xl shadow-lg active:scale-[0.98] transition-transform"
           >
             {isSubmitting ? (
               <>
@@ -233,41 +233,41 @@ export default function ProduccionPage() {
       )}
 
       {/* ─── HISTORIAL DE HOY ─── */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+      <div className="bg-card rounded-xl border border-border overflow-hidden">
+        <div className="px-5 py-4 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-gray-400" />
-            <h2 className="font-semibold text-gray-800">Producción de hoy</h2>
+            <Clock className="h-5 w-5 text-muted-foreground/60" />
+            <h2 className="font-semibold text-foreground">Producción de hoy</h2>
           </div>
           <div className="flex gap-4 text-sm">
-            <span className="text-gray-500">
-              <span className="font-bold text-gray-900">{todayTotalTrays}</span> latas
+            <span className="text-muted-foreground">
+              <span className="font-bold text-foreground">{todayTotalTrays}</span> latas
             </span>
-            <span className="text-amber-600 font-medium">
+            <span className="text-primary font-medium">
               {todayTotalUnits.toLocaleString()} uds
             </span>
           </div>
         </div>
 
         {todayLogs.length === 0 ? (
-          <div className="p-8 text-center text-gray-400">
-            <Flame className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+          <div className="p-8 text-center text-muted-foreground/60">
+            <Flame className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />
             <p>Aún no se ha registrado producción hoy</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-50">
             {todayLogs.map((log) => (
-              <div key={log.id} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50">
+              <div key={log.id} className="px-5 py-3 flex items-center justify-between hover:bg-cream">
                 <div>
-                  <p className="font-medium text-gray-900">{log.recipe.name}</p>
-                  <p className="text-xs text-gray-500">
+                  <p className="font-medium text-foreground">{log.recipe.name}</p>
+                  <p className="text-xs text-muted-foreground">
                     {log.recipe.product.name} • {log.user.firstName} {log.user.lastName} •{' '}
                     {new Date(log.createdAt).toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-gray-900">{log.traysProduced} latas</p>
-                  <p className="text-xs text-amber-600 font-medium">{log.unitsProduced.toLocaleString()} uds</p>
+                  <p className="font-bold text-foreground">{log.traysProduced} latas</p>
+                  <p className="text-xs text-primary font-medium">{log.unitsProduced.toLocaleString()} uds</p>
                 </div>
               </div>
             ))}

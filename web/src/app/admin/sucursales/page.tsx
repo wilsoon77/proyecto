@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Plus, Search, MapPin, Phone, Pencil, Trash2, Loader2 } from "lucide-react"
+import { Plus, Search, MapPin, Phone, Pencil, Trash2, Loader as Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { useToast } from "@/components/ui/toast"
@@ -78,7 +78,7 @@ export default function SucursalesPage() {
   if (isLoading) {
     return (
       <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-[50vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-amber-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -88,11 +88,11 @@ export default function SucursalesPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Sucursales</h1>
-          <p className="text-gray-500">{branches.length} sucursales registradas</p>
+          <h1 className="text-2xl lg:text-3xl font-bold text-foreground">Sucursales</h1>
+          <p className="text-muted-foreground">{branches.length} sucursales registradas</p>
         </div>
         <Link href="/admin/sucursales/nuevo">
-          <Button className="bg-amber-600 hover:bg-amber-700">
+          <Button className="bg-primary hover:bg-primary/90">
             <Plus className="h-4 w-4 mr-2" />
             Nueva Sucursal
           </Button>
@@ -100,34 +100,34 @@ export default function SucursalesPage() {
       </div>
 
       {/* Search */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+      <div className="bg-card rounded-xl shadow-sm border border-border p-4 mb-6">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground/60" />
           <input
             type="text"
             placeholder="Buscar sucursales..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
           />
         </div>
       </div>
 
       {/* Branches Grid */}
       {filteredBranches.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
-          <MapPin className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
+        <div className="bg-card rounded-xl shadow-sm border border-border p-12 text-center">
+          <MapPin className="h-12 w-12 text-muted-foreground/40 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-foreground mb-2">
             {searchTerm ? "Sin resultados" : "No hay sucursales"}
           </h3>
-          <p className="text-gray-500 mb-4">
+          <p className="text-muted-foreground mb-4">
             {searchTerm
               ? "No se encontraron sucursales con ese término"
               : "Crea tu primera sucursal para comenzar"}
           </p>
           {!searchTerm && (
             <Link href="/admin/sucursales/nuevo">
-              <Button className="bg-amber-600 hover:bg-amber-700">
+              <Button className="bg-primary hover:bg-primary/90">
                 <Plus className="h-4 w-4 mr-2" />
                 Nueva Sucursal
               </Button>
@@ -139,18 +139,18 @@ export default function SucursalesPage() {
           {filteredBranches.map((branch) => (
             <div
               key={branch.id}
-              className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow"
+              className="bg-card rounded-xl shadow-sm border border-border p-6 hover:shadow-md transition-shadow"
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-4">
-                  <div className="h-12 w-12 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <MapPin className="h-6 w-6 text-amber-600" />
+                  <div className="h-12 w-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <MapPin className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">{branch.name}</h3>
-                    <p className="text-gray-600 text-sm mt-1">{branch.address}</p>
+                    <h3 className="font-semibold text-foreground">{branch.name}</h3>
+                    <p className="text-muted-foreground text-sm mt-1">{branch.address}</p>
                     {branch.phone && (
-                      <div className="flex items-center gap-1 text-gray-500 text-sm mt-2">
+                      <div className="flex items-center gap-1 text-muted-foreground text-sm mt-2">
                         <Phone className="h-4 w-4" />
                         {branch.phone}
                       </div>
@@ -167,7 +167,7 @@ export default function SucursalesPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => setDeleteId(branch.id)}
-                    className="text-red-600 hover:text-red-700 hover:border-red-300"
+                    className="text-destructive hover:text-destructive hover:border-destructive/30"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

@@ -10,7 +10,7 @@ import { addressesService, ordersService, authService } from "@/lib/api"
 import type { ApiAddress, ApiOrder } from "@/lib/api/types"
 import { ROUTES } from "@/lib/constants"
 import { formatDate, formatPrice } from "@/lib/utils"
-import { AlertTriangle, Loader2 } from "lucide-react"
+import { TriangleAlert as AlertTriangle, Loader as Loader2 } from "lucide-react"
 
 export default function PerfilPage() {
   const { user, isAuthenticated, isLoading: authLoading, updateProfile, logout } = useAuth()
@@ -159,7 +159,7 @@ export default function PerfilPage() {
       <div className="flex min-h-[50vh] items-center justify-center">
         <div className="text-center">
           <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="text-gray-600">{authLoading ? 'Cargando...' : 'Redirigiendo al login...'}</p>
+          <p className="text-muted-foreground">{authLoading ? 'Cargando...' : 'Redirigiendo al login...'}</p>
         </div>
       </div>
     )
@@ -173,14 +173,14 @@ export default function PerfilPage() {
       </div>
 
       {error && (
-        <div className="mb-6 rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-800">
+        <div className="mb-6 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
           {error}
         </div>
       )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Información personal */}
-        <div className="rounded-lg border bg-white p-6">
+        <div className="rounded-lg border bg-card p-6">
           <h2 className="mb-4 text-xl font-semibold">Información personal</h2>
           <div className="grid gap-4">
             <div>
@@ -193,8 +193,8 @@ export default function PerfilPage() {
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">Correo</label>
-              <Input value={email} disabled className="bg-gray-50" />
-              <p className="mt-1 text-xs text-gray-500">El correo no se puede cambiar</p>
+              <Input value={email} disabled className="bg-cream" />
+              <p className="mt-1 text-xs text-muted-foreground">El correo no se puede cambiar</p>
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">Teléfono</label>
@@ -208,22 +208,22 @@ export default function PerfilPage() {
         </div>
 
         {/* Direcciones */}
-        <div className="rounded-lg border bg-white p-6">
+        <div className="rounded-lg border bg-card p-6">
           <h2 className="mb-4 text-xl font-semibold">Mis direcciones</h2>
           {loadingAddresses ? (
             <div className="animate-pulse space-y-2">
-              <div className="h-16 rounded bg-gray-200" />
-              <div className="h-16 rounded bg-gray-200" />
+              <div className="h-16 rounded bg-border" />
+              <div className="h-16 rounded bg-border" />
             </div>
           ) : addresses.length === 0 ? (
-            <p className="text-gray-600">No tienes direcciones guardadas.</p>
+            <p className="text-muted-foreground">No tienes direcciones guardadas.</p>
           ) : (
             <div className="space-y-3">
               {addresses.map(addr => (
                 <div key={addr.id} className="rounded-md border p-3 text-sm">
                   <p className="font-medium">{addr.street}</p>
-                  <p className="text-gray-600">{addr.city}{addr.state ? `, ${addr.state}` : ''}{addr.zone ? ` - ${addr.zone}` : ''}</p>
-                  {addr.reference && <p className="text-gray-500 text-xs">Ref: {addr.reference}</p>}
+                  <p className="text-muted-foreground">{addr.city}{addr.state ? `, ${addr.state}` : ''}{addr.zone ? ` - ${addr.zone}` : ''}</p>
+                  {addr.reference && <p className="text-muted-foreground text-xs">Ref: {addr.reference}</p>}
                 </div>
               ))}
             </div>
@@ -232,7 +232,7 @@ export default function PerfilPage() {
       </div>
 
       {/* Últimos pedidos */}
-      <div className="mt-6 rounded-lg border bg-white p-6">
+      <div className="mt-6 rounded-lg border bg-card p-6">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-semibold">Últimos pedidos</h2>
           <Link href={ROUTES.orders} className="text-sm text-primary hover:underline">
@@ -241,22 +241,22 @@ export default function PerfilPage() {
         </div>
         {loadingOrders ? (
           <div className="animate-pulse space-y-2">
-            <div className="h-12 rounded bg-gray-200" />
-            <div className="h-12 rounded bg-gray-200" />
+            <div className="h-12 rounded bg-border" />
+            <div className="h-12 rounded bg-border" />
           </div>
         ) : recentOrders.length === 0 ? (
-          <p className="text-gray-600">Aún no tienes pedidos.</p>
+          <p className="text-muted-foreground">Aún no tienes pedidos.</p>
         ) : (
           <div className="divide-y">
             {recentOrders.map(order => (
               <div key={order.id} className="flex items-center justify-between py-3">
                 <div>
                   <p className="font-medium">{order.orderNumber}</p>
-                  <p className="text-sm text-gray-600">{formatDate(new Date(order.createdAt))}</p>
+                  <p className="text-sm text-muted-foreground">{formatDate(new Date(order.createdAt))}</p>
                 </div>
                 <div className="text-right">
                   <p className="font-bold text-primary">{formatPrice(order.total)}</p>
-                  <p className="text-sm text-gray-600">{order.status}</p>
+                  <p className="text-sm text-muted-foreground">{order.status}</p>
                 </div>
               </div>
             ))}
@@ -265,12 +265,12 @@ export default function PerfilPage() {
       </div>
 
       {/* Zona de peligro - Eliminar cuenta */}
-      <div className="mt-6 rounded-lg border border-red-200 bg-red-50 p-6">
+      <div className="mt-6 rounded-lg border border-destructive/20 bg-destructive/10 p-6">
         <div className="flex items-start gap-3">
-          <AlertTriangle className="h-6 w-6 text-red-500 flex-shrink-0 mt-0.5" />
+          <AlertTriangle className="h-6 w-6 text-destructive flex-shrink-0 mt-0.5" />
           <div className="flex-1">
-            <h2 className="text-xl font-semibold text-red-700">Eliminar cuenta</h2>
-            <p className="mt-1 text-sm text-red-600">
+            <h2 className="text-xl font-semibold text-destructive">Eliminar cuenta</h2>
+            <p className="mt-1 text-sm text-destructive">
               Esta acción desactivará tu cuenta. No podrás iniciar sesión hasta que contactes a soporte. 
               Tu historial de pedidos se conservará.
             </p>
@@ -278,21 +278,21 @@ export default function PerfilPage() {
             {!showDeleteConfirm ? (
               <Button 
                 variant="outline" 
-                className="mt-4 border-red-300 text-red-600 hover:bg-red-100"
+                className="mt-4 border-destructive/30 text-destructive hover:bg-destructive/10"
                 onClick={() => setShowDeleteConfirm(true)}
               >
                 Eliminar mi cuenta
               </Button>
             ) : (
               <div className="mt-4 space-y-3">
-                <p className="text-sm text-red-700 font-medium">
+                <p className="text-sm text-destructive font-medium">
                   Para confirmar, escribe ELIMINAR en el campo de abajo:
                 </p>
                 <Input
                   value={deleteConfirmText}
                   onChange={(e) => setDeleteConfirmText(e.target.value)}
                   placeholder="Escribe ELIMINAR"
-                  className="max-w-xs border-red-300 focus:border-red-500 focus:ring-red-500"
+                  className="max-w-xs border-destructive/30 focus:border-red-500 focus:ring-red-500"
                 />
                 <div className="flex gap-3">
                   <Button

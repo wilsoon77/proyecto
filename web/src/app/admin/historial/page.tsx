@@ -2,25 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import { 
-  History, 
-  Search, 
-  Loader2,
-  Filter,
-  Calendar,
-  User,
-  Package,
-  ShoppingCart,
-  Building2,
-  Tag,
-  AlertCircle,
-  RefreshCcw,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  Activity,
-  ClipboardCheck
-} from "lucide-react"
+import { Factory as History, Search, Loader as Loader2, ListFilter as Filter, Calendar, User, Package, ShoppingCart, Building2, Tag, CircleAlert as AlertCircle, RefreshCcw, ChevronLeft, ChevronRight, Clock, Activity, ClipboardCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/context/ToastContext"
 import { useAuth } from "@/context/AuthContext"
@@ -58,12 +40,12 @@ const ENTITY_ICONS: Record<string, React.ElementType> = {
 
 // Colores por acción
 const ACTION_COLORS: Record<string, { bg: string; text: string }> = {
-  CREATE: { bg: "bg-green-100", text: "text-green-700" },
-  UPDATE: { bg: "bg-blue-100", text: "text-blue-700" },
-  DELETE: { bg: "bg-red-100", text: "text-red-700" },
-  LOGIN: { bg: "bg-purple-100", text: "text-purple-700" },
-  LOGOUT: { bg: "bg-gray-100", text: "text-gray-700" },
-  STATUS_CHANGE: { bg: "bg-amber-100", text: "text-amber-700" },
+  CREATE: { bg: "bg-success/10", text: "text-success" },
+  UPDATE: { bg: "bg-chart-3/10", text: "text-chart-3" },
+  DELETE: { bg: "bg-destructive/10", text: "text-destructive" },
+  LOGIN: { bg: "bg-chart-5/10", text: "text-chart-5" },
+  LOGOUT: { bg: "bg-muted", text: "text-foreground" },
+  STATUS_CHANGE: { bg: "bg-primary/10", text: "text-primary" },
 }
 
 // Traducciones de acciones
@@ -224,11 +206,11 @@ export default function HistorialPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-3">
-            <History className="h-7 w-7 sm:h-8 sm:w-8 text-amber-600" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-3">
+            <History className="h-7 w-7 sm:h-8 sm:w-8 text-primary" />
             Historial de Cambios
           </h1>
-          <p className="text-gray-500 mt-1">
+          <p className="text-muted-foreground mt-1">
             Registro completo de todas las acciones realizadas en el sistema
           </p>
         </div>
@@ -277,17 +259,17 @@ export default function HistorialPage() {
       )}
 
       {/* Search and Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+      <div className="bg-card rounded-xl shadow-sm border border-border p-4 mb-6">
         <div className="flex flex-col sm:flex-row gap-4">
           {/* Search */}
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
             <input
               type="text"
               placeholder="Buscar por usuario, entidad o detalles..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
           
@@ -295,12 +277,12 @@ export default function HistorialPage() {
           <Button
             variant="outline"
             onClick={() => setShowFilters(!showFilters)}
-            className={`gap-2 ${hasActiveFilters ? 'border-amber-500 text-amber-700' : ''}`}
+            className={`gap-2 ${hasActiveFilters ? 'border-primary text-primary' : ''}`}
           >
             <Filter className="h-4 w-4" />
             Filtros
             {hasActiveFilters && (
-              <span className="ml-1 px-1.5 py-0.5 text-xs bg-amber-100 text-amber-700 rounded-full">
+              <span className="ml-1 px-1.5 py-0.5 text-xs bg-primary/10 text-primary rounded-full">
                 Activos
               </span>
             )}
@@ -309,16 +291,16 @@ export default function HistorialPage() {
 
         {/* Expanded Filters */}
         {showFilters && (
-          <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="mt-4 pt-4 border-t border-border grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Entity Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Entidad
               </label>
               <select
                 value={filters.entity || ""}
                 onChange={(e) => handleFilterChange("entity", e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500"
+                className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary"
               >
                 <option value="">Todas</option>
                 {filterOptions.entities.map((entity) => (
@@ -331,13 +313,13 @@ export default function HistorialPage() {
 
             {/* Action Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Acción
               </label>
               <select
                 value={filters.action || ""}
                 onChange={(e) => handleFilterChange("action", e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500"
+                className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary"
               >
                 <option value="">Todas</option>
                 {filterOptions.actions.map((action) => (
@@ -350,27 +332,27 @@ export default function HistorialPage() {
 
             {/* Start Date */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Desde
               </label>
               <input
                 type="date"
                 value={filters.startDate || ""}
                 onChange={(e) => handleFilterChange("startDate", e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500"
+                className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary"
               />
             </div>
 
             {/* End Date */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Hasta
               </label>
               <input
                 type="date"
                 value={filters.endDate || ""}
                 onChange={(e) => handleFilterChange("endDate", e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500"
+                className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary"
               />
             </div>
 
@@ -380,7 +362,7 @@ export default function HistorialPage() {
                 <Button
                   variant="ghost"
                   onClick={clearFilters}
-                  className="text-sm text-gray-600"
+                  className="text-sm text-muted-foreground"
                 >
                   Limpiar filtros
                 </Button>
@@ -391,14 +373,14 @@ export default function HistorialPage() {
       </div>
 
       {/* Logs Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-amber-600" />
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : logs.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-gray-500">
-            <AlertCircle className="h-12 w-12 mb-4 text-gray-300" />
+          <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+            <AlertCircle className="h-12 w-12 mb-4 text-muted-foreground/40" />
             <p className="text-lg font-medium">No hay registros</p>
             <p className="text-sm">
               {hasActiveFilters 
@@ -412,21 +394,21 @@ export default function HistorialPage() {
             {/* Desktop Table */}
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-100">
+                <thead className="bg-cream border-b border-border">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
                       Fecha
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
                       Usuario
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
                       Acción
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
                       Entidad
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
                       Detalles
                     </th>
                   </tr>
@@ -447,8 +429,8 @@ export default function HistorialPage() {
             </div>
 
             {/* Pagination */}
-            <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between">
-              <p className="text-sm text-gray-500">
+            <div className="px-4 py-3 border-t border-border flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
                 Mostrando {((pagination.page - 1) * pagination.pageSize) + 1} - {Math.min(pagination.page * pagination.pageSize, pagination.total)} de {pagination.total}
               </p>
               <div className="flex items-center gap-2">
@@ -460,7 +442,7 @@ export default function HistorialPage() {
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-muted-foreground">
                   {pagination.page} / {pagination.totalPages}
                 </span>
                 <Button
@@ -495,22 +477,22 @@ function StatsCard({
   color: "amber" | "blue" | "green" | "purple"
 }) {
   const colorClasses = {
-    amber: "bg-amber-50 text-amber-600",
-    blue: "bg-blue-50 text-blue-600",
-    green: "bg-green-50 text-green-600",
-    purple: "bg-purple-50 text-purple-600",
+    amber: "bg-accent text-primary",
+    blue: "bg-chart-3/10 text-chart-3",
+    green: "bg-success/10 text-success",
+    purple: "bg-chart-5/10 text-chart-5",
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+    <div className="bg-card rounded-xl shadow-sm border border-border p-4">
       <div className="flex items-center gap-3">
         <div className={`p-2 rounded-lg ${colorClasses[color]}`}>
           <Icon className="h-5 w-5" />
         </div>
         <div>
-          <p className="text-2xl font-bold text-gray-900">{value.toLocaleString()}</p>
-          <p className="text-sm text-gray-500">{title}</p>
-          {subtitle && <p className="text-xs text-gray-400">{subtitle}</p>}
+          <p className="text-2xl font-bold text-foreground">{value.toLocaleString()}</p>
+          <p className="text-sm text-muted-foreground">{title}</p>
+          {subtitle && <p className="text-xs text-muted-foreground/60">{subtitle}</p>}
         </div>
       </div>
     </div>
@@ -530,21 +512,21 @@ function LogRow({ log }: { log: AuditLog }) {
 
   return (
     <tr
-      className="hover:bg-amber-50/50 cursor-pointer transition-colors"
+      className="hover:bg-accent/50 cursor-pointer transition-colors"
       onClick={() => window.location.href = `/admin/historial/${log.id}`}
     >
       <td className="px-4 py-3 whitespace-nowrap">
-        <div className="text-sm text-gray-900">
+        <div className="text-sm text-foreground">
           {formatDate(log.createdAt)}
         </div>
-        <div className="text-xs text-gray-500">
+        <div className="text-xs text-muted-foreground">
           {formatRelativeTime(log.createdAt)}
         </div>
       </td>
       <td className="px-4 py-3 whitespace-nowrap">
-        <div className="text-sm font-medium text-gray-900">{log.userName}</div>
+        <div className="text-sm font-medium text-foreground">{log.userName}</div>
         {log.user?.email && (
-          <div className="text-xs text-gray-500">{log.user.email}</div>
+          <div className="text-xs text-muted-foreground">{log.user.email}</div>
         )}
       </td>
       <td className="px-4 py-3 whitespace-nowrap">
@@ -554,13 +536,13 @@ function LogRow({ log }: { log: AuditLog }) {
       </td>
       <td className="px-4 py-3 whitespace-nowrap">
         <div className="flex items-center gap-2">
-          <EntityIcon className="h-4 w-4 text-gray-400" />
+          <EntityIcon className="h-4 w-4 text-muted-foreground/60" />
           <div>
-            <div className="text-sm text-gray-900">
+            <div className="text-sm text-foreground">
               {ENTITY_LABELS[log.entity] || log.entity}
             </div>
             {log.entityName && (
-              <div className="text-xs text-gray-500 truncate max-w-[150px]">
+              <div className="text-xs text-muted-foreground truncate max-w-[150px]">
                 {log.entityName}
               </div>
             )}
@@ -568,18 +550,18 @@ function LogRow({ log }: { log: AuditLog }) {
         </div>
       </td>
       <td className="px-4 py-3">
-        <div className="text-sm text-gray-700 truncate max-w-[280px]" title={summary.headline}>
+        <div className="text-sm text-foreground truncate max-w-[280px]" title={summary.headline}>
           {summary.headline}
         </div>
         {summary.changedFields && summary.changedFields.length > 0 && (
           <div className="mt-1 flex flex-wrap gap-1">
             {summary.changedFields.slice(0, 3).map((field, i) => (
-              <span key={i} className="inline-flex px-1.5 py-0.5 text-[10px] font-medium rounded bg-blue-50 text-blue-600">
+              <span key={i} className="inline-flex px-1.5 py-0.5 text-[10px] font-medium rounded bg-chart-3/10 text-chart-3">
                 {field}
               </span>
             ))}
             {summary.changedFields.length > 3 && (
-              <span className="text-[10px] text-gray-400">+{summary.changedFields.length - 3} más</span>
+              <span className="text-[10px] text-muted-foreground/60">+{summary.changedFields.length - 3} más</span>
             )}
           </div>
         )}
@@ -602,37 +584,37 @@ function LogCard({ log }: { log: AuditLog }) {
   return (
     <a
       href={`/admin/historial/${log.id}`}
-      className="block p-4 space-y-2 hover:bg-amber-50/50 active:bg-amber-100/50 transition-colors"
+      className="block p-4 space-y-2 hover:bg-accent/50 active:bg-primary/10/50 transition-colors"
     >
       <div className="flex items-center justify-between gap-2">
         <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${actionColor.bg} ${actionColor.text}`}>
           {ACTION_LABELS[log.action] || log.action}
         </span>
-        <span className="text-xs text-gray-500 whitespace-nowrap">
+        <span className="text-xs text-muted-foreground whitespace-nowrap">
           {formatRelativeTime(log.createdAt)}
         </span>
       </div>
       
-      <p className="text-sm font-medium text-gray-900 leading-snug">
+      <p className="text-sm font-medium text-foreground leading-snug">
         {summary.headline}
       </p>
 
       {summary.changedFields && summary.changedFields.length > 0 && (
         <div className="flex flex-wrap gap-1">
           {summary.changedFields.map((field, i) => (
-            <span key={i} className="inline-flex px-1.5 py-0.5 text-[10px] font-medium rounded bg-blue-50 text-blue-600">
+            <span key={i} className="inline-flex px-1.5 py-0.5 text-[10px] font-medium rounded bg-chart-3/10 text-chart-3">
               {field}
             </span>
           ))}
         </div>
       )}
 
-      <div className="flex items-center justify-between text-xs text-gray-500">
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
         <div className="flex items-center gap-1.5">
-          <EntityIcon className="h-3.5 w-3.5 text-gray-400" />
+          <EntityIcon className="h-3.5 w-3.5 text-muted-foreground/60" />
           <span>{ENTITY_LABELS[log.entity] || log.entity}</span>
           {log.entityName && (
-            <span className="text-gray-400">• {log.entityName}</span>
+            <span className="text-muted-foreground/60">• {log.entityName}</span>
           )}
         </div>
         <div className="flex items-center gap-1">

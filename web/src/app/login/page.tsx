@@ -123,19 +123,22 @@ function LoginForm() {
   }
 
   return (
-    <div className="mx-auto max-w-md px-4 py-16">
-      <h1 className="mb-2 text-3xl font-bold">Iniciar Sesión</h1>
-      <p className="mb-8 text-gray-600">Ingresa a tu cuenta para continuar.</p>
+    <div className="mx-auto flex min-h-[calc(100vh-200px)] max-w-md flex-col items-center justify-center px-4 py-16">
+      <div className="w-full rounded-2xl border border-border bg-card p-8 shadow-card animate-fade-up">
+      <div className="mb-8 text-center">
+        <h1 className="mb-2 font-display text-3xl font-bold text-foreground">Iniciar Sesión</h1>
+        <p className="text-muted-foreground">Ingresa a tu cuenta para continuar.</p>
+      </div>
       
       {error && (
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
         </div>
       )}
 
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">
+          <label className="mb-1 block text-sm font-medium text-foreground">
             Correo electrónico
           </label>
           <input 
@@ -149,7 +152,7 @@ function LoginForm() {
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">
+          <label className="mb-1 block text-sm font-medium text-foreground">
             Contraseña
           </label>
           <div className="relative">
@@ -164,7 +167,7 @@ function LoginForm() {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
               tabIndex={-1}
             >
               {showPassword ? (
@@ -193,10 +196,10 @@ function LoginForm() {
             id="rememberMe"
             checked={rememberMe}
             onChange={(e) => setRememberMe(e.target.checked)}
-            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+            className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
             disabled={isLoading || !!oauthLoading}
           />
-          <label htmlFor="rememberMe" className="text-sm text-gray-600">
+          <label htmlFor="rememberMe" className="text-sm text-muted-foreground">
             Recordar mi sesión por 30 días
           </label>
         </div>
@@ -211,22 +214,23 @@ function LoginForm() {
         )}
 
         {checkingCaptcha && (
-          <p className="text-xs text-gray-500">Verificando seguridad...</p>
+          <p className="text-xs text-muted-foreground">Verificando seguridad...</p>
         )}
 
         <Button 
           type="submit" 
-          className="w-full"
+          className="w-full shadow-warm"
           disabled={isLoading || !!oauthLoading || checkingCaptcha}
         >
           {isLoading ? "Ingresando..." : "Ingresar"}
         </Button>
       </form>
 
-      <div className="my-6 flex items-center gap-2">
-        <div className="h-px flex-1 bg-gray-200" />
-        <span className="text-xs text-gray-500">o continúa con</span>
-        <div className="h-px flex-1 bg-gray-200" />
+      </div>
+      <div className="my-6 flex w-full items-center gap-2">
+        <div className="h-px flex-1 bg-border" />
+        <span className="text-xs text-muted-foreground">o continúa con</span>
+        <div className="h-px flex-1 bg-border" />
       </div>
 
       <div className="grid gap-3">
@@ -234,7 +238,7 @@ function LoginForm() {
           type="button"
           onClick={() => handleOAuth('google')}
           disabled={isLoading || !!oauthLoading}
-          className="flex w-full items-center justify-center gap-3 rounded-md border bg-white p-3 text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex w-full items-center justify-center gap-3 rounded-md border border-border bg-card p-3 text-sm font-medium hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -249,7 +253,7 @@ function LoginForm() {
           type="button"
           onClick={() => handleOAuth('github')}
           disabled={isLoading || !!oauthLoading}
-          className="flex w-full items-center justify-center gap-3 rounded-md border bg-gray-900 p-3 text-sm font-medium text-white hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex w-full items-center justify-center gap-3 rounded-md border border-border bg-secondary p-3 text-sm font-medium text-secondary-foreground hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
             <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0012 2z"/>
@@ -258,7 +262,7 @@ function LoginForm() {
         </button>
       </div>
 
-      <p className="mt-6 text-center text-sm text-gray-700">
+      <p className="mt-6 text-center text-sm text-muted-foreground">
         ¿No tienes cuenta?{" "}
         <Link href={ROUTES.register} className="text-primary hover:underline font-medium">
           Crear cuenta
@@ -273,12 +277,12 @@ export default function LoginPage() {
     <Suspense fallback={
       <div className="mx-auto max-w-md px-4 py-16">
         <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/2 mb-4"></div>
-          <div className="h-4 bg-gray-200 rounded w-3/4 mb-8"></div>
+          <div className="h-8 bg-muted rounded w-1/2 mb-4"></div>
+          <div className="h-4 bg-muted rounded w-3/4 mb-8"></div>
           <div className="space-y-4">
-            <div className="h-12 bg-gray-200 rounded"></div>
-            <div className="h-12 bg-gray-200 rounded"></div>
-            <div className="h-12 bg-gray-200 rounded"></div>
+            <div className="h-12 bg-muted rounded"></div>
+            <div className="h-12 bg-muted rounded"></div>
+            <div className="h-12 bg-muted rounded"></div>
           </div>
         </div>
       </div>

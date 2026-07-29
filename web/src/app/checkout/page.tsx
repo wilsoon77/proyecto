@@ -169,7 +169,7 @@ export default function CheckoutPage() {
   if (isLoading) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-20 text-center">
-        <p className="text-gray-500">Verificando sesión...</p>
+        <p className="text-muted-foreground">Verificando sesión...</p>
       </div>
     )
   }
@@ -177,9 +177,9 @@ export default function CheckoutPage() {
   if (items.length === 0 && !placed) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
-        <h1 className="mb-4 text-2xl sm:text-3xl font-bold">Confirmar Pedido</h1>
-        <div className="rounded-lg border bg-white p-8 text-center">
-          <p className="mb-4 text-gray-700">Tu carrito está vacío.</p>
+        <h1 className="mb-4 font-display text-2xl sm:text-3xl font-bold">Confirmar Pedido</h1>
+        <div className="rounded-xl border border-border bg-card p-8 text-center shadow-card">
+          <p className="mb-4 text-card-foreground">Tu carrito está vacío.</p>
           <Link href={ROUTES.products}><Button>Volver a productos</Button></Link>
         </div>
       </div>
@@ -189,14 +189,14 @@ export default function CheckoutPage() {
   if (placed) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
-        <h1 className="mb-4 text-2xl sm:text-3xl font-bold">¡Pedido reservado!</h1>
-        <div className="rounded-lg border bg-white p-8 text-center">
-          <div className="text-6xl mb-4">🎉</div>
-          <p className="mb-2 text-gray-700">Tu pedido ha sido registrado. Te notificaremos cuando esté listo para recoger.</p>
+        <h1 className="mb-4 font-display text-2xl sm:text-3xl font-bold">¡Pedido reservado!</h1>
+        <div className="rounded-xl border border-border bg-card p-8 text-center shadow-card">
+          <div className="text-6xl mb-4 animate-bounce-in">🎉</div>
+          <p className="mb-2 text-card-foreground">Tu pedido ha sido registrado. Te notificaremos cuando esté listo para recoger.</p>
           {orderNumber && (
-            <p className="mb-2 text-sm text-gray-600">Número de pedido: <span className="font-medium">{orderNumber}</span></p>
+            <p className="mb-2 text-sm text-muted-foreground">Número de pedido: <span className="font-medium text-foreground">{orderNumber}</span></p>
           )}
-          <p className="text-gray-600">Gracias por tu preferencia.</p>
+          <p className="text-muted-foreground">Gracias por tu preferencia.</p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Link href={ROUTES.home}><Button variant="outline">Ir al inicio</Button></Link>
             <Link href={ROUTES.products}><Button>Seguir comprando</Button></Link>
@@ -209,28 +209,28 @@ export default function CheckoutPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-      <h1 className="mb-6 text-2xl sm:text-3xl font-bold text-gray-900">Confirmar Pedido</h1>
+      <h1 className="mb-6 font-display text-2xl sm:text-3xl font-bold text-foreground">Confirmar Pedido</h1>
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         {/* Formulario */}
         <div className="lg:col-span-2 space-y-6">
           {/* Datos de contacto */}
-          <div className="rounded-lg border bg-white p-6">
-            <h2 className="mb-4 text-xl font-semibold">Datos de contacto</h2>
+          <div className="rounded-xl border border-border bg-card p-6 shadow-card">
+            <h2 className="mb-4 font-display text-xl font-semibold">Datos de contacto</h2>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <label htmlFor="checkout-fullname" className="mb-1 block text-sm font-medium">Nombre completo</label>
+                <label htmlFor="checkout-fullname" className="mb-1 block text-sm font-medium text-foreground">Nombre completo</label>
                 <Input id="checkout-fullname" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Ej. Juan Pérez" />
               </div>
               <div>
-                <label htmlFor="checkout-phone" className="mb-1 block text-sm font-medium">Teléfono (WhatsApp)</label>
+                <label htmlFor="checkout-phone" className="mb-1 block text-sm font-medium text-foreground">Teléfono (WhatsApp)</label>
                 <Input id="checkout-phone" value={phone} onChange={e => setPhone(e.target.value)} placeholder="Ej. 5555-5555" />
                 {isAuthenticated && !user?.phone && phone && (
-                  <label className="mt-2 flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                  <label className="mt-2 flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
                     <input 
                       type="checkbox" 
                       checked={savePhoneToProfile} 
                       onChange={(e) => setSavePhoneToProfile(e.target.checked)} 
-                      className="accent-amber-600 w-4 h-4" 
+                      className="accent-primary w-4 h-4" 
                     />
                     Guardar este número en mi cuenta
                   </label>
@@ -240,38 +240,38 @@ export default function CheckoutPage() {
           </div>
 
           {/* Sucursal de retiro (Solo visualización) */}
-          <div className="rounded-lg border bg-white p-6">
-            <h2 className="mb-4 text-xl font-semibold">Sucursal de retiro</h2>
-            <p className="mb-3 text-sm text-gray-600">Tu pedido se procesará exclusivamente para retiro en esta sucursal.</p>
+          <div className="rounded-xl border border-border bg-card p-6 shadow-card">
+            <h2 className="mb-4 font-display text-xl font-semibold">Sucursal de retiro</h2>
+            <p className="mb-3 text-sm text-muted-foreground">Tu pedido se procesará exclusivamente para retiro en esta sucursal.</p>
             {branches.length > 0 ? (
               <div className="space-y-3">
                 {branches.filter(b => b.id === selectedBranchId).map(branch => (
                   <div
                     key={branch.id}
-                    className="flex items-start gap-3 rounded-lg border border-amber-500 bg-amber-50 p-4"
+                    className="flex items-start gap-3 rounded-lg border border-primary/30 bg-primary/5 p-4"
                   >
                     <div>
-                      <p className="font-medium text-amber-900">{branch.name}</p>
-                      <p className="text-sm text-amber-800/80">{branch.address}</p>
-                      {branch.phone && <p className="text-sm text-amber-700 mt-1">📞 {branch.phone}</p>}
+                      <p className="font-medium text-foreground">{branch.name}</p>
+                      <p className="text-sm text-muted-foreground">{branch.address}</p>
+                      {branch.phone && <p className="text-sm text-primary mt-1">📞 {branch.phone}</p>}
                     </div>
                   </div>
                 ))}
               </div>
             ) : branchesError ? (
-              <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+              <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
                 <p className="font-medium">Error al cargar sucursales</p>
                 <p>Verifica tu conexión a internet e intenta de nuevo.</p>
                 <Button variant="outline" size="sm" className="mt-2" onClick={() => window.location.reload()}>Reintentar</Button>
               </div>
             ) : (
-              <p className="text-sm text-gray-500">Cargando sucursales...</p>
+              <p className="text-sm text-muted-foreground">Cargando sucursales...</p>
             )}
           </div>
 
           {/* Notas del cliente */}
-          <div className="rounded-lg border bg-white p-6">
-            <h2 className="mb-4 text-xl font-semibold">Notas adicionales</h2>
+          <div className="rounded-xl border border-border bg-card p-6 shadow-card">
+            <h2 className="mb-4 font-display text-xl font-semibold">Notas adicionales</h2>
             <textarea
               className="w-full rounded-md border px-3 py-2 text-sm"
               rows={3}
@@ -283,7 +283,7 @@ export default function CheckoutPage() {
 
           {/* Monto mínimo */}
           {belowMin && (
-            <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
+            <div className="rounded-lg border border-warning/30 bg-warning/10 p-4 text-sm text-warning">
               <p className="font-medium">Pedido mínimo no alcanzado</p>
               <p>El monto mínimo para realizar un pedido es de {formatPrice(minOrderAmount)}. Tu subtotal actual es {formatPrice(subtotal)}.</p>
             </div>
@@ -291,9 +291,9 @@ export default function CheckoutPage() {
 
           {/* Mensaje para usuarios no autenticados */}
           {!isAuthenticated && (
-            <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
+            <div className="rounded-lg border border-warning/30 bg-warning/10 p-4 text-sm text-warning">
               <p className="font-medium flex items-center gap-1.5 mb-1">
-                <Lightbulb className="h-4 w-4 text-amber-600 animate-pulse" />
+                <Lightbulb className="h-4 w-4 text-warning animate-pulse" />
                 ¿Ya tienes cuenta?
               </p>
               <p>
@@ -304,7 +304,7 @@ export default function CheckoutPage() {
 
           {/* Error */}
           {error && (
-            <div className="rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-800">
+            <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
               <p className="font-medium">Error</p>
               <p>{error}</p>
             </div>
@@ -313,8 +313,8 @@ export default function CheckoutPage() {
 
         {/* Resumen */}
         <div className="space-y-4">
-          <div className="rounded-lg border bg-white p-6">
-            <h2 className="mb-4 text-xl font-semibold">Resumen del pedido</h2>
+          <div className="rounded-xl border border-border bg-card p-6 shadow-card">
+            <h2 className="mb-4 font-display text-xl font-semibold">Resumen del pedido</h2>
             <div className="mb-4 max-h-52 space-y-2 overflow-auto pr-1 text-sm">
               {items.map(({ product, quantity }) => (
                 <div key={product.id} className="flex items-center justify-between">
@@ -329,9 +329,9 @@ export default function CheckoutPage() {
                 <span className="font-bold text-primary">{formatPrice(subtotal)}</span>
               </div>
             </div>
-            <p className="mt-2 text-xs text-gray-500">Pago al recoger en sucursal</p>
+            <p className="mt-2 text-xs text-muted-foreground">Pago al recoger en sucursal</p>
             <Button 
-              className="mt-4 w-full" 
+              className="mt-4 w-full shadow-warm" 
               onClick={() => {
                 if (!canPlace) {
                   show('Por favor, completa Nombre, Teléfono y Sucursal para ordenar.', { variant: 'error' })
@@ -345,9 +345,9 @@ export default function CheckoutPage() {
             >
               {placing ? 'Procesando…' : 'Reservar Pedido'}
             </Button>
-            <p className="mt-2 text-center text-xs text-gray-500">Al realizar el pedido, aceptas nuestros términos y políticas.</p>
+            <p className="mt-2 text-center text-xs text-muted-foreground">Al realizar el pedido, aceptas nuestros términos y políticas.</p>
           </div>
-          <div className="rounded-lg border bg-white p-4 text-sm text-gray-600">
+          <div className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
             <p>📍 Retira en sucursal. Pedido mínimo: {formatPrice(minOrderAmount)}. Pago al recoger.</p>
           </div>
         </div>

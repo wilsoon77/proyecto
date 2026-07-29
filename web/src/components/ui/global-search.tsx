@@ -2,19 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { 
-  Search, 
-  X, 
-  Package, 
-  ShoppingCart, 
-  Users, 
-  Building2, 
-  Tag,
-  Warehouse,
-  Command,
-  ArrowRight,
-  Loader2
-} from "lucide-react"
+import { Search, X, Package, ShoppingCart, Users, Building2, Tag, Warehouse, Command, ArrowRight, Loader as Loader2 } from "lucide-react"
 import { productsService, branchesService, categoriesService } from "@/lib/api"
 
 interface SearchResult {
@@ -40,12 +28,12 @@ const PAGES: SearchResult[] = [
 ]
 
 const TYPE_ICONS: Record<string, React.ReactNode> = {
-  product: <Package className="h-4 w-4 text-amber-600" />,
-  user: <Users className="h-4 w-4 text-blue-600" />,
-  order: <ShoppingCart className="h-4 w-4 text-green-600" />,
-  branch: <Building2 className="h-4 w-4 text-purple-600" />,
-  category: <Tag className="h-4 w-4 text-pink-600" />,
-  page: <ArrowRight className="h-4 w-4 text-gray-400" />,
+  product: <Package className="h-4 w-4 text-primary" />,
+  user: <Users className="h-4 w-4 text-chart-3" />,
+  order: <ShoppingCart className="h-4 w-4 text-success" />,
+  branch: <Building2 className="h-4 w-4 text-chart-5" />,
+  category: <Tag className="h-4 w-4 text-chart-4" />,
+  page: <ArrowRight className="h-4 w-4 text-muted-foreground" />,
 }
 
 export function GlobalSearch() {
@@ -215,11 +203,11 @@ export function GlobalSearch() {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-500 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+        className="flex items-center gap-2 px-3 py-1.5 text-sm text-muted-foreground bg-muted hover:bg-accent rounded-lg transition-colors"
       >
         <Search className="h-4 w-4" />
         <span className="hidden sm:inline">Buscar...</span>
-        <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-xs bg-white rounded border border-gray-300 font-mono">
+        <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-xs bg-card rounded border border-border font-mono">
           <Command className="h-3 w-3" />K
         </kbd>
       </button>
@@ -236,13 +224,13 @@ export function GlobalSearch() {
 
       {/* Modal de búsqueda */}
       <div className="absolute top-[10%] left-1/2 -translate-x-1/2 w-full max-w-2xl px-4">
-        <div className="bg-white rounded-xl shadow-2xl overflow-hidden border border-gray-200">
+        <div className="bg-card rounded-xl shadow-card-hover overflow-hidden border border-border animate-scale-in">
           {/* Input de búsqueda */}
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100">
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
             {isLoading ? (
-              <Loader2 className="h-5 w-5 text-gray-400 animate-spin" />
+              <Loader2 className="h-5 w-5 text-muted-foreground animate-spin" />
             ) : (
-              <Search className="h-5 w-5 text-gray-400" />
+              <Search className="h-5 w-5 text-muted-foreground" />
             )}
             <input
               ref={inputRef}
@@ -251,11 +239,11 @@ export function GlobalSearch() {
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Buscar productos, usuarios, páginas..."
-              className="flex-1 text-base outline-none placeholder:text-gray-400"
+              className="flex-1 text-base outline-none placeholder:text-muted-foreground bg-transparent text-foreground"
             />
             <button
               onClick={() => setIsOpen(false)}
-              className="p-1 text-gray-400 hover:text-gray-600 rounded"
+              className="p-1 text-muted-foreground hover:text-foreground rounded"
             >
               <X className="h-5 w-5" />
             </button>
@@ -264,8 +252,8 @@ export function GlobalSearch() {
           {/* Resultados */}
           <div ref={resultsRef} className="max-h-[60vh] overflow-y-auto">
             {results.length === 0 && query ? (
-              <div className="py-12 text-center text-gray-500">
-                <Search className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+              <div className="py-12 text-center text-muted-foreground">
+                <Search className="h-8 w-8 mx-auto mb-2 text-muted-foreground/30" />
                 <p>No se encontraron resultados</p>
               </div>
             ) : (
@@ -274,26 +262,26 @@ export function GlobalSearch() {
                   key={result.id}
                   onClick={() => navigateTo(result.href)}
                   className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
-                    index === selectedIndex ? "bg-amber-50" : "hover:bg-gray-50"
+                    index === selectedIndex ? "bg-accent" : "hover:bg-muted"
                   }`}
                 >
                   <span className={`p-2 rounded-lg ${
-                    index === selectedIndex ? "bg-amber-100" : "bg-gray-100"
+                    index === selectedIndex ? "bg-primary/15" : "bg-muted"
                   }`}>
                     {result.icon}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 truncate">{result.title}</p>
+                    <p className="font-medium text-card-foreground truncate">{result.title}</p>
                     {result.subtitle && (
-                      <p className="text-sm text-gray-500 truncate">{result.subtitle}</p>
+                      <p className="text-sm text-muted-foreground truncate">{result.subtitle}</p>
                     )}
                   </div>
                   <span className={`text-xs px-2 py-1 rounded-full ${
-                    result.type === "page" ? "bg-gray-100 text-gray-600" :
-                    result.type === "product" ? "bg-amber-100 text-amber-700" :
-                    result.type === "user" ? "bg-blue-100 text-blue-700" :
-                    result.type === "branch" ? "bg-purple-100 text-purple-700" :
-                    "bg-gray-100 text-gray-600"
+                    result.type === "page" ? "bg-muted text-muted-foreground" :
+                    result.type === "product" ? "bg-primary/10 text-primary" :
+                    result.type === "user" ? "bg-chart-3/10 text-chart-3" :
+                    result.type === "branch" ? "bg-chart-5/10 text-chart-5" :
+                    "bg-muted text-muted-foreground"
                   }`}>
                     {result.type === "page" ? "Página" :
                      result.type === "product" ? "Producto" :
@@ -307,18 +295,18 @@ export function GlobalSearch() {
           </div>
 
           {/* Footer con atajos */}
-          <div className="px-4 py-2 border-t border-gray-100 bg-gray-50 flex items-center gap-4 text-xs text-gray-500">
+          <div className="px-4 py-2 border-t border-border bg-muted/50 flex items-center gap-4 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 bg-white rounded border border-gray-200">↑</kbd>
-              <kbd className="px-1.5 py-0.5 bg-white rounded border border-gray-200">↓</kbd>
+              <kbd className="px-1.5 py-0.5 bg-card rounded border border-border">↑</kbd>
+              <kbd className="px-1.5 py-0.5 bg-card rounded border border-border">↓</kbd>
               navegar
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 bg-white rounded border border-gray-200">Enter</kbd>
+              <kbd className="px-1.5 py-0.5 bg-card rounded border border-border">Enter</kbd>
               ir
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 bg-white rounded border border-gray-200">Esc</kbd>
+              <kbd className="px-1.5 py-0.5 bg-card rounded border border-border">Esc</kbd>
               cerrar
             </span>
           </div>

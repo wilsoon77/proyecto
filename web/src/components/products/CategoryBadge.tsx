@@ -8,19 +8,19 @@ interface CategoryBadgeProps {
 }
 
 const CATEGORY_CONFIG: Record<string, { icon: React.ElementType; color: string }> = {
-  pan: { icon: Croissant, color: 'bg-orange-100 text-orange-800 border-orange-200' },
-  pasteles: { icon: CakeSlice, color: 'bg-pink-100 text-pink-800 border-pink-200' },
-  galletas: { icon: Cookie, color: 'bg-amber-100 text-amber-800 border-amber-200' },
-  dulces: { icon: Candy, color: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
-  especiales: { icon: Sparkles, color: 'bg-purple-100 text-purple-800 border-purple-200' },
-  bebidas: { icon: Coffee, color: 'bg-blue-100 text-blue-800 border-blue-200' },
-  reposteria: { icon: Cherry, color: 'bg-rose-100 text-rose-800 border-rose-200' },
+  pan: { icon: Croissant, color: 'bg-primary/10 text-primary border-primary/20' },
+  pasteles: { icon: CakeSlice, color: 'bg-chart-5/10 text-chart-5 border-chart-5/20' },
+  galletas: { icon: Cookie, color: 'bg-chart-4/10 text-chart-4 border-chart-4/20' },
+  dulces: { icon: Candy, color: 'bg-chart-4/10 text-chart-4 border-chart-4/20' },
+  especiales: { icon: Sparkles, color: 'bg-chart-3/10 text-chart-3 border-chart-3/20' },
+  bebidas: { icon: Coffee, color: 'bg-chart-3/10 text-chart-3 border-chart-3/20' },
+  reposteria: { icon: Cherry, color: 'bg-chart-5/10 text-chart-5 border-chart-5/20' },
 }
 
 export function CategoryBadge({ category, label, className }: CategoryBadgeProps) {
   const config = CATEGORY_CONFIG[category.toLowerCase()] || {
     icon: Shell,
-    color: 'bg-gray-100 text-gray-800 border-gray-200'
+    color: 'bg-muted text-muted-foreground border-border'
   }
 
   // Usa el label proporcionado (del DB) o capitaliza el slug como fallback

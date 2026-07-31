@@ -82,7 +82,7 @@ Clientes ven automáticamente solo sus pedidos. ADMIN/MANAGER ven todos.
 1. **Inicia el servidor:**
    ```powershell
    cd api
-   pnpm run dev
+   npm run dev
    ```
 
 2. **Abre Swagger UI:** `http://localhost:4000/docs`

@@ -249,21 +249,20 @@ formatDate(new Date())  // → "11 de noviembre de 2025"
 cd web
 
 # Instalar dependencias
-corepack enable
-pnpm install --frozen-lockfile
+npm ci
 
 # Iniciar servidor de desarrollo
-pnpm run dev
+npm run dev
 # → http://localhost:3000
 
 # Compilar para producción
-pnpm run build
+npm run build
 
 # Ejecutar versión de producción
-pnpm run start
+npm run start
 
 # Linting
-pnpm run lint
+npm run lint
 ```
 
 ### Variables de Entorno
@@ -465,7 +464,7 @@ Cannot apply unknown utility class 'border-border'
 **Causa**: Next.js 16 intenta usar Tailwind CSS v4 que tiene sintaxis incompatible.  
 **Solución**: 
 1. Desinstalar Tailwind v4
-2. Instalar Tailwind CSS v3: `pnpm add -D tailwindcss@3 postcss autoprefixer`
+2. Instalar Tailwind CSS v3: `npm install -D tailwindcss@3 postcss autoprefixer`
 3. Crear `postcss.config.js`
 4. Simplificar `globals.css` eliminando `@apply`
 

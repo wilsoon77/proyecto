@@ -209,7 +209,7 @@ api/test/auth-security.e2e-spec.ts
 ### Ejecutar Tests
 ```bash
 cd api
-pnpm run test:e2e
+npm run test:e2e
 ```
 
 ### Cobertura de Tests

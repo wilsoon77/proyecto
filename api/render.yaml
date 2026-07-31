@@ -14,7 +14,7 @@ services:
     rootDir: api
     
     # Comandos de build
-    buildCommand: npm install && npm run prisma:generate && npm run build
+    buildCommand: npm ci && npm run prisma:generate && npm run build
     
     # Comando para iniciar
     startCommand: npm run start:prod

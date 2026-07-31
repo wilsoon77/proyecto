@@ -96,13 +96,33 @@ async function main() {
 
   // Branches
   const branches = [
-    { name: 'Sucursal Central', slug: 'central', address: 'Zona 10, Guatemala City', phone: '+50212345678' },
-    { name: 'Sucursal Norte', slug: 'norte', address: 'Zona 18, Guatemala City', phone: '+50287654321' },
+    { 
+      name: 'Sucursal Central', 
+      slug: 'central', 
+      address: 'Aldea Buena Vista, Zona 8, Sector Sur, Chimaltenango', 
+      phone: '+502 1234-5678',
+      latitude: 14.664106,
+      longitude: -90.845432
+    },
+    { 
+      name: 'Sucursal Secundaria', 
+      slug: 'secundaria', 
+      address: 'Frente a Pradera Chimaltenango, Chimaltenango', 
+      phone: '+502 8765-4321',
+      latitude: 14.6597265,
+      longitude: -90.809855
+    },
   ];
   for (const b of branches) {
     await prisma.branch.upsert({
       where: { slug: b.slug },
-      update: {},
+      update: {
+        name: b.name,
+        address: b.address,
+        phone: b.phone,
+        latitude: b.latitude,
+        longitude: b.longitude,
+      },
       create: b,
     });
   }
@@ -360,7 +380,7 @@ async function main() {
     },
     {
       key: 'store.operating_hours',
-      value: '06:00 - 20:00',
+      value: 'Lunes a Sábado: 7:00 AM - 8:00 PM',
       type: 'string',
       category: 'STORE',
       label: 'Horario de operación',

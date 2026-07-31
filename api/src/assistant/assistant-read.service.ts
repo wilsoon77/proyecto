@@ -279,4 +279,53 @@ export class AssistantReadService {
       note: 'El cierre actual no almacena precio histórico; no se reporta monto monetario.',
     };
   }
+
+  async rawMaterialInventory(context: AssistantContext, args: { materialQuery?: string; branch?: string }) {
+    const branchIds = this.resolveBranches(context, args);
+    const query = typeof args.materialQuery === 'string' ? args.materialQuery.trim().slice(0, 80) : '';
+
+    const materials = await this.prisma.rawMaterial.findMany({
+      where: {
+        isActive: true,
+        ...(query
+          ? {
+              name: { contains: query, mode: 'insensitive' },
+            }
+          : {}),
+      },
+      select: { id: true, name: true, baseUnit: true, minStock: true },
+      orderBy: { name: 'asc' },
+      take: 50,
+    });
+
+    const rows = await this.prisma.rawMaterialInventory.findMany({
+      where: {
+        branchId: { in: branchIds },
+        ...(materials.length ? { rawMaterialId: { in: materials.map((m) => m.id) } } : { rawMaterialId: -1 }),
+      },
+      select: {
+        rawMaterial: { select: { id: true, name: true, baseUnit: true, minStock: true } },
+        branch: { select: { id: true, name: true } },
+        quantity: true,
+        updatedAt: true,
+      },
+      orderBy: [{ rawMaterial: { name: 'asc' } }, { branchId: 'asc' }],
+      take: 100,
+    });
+
+    return {
+      query: query || null,
+      items: rows.map((row) => ({
+        materialId: row.rawMaterial.id,
+        materialName: row.rawMaterial.name,
+        branchId: row.branch.id,
+        branchName: row.branch.name,
+        quantity: decimal(row.quantity),
+        minimum: row.rawMaterial.minStock ? decimal(row.rawMaterial.minStock) : null,
+        unit: row.rawMaterial.baseUnit,
+        isLowStock: row.rawMaterial.minStock !== null && decimal(row.quantity) <= decimal(row.rawMaterial.minStock),
+        updatedAt: row.updatedAt,
+      })),
+    };
+  }
 }

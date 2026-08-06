@@ -6,8 +6,8 @@ import { Flame, Plus, Minus, Loader as Loader2, Clock, ChefHat } from "lucide-re
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { useAuth } from "@/context/AuthContext"
-import { productionService } from "@/lib/api"
-import type { Recipe, ProductionLog } from "@/lib/api"
+import { branchesService, productionService } from "@/lib/api"
+import type { ApiBranch, Recipe, ProductionLog } from "@/lib/api"
 
 export default function ProduccionPage() {
   const router = useRouter()
@@ -16,6 +16,8 @@ export default function ProduccionPage() {
 
   const [recipes, setRecipes] = useState<Recipe[]>([])
   const [todayLogs, setTodayLogs] = useState<ProductionLog[]>([])
+  const [branches, setBranches] = useState<ApiBranch[]>([])
+  const [branchId, setBranchId] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -32,21 +34,31 @@ export default function ProduccionPage() {
   }, [user, router])
 
   const loadData = useCallback(async () => {
+    if (!user) return
+
     setIsLoading(true)
     try {
-      const [recipesData, logsData] = await Promise.all([
+      const [recipesData, logsData, branchesData] = await Promise.all([
         productionService.getRecipes(),
         productionService.getTodayProduction(),
+        user.role === 'ADMIN' ? branchesService.list() : Promise.resolve([] as ApiBranch[]),
       ])
       setRecipes(recipesData)
       setTodayLogs(logsData)
+      setBranches(branchesData)
+
+      const assignedBranchId = user.branch?.id ?? user.branchId ?? null
+      setBranchId((current) => user.role === 'ADMIN'
+        ? current ?? assignedBranchId ?? (branchesData.length === 1 ? branchesData[0].id : null)
+        : assignedBranchId
+      )
     } catch (error) {
       console.error('Error loading data:', error)
       showToast('Error al cargar datos', 'error')
     } finally {
       setIsLoading(false)
     }
-  }, [showToast])
+  }, [showToast, user])
 
   useEffect(() => {
     loadData()
@@ -62,12 +74,22 @@ export default function ProduccionPage() {
 
   const handleSubmit = async () => {
     if (!selectedRecipeId || traysProduced <= 0 || isSubmitting) return
+    if (!branchId) {
+      showToast(
+        user?.role === 'ADMIN'
+          ? 'Selecciona la sucursal donde se registrará el horneado'
+          : 'Tu usuario no tiene una sucursal asignada',
+        'error'
+      )
+      return
+    }
 
     setIsSubmitting(true)
     try {
       const result = await productionService.registerProduction({
         recipeId: selectedRecipeId,
         traysProduced,
+        branchId,
         note: note.trim() || undefined,
       })
 
@@ -82,8 +104,8 @@ export default function ProduccionPage() {
       setNote("")
       const logsData = await productionService.getTodayProduction()
       setTodayLogs(logsData)
-    } catch (error: any) {
-      const msg = error?.response?.data?.message || error?.message || 'Error al registrar producción'
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Error al registrar producción'
       showToast(msg, 'error')
     } finally {
       setIsSubmitting(false)
@@ -115,6 +137,29 @@ export default function ProduccionPage() {
           </div>
         </div>
       </div>
+
+      {user?.role === 'ADMIN' && (
+        <div className="mb-6 rounded-xl border border-primary/20 bg-primary/5 p-4">
+          <label htmlFor="production-branch" className="block text-sm font-semibold text-foreground mb-2">
+            Sucursal donde se horneará
+          </label>
+          <select
+            id="production-branch"
+            value={branchId ?? ""}
+            onChange={(e) => setBranchId(e.target.value ? Number(e.target.value) : null)}
+            className="w-full px-4 py-3 border border-border rounded-lg bg-card focus:outline-none focus:ring-2 focus:ring-primary"
+            required
+          >
+            <option value="">Selecciona una sucursal...</option>
+            {branches.map((branch) => (
+              <option key={branch.id} value={branch.id}>{branch.name}</option>
+            ))}
+          </select>
+          <p className="text-xs text-muted-foreground mt-2">
+            Las materias primas se descontarán y el producto terminado se agregará en esta sucursal.
+          </p>
+        </div>
+      )}
 
       {/* ─── PASO 1: Seleccionar Receta ─── */}
       <div className="mb-6">

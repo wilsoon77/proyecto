@@ -56,6 +56,9 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
   const [comboQuantity, setComboQuantity] = useState("")
   const [comboPrice, setComboPrice] = useState("")
   const [unitsPerTray, setUnitsPerTray] = useState("")
+  const [origin, setOrigin] = useState<'PRODUCIDO' | 'COMPRADO'>('PRODUCIDO')
+  const [tracksExpiration, setTracksExpiration] = useState(false)
+  const [expirationAlertDays, setExpirationAlertDays] = useState("3")
   const [isActive, setIsActive] = useState(true)
   const [isAvailable, setIsAvailable] = useState(true)
 
@@ -100,6 +103,9 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
       setComboQuantity(data.comboQuantity?.toString() || "")
       setComboPrice(data.comboPrice?.toString() || "")
       setUnitsPerTray(data.unitsPerTray?.toString() || "")
+      setOrigin(data.origin === 'COMPRADO' ? 'COMPRADO' : 'PRODUCIDO')
+      setTracksExpiration(data.origin === 'COMPRADO' && data.tracksExpiration === true)
+      setExpirationAlertDays((data.expirationAlertDays ?? 3).toString())
       
       // Usar categoryId directamente
       setCategoryId(data.categoryId.toString())
@@ -212,6 +218,9 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
         isNew,
         isActive,
         isAvailable,
+        origin,
+        tracksExpiration: origin === 'COMPRADO' && tracksExpiration,
+        expirationAlertDays: origin === 'COMPRADO' ? Math.max(0, parseInt(expirationAlertDays || "3", 10)) : 3,
         comboQuantity: comboQuantity ? parseInt(comboQuantity) : undefined,
         comboPrice: comboPrice ? parseFloat(comboPrice) : undefined,
         unitsPerTray: unitsPerTray ? parseInt(unitsPerTray) : undefined,
@@ -488,6 +497,43 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
             </div>
           </div>
 
+          {/* Origen y caducidad */}
+          <div className="bg-cream rounded-lg p-4 space-y-4">
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">Cómo se abastece</h3>
+              <p className="text-xs text-muted-foreground mt-1">Los panes producidos no solicitan fecha de caducidad.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <label className={`cursor-pointer rounded-lg border p-3 ${origin === 'PRODUCIDO' ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                <input type="radio" name="origin" value="PRODUCIDO" checked={origin === 'PRODUCIDO'} onChange={() => { setOrigin('PRODUCIDO'); setTracksExpiration(false) }} className="mr-2" />
+                <span className="text-sm font-medium">Producido</span>
+                <span className="block text-xs text-muted-foreground mt-1">Usa receta y materia prima.</span>
+              </label>
+              <label className={`cursor-pointer rounded-lg border p-3 ${origin === 'COMPRADO' ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                <input type="radio" name="origin" value="COMPRADO" checked={origin === 'COMPRADO'} onChange={() => { setOrigin('COMPRADO'); setUnitsPerTray('') }} className="mr-2" />
+                <span className="text-sm font-medium">Comprado</span>
+                <span className="block text-xs text-muted-foreground mt-1">Se ingresa desde un proveedor.</span>
+              </label>
+            </div>
+            {origin === 'COMPRADO' && (
+              <div className="border-t border-border pt-4 space-y-3">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input type="checkbox" checked={tracksExpiration} onChange={(e) => setTracksExpiration(e.target.checked)} className="h-4 w-4 rounded border-input text-primary focus:ring-primary" />
+                  <span>
+                    <span className="block text-sm font-medium text-foreground">Controlar fecha de caducidad</span>
+                    <span className="block text-xs text-muted-foreground">El sistema avisará antes de que se venza el lote.</span>
+                  </span>
+                </label>
+                {tracksExpiration && (
+                  <div className="max-w-xs">
+                    <label className="block text-xs font-medium text-muted-foreground mb-1">Avisar con cuántos días de anticipación</label>
+                    <input type="number" min="0" value={expirationAlertDays} onChange={(e) => setExpirationAlertDays(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-sm" />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Combo Pricing */}
           <div className="bg-accent rounded-lg p-4 space-y-4">
             <h3 className="text-sm font-semibold text-primary">Precio por Volumen (Combo)</h3>
@@ -516,17 +562,19 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
                   className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Unidades/Lata</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={unitsPerTray}
-                  onChange={(e) => setUnitsPerTray(e.target.value)}
-                  placeholder="Ej: 36"
-                  className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
+              {origin === 'PRODUCIDO' && (
+                <div>
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">Unidades/Lata</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={unitsPerTray}
+                    onChange={(e) => setUnitsPerTray(e.target.value)}
+                    placeholder="Ej: 36"
+                    className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -413,6 +413,59 @@ export class NotificationsService {
   }
 
   /**
+   * Sends an expiration alert once per lot and stage (warning/expired).
+   * The lot id is part of resourceKey, so a second lot of the same product
+   * remains independently traceable.
+   */
+  async sendExpirationIfNeeded(options: {
+    branchId: number;
+    resourceKey: string;
+    configKey: 'inventory.expiration_warning' | 'inventory.expired_stock';
+    placeholders: Record<string, any>;
+    url?: string;
+    icon?: string;
+  }): Promise<boolean> {
+    const config = await this.prisma.notificationConfig.findUnique({ where: { key: options.configKey } });
+    if (!config || !config.isEnabled) return false;
+
+    const where = {
+      branchId_alertType_resourceKey: {
+        branchId: options.branchId,
+        alertType: AlertType.PRODUCT_EXPIRY,
+        resourceKey: options.resourceKey,
+      },
+    };
+    const state = await this.prisma.alertState.findUnique({ where });
+    if (state?.active) return false;
+
+    await this.prisma.alertState.upsert({
+      where,
+      update: {
+        active: true,
+        firstTriggeredAt: state?.firstTriggeredAt || new Date(),
+        lastNotifiedAt: new Date(),
+        resolvedAt: null,
+      },
+      create: {
+        branchId: options.branchId,
+        alertType: AlertType.PRODUCT_EXPIRY,
+        resourceKey: options.resourceKey,
+        active: true,
+        firstTriggeredAt: new Date(),
+        lastNotifiedAt: new Date(),
+      },
+    });
+
+    await this.sendByConfig(
+      options.configKey,
+      { ...options.placeholders, branchId: options.branchId },
+      options.url,
+      options.icon,
+    );
+    return true;
+  }
+
+  /**
    * Helper para formatear mensajes reemplazando placeholders
    */
   private formatMessage(text: string, placeholders: Record<string, any>): string {

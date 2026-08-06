@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards, Req, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Req, ParseIntPipe } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { RawMaterialsService } from './raw-materials.service.js';
 import { CreateRawMaterialDto, UpdateRawMaterialDto, PurchaseRawMaterialDto } from './dto/raw-material.dto.js';
@@ -20,8 +20,8 @@ export class RawMaterialsController {
   @Get()
   @Roles('ADMIN', 'MANAGER')
   @ApiOperation({ summary: 'Listar materias primas' })
-  findAll() {
-    return this.rawMaterialsService.findAll();
+  findAll(@Query('activeOnly') activeOnly?: string) {
+    return this.rawMaterialsService.findAll(activeOnly !== 'false');
   }
 
   @Get('inventory')
@@ -53,6 +53,13 @@ export class RawMaterialsController {
   @ApiOperation({ summary: 'Actualizar materia prima' })
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateRawMaterialDto) {
     return this.rawMaterialsService.update(id, dto);
+  }
+
+  @Delete(':id')
+  @Roles('ADMIN', 'MANAGER')
+  @ApiOperation({ summary: 'Desactivar materia prima' })
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.rawMaterialsService.remove(id);
   }
 
   @Post('purchase')

@@ -8,10 +8,9 @@ import { useProducts } from "@/hooks/use-products"
 import { useCategories } from "@/hooks/use-categories"
 import { useBranches } from "@/hooks/use-branches"
 import { useToast } from "@/components/ui/toast"
-import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ShoppingCart, Trash2, Plus, Minus, Search, CreditCard, Banknote, Store, Cookie, ArrowLeft } from "lucide-react"
+import { ShoppingCart, Trash2, Plus, Minus, Search, Store, Cookie, ArrowLeft } from "lucide-react"
 
 // Types for POS
 type CartItem = {
@@ -40,7 +39,6 @@ export default function PosPage() {
 
   // Cart & checkout states
   const [cart, setCart] = useState<CartItem[]>([])
-  const [paymentMethod, setPaymentMethod] = useState<string>("EFECTIVO")
   const [amountTendered, setAmountTendered] = useState<string>("")
   const [isProcessing, setIsProcessing] = useState(false)
   const [showCartOnMobile, setShowCartOnMobile] = useState(false)
@@ -116,7 +114,7 @@ export default function PosPage() {
 
     cart.forEach(({ product, quantity }) => {
       const basePrice = Number(product.basePrice)
-      let itemTotal = basePrice * quantity
+      const itemTotal = basePrice * quantity
 
       // Aplicar combos localmente en frontend para mostrar el total en tiempo real
       if (product.comboQuantity && product.comboPrice && product.comboQuantity > 0) {
@@ -180,8 +178,8 @@ export default function PosPage() {
       setShowCartOnMobile(false)
       // Refrescar inventario disparando el refetch del hook (React Query auto-invalida)
       refetchProducts()
-    } catch (error: any) {
-      const msg = error.response?.data?.message || 'Error al procesar la venta'
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Error al procesar la venta'
       showToast(Array.isArray(msg) ? msg[0] : msg, 'error')
     } finally {
       setIsProcessing(false)
@@ -189,14 +187,14 @@ export default function PosPage() {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row h-[calc(100vh-64px)] overflow-hidden bg-cream">
+    <div className="flex flex-col lg:flex-row h-[calc(100dvh-64px)] min-h-[calc(100dvh-64px)] overflow-hidden bg-cream">
 
       {/* LEFT: PRODUCTS LISTING */}
-      <div className={`flex-1 flex flex-col h-full border-r border-border ${showCartOnMobile ? 'hidden lg:flex' : 'flex'}`}>
+      <div className={`flex-1 min-h-0 flex flex-col h-full border-r border-border ${showCartOnMobile ? 'hidden lg:flex' : 'flex'}`}>
 
         {/* HEADER: Branches & Search */}
-        <div className="p-4 bg-card border-b flex flex-wrap gap-4 items-center shadow-sm z-10">
-          <div className="flex-1 min-w-[200px] relative">
+        <div className="p-3 sm:p-4 bg-card border-b flex flex-col lg:flex-row gap-3 lg:gap-4 lg:items-center shadow-sm z-10 shrink-0">
+          <div className="w-full min-w-0 lg:flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
             <Input
               placeholder="Buscar productos (nombre o SKU)..."
@@ -206,10 +204,10 @@ export default function PosPage() {
             />
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="w-full lg:w-auto flex items-center gap-2 min-w-0">
             <Store className="h-5 w-5 text-muted-foreground" />
             <select
-              className="border border-input rounded-md text-sm p-2 bg-card focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full lg:w-auto min-w-0 border border-input rounded-md text-sm p-2 bg-card focus:outline-none focus:ring-2 focus:ring-primary"
               value={selectedBranch}
               onChange={(e) => setSelectedBranch(e.target.value)}
               disabled={user?.role !== 'ADMIN'}
@@ -223,7 +221,7 @@ export default function PosPage() {
         </div>
 
         {/* CATEGORIES TABS */}
-        <div className="bg-card border-b px-2 overflow-x-auto no-scrollbar shadow-sm">
+        <div className="bg-card border-b px-2 overflow-x-auto no-scrollbar shadow-sm shrink-0">
           <div className="flex gap-2 p-2">
             <button
               onClick={() => setSelectedCategory('ALL')}
@@ -246,7 +244,7 @@ export default function PosPage() {
         </div>
 
         {/* PRODUCT GRID */}
-        <div className="flex-1 overflow-y-auto p-4 bg-cream">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-3 sm:p-4 bg-cream">
           {!selectedBranch ? (
             <div className="flex h-full items-center justify-center text-muted-foreground/60">
               <p>Selecciona una sucursal para ver los productos</p>
@@ -256,7 +254,7 @@ export default function PosPage() {
               <p>No se encontraron productos disponibles</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-4">
               {filteredProducts.map(p => {
                 const cartItem = cart.find(item => item.product.id === p.id)
                 const qtyInCart = cartItem?.quantity || 0
@@ -266,7 +264,7 @@ export default function PosPage() {
                   <div
                     key={p.id}
                     className={`
-                      relative group bg-card border rounded-xl overflow-hidden shadow-sm transition-all h-full flex flex-col
+                      relative group min-w-0 bg-card border rounded-xl overflow-hidden shadow-sm transition-all h-full flex flex-col
                       ${isOutOfStock ? 'opacity-50' : qtyInCart > 0 ? 'border-primary/40 ring-1 ring-primary/20 shadow-md' : 'hover:shadow-md hover:border-primary/40 cursor-pointer'}
                     `}
                     onClick={() => { if (!isOutOfStock && qtyInCart === 0) addToCart(p) }}
@@ -290,7 +288,7 @@ export default function PosPage() {
                       </div>
                     )}
 
-                    <div className="h-28 bg-muted flex items-center justify-center">
+                    <div className="h-24 sm:h-28 bg-muted flex items-center justify-center">
                       {p.images?.[0] ? (
                         <img src={p.images[0].url} alt={p.name} className="h-full w-full object-cover" />
                       ) : (
@@ -340,7 +338,7 @@ export default function PosPage() {
 
         {/* Mobile Floating Cart Summary Button */}
         {cart.length > 0 && (
-          <div className="lg:hidden p-3 bg-card border-t border-border">
+          <div className="lg:hidden p-3 bg-card border-t border-border shrink-0">
             <Button
               onClick={() => setShowCartOnMobile(true)}
               className="w-full bg-primary hover:bg-primary/90 text-white h-12 rounded-xl flex items-center justify-between px-4 font-bold shadow-lg transition-transform active:scale-[0.98]"
@@ -359,10 +357,10 @@ export default function PosPage() {
       </div>
 
       {/* RIGHT: CART & CHECKOUT (Width: 380px fixed on Desktop) */}
-      <div className={`w-full lg:w-[380px] flex flex-col h-full bg-card border-l shadow-2xl z-20 ${showCartOnMobile ? 'flex' : 'hidden lg:flex'}`}>
+      <div className={`w-full lg:w-[380px] lg:max-w-[40vw] min-h-0 flex flex-col h-full bg-card border-l shadow-2xl z-20 ${showCartOnMobile ? 'flex' : 'hidden lg:flex'}`}>
 
         {/* Cart Header */}
-        <div className="p-4 border-b bg-cream flex items-center gap-2">
+        <div className="p-3 sm:p-4 border-b bg-cream flex items-center gap-2 shrink-0">
           <button
             type="button"
             onClick={() => setShowCartOnMobile(false)}
@@ -378,7 +376,7 @@ export default function PosPage() {
         </div>
 
         {/* Cart Items List */}
-        <div className="flex-1 overflow-y-auto p-4 bg-card relative">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-3 sm:p-4 bg-card relative">
           {cart.length === 0 ? (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground/60">
               <ShoppingCart className="h-12 w-12 mb-4 opacity-20" />
@@ -429,7 +427,7 @@ export default function PosPage() {
         </div>
 
         {/* Totals & Checkout Panel */}
-        <div className="border-t bg-cream p-4 shrink-0">
+        <div className="border-t bg-cream p-3 sm:p-4 shrink-0 overflow-y-auto">
 
           <div className="space-y-2 mb-4">
             <div className="flex justify-between text-sm text-muted-foreground">

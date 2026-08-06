@@ -1,10 +1,11 @@
-import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiQuery, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/roles.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
 import { InventoryService } from './inventory.service.js';
 import { BranchScopeService } from '../branch-scope/branch-scope.service.js';
+import { ExpirationService } from './expiration.service.js';
 
 /**
  * InventoryController — Solo maneja HTTP, delega a InventoryService.
@@ -20,6 +21,7 @@ export class InventoryController {
   constructor(
     private readonly inventoryService: InventoryService,
     private readonly branchScope: BranchScopeService,
+    private readonly expirationService: ExpirationService,
   ) {}
 
   @Get()
@@ -46,5 +48,37 @@ export class InventoryController {
       scopedBranchId,
       threshold ? parseInt(threshold) : 10,
     );
+  }
+
+  @Get('expirations')
+  @ApiOperation({ summary: 'Consultar caducidades', description: 'Lista lotes próximos a vencer, vencidos o sin fecha registrada.' })
+  @ApiQuery({ name: 'branch', required: false, description: 'slug de la sucursal' })
+  @ApiQuery({ name: 'status', required: false, description: 'all, expired, expiring o no-date' })
+  @ApiQuery({ name: 'days', required: false, description: 'Días hacia adelante para considerar próximos a vencer' })
+  async getExpirations(
+    @Req() req: any,
+    @Query('branch') branchSlug?: string,
+    @Query('status') status?: string,
+    @Query('days') days?: string,
+  ) {
+    const scopedBranchSlug = await this.branchScope.resolveBranchSlug(req.user, branchSlug);
+    const normalizedStatus = ['expired', 'expiring', 'no-date'].includes(status || '')
+      ? status as 'expired' | 'expiring' | 'no-date'
+      : 'all';
+    const parsedDays = days ? Number(days) : 7;
+    return this.inventoryService.listExpirations(
+      scopedBranchSlug,
+      normalizedStatus,
+      Number.isFinite(parsedDays) ? parsedDays : 7,
+    );
+  }
+
+  @Post('expirations/check')
+  @ApiOperation({ summary: 'Revisar caducidades ahora', description: 'Ejecuta manualmente la revisión de alertas de caducidad.' })
+  async checkExpirations(@Req() req: any) {
+    // Un MANAGER solo puede disparar la revisión de su sucursal; ADMIN puede
+    // revisar todas, igual que la tarea programada diaria.
+    const scopedBranchId = await this.branchScope.resolveBranchId(req.user);
+    return this.expirationService.scanAndNotify(scopedBranchId);
   }
 }

@@ -73,6 +73,11 @@ export const rawMaterialsService = {
     return api.patch<RawMaterial>(`/raw-materials/${id}`, data)
   },
 
+  /** Desactivar una materia prima sin romper recetas ni historial */
+  async remove(id: number): Promise<RawMaterial> {
+    return api.delete<RawMaterial>(`/raw-materials/${id}`)
+  },
+
   /** Obtener inventario de materia prima por sucursal */
   async getInventory(branchId?: number): Promise<RawMaterialInventory[]> {
     const params = branchId ? `?branchId=${branchId}` : ''

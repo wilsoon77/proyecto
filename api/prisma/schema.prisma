@@ -78,6 +78,16 @@ enum StockMovementType {
   SOBRANTE // Suma (+) ajuste positivo
 }
 
+// Origen de un lote de producto terminado.
+// TRANSFERENCIA permite conservar la fecha de caducidad al mover stock entre sucursales.
+enum InventoryLotSource {
+  PRODUCCION
+  COMPRA
+  TRANSFERENCIA
+  SOBRANTE
+  APERTURA
+}
+
 // ─────────────────────────────────────────────
 // USUARIOS Y AUTENTICACIÓN
 // ─────────────────────────────────────────────
@@ -180,35 +190,38 @@ model Category {
 }
 
 model Product {
-  id              Int              @id @default(autoincrement())
-  sku             String           @unique
-  name            String
-  slug            String           @unique
-  description     String?
+  id                  Int              @id @default(autoincrement())
+  sku                 String           @unique
+  name                String
+  slug                String           @unique
+  description         String?
   // ── Precios ──
-  basePrice       Decimal          @db.Decimal(10, 2) // Precio unitario (ej: Q0.50)
-  comboQuantity   Int? // Cantidad del combo (ej: 3 para "3x1.25")
-  comboPrice      Decimal?         @db.Decimal(10, 2) // Precio del combo (ej: Q1.25)
+  basePrice           Decimal          @db.Decimal(10, 2) // Precio unitario (ej: Q0.50)
+  comboQuantity       Int? // Cantidad del combo (ej: 3 para "3x1.25")
+  comboPrice          Decimal?         @db.Decimal(10, 2) // Precio del combo (ej: Q1.25)
   // ── Producción ──
-  origin          ProductOrigin    @default(PRODUCIDO)
-  unitsPerTray    Int? // Unidades por lata (ej: 36). Solo para PRODUCIDO.
+  origin              ProductOrigin    @default(PRODUCIDO)
+  unitsPerTray        Int? // Unidades por lata (ej: 36). Solo para PRODUCIDO.
+  tracksExpiration    Boolean          @default(false) // Activa control de caducidad por lote
+  expirationAlertDays Int              @default(3) // Días antes de caducar para alertar
   // ── Estado ──
-  isNew           Boolean          @default(false)
-  isActive        Boolean          @default(true)
-  isAvailable     Boolean          @default(true)
+  isNew               Boolean          @default(false)
+  isActive            Boolean          @default(true)
+  isAvailable         Boolean          @default(true)
   // ── Relaciones ──
-  category        Category         @relation(fields: [categoryId], references: [id])
-  categoryId      Int
-  images          ProductImage[]
-  recipes         Recipe[]
-  inventories     Inventory[]
-  orderItems      OrderItem[]
-  stockMovements  StockMovement[]
-  dailyCloseItems DailyCloseItem[]
-  demandDaily     DemandDaily[]
-  forecastItems   ForecastItem[]
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  category            Category         @relation(fields: [categoryId], references: [id])
+  categoryId          Int
+  images              ProductImage[]
+  recipes             Recipe[]
+  inventories         Inventory[]
+  orderItems          OrderItem[]
+  stockMovements      StockMovement[]
+  inventoryLots       InventoryLot[]
+  dailyCloseItems     DailyCloseItem[]
+  demandDaily         DemandDaily[]
+  forecastItems       ForecastItem[]
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
 
   // supabase-postgres-best-practices: indexes para queries frecuentes
   @@index([categoryId]) // Filtro por categoría (catálogo, POS)
@@ -339,29 +352,70 @@ model Inventory {
   @@index([productId])
 }
 
+// Lote de producto terminado. Inventory continúa siendo el resumen por producto/sucursal;
+// este modelo conserva la fecha y el saldo de cada entrada para aplicar FEFO.
+model InventoryLot {
+  id                Int                       @id @default(autoincrement())
+  product           Product                   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId         Int
+  branch            Branch                    @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  branchId          Int
+  sourceType        InventoryLotSource
+  sourceMovement    StockMovement?            @relation("LotSourceMovement", fields: [sourceMovementId], references: [id], onDelete: SetNull)
+  sourceMovementId  Int?
+  initialQuantity   Int
+  availableQuantity Int
+  expiresAt         DateTime?
+  alertAt           DateTime?
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+  consumptions      InventoryLotConsumption[]
+
+  @@index([productId, branchId])
+  @@index([branchId, expiresAt])
+  @@index([availableQuantity])
+  @@index([sourceMovementId])
+}
+
+// Relación de consumo para auditar qué lotes se usaron en una venta, merma o transferencia.
+model InventoryLotConsumption {
+  id              Int           @id @default(autoincrement())
+  lot             InventoryLot  @relation(fields: [lotId], references: [id], onDelete: Cascade)
+  lotId           Int
+  stockMovement   StockMovement @relation(fields: [stockMovementId], references: [id], onDelete: Cascade)
+  stockMovementId Int
+  quantity        Int
+  createdAt       DateTime      @default(now())
+
+  @@unique([lotId, stockMovementId])
+  @@index([stockMovementId])
+}
+
 // Movimientos de inventario de producto terminado / reventa
 model StockMovement {
-  id              Int               @id @default(autoincrement())
-  product         Product           @relation(fields: [productId], references: [id])
+  id              Int                       @id @default(autoincrement())
+  product         Product                   @relation(fields: [productId], references: [id])
   productId       Int
-  fromBranch      Branch?           @relation("FromBranch", fields: [fromBranchId], references: [id])
+  fromBranch      Branch?                   @relation("FromBranch", fields: [fromBranchId], references: [id])
   fromBranchId    Int?
-  toBranch        Branch?           @relation("ToBranch", fields: [toBranchId], references: [id])
+  toBranch        Branch?                   @relation("ToBranch", fields: [toBranchId], references: [id])
   toBranchId      Int?
   type            StockMovementType
   quantity        Int
   // Vínculo opcional a producción (cuando type = PRODUCCION)
-  productionLog   ProductionLog?    @relation(fields: [productionLogId], references: [id])
+  productionLog   ProductionLog?            @relation(fields: [productionLogId], references: [id])
   productionLogId Int?
   // Caducidad para productos de reventa (type = COMPRA)
   expiresAt       DateTime?
-  user            User?             @relation(fields: [userId], references: [id])
+  sourceLots      InventoryLot[]            @relation("LotSourceMovement")
+  lotConsumptions InventoryLotConsumption[]
+  user            User?                     @relation(fields: [userId], references: [id])
   userId          String?
-  dailyClose      DailyClose?       @relation(fields: [dailyCloseId], references: [id], onDelete: SetNull)
+  dailyClose      DailyClose?               @relation(fields: [dailyCloseId], references: [id], onDelete: SetNull)
   dailyCloseId    Int?
   referenceId     String?
   note            String?
-  createdAt       DateTime          @default(now())
+  createdAt       DateTime                  @default(now())
 
   @@index([productId])
   @@index([createdAt])
@@ -386,6 +440,7 @@ model Branch {
   // Relaciones
   inventories            Inventory[]
   rawMaterialInventories RawMaterialInventory[]
+  inventoryLots          InventoryLot[]
   productionLogs         ProductionLog[]
   stockMovementsFrom     StockMovement[]        @relation("FromBranch")
   stockMovementsTo       StockMovement[]        @relation("ToBranch")
@@ -694,6 +749,7 @@ model TelegramLinkAttempt {
 enum AlertType {
   RAW_MATERIAL_LOW
   PRODUCT_LOW
+  PRODUCT_EXPIRY
 }
 
 model AlertState {

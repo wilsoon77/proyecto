@@ -44,6 +44,7 @@ export interface StockMovement {
   toBranchName: string | null
   referenceId: string | null
   note: string | null
+  expiresAt: string | null
   createdAt: string
   createdBy: string | null
 }
@@ -56,6 +57,26 @@ export interface CreateStockMovementData {
   toBranchSlug?: string
   referenceId?: string
   note?: string
+  expiresAt?: string
+  alertAt?: string
+}
+
+export interface ExpirationLot {
+  id: number
+  product: { id: number; name: string; slug: string; origin: 'PRODUCIDO' | 'COMPRADO' }
+  branch: { id: number; name: string; slug: string }
+  sourceType: 'PRODUCCION' | 'COMPRA' | 'TRANSFERENCIA' | 'SOBRANTE' | 'APERTURA'
+  initialQuantity: number
+  availableQuantity: number
+  expiresAt: string | null
+  alertAt: string | null
+  daysLeft: number | null
+  status: 'EXPIRED' | 'EXPIRING_SOON' | 'NO_DATE'
+}
+
+export interface ExpirationResponse {
+  data: ExpirationLot[]
+  summary: { expired: number; expiring: number; noDate: number }
 }
 
 export interface StockMovementsListResponse {
@@ -115,6 +136,23 @@ export const inventoryService = {
    */
   async createMovement(data: CreateStockMovementData): Promise<StockMovement> {
     return api.post<StockMovement>('/stock-movements', data)
+  },
+
+  async listExpirations(params?: {
+    branch?: string
+    status?: 'all' | 'expired' | 'expiring' | 'no-date'
+    days?: number
+  }): Promise<ExpirationResponse> {
+    const searchParams = new URLSearchParams()
+    if (params?.branch) searchParams.set('branch', params.branch)
+    if (params?.status) searchParams.set('status', params.status)
+    if (params?.days !== undefined) searchParams.set('days', String(params.days))
+    const query = searchParams.toString()
+    return api.get<ExpirationResponse>(`/inventory/expirations${query ? `?${query}` : ''}`)
+  },
+
+  async checkExpirations(): Promise<{ scanned: number; warningCount: number; expiredCount: number; checkedAt: string }> {
+    return api.post('/inventory/expirations/check')
   },
 
   /**

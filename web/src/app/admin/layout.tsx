@@ -6,7 +6,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useAuth } from "@/context/AuthContext"
 import { ToastProvider } from "@/components/ui/toast"
-import { LayoutDashboard, Package, ShoppingCart, Users, Settings, LogOut, ChevronLeft, ChevronRight, Menu, Bell, User, Warehouse, Tag, Building2, X, Factory as History, Flame, Store, BookOpen, ChartBar as BarChart3, ArrowRightLeft, ChevronDown, ClipboardCheck } from "lucide-react"
+import { LayoutDashboard, Package, ShoppingCart, Users, Settings, LogOut, ChevronLeft, ChevronRight, Menu, Bell, User, Warehouse, Tag, Building2, X, Factory as History, Flame, Store, BookOpen, ChartBar as BarChart3, ArrowRightLeft, ChevronDown, ClipboardCheck, CalendarClock } from "lucide-react"
 import { GlobalSearch } from "@/components/ui/global-search"
 import NotificationBell from "@/components/layout/NotificationBell"
 
@@ -46,6 +46,7 @@ const adminNavItems: NavItem[] = [
       { href: "/admin/inventario", label: "Resumen", icon: BarChart3, exact: true, roles: ["ADMIN", "MANAGER"] },
       { href: "/admin/inventario/productos", label: "Productos", icon: Package, roles: ["ADMIN", "MANAGER"] },
       { href: "/admin/inventario/materias-primas", label: "Materias Primas", icon: Warehouse, roles: ["ADMIN", "MANAGER"] },
+      { href: "/admin/inventario/caducidades", label: "Caducidades", icon: CalendarClock, roles: ["ADMIN", "MANAGER"] },
       { href: "/admin/inventario/movimiento", label: "Movimientos", icon: ArrowRightLeft, roles: ["ADMIN", "MANAGER"] },
       { href: "/admin/inventario/conteo", label: "Conteo Físico", icon: ClipboardCheck, roles: ["ADMIN", "MANAGER"] },
     ]

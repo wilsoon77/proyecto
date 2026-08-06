@@ -44,6 +44,8 @@ const PLACEHOLDERS_HELP: Record<string, string[]> = {
   'inventory.low_stock': ['{productName}', '{current}', '{branchName}'],
   'inventory.raw_material_low': ['{materialName}', '{current}', '{unit}', '{branchName}'],
   'inventory.loss_detected': ['{type}', '{quantity}', '{productName}'],
+  'inventory.expiration_warning': ['{productName}', '{quantity}', '{expiresAt}', '{branchName}'],
+  'inventory.expired_stock': ['{productName}', '{quantity}', '{expiresAt}', '{branchName}'],
   'production.assigned': ['{recipeName}', '{branchName}'],
   'system.audit_alert': ['{count}', '{ip}']
 }

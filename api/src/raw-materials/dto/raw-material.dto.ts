@@ -26,16 +26,19 @@ export class UpdateRawMaterialDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  @MinLength(1)
   name?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsNumber()
+  @Min(0)
   costPerUnit?: number;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsNumber()
+  @Min(0)
   minStock?: number;
 
   @ApiPropertyOptional()

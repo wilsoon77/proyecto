@@ -64,6 +64,8 @@ export interface ApiProduct {
   comboQuantity?: number
   comboPrice?: number
   unitsPerTray?: number
+  tracksExpiration: boolean
+  expirationAlertDays: number
   images: ApiProductImage[]
   available?: number // Stock disponible (si se incluye branch)
   createdAt: string
@@ -88,6 +90,8 @@ export interface CreateProductDto {
   isNew?: boolean
   categoryId: number
   origin?: 'PRODUCIDO' | 'COMPRADO'
+  tracksExpiration?: boolean
+  expirationAlertDays?: number
 }
 
 export interface UpdateProductDto {
@@ -102,6 +106,8 @@ export interface UpdateProductDto {
   origin?: 'PRODUCIDO' | 'COMPRADO'
   isActive?: boolean
   isAvailable?: boolean
+  tracksExpiration?: boolean
+  expirationAlertDays?: number
 }
 
 // ==================== CATEGORÍAS ====================

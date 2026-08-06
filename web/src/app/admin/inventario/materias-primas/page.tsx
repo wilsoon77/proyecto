@@ -1,8 +1,9 @@
 "use client"
 
 import { useEffect, useState, useCallback, useMemo } from "react"
+import type { FormEvent } from "react"
 import Link from "next/link"
-import { Package, RefreshCw, Plus, Search, TriangleAlert as AlertTriangle, Building2, ChevronLeft, ChevronRight, Warehouse, Loader as Loader2 } from "lucide-react"
+import { Package, RefreshCw, Plus, Search, TriangleAlert as AlertTriangle, ChevronLeft, ChevronRight, Warehouse, Pencil } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { 
   branchesService,
@@ -22,6 +23,7 @@ export default function MateriasPrimasPage() {
   // Estados de carga e inventario
   const [rawInventory, setRawInventory] = useState<RawMaterialInventory[]>([])
   const [rawMaterials, setRawMaterials] = useState<RawMaterial[]>([])
+  const [rawMaterialCatalog, setRawMaterialCatalog] = useState<RawMaterial[]>([])
   const [branches, setBranches] = useState<Branch[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isRawLoading, setIsRawLoading] = useState(false)
@@ -31,6 +33,7 @@ export default function MateriasPrimasPage() {
   const [selectedBranch, setSelectedBranch] = useState<string>("all")
   const [searchQuery, setSearchQuery] = useState("")
   const [showLowStock, setShowLowStock] = useState(false)
+  const [showInactiveMaterials, setShowInactiveMaterials] = useState(false)
 
   // Paginación
   const ITEMS_PER_PAGE = 10
@@ -39,6 +42,8 @@ export default function MateriasPrimasPage() {
   // Modales
   const [showPurchaseModal, setShowPurchaseModal] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingMaterial, setEditingMaterial] = useState<RawMaterial | null>(null)
 
   // Form de Compra/Ingreso
   const [purchaseMaterialId, setPurchaseMaterialId] = useState<number | "">("")
@@ -53,6 +58,13 @@ export default function MateriasPrimasPage() {
   const [newCost, setNewCost] = useState<number>(0)
   const [newMinStock, setNewMinStock] = useState<number>(10)
   const [isCreateSubmitting, setIsCreateSubmitting] = useState(false)
+
+  // Form de edición de materia prima
+  const [editName, setEditName] = useState("")
+  const [editCost, setEditCost] = useState<number>(0)
+  const [editMinStock, setEditMinStock] = useState<number>(0)
+  const [editIsActive, setEditIsActive] = useState(true)
+  const [isEditSubmitting, setIsEditSubmitting] = useState(false)
 
   const { showToast } = useToast()
 
@@ -83,6 +95,7 @@ export default function MateriasPrimasPage() {
         rawMaterialsService.list(false)
       ])
       setRawInventory(invData)
+      setRawMaterialCatalog(listData)
       setRawMaterials(listData.filter(r => r.isActive))
     } catch (err) {
       console.error("Error loading raw materials:", err)
@@ -132,6 +145,53 @@ export default function MateriasPrimasPage() {
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   )
+
+  const filteredMaterialCatalog = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    return rawMaterialCatalog.filter((material) => {
+      if (!showInactiveMaterials && !material.isActive) return false
+      return !query || material.name.toLowerCase().includes(query)
+    })
+  }, [rawMaterialCatalog, searchQuery, showInactiveMaterials])
+
+  const openEditModal = (materialId: number) => {
+    const material = rawMaterialCatalog.find((item) => item.id === materialId)
+    if (!material) {
+      showToast("No se encontró la materia prima", "error")
+      return
+    }
+
+    setEditingMaterial(material)
+    setEditName(material.name)
+    setEditCost(Number(material.costPerUnit))
+    setEditMinStock(material.minStock === null ? 0 : Number(material.minStock))
+    setEditIsActive(material.isActive)
+    setShowEditModal(true)
+  }
+
+  const handleEditSubmit = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!editingMaterial || !editName.trim() || editCost < 0 || editMinStock < 0 || isEditSubmitting) return
+
+    setIsEditSubmitting(true)
+    try {
+      await rawMaterialsService.update(editingMaterial.id, {
+        name: editName.trim(),
+        costPerUnit: Number(editCost),
+        minStock: Number(editMinStock),
+        isActive: editIsActive,
+      })
+      showToast("Materia prima actualizada con éxito", "success")
+      setShowEditModal(false)
+      setEditingMaterial(null)
+      await loadRawMaterials()
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Error al actualizar materia prima"
+      showToast(msg, "error")
+    } finally {
+      setIsEditSubmitting(false)
+    }
+  }
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-cream min-h-screen">
@@ -407,6 +467,60 @@ export default function MateriasPrimasPage() {
         )}
       </div>
 
+      {/* Catálogo y configuración de materias primas */}
+      <section className="mt-6 bg-card rounded-xl shadow-sm border border-border overflow-hidden">
+        <div className="px-4 sm:px-6 py-4 border-b border-border flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">Catálogo de materias primas</h2>
+            <p className="text-sm text-muted-foreground">Edita el costo y el umbral de alerta sin modificar el inventario existente.</p>
+          </div>
+          <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showInactiveMaterials}
+              onChange={(e) => setShowInactiveMaterials(e.target.checked)}
+              className="w-4 h-4 text-primary rounded focus:ring-primary"
+            />
+            Mostrar desactivadas
+          </label>
+        </div>
+
+        {filteredMaterialCatalog.length === 0 ? (
+          <div className="p-8 text-center text-muted-foreground/70">
+            No hay materias primas que coincidan con el filtro.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 p-4 sm:p-6">
+            {filteredMaterialCatalog.map((material) => (
+              <div key={material.id} className="rounded-lg border border-border p-4 bg-cream/30">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-foreground truncate">{material.name}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Unidad base: {material.baseUnit} · Costo: Q{Number(material.costPerUnit).toFixed(4)}
+                    </p>
+                  </div>
+                  <span className={`shrink-0 rounded-full px-2 py-1 text-[11px] font-semibold ${
+                    material.isActive ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground'
+                  }`}>
+                    {material.isActive ? 'Activa' : 'Inactiva'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-3 mt-4 pt-3 border-t border-border">
+                  <span className="text-xs text-muted-foreground">
+                    Alerta mínima: <strong className="text-foreground">{material.minStock === null ? 'Sin umbral' : `${Number(material.minStock).toFixed(2)} ${material.baseUnit}`}</strong>
+                  </span>
+                  <Button variant="outline" size="sm" onClick={() => openEditModal(material.id)}>
+                    <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                    Editar
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
       {/* MODAL 1: Registrar Compra de Materia Prima */}
       {showPurchaseModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
@@ -635,6 +749,92 @@ export default function MateriasPrimasPage() {
                   disabled={isCreateSubmitting}
                 >
                   {isCreateSubmitting ? "Creando..." : "Crear Insumo"}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 3: Editar materia prima */}
+      {showEditModal && editingMaterial && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+          <div className="bg-card rounded-2xl shadow-xl border border-border max-w-md w-full p-6 relative overflow-hidden">
+            <h3 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+              <Pencil className="h-5 w-5 text-primary" />
+              Editar materia prima
+            </h3>
+
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <div>
+                <label className="text-xs text-muted-foreground font-bold block mb-1">Nombre del insumo</label>
+                <input
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full border border-border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-card h-10 px-3"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs text-muted-foreground font-bold block mb-1">Unidad base</label>
+                  <input
+                    value={editingMaterial.baseUnit}
+                    readOnly
+                    className="w-full border border-border rounded-lg p-2 text-sm bg-muted text-muted-foreground h-10 px-3"
+                  />
+                  <p className="text-[10px] text-muted-foreground/70 mt-1">No se cambia para proteger recetas e inventario.</p>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground font-bold block mb-1">Costo unitario (Q)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.0001"
+                    value={editCost}
+                    onChange={(e) => setEditCost(Number(e.target.value))}
+                    className="w-full border border-border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-card h-10 px-3"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs text-muted-foreground font-bold block mb-1">Stock de alerta mínima</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={editMinStock}
+                  onChange={(e) => setEditMinStock(Number(e.target.value))}
+                  className="w-full border border-border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-card h-10 px-3"
+                  required
+                />
+                <p className="text-[10px] text-muted-foreground/60 mt-1">La alerta se evalúa por sucursal usando este umbral.</p>
+              </div>
+
+              <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={editIsActive}
+                  onChange={(e) => setEditIsActive(e.target.checked)}
+                  className="w-4 h-4 text-primary rounded focus:ring-primary"
+                />
+                Materia prima activa
+              </label>
+
+              <div className="flex gap-3 justify-end pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => { setShowEditModal(false); setEditingMaterial(null) }}
+                  disabled={isEditSubmitting}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" className="bg-primary hover:bg-primary/90 text-white font-bold" disabled={isEditSubmitting}>
+                  {isEditSubmitting ? "Guardando..." : "Guardar cambios"}
                 </Button>
               </div>
             </form>

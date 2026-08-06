@@ -5,6 +5,7 @@ import { ExpressAdapter } from '@nestjs/platform-express';
 import express from 'express';
 import { ProductsController } from '../src/products/products.controller.js';
 import { ProductsService } from '../src/products/products.service.js';
+import { AuditService } from '../src/audit/audit.service.js';
 
 const mockService: Partial<ProductsService> = {
   findAll: async () => ({
@@ -24,6 +25,8 @@ const mockService: Partial<ProductsService> = {
         comboQuantity: 3,
         comboPrice: 1.25,
         unitsPerTray: 36,
+        tracksExpiration: false,
+        expirationAlertDays: 3,
         available: 24,
         images: [],
       },
@@ -40,6 +43,7 @@ describe('Products pagination (e2e)', () => {
       controllers: [ProductsController],
       providers: [
         { provide: ProductsService, useValue: mockService },
+        { provide: AuditService, useValue: { getUserName: jest.fn(), log: jest.fn() } },
       ],
     }).compile();
 

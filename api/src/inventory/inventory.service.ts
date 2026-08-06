@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { addDays, dateKeyToUtcDate, todayBusinessDate } from '../common/time/business-date.js';
 
 /**
  * InventoryService — Servicio puro para consultas de inventario de producto terminado.
@@ -93,5 +94,78 @@ export class InventoryService {
         available: i.quantity - i.reserved,
         updatedAt: i.updatedAt,
       }));
+  }
+
+  /**
+   * Lists active lots that are expired, close to expiration, or still lack a
+   * date. The latter is useful during the migration from aggregate inventory.
+   */
+  async listExpirations(
+    branchSlug?: string,
+    status: 'all' | 'expired' | 'expiring' | 'no-date' = 'all',
+    days = 7,
+  ) {
+    const branch = branchSlug
+      ? await this.prisma.branch.findUnique({ where: { slug: branchSlug }, select: { id: true } })
+      : undefined;
+    if (branchSlug && !branch) return { data: [], summary: { expired: 0, expiring: 0, noDate: 0 } };
+
+    const safeDays = Math.max(0, Math.min(365, Math.floor(days)));
+    const todayKey = todayBusinessDate();
+    const today = dateKeyToUtcDate(todayKey);
+    const horizon = dateKeyToUtcDate(addDays(todayKey, safeDays));
+    const baseWhere: any = {
+      availableQuantity: { gt: 0 },
+      ...(branch ? { branchId: branch.id } : {}),
+      product: { tracksExpiration: true },
+    };
+
+    if (status === 'expired') baseWhere.expiresAt = { lt: today };
+    if (status === 'expiring') baseWhere.expiresAt = { gte: today, lte: horizon };
+    if (status === 'no-date') baseWhere.expiresAt = null;
+    if (status === 'all') {
+      baseWhere.OR = [
+        { expiresAt: { lt: today } },
+        { expiresAt: { gte: today, lte: horizon } },
+        { expiresAt: null },
+      ];
+    }
+
+    const lots = await this.prisma.inventoryLot.findMany({
+      where: baseWhere,
+      include: {
+        product: { select: { id: true, name: true, slug: true, origin: true } },
+        branch: { select: { id: true, name: true, slug: true } },
+      },
+      orderBy: [{ expiresAt: 'asc' }, { createdAt: 'asc' }],
+    });
+
+    const data = lots.map((lot) => {
+      const expiresAt = lot.expiresAt?.toISOString().slice(0, 10) ?? null;
+      const daysLeft = expiresAt
+        ? Math.round((dateKeyToUtcDate(expiresAt).getTime() - today.getTime()) / 86_400_000)
+        : null;
+      return {
+        id: lot.id,
+        product: lot.product,
+        branch: lot.branch,
+        sourceType: lot.sourceType,
+        initialQuantity: lot.initialQuantity,
+        availableQuantity: lot.availableQuantity,
+        expiresAt,
+        alertAt: lot.alertAt?.toISOString().slice(0, 10) ?? null,
+        daysLeft,
+        status: expiresAt === null ? 'NO_DATE' : daysLeft !== null && daysLeft < 0 ? 'EXPIRED' : 'EXPIRING_SOON',
+      };
+    });
+
+    return {
+      data,
+      summary: {
+        expired: data.filter((lot) => lot.status === 'EXPIRED').length,
+        expiring: data.filter((lot) => lot.status === 'EXPIRING_SOON').length,
+        noDate: data.filter((lot) => lot.status === 'NO_DATE').length,
+      },
+    };
   }
 }

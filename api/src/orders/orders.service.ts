@@ -5,6 +5,7 @@ import { OrderStatus, Prisma, StockMovementType } from '@prisma/client';
 import { LoggerService } from '../common/logger/logger.service.js';
 import { SystemConfigService } from '../system-config/system-config.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
+import { InventoryLotsService } from '../inventory/inventory-lots.service.js';
 import { assertOrderTransition, FULFILLMENT_STATUSES, ORDER_STATUS_LABELS } from './order-state.js';
 
 function formatOrderNumber(id: number) {
@@ -34,6 +35,7 @@ export class OrdersService {
     private readonly logger: LoggerService,
     private readonly systemConfig: SystemConfigService,
     private readonly notificationsService: NotificationsService,
+    private readonly inventoryLotsService: InventoryLotsService,
   ) {}
 
   async reserve(dto: ReserveOrderDto, userId?: string) {
@@ -89,7 +91,8 @@ export class OrdersService {
         const inv = await tx.inventory.findUnique({
           where: { productId_branchId: { productId: p.id, branchId: branch.id } },
         });
-        const available = (inv?.quantity ?? 0) - (inv?.reserved ?? 0);
+        const sellableLots = await this.inventoryLotsService.getSellableQuantity(tx, p.id, branch.id);
+        const available = (sellableLots ?? inv?.quantity ?? 0) - (inv?.reserved ?? 0);
         if (available < item.quantity) throw new BadRequestException(`Stock insuficiente: ${p.name}`);
       }
 
@@ -179,7 +182,8 @@ export class OrdersService {
         const inv = await tx.inventory.findUnique({
           where: { productId_branchId: { productId: p.id, branchId: branch.id } },
         });
-        const available = (inv?.quantity ?? 0) - (inv?.reserved ?? 0);
+        const sellableLots = await this.inventoryLotsService.getSellableQuantity(tx, p.id, branch.id);
+        const available = (sellableLots ?? inv?.quantity ?? 0) - (inv?.reserved ?? 0);
         if (available < item.quantity) {
           throw new BadRequestException(`Stock disponible insuficiente: ${p.name}`);
         }
@@ -243,7 +247,7 @@ export class OrdersService {
         });
 
         // Create stock movement
-        await tx.stockMovement.create({
+        const movement = await tx.stockMovement.create({
           data: {
              productId: p.id,
              fromBranchId: branch.id,
@@ -251,6 +255,12 @@ export class OrdersService {
              quantity: item.quantity,
              userId 
           }
+        });
+        await this.inventoryLotsService.consumeLots(tx, {
+          productId: p.id,
+          branchId: branch.id,
+          quantity: item.quantity,
+          stockMovementId: movement.id,
         });
       }
 
@@ -350,6 +360,11 @@ export class OrdersService {
           throw new BadRequestException('Stock físico insuficiente');
         }
 
+        const sellableLots = await this.inventoryLotsService.getSellableQuantity(tx, item.productId, current.branchId);
+        if (sellableLots !== null && sellableLots < item.quantity) {
+          throw new BadRequestException('La reserva contiene unidades vencidas o sin lote vigente');
+        }
+
         await tx.inventory.update({
           where: { id: inventory.id },
           data: {
@@ -357,7 +372,7 @@ export class OrdersService {
             quantity: { decrement: item.quantity },
           },
         });
-        await tx.stockMovement.create({
+        const movement = await tx.stockMovement.create({
           data: {
             productId: item.productId,
             fromBranchId: current.branchId,
@@ -365,6 +380,12 @@ export class OrdersService {
             quantity: item.quantity,
             userId,
           },
+        });
+        await this.inventoryLotsService.consumeLots(tx, {
+          productId: item.productId,
+          branchId: current.branchId,
+          quantity: item.quantity,
+          stockMovementId: movement.id,
         });
       }
 

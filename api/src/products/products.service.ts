@@ -1,6 +1,15 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { generateSlug } from '../common/utils/slug.util.js';
+import { ProductOrigin } from '@prisma/client';
+
+function normalizeOrigin(value: string | undefined, fallback: ProductOrigin): ProductOrigin {
+  if (value === undefined) return fallback;
+  if (value !== ProductOrigin.PRODUCIDO && value !== ProductOrigin.COMPRADO) {
+    throw new BadRequestException('El origen debe ser PRODUCIDO o COMPRADO');
+  }
+  return value;
+}
 
 export interface ProductDTO {
   id: number;
@@ -14,6 +23,8 @@ export interface ProductDTO {
   comboQuantity?: number;
   comboPrice?: number;
   unitsPerTray?: number;
+  tracksExpiration?: boolean;
+  expirationAlertDays?: number;
   available?: number; // stock disponible (quantity - reserved)
 }
 
@@ -116,6 +127,8 @@ export class ProductsService {
         comboQuantity: p.comboQuantity ?? undefined,
         comboPrice: p.comboPrice ? Number(p.comboPrice) : undefined,
         unitsPerTray: p.unitsPerTray ?? undefined,
+        tracksExpiration: p.tracksExpiration,
+        expirationAlertDays: p.expirationAlertDays,
         available,
         images: p.images.map(img => ({ id: img.id, url: img.url, position: img.position })),
       };
@@ -162,6 +175,8 @@ export class ProductsService {
       comboQuantity: p.comboQuantity ?? undefined,
       comboPrice: p.comboPrice ? Number(p.comboPrice) : undefined,
       unitsPerTray: p.unitsPerTray ?? undefined,
+      tracksExpiration: p.tracksExpiration,
+      expirationAlertDays: p.expirationAlertDays,
       available,
       images: p.images.map((img: any) => ({
         id: img.id,
@@ -205,6 +220,8 @@ export class ProductsService {
       comboQuantity: p.comboQuantity ?? undefined,
       comboPrice: p.comboPrice ? Number(p.comboPrice) : undefined,
       unitsPerTray: p.unitsPerTray ?? undefined,
+      tracksExpiration: p.tracksExpiration,
+      expirationAlertDays: p.expirationAlertDays,
       images: p.images.map(img => ({ id: img.id, url: img.url, position: img.position })),
       available,
       createdAt: p.createdAt,
@@ -212,7 +229,7 @@ export class ProductsService {
     };
   }
 
-  async updateById(id: number, data: { sku?: string; name?: string; description?: string; basePrice?: number; comboQuantity?: number; comboPrice?: number; unitsPerTray?: number; categorySlug?: string; origin?: string; isNew?: boolean; isActive?: boolean; isAvailable?: boolean; imageUrl?: string }) {
+  async updateById(id: number, data: { sku?: string; name?: string; description?: string; basePrice?: number; comboQuantity?: number; comboPrice?: number; unitsPerTray?: number; categorySlug?: string; origin?: string; isNew?: boolean; isActive?: boolean; isAvailable?: boolean; tracksExpiration?: boolean; expirationAlertDays?: number; imageUrl?: string }) {
     const prod = await this.prisma.product.findUnique({ where: { id } });
     if (!prod) throw new NotFoundException('Producto no encontrado');
     
@@ -240,6 +257,14 @@ export class ProductsService {
       if (!category) throw new BadRequestException('Categoría no encontrada');
       categoryId = category.id;
     }
+
+    const nextOrigin = normalizeOrigin(data.origin, prod.origin);
+    const tracksExpiration = nextOrigin === ProductOrigin.COMPRADO
+      ? (data.tracksExpiration ?? prod.tracksExpiration)
+      : false;
+    const expirationAlertDays = nextOrigin === ProductOrigin.COMPRADO
+      ? Math.max(0, data.expirationAlertDays ?? prod.expirationAlertDays)
+      : 3;
     
     const updated = await this.prisma.product.update({ 
       where: { id }, 
@@ -251,9 +276,11 @@ export class ProductsService {
         basePrice: data.basePrice, 
         comboQuantity: data.comboQuantity, 
         comboPrice: data.comboPrice, 
-        unitsPerTray: data.unitsPerTray, 
+        unitsPerTray: nextOrigin === ProductOrigin.COMPRADO ? null : data.unitsPerTray,
         categoryId, 
-        origin: (data.origin as any) ?? undefined, 
+        origin: nextOrigin,
+        tracksExpiration,
+        expirationAlertDays,
         isNew: data.isNew, 
         isActive: data.isActive, 
         isAvailable: data.isAvailable 
@@ -283,6 +310,9 @@ export class ProductsService {
       basePrice: Number(updated.basePrice),
       category: updated.category.name,
       categorySlug: updated.category.slug,
+      origin: updated.origin,
+      tracksExpiration: updated.tracksExpiration,
+      expirationAlertDays: updated.expirationAlertDays,
       isNew: updated.isNew,
       isActive: updated.isActive,
     };
@@ -322,7 +352,7 @@ export class ProductsService {
     return invAll.reduce((sum, i) => sum + (i.quantity - i.reserved), 0);
   }
 
-  async create(data: { sku: string; name: string; description?: string; basePrice: number; comboQuantity?: number; comboPrice?: number; unitsPerTray?: number; categorySlug: string; origin?: string; isNew?: boolean; isAvailable?: boolean; imageUrl?: string }) {
+  async create(data: { sku: string; name: string; description?: string; basePrice: number; comboQuantity?: number; comboPrice?: number; unitsPerTray?: number; categorySlug: string; origin?: string; isNew?: boolean; isAvailable?: boolean; tracksExpiration?: boolean; expirationAlertDays?: number; imageUrl?: string }) {
     const category = await this.prisma.category.findUnique({ where: { slug: data.categorySlug } });
     if (!category) throw new BadRequestException('Categoría no encontrada');
     
@@ -337,6 +367,12 @@ export class ProductsService {
     while (await this.prisma.product.findUnique({ where: { slug } })) {
       slug = `${baseSlug}-${suffix++}`;
     }
+
+    const origin = normalizeOrigin(data.origin, ProductOrigin.PRODUCIDO);
+    const tracksExpiration = origin === ProductOrigin.COMPRADO && (data.tracksExpiration ?? false);
+    const expirationAlertDays = origin === ProductOrigin.COMPRADO
+      ? Math.max(0, data.expirationAlertDays ?? 3)
+      : 3;
     
     // Usar transacción para crear producto + inventarios en todas las sucursales
     return this.prisma.$transaction(async (tx) => {
@@ -350,9 +386,11 @@ export class ProductsService {
           basePrice: data.basePrice, 
           comboQuantity: data.comboQuantity, 
           comboPrice: data.comboPrice, 
-          unitsPerTray: data.unitsPerTray, 
+          unitsPerTray: origin === ProductOrigin.COMPRADO ? null : data.unitsPerTray,
           categoryId: category.id, 
-          origin: (data.origin as any) ?? undefined, 
+          origin,
+          tracksExpiration,
+          expirationAlertDays,
           isNew: data.isNew ?? false, 
           isAvailable: data.isAvailable ?? true 
         } 
@@ -388,7 +426,7 @@ export class ProductsService {
     });
   }
 
-  async update(slug: string, data: { sku?: string; name?: string; description?: string; basePrice?: number; comboQuantity?: number; comboPrice?: number; unitsPerTray?: number; categorySlug?: string; origin?: string; isNew?: boolean; isActive?: boolean; isAvailable?: boolean }) {
+  async update(slug: string, data: { sku?: string; name?: string; description?: string; basePrice?: number; comboQuantity?: number; comboPrice?: number; unitsPerTray?: number; categorySlug?: string; origin?: string; isNew?: boolean; isActive?: boolean; isAvailable?: boolean; tracksExpiration?: boolean; expirationAlertDays?: number }) {
     const prod = await this.prisma.product.findUnique({ where: { slug } });
     if (!prod) throw new NotFoundException('Producto no encontrado');
     if (data.sku && data.sku !== prod.sku) {
@@ -412,7 +450,14 @@ export class ProductsService {
       if (!category) throw new BadRequestException('Categoría no encontrada');
       categoryId = category.id;
     }
-    const updated = await this.prisma.product.update({ where: { id: prod.id }, data: { sku: data.sku, name: data.name, slug: newSlug, description: data.description, basePrice: data.basePrice, comboQuantity: data.comboQuantity, comboPrice: data.comboPrice, unitsPerTray: data.unitsPerTray, categoryId, origin: (data.origin as any) ?? undefined, isNew: data.isNew, isActive: data.isActive, isAvailable: data.isAvailable } });
+    const nextOrigin = normalizeOrigin(data.origin, prod.origin);
+    const tracksExpiration = nextOrigin === ProductOrigin.COMPRADO
+      ? (data.tracksExpiration ?? prod.tracksExpiration)
+      : false;
+    const expirationAlertDays = nextOrigin === ProductOrigin.COMPRADO
+      ? Math.max(0, data.expirationAlertDays ?? prod.expirationAlertDays)
+      : 3;
+    const updated = await this.prisma.product.update({ where: { id: prod.id }, data: { sku: data.sku, name: data.name, slug: newSlug, description: data.description, basePrice: data.basePrice, comboQuantity: data.comboQuantity, comboPrice: data.comboPrice, unitsPerTray: nextOrigin === ProductOrigin.COMPRADO ? null : data.unitsPerTray, categoryId, origin: nextOrigin, tracksExpiration, expirationAlertDays, isNew: data.isNew, isActive: data.isActive, isAvailable: data.isAvailable } });
     return updated;
   }
 
@@ -437,20 +482,29 @@ export class ProductsService {
     return { deleted: true, slug };
   }
 
-  async putUpdate(slug: string, data: { name: string; description?: string; basePrice: number; comboQuantity?: number; comboPrice?: number; unitsPerTray?: number; categorySlug: string; origin?: string; isNew?: boolean }) {
+  async putUpdate(slug: string, data: { name: string; description?: string; basePrice: number; comboQuantity?: number; comboPrice?: number; unitsPerTray?: number; categorySlug: string; origin?: string; isNew?: boolean; tracksExpiration?: boolean; expirationAlertDays?: number }) {
     const prod = await this.prisma.product.findUnique({ where: { slug } });
     if (!prod) throw new NotFoundException('Producto no encontrado');
     const category = await this.prisma.category.findUnique({ where: { slug: data.categorySlug } });
     if (!category) throw new BadRequestException('Categoría no encontrada');
+    const nextOrigin = normalizeOrigin(data.origin, prod.origin);
+    const tracksExpiration = nextOrigin === ProductOrigin.COMPRADO
+      ? (data.tracksExpiration ?? prod.tracksExpiration)
+      : false;
+    const expirationAlertDays = nextOrigin === ProductOrigin.COMPRADO
+      ? Math.max(0, data.expirationAlertDays ?? prod.expirationAlertDays)
+      : 3;
     const updated = await this.prisma.product.update({ where: { id: prod.id }, data: {
       name: data.name,
       description: data.description,
       basePrice: data.basePrice,
       comboQuantity: data.comboQuantity,
       comboPrice: data.comboPrice,
-      unitsPerTray: data.unitsPerTray,
+      unitsPerTray: nextOrigin === ProductOrigin.COMPRADO ? null : data.unitsPerTray,
       categoryId: category.id,
-      origin: (data.origin as any) ?? prod.origin,
+      origin: nextOrigin,
+      tracksExpiration,
+      expirationAlertDays,
       isNew: data.isNew ?? false,
     }});
     return updated;

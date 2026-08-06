@@ -20,4 +20,5 @@ export class CreateProductionLogDto {
   @IsOptional()
   @IsString()
   note?: string;
+
 }

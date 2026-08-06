@@ -2,10 +2,8 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Package, ShoppingCart, Users, Banknote, Clock, TriangleAlert as AlertTriangle, ArrowUpRight, ChartBar as BarChart3, ChartPie as PieChartIcon, TrendingDown, Store, MapPin, ChartLine as LineChartIcon, RefreshCw, Calendar, Boxes, Tag, FileText } from "lucide-react"
+import { Package, ShoppingCart, Users, Banknote, Clock, TriangleAlert as AlertTriangle, ArrowUpRight, ChartPie as PieChartIcon, TrendingDown, Store, MapPin, ChartLine as LineChartIcon, RefreshCw, Calendar, Boxes, Tag } from "lucide-react"
 import {
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -195,21 +193,10 @@ export default function AdminDashboardPage() {
     color: STATUS_COLORS[item.status] || "#94a3b8"
   })) || []
 
-  const topProductsData = stats?.topProducts?.slice(0, 5).map(p => ({
-    name: p.name.length > 15 ? p.name.substring(0, 15) + '...' : p.name,
-    totalSold: p.totalSold
-  })) || []
-
   const weeklySalesData = stats?.weeklySales?.map(d => ({
     date: formatDateChart(d.date),
     ventas: d.totalSales,
     ordenes: d.orderCount
-  })) || []
-
-  const salesByBranchData = stats?.salesByBranch?.map(b => ({
-    name: b.branchName,
-    ventas: b.totalSales,
-    ordenes: b.orderCount
   })) || []
 
   return (
@@ -387,36 +374,16 @@ export default function AdminDashboardPage() {
 
       {/* Gráficas principales */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Gráfica principal - depende del rol y selección */}
+        {/* Resumen operativo: el análisis histórico detallado vive en Reportes */}
         <div className="bg-card rounded-xl shadow-sm p-6 border border-border">
-          <div className="flex items-center gap-2 mb-6">
-            {selectedBranch === "global" ? (
-              <>
-                <BarChart3 className="h-5 w-5 text-muted-foreground/60" />
-                <h3 className="font-semibold text-foreground">Ventas por Sucursal</h3>
-              </>
-            ) : (
-              <>
-                <LineChartIcon className="h-5 w-5 text-muted-foreground/60" />
-                <h3 className="font-semibold text-foreground">Ventas de la Semana</h3>
-              </>
-            )}
+          <div className="flex items-center justify-between gap-3 mb-6">
+            <div className="flex items-center gap-2">
+              <LineChartIcon className="h-5 w-5 text-muted-foreground/60" />
+              <h3 className="font-semibold text-foreground">Ventas de los últimos 7 días</h3>
+            </div>
+            <Link href="/admin/reportes" className="text-xs text-primary hover:underline whitespace-nowrap">Ver análisis</Link>
           </div>
-          
-          {selectedBranch === "global" && salesByBranchData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={salesByBranchData} layout="vertical" margin={{ left: 20, right: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
-                <XAxis type="number" tickFormatter={(v) => `Q${v}`} />
-                <YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 12 }} />
-                <Tooltip 
-                  formatter={(value) => [formatCurrency(Number(value)), 'Ventas']}
-                  contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }}
-                />
-                <Bar dataKey="ventas" fill="#10b981" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : weeklySalesData.length > 0 ? (
+          {weeklySalesData.length > 0 ? (
             <ResponsiveContainer width="100%" height={280}>
               <LineChart data={weeklySalesData} margin={{ left: 20, right: 20, top: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -477,35 +444,8 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* Segunda fila de gráficas */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Top productos */}
-        <div className="bg-card rounded-xl shadow-sm p-6 border border-border">
-          <div className="flex items-center gap-2 mb-6">
-            <BarChart3 className="h-5 w-5 text-muted-foreground/60" />
-            <h3 className="font-semibold text-foreground">Productos Más Vendidos</h3>
-          </div>
-          {topProductsData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={topProductsData} layout="vertical" margin={{ left: 20, right: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
-                <XAxis type="number" />
-                <YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 12 }} />
-                <Tooltip 
-                  formatter={(value) => [`${value} unidades`, 'Vendidos']}
-                  contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }}
-                />
-                <Bar dataKey="totalSold" fill="#f59e0b" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="h-64 flex items-center justify-center text-muted-foreground/60">
-              <p>No hay datos de ventas disponibles</p>
-            </div>
-          )}
-        </div>
-
-        {/* Alerta de Stock Bajo */}
+      {/* Acciones operativas: el stock bajo conserva prioridad en el dashboard */}
+      <div className="grid grid-cols-1 gap-6 mb-8">
         <div className="bg-card rounded-xl shadow-sm p-6 border border-border">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">

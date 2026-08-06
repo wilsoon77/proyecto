@@ -62,6 +62,17 @@ export class RawMaterialsService {
   }
 
   /**
+   * Desactivación lógica para conservar recetas, inventario e historial.
+   */
+  async remove(id: number) {
+    await this.findOne(id);
+    return this.prisma.rawMaterial.update({
+      where: { id },
+      data: { isActive: false },
+    });
+  }
+
+  /**
    * Obtener inventario de materia prima por sucursal
    */
   async getInventory(branchId?: number) {

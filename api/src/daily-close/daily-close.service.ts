@@ -5,10 +5,11 @@ import {
   NotFoundException,
   Optional,
 } from '@nestjs/common';
-import { Prisma, StockMovementType } from '@prisma/client';
+import { InventoryLotSource, Prisma, StockMovementType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateDailyCloseDto } from './dto/create-daily-close.dto.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
+import { InventoryLotsService } from '../inventory/inventory-lots.service.js';
 
 const BUSINESS_TIMEZONE = process.env.STORE_TIMEZONE || 'America/Guatemala';
 const DEFAULT_MAX_RETRO_DAYS = 3;
@@ -94,6 +95,7 @@ function summarize(items: Array<{ soldQty: number; wasteQty: number; surplusQty:
 export class DailyCloseService {
   constructor(
     private readonly prisma: PrismaService,
+    @Optional() private readonly inventoryLotsService?: InventoryLotsService,
     @Optional() private readonly notificationsService?: NotificationsService,
   ) {}
 
@@ -253,7 +255,7 @@ export class DailyCloseService {
             }
 
             if (soldQty > 0) {
-              await tx.stockMovement.create({
+              const movement = await tx.stockMovement.create({
                 data: {
                   productId: item.productId,
                   fromBranchId: branchId,
@@ -265,9 +267,17 @@ export class DailyCloseService {
                   note: `Venta no registrada calculada en cierre ${dto.closeDate}`,
                 },
               });
+              if (this.inventoryLotsService) {
+                await this.inventoryLotsService.consumeLots(tx, {
+                  productId: item.productId,
+                  branchId,
+                  quantity: soldQty,
+                  stockMovementId: movement.id,
+                });
+              }
             }
             if (wasteQty > 0) {
-              await tx.stockMovement.create({
+              const movement = await tx.stockMovement.create({
                 data: {
                   productId: item.productId,
                   fromBranchId: branchId,
@@ -279,9 +289,18 @@ export class DailyCloseService {
                   note: `Merma declarada en cierre ${dto.closeDate}`,
                 },
               });
+              if (this.inventoryLotsService) {
+                await this.inventoryLotsService.consumeLots(tx, {
+                  productId: item.productId,
+                  branchId,
+                  quantity: wasteQty,
+                  stockMovementId: movement.id,
+                  allowExpired: true,
+                });
+              }
             }
             if (surplusQty > 0) {
-              await tx.stockMovement.create({
+              const movement = await tx.stockMovement.create({
                 data: {
                   productId: item.productId,
                   toBranchId: branchId,
@@ -293,6 +312,15 @@ export class DailyCloseService {
                   note: `Sobrante físico detectado en cierre ${dto.closeDate}`,
                 },
               });
+              if (this.inventoryLotsService) {
+                await this.inventoryLotsService.createInboundLot(tx, {
+                  productId: item.productId,
+                  branchId,
+                  quantity: surplusQty,
+                  sourceType: InventoryLotSource.SOBRANTE,
+                  sourceMovementId: movement.id,
+                });
+              }
             }
 
             if (inventory) {

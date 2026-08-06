@@ -29,6 +29,9 @@ interface Product {
   slug: string
   category?: string
   categorySlug?: string
+  origin?: 'PRODUCIDO' | 'COMPRADO'
+  tracksExpiration?: boolean
+  expirationAlertDays?: number
 }
 
 function getProductUnit(product?: Product | null): string {
@@ -135,6 +138,7 @@ function MovimientoForm() {
   const searchParams = useSearchParams()
   const productSlug = searchParams.get("producto")
   const branchSlug = searchParams.get("sucursal")
+  const requestedExpirationDate = searchParams.get("caducidad") || ""
   
   const { user } = useAuth()
   const { showToast } = useToast()
@@ -161,6 +165,7 @@ function MovimientoForm() {
   const [movementToBranch, setMovementToBranch] = useState<string>(branchSlug || "")
   const [movementNote, setMovementNote] = useState("")
   const [movementReference, setMovementReference] = useState("")
+  const [movementExpiresAt, setMovementExpiresAt] = useState(requestedExpirationDate)
   
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitSuccess, setSubmitSuccess] = useState(false)
@@ -176,6 +181,25 @@ function MovimientoForm() {
   )
 
   const currentProduct = products.find(p => p.slug === selectedProduct)
+  const requiresExpirationDate = movementType === 'COMPRA' &&
+    currentProduct?.origin === 'COMPRADO' &&
+    currentProduct?.tracksExpiration === true
+
+  const calculatedAlertDate = movementExpiresAt && currentProduct?.expirationAlertDays !== undefined
+    ? (() => {
+        const date = new Date(`${movementExpiresAt}T00:00:00Z`)
+        date.setUTCDate(date.getUTCDate() - Math.max(0, currentProduct.expirationAlertDays || 0))
+        return date.toISOString().slice(0, 10)
+      })()
+    : ""
+
+  useEffect(() => {
+    // Mientras el producto aún se carga no debemos borrar la fecha recibida
+    // desde el alta del producto.
+    if (selectedProduct && currentProduct && !requiresExpirationDate) {
+      setMovementExpiresAt("")
+    }
+  }, [selectedProduct, currentProduct, requiresExpirationDate])
 
   // Cargar datos
   useEffect(() => {
@@ -218,6 +242,25 @@ function MovimientoForm() {
       setProductSearch(productSlug)
     }
   }, [productSlug])
+
+  useEffect(() => {
+    const requestedType = searchParams.get("tipo") as StockMovementType | null
+    if (requestedType && requestedType in MOVEMENT_TYPES && requestedType !== 'VENTA') {
+      setMovementType(requestedType)
+    }
+  }, [searchParams])
+
+  useEffect(() => {
+    if (
+      requestedExpirationDate &&
+      selectedProduct === productSlug &&
+      currentProduct?.origin === 'COMPRADO' &&
+      currentProduct.tracksExpiration === true &&
+      movementType === 'COMPRA'
+    ) {
+      setMovementExpiresAt(requestedExpirationDate)
+    }
+  }, [requestedExpirationDate, productSlug, selectedProduct, currentProduct, movementType])
 
   useEffect(() => {
     if (productSlug && products.length > 0) {
@@ -337,6 +380,10 @@ function MovimientoForm() {
       setSubmitError("La cantidad debe ser mayor a 0")
       return
     }
+    if (requiresExpirationDate && !movementExpiresAt) {
+      setSubmitError("Debe indicar la fecha de caducidad de este producto comprado")
+      return
+    }
 
     setIsSubmitting(true)
     setSubmitError(null)
@@ -348,6 +395,8 @@ function MovimientoForm() {
         productSlug: selectedProduct,
         note: movementNote || undefined,
         referenceId: movementReference || undefined,
+        expiresAt: requiresExpirationDate ? movementExpiresAt : undefined,
+        alertAt: requiresExpirationDate ? calculatedAlertDate || undefined : undefined,
       }
 
       if (typeConfig.requiresFromBranch) {
@@ -366,6 +415,7 @@ function MovimientoForm() {
         setMovementQuantity(1)
         setMovementNote("")
         setMovementReference("")
+        setMovementExpiresAt("")
       } else {
         setSubmitSuccess(true)
         setTimeout(() => {
@@ -602,6 +652,40 @@ function MovimientoForm() {
                       ))
                     }
                   </select>
+                </div>
+              )}
+
+              {requiresExpirationDate && (
+                <div className="md:col-span-2 rounded-lg border border-warning/30 bg-warning/5 p-4">
+                  <div className="flex items-center justify-between gap-3 mb-3">
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Caducidad del lote</p>
+                      <p className="text-xs text-muted-foreground">Solo se solicita para productos comprados configurados con caducidad.</p>
+                    </div>
+                    <span className="text-xs font-medium rounded-full bg-primary/10 text-primary px-2 py-1">Compra</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">Fecha de caducidad *</label>
+                      <input
+                        type="date"
+                        value={movementExpiresAt}
+                        onChange={(e) => setMovementExpiresAt(e.target.value)}
+                        className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-card"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">Fecha de alerta</label>
+                      <input
+                        type="date"
+                        value={calculatedAlertDate}
+                        readOnly
+                        className="w-full px-4 py-3 border border-border rounded-lg bg-muted text-muted-foreground"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">Se calcula con {currentProduct?.expirationAlertDays ?? 3} día(s) de anticipación.</p>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

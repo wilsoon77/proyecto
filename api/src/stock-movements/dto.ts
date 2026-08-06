@@ -1,4 +1,4 @@
-import { IsInt, IsPositive, IsString, IsOptional, IsEnum, IsArray, ValidateNested, Min } from 'class-validator';
+import { IsInt, IsPositive, IsString, IsOptional, IsEnum, IsArray, ValidateNested, Min, IsDateString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { StockMovementType } from '@prisma/client';
 import { Type } from 'class-transformer';
@@ -36,6 +36,16 @@ export class CreateStockMovementDto {
   @IsOptional()
   @IsString()
   note?: string;
+
+  @ApiProperty({ example: '2026-08-10', required: false, description: 'Fecha de caducidad del lote comprado; solo aplica si el producto tiene activado el control de caducidad' })
+  @IsOptional()
+  @IsDateString()
+  expiresAt?: string;
+
+  @ApiProperty({ example: '2026-08-07', required: false, description: 'Fecha personalizada de alerta; si se omite se calcula automáticamente' })
+  @IsOptional()
+  @IsDateString()
+  alertAt?: string;
 }
 
 export class ReconcileItemDto {

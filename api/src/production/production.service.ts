@@ -1,8 +1,9 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, Optional } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateProductionLogDto } from './dto/production.dto.js';
-import { Prisma } from '@prisma/client';
+import { InventoryLotSource, Prisma } from '@prisma/client';
 import { NotificationsService } from '../notifications/notifications.service.js';
+import { InventoryLotsService } from '../inventory/inventory-lots.service.js';
 
 /**
  * ProductionService — Motor de producción del sistema PanaderIA.
@@ -23,6 +24,7 @@ export class ProductionService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
+    @Optional() private readonly inventoryLotsService?: InventoryLotsService,
   ) {}
 
   /**
@@ -132,7 +134,7 @@ export class ProductionService {
         });
 
         // 5. Crear StockMovement de tipo PRODUCCION
-        await tx.stockMovement.create({
+        const movement = await tx.stockMovement.create({
           data: {
             productId: recipe.productId,
             toBranchId: branchId,
@@ -143,6 +145,16 @@ export class ProductionService {
             note: `Amasijo: ${recipe.name} — ${traysProduced} latas`,
           },
         });
+
+        if (this.inventoryLotsService) {
+          await this.inventoryLotsService.createInboundLot(tx, {
+            productId: recipe.productId,
+            branchId,
+            quantity: unitsProduced,
+            sourceType: InventoryLotSource.PRODUCCION,
+            sourceMovementId: movement.id,
+          });
+        }
 
         return log;
       }, {

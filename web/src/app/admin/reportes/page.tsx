@@ -18,7 +18,7 @@ import {
 } from "recharts"
 import type { MouseHandlerDataParam } from "recharts"
 import { analyticsService, branchesService, forecastService } from "@/lib/api"
-import type { AnalyticsOverview, DrilldownResponse, ForecastRun } from "@/lib/api"
+import type { AnalyticsFilters, AnalyticsOverview, DrilldownResponse, ForecastRun } from "@/lib/api"
 import { formatCurrency } from "@/lib/utils"
 import { useAuth } from "@/context/AuthContext"
 
@@ -45,6 +45,9 @@ export default function ReportsPage() {
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null)
   const [forecastRuns, setForecastRuns] = useState<ForecastRun[]>([])
   const [drilldown, setDrilldown] = useState<DrilldownResponse | null>(null)
+  const [drilldownMetric, setDrilldownMetric] = useState<NonNullable<AnalyticsFilters["metric"]>>("sales")
+  const [drilldownLevel, setDrilldownLevel] = useState<NonNullable<AnalyticsFilters["level"]>>("day")
+  const [isDrilling, setIsDrilling] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isRunning, setIsRunning] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -110,19 +113,28 @@ export default function ReportsPage() {
     return [...actual, ...forecastSeries.map((point) => ({ date: point.date, prevista: point.prevista, inferior: point.inferior, superior: point.superior }))]
   }, [overview?.series, forecastSeries])
 
-  const openDrilldown = async (level: "branch" | "day" | "product" | "source", product?: number | null, nextBranch?: number) => {
+  const openDrilldown = async (
+    level: NonNullable<AnalyticsFilters["level"]> = drilldownLevel,
+    product?: number | null,
+    nextBranch?: number,
+    selectedDate?: string,
+  ) => {
     const selectedBranch = nextBranch ?? scopedBranchId
+    const detailFrom = selectedDate || from
+    const detailTo = selectedDate || to
+    setIsDrilling(true)
     try {
       const result = await analyticsService.drilldown({
         branchId: selectedBranch,
         productId: product ?? undefined,
-        from,
-        to,
+        from: detailFrom,
+        to: detailTo,
         level,
-        metric: "sales",
+        metric: drilldownMetric,
         pageSize: 50,
       })
       setDrilldown(result)
+      setDrilldownLevel(level)
       if (nextBranch) {
         setBranchId(String(nextBranch))
         router.replace(`/admin/reportes?branchId=${nextBranch}&from=${from}&to=${to}`)
@@ -130,6 +142,8 @@ export default function ReportsPage() {
     } catch (drillError) {
       console.error(drillError)
       setError("No fue posible cargar el detalle seleccionado.")
+    } finally {
+      setIsDrilling(false)
     }
   }
 
@@ -158,6 +172,11 @@ export default function ReportsPage() {
       setIsRunning(false)
     }
   }
+
+  const totalDemand = overview?.kpis.totalDemandQty || 0
+  const productionCoverage = totalDemand > 0
+    ? Math.round((overview?.kpis.productionQty || 0) / totalDemand * 100)
+    : 0
 
   return (
     <div className="min-h-screen bg-cream p-4 sm:p-6 lg:p-8">
@@ -207,16 +226,48 @@ export default function ReportsPage() {
         </div>
       </div>
 
+      <div className="mb-6 flex flex-col gap-3 rounded-xl border border-primary/10 bg-primary/5 p-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold text-foreground">Explorar detalle</p>
+          <p className="mt-1 text-xs text-muted-foreground">Selecciona la métrica y el nivel; también puedes abrirlo pulsando una gráfica.</p>
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:items-end">
+          <label className="text-xs font-medium text-muted-foreground">
+            Métrica
+            <select value={drilldownMetric} onChange={(event) => setDrilldownMetric(event.target.value as NonNullable<AnalyticsFilters["metric"]>)} className="mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground">
+              <option value="sales">Ventas / demanda</option>
+              <option value="orders">Pedidos</option>
+              <option value="production">Producción</option>
+              <option value="waste">Merma</option>
+            </select>
+          </label>
+          <label className="text-xs font-medium text-muted-foreground">
+            Agrupar por
+            <select value={drilldownLevel} onChange={(event) => setDrilldownLevel(event.target.value as NonNullable<AnalyticsFilters["level"]>)} className="mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground">
+              <option value="day">Día</option>
+              <option value="branch">Sucursal</option>
+              <option value="product">Producto</option>
+              <option value="source">Fuente</option>
+            </select>
+          </label>
+          <button onClick={() => void openDrilldown()} disabled={isDrilling} className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-white hover:bg-primary/90 disabled:opacity-50">
+            {isDrilling ? "Cargando..." : "Ver detalle"}
+          </button>
+        </div>
+      </div>
+
       {isLoading && !overview ? (
         <div className="rounded-xl bg-card p-10 text-center text-muted-foreground">Cargando analítica…</div>
       ) : (
         <>
-          <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-6">
+          <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8">
             {[
               ["Ingresos", formatCurrency(overview?.kpis.revenue || 0)],
               ["Órdenes", overview?.kpis.orderCount || 0],
+              ["Ticket promedio", formatCurrency(overview?.kpis.averageOrderValue || 0)],
               ["Demanda", `${overview?.kpis.totalDemandQty || 0} uds`],
               ["Producción", `${overview?.kpis.productionQty || 0} uds`],
+              ["Cobertura producción", `${productionCoverage}%`],
               ["Merma", `${overview?.kpis.wasteQty || 0} uds`],
               ["Stock bajo", overview?.kpis.lowStockAlerts || 0],
             ].map(([label, value]) => (
@@ -229,13 +280,14 @@ export default function ReportsPage() {
 
           <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
             <section className="rounded-xl border border-border bg-card p-5 shadow-sm">
-              <div className="mb-4 flex items-center justify-between">
-                <div className="flex items-center gap-2"><BarChart3 className="h-5 w-5 text-primary" /><h2 className="font-semibold">Demanda, producción y ventas</h2></div>
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2"><BarChart3 className="h-5 w-5 text-primary" /><h2 className="font-semibold">Demanda, producción y ventas</h2></div>
                 <span className="text-xs text-muted-foreground/60">Click en un día para detalle</span>
               </div>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={actualForecastSeries} onClick={(state: MouseHandlerDataParam) => {
-                  if (typeof state.activeTooltipIndex === "number" && actualForecastSeries[state.activeTooltipIndex]?.date) openDrilldown("day")
+                  const selectedDate = typeof state.activeTooltipIndex === "number" ? actualForecastSeries[state.activeTooltipIndex]?.date : undefined
+                  if (selectedDate) void openDrilldown("day", undefined, undefined, selectedDate)
                 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" tickFormatter={formatDay} tick={{ fontSize: 11 }} />
@@ -342,7 +394,50 @@ export default function ReportsPage() {
 
           {overview?.lowStockProducts.length ? <section className="mb-6 rounded-xl border border-destructive/10 bg-card p-5 shadow-sm"><div className="mb-4 flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-destructive" /><h2 className="font-semibold">Inventario bajo relacionado con la demanda</h2></div><div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">{overview.lowStockProducts.slice(0, 8).map((item) => <Link key={`${item.branchId}-${item.productId}`} href={`/admin/inventario?productId=${item.productId}`} className="rounded-lg border border-border p-3 hover:border-primary/30"><p className="font-medium">{item.productName}</p><p className="text-xs text-muted-foreground">{item.branchName}</p><p className="mt-1 text-destructive">{item.available} uds disponibles</p></Link>)}</div></section> : null}
 
-          {drilldown && <section className="rounded-xl border border-border bg-card p-5 shadow-sm"><div className="mb-4 flex items-center justify-between"><div><div className="mb-1 flex items-center gap-2"><CalendarDays className="h-5 w-5 text-primary" /><h2 className="font-semibold">Detalle: {drilldown.level === "product" ? "producto" : drilldown.level === "branch" ? "sucursal" : "día"}</h2></div><p className="text-xs text-muted-foreground">{drilldown.range.from} a {drilldown.range.to} · {drilldown.meta.total} registros</p></div><button onClick={() => setDrilldown(null)} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" /> Cerrar</button></div><div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead><tr className="border-b text-xs uppercase text-muted-foreground"><th className="pb-3">Nivel</th><th className="pb-3">Demanda</th><th className="pb-3">Pedidos/POS</th><th className="pb-3">Cierre</th><th className="pb-3">Producción</th><th className="pb-3">Merma</th><th className="pb-3">Fuentes</th></tr></thead><tbody>{drilldown.data.map((row, index) => <tr key={`${row.key}-${index}`} className="border-b last:border-0"><td className="py-3 font-medium">{row.productName || row.branchName || row.date || row.businessDate || row.reference || "—"}</td><td className="py-3">{row.demandQty ?? row.quantity ?? 0}</td><td className="py-3">{row.orderQty ?? "—"}</td><td className="py-3">{row.dailyCloseQty ?? "—"}</td><td className="py-3">{row.productionQty ?? "—"}</td><td className="py-3">{row.wasteQty ?? "—"}</td><td className="py-3">{row.source ? <Link href={row.href || "#"} className="text-primary hover:underline">{row.source}</Link> : row.productId ? <button onClick={() => openDrilldown("source", row.productId)} className="text-primary hover:underline">Ver fuentes</button> : "—"}</td></tr>)}</tbody></table></div></section>}
+          {drilldown && (
+            <section className="rounded-xl border border-border bg-card p-5 shadow-sm">
+              <div className="mb-4 flex items-center justify-between gap-4">
+                <div>
+                  <div className="mb-1 flex items-center gap-2">
+                    <CalendarDays className="h-5 w-5 text-primary" />
+                    <h2 className="font-semibold">
+                      Detalle: {drilldown.level === "product" ? "producto" : drilldown.level === "branch" ? "sucursal" : drilldown.level === "source" ? "fuente" : "día"}
+                    </h2>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {drilldown.range.from} a {drilldown.range.to} · {drilldown.meta.total} registros · Métrica: {drilldown.metric}
+                  </p>
+                </div>
+                <button onClick={() => setDrilldown(null)} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+                  <ArrowLeft className="h-4 w-4" /> Cerrar
+                </button>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead>
+                    <tr className="border-b text-xs uppercase text-muted-foreground">
+                      <th className="pb-3">Nivel</th><th className="pb-3">Demanda</th><th className="pb-3">Pedidos/POS</th><th className="pb-3">Cierre</th><th className="pb-3">Producción</th><th className="pb-3">Merma</th><th className="pb-3">Fuentes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {drilldown.data.map((row, index) => (
+                      <tr key={`${row.key}-${index}`} className="border-b last:border-0">
+                        <td className="py-3 font-medium">{row.productName || row.branchName || row.date || row.businessDate || row.reference || "—"}</td>
+                        <td className="py-3">{row.demandQty ?? row.quantity ?? 0}</td>
+                        <td className="py-3">{row.orderQty ?? "—"}</td>
+                        <td className="py-3">{row.dailyCloseQty ?? "—"}</td>
+                        <td className="py-3">{row.productionQty ?? "—"}</td>
+                        <td className="py-3">{row.wasteQty ?? "—"}</td>
+                        <td className="py-3">
+                          {row.source ? <Link href={row.href || "#"} className="text-primary hover:underline">{row.source}</Link> : row.productId ? <button onClick={() => void openDrilldown("source", row.productId)} className="text-primary hover:underline">Ver fuentes</button> : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
         </>
       )}
     </div>

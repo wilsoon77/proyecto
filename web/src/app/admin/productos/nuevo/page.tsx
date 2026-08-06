@@ -50,6 +50,10 @@ export default function NuevoProductoPage() {
   const [comboQuantity, setComboQuantity] = useState("")
   const [comboPrice, setComboPrice] = useState("")
   const [unitsPerTray, setUnitsPerTray] = useState("")
+  const [origin, setOrigin] = useState<'PRODUCIDO' | 'COMPRADO'>('PRODUCIDO')
+  const [tracksExpiration, setTracksExpiration] = useState(false)
+  const [expirationAlertDays, setExpirationAlertDays] = useState("3")
+  const [initialExpirationDate, setInitialExpirationDate] = useState("")
 
   useEffect(() => {
     loadCategories()
@@ -160,6 +164,10 @@ export default function NuevoProductoPage() {
       setError("Selecciona una categoría")
       return
     }
+    if (origin === 'COMPRADO' && tracksExpiration && !initialExpirationDate) {
+      setError("Indica la fecha de vencimiento del primer lote")
+      return
+    }
 
     setIsLoading(true)
 
@@ -167,7 +175,7 @@ export default function NuevoProductoPage() {
       // Encontrar el slug de la categoría seleccionada
       const selectedCategory = categories.find(c => c.id.toString() === categoryId)
       
-      await adminService.createProduct({
+      const createdProduct = await adminService.createProduct({
         sku: `SKU-${slug.trim().toUpperCase()}`,
         name: name.trim(),
         slug: slug.trim(),
@@ -175,8 +183,22 @@ export default function NuevoProductoPage() {
         basePrice: parseFloat(price),
         categorySlug: selectedCategory?.slug || '',
         isNew,
+        origin,
+        tracksExpiration: origin === 'COMPRADO' && tracksExpiration,
+        expirationAlertDays: origin === 'COMPRADO' ? Math.max(0, parseInt(expirationAlertDays || "3", 10)) : 3,
         imageUrl: imageUrl || undefined,
       })
+
+      if (origin === 'COMPRADO' && tracksExpiration && initialExpirationDate) {
+        const params = new URLSearchParams({
+          producto: createdProduct.slug,
+          tipo: 'COMPRA',
+          caducidad: initialExpirationDate,
+        })
+        showToast(`Producto "${name.trim()}" creado. Registra ahora su stock inicial.`, "success")
+        router.push(`/admin/inventario/movimiento?${params.toString()}`)
+        return
+      }
 
       showToast(`Producto "${name.trim()}" creado correctamente`, "success")
       router.push("/admin/productos")
@@ -390,6 +412,56 @@ export default function NuevoProductoPage() {
             </label>
           </div>
 
+          {/* Origen y caducidad */}
+          <div className="bg-cream rounded-lg p-4 space-y-4">
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">Cómo se abastece</h3>
+              <p className="text-xs text-muted-foreground mt-1">Define si el producto se hornea o se compra a un proveedor.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <label className={`cursor-pointer rounded-lg border p-3 ${origin === 'PRODUCIDO' ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                <input type="radio" name="origin" value="PRODUCIDO" checked={origin === 'PRODUCIDO'} onChange={() => { setOrigin('PRODUCIDO'); setTracksExpiration(false); setInitialExpirationDate("") }} className="mr-2" />
+                <span className="text-sm font-medium">Producido</span>
+                <span className="block text-xs text-muted-foreground mt-1">Usa receta y materia prima.</span>
+              </label>
+              <label className={`cursor-pointer rounded-lg border p-3 ${origin === 'COMPRADO' ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                <input type="radio" name="origin" value="COMPRADO" checked={origin === 'COMPRADO'} onChange={() => { setOrigin('COMPRADO'); setUnitsPerTray('') }} className="mr-2" />
+                <span className="text-sm font-medium">Comprado</span>
+                <span className="block text-xs text-muted-foreground mt-1">Se ingresa desde un proveedor.</span>
+              </label>
+            </div>
+            {origin === 'COMPRADO' && (
+              <div className="border-t border-border pt-4 space-y-3">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input type="checkbox" checked={tracksExpiration} onChange={(e) => { const checked = e.target.checked; setTracksExpiration(checked); if (!checked) setInitialExpirationDate("") }} className="h-4 w-4 rounded border-input text-primary focus:ring-primary" />
+                  <span>
+                    <span className="block text-sm font-medium text-foreground">Controlar fecha de caducidad</span>
+                    <span className="block text-xs text-muted-foreground">El sistema avisará antes de que se venza el lote.</span>
+                  </span>
+                </label>
+                {tracksExpiration && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">Fecha de vencimiento del primer lote *</label>
+                      <input
+                        type="date"
+                        value={initialExpirationDate}
+                        onChange={(e) => setInitialExpirationDate(e.target.value)}
+                        className="w-full px-3 py-2 border border-border rounded-lg text-sm"
+                        required
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">Se precargará al registrar el stock inicial.</p>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">Avisar con cuántos días de anticipación</label>
+                      <input type="number" min="0" value={expirationAlertDays} onChange={(e) => setExpirationAlertDays(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-sm" />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Combo Pricing */}
           <div className="bg-accent rounded-lg p-4 space-y-4">
             <h3 className="text-sm font-semibold text-primary">Precio por Volumen (Combo)</h3>
@@ -418,17 +490,19 @@ export default function NuevoProductoPage() {
                   className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Unidades/Lata</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={unitsPerTray}
-                  onChange={(e) => setUnitsPerTray(e.target.value)}
-                  placeholder="Ej: 36"
-                  className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
+              {origin === 'PRODUCIDO' && (
+                <div>
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">Unidades/Lata</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={unitsPerTray}
+                    onChange={(e) => setUnitsPerTray(e.target.value)}
+                    placeholder="Ej: 36"
+                    className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsInt, IsNumber, IsOptional, IsString, Max, Min, MinLength } from 'class-validator';
+import { IsBoolean, IsEnum, IsInt, IsNumber, IsOptional, IsString, Max, Min, MinLength } from 'class-validator';
+import { ProductOrigin } from '@prisma/client';
 
 export class ProductDto {
   @ApiProperty({ example: 1 }) id!: number;
@@ -13,6 +14,8 @@ export class ProductDto {
   @ApiProperty({ example: 3, nullable: true, description: 'Cantidad del combo (ej: 3 para "3x1.25")' }) comboQuantity?: number;
   @ApiProperty({ example: 1.25, nullable: true, description: 'Precio del combo' }) comboPrice?: number;
   @ApiProperty({ example: 36, nullable: true, description: 'Unidades por lata (solo PRODUCIDO)' }) unitsPerTray?: number;
+  @ApiProperty({ example: false, description: 'Si el inventario controla caducidad por lote' }) tracksExpiration?: boolean;
+  @ApiProperty({ example: 3, description: 'Días antes de caducar para generar la alerta' }) expirationAlertDays?: number;
   @ApiProperty({ example: 24 }) available?: number;
 }
 
@@ -42,13 +45,19 @@ export class CreateProductDto {
   @IsString() categorySlug!: string;
 
   @ApiProperty({ example: 'PRODUCIDO', required: false, enum: ['PRODUCIDO','COMPRADO'] })
-  @IsOptional() @IsString() origin?: string;
+  @IsOptional() @IsEnum(ProductOrigin) origin?: ProductOrigin;
 
   @ApiProperty({ example: true, required: false })
   @IsOptional() @IsBoolean() isNew?: boolean;
 
   @ApiProperty({ example: true, required: false, description: 'Si está disponible para venta' })
   @IsOptional() @IsBoolean() isAvailable?: boolean;
+
+  @ApiProperty({ example: false, required: false, description: 'Activa el control de caducidad por lote' })
+  @IsOptional() @IsBoolean() tracksExpiration?: boolean;
+
+  @ApiProperty({ example: 3, required: false, minimum: 0, description: 'Días antes de caducar para alertar' })
+  @IsOptional() @IsInt() @Min(0) expirationAlertDays?: number;
 
   @ApiProperty({ example: 'https://example.com/image.jpg', required: false, description: 'URL de la imagen del producto' })
   @IsOptional() @IsString() imageUrl?: string;
@@ -80,7 +89,7 @@ export class UpdateProductDto {
   @IsOptional() @IsString() categorySlug?: string;
 
   @ApiProperty({ example: 'PRODUCIDO', required: false, enum: ['PRODUCIDO','COMPRADO'] })
-  @IsOptional() @IsString() origin?: string;
+  @IsOptional() @IsEnum(ProductOrigin) origin?: ProductOrigin;
 
   @ApiProperty({ example: true, required: false })
   @IsOptional() @IsBoolean() isNew?: boolean;
@@ -90,6 +99,12 @@ export class UpdateProductDto {
 
   @ApiProperty({ example: true, required: false, description: 'Si está disponible para venta' })
   @IsOptional() @IsBoolean() isAvailable?: boolean;
+
+  @ApiProperty({ example: false, required: false, description: 'Activa el control de caducidad por lote' })
+  @IsOptional() @IsBoolean() tracksExpiration?: boolean;
+
+  @ApiProperty({ example: 3, required: false, minimum: 0, description: 'Días antes de caducar para alertar' })
+  @IsOptional() @IsInt() @Min(0) expirationAlertDays?: number;
 
   @ApiProperty({ example: 'https://example.com/image.jpg', required: false, description: 'URL de la imagen del producto' })
   @IsOptional() @IsString() imageUrl?: string;
@@ -105,7 +120,7 @@ export class PutProductDto {
   @ApiProperty({ example: 'pan-dulce' })
   @IsString() categorySlug!: string;
   @ApiProperty({ example: 'PRODUCIDO', enum: ['PRODUCIDO','COMPRADO'], required: false })
-  @IsOptional() @IsString() origin?: string;
+  @IsOptional() @IsEnum(ProductOrigin) origin?: ProductOrigin;
   @ApiProperty({ example: true, required: false })
   @IsOptional() @IsBoolean() isNew?: boolean;
   @ApiProperty({ example: 3, required: false, description: 'Cantidad del combo' })
@@ -114,4 +129,10 @@ export class PutProductDto {
   @IsOptional() @IsNumber() @Min(0) comboPrice?: number;
   @ApiProperty({ example: 36, required: false, description: 'Unidades por lata' })
   @IsOptional() @IsInt() @Min(1) unitsPerTray?: number;
+
+  @ApiProperty({ example: false, required: false, description: 'Activa el control de caducidad por lote' })
+  @IsOptional() @IsBoolean() tracksExpiration?: boolean;
+
+  @ApiProperty({ example: 3, required: false, minimum: 0, description: 'Días antes de caducar para alertar' })
+  @IsOptional() @IsInt() @Min(0) expirationAlertDays?: number;
 }

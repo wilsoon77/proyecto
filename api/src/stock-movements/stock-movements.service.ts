@@ -1,9 +1,10 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateStockMovementDto, ReconcileInventoryDto } from './dto.js';
-import { StockMovementType } from '@prisma/client';
+import { InventoryLotSource, Prisma, StockMovementType } from '@prisma/client';
 import { LoggerService } from '../common/logger/logger.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
+import { InventoryLotsService } from '../inventory/inventory-lots.service.js';
 
 @Injectable()
 export class StockMovementsService {
@@ -11,6 +12,7 @@ export class StockMovementsService {
     private readonly prisma: PrismaService,
     private readonly logger: LoggerService,
     private readonly notificationsService: NotificationsService,
+    private readonly inventoryLotsService: InventoryLotsService,
   ) {}
 
   async create(dto: CreateStockMovementDto, userId?: string) {
@@ -84,11 +86,54 @@ export class StockMovementsService {
           toBranchId: toBranch?.id,
           type: dto.type,
           quantity: dto.quantity,
+          // La fecha solo pertenece a una entrada de COMPRA de un producto
+          // comprado con control de caducidad. Nunca se registra para panes
+          // PRODUCIDO, aunque un cliente envíe el campo manualmente.
+          expiresAt: dto.type === StockMovementType.COMPRA && product.origin === 'COMPRADO' && product.tracksExpiration && dto.expiresAt
+            ? new Date(dto.expiresAt)
+            : undefined,
           userId: userId,
           referenceId: dto.referenceId,
           note: dto.note,
         },
       });
+
+      if (dto.type === StockMovementType.TRANSFERENCIA) {
+        await this.inventoryLotsService.transferLots(tx, {
+          productId: product.id,
+          fromBranchId: fromBranch!.id,
+          toBranchId: toBranch!.id,
+          quantity: dto.quantity,
+          stockMovementId: movement.id,
+        });
+      } else if (
+        dto.type === StockMovementType.PRODUCCION ||
+        dto.type === StockMovementType.COMPRA ||
+        dto.type === StockMovementType.SOBRANTE
+      ) {
+        const sourceType = dto.type === StockMovementType.PRODUCCION
+          ? InventoryLotSource.PRODUCCION
+          : dto.type === StockMovementType.COMPRA
+            ? InventoryLotSource.COMPRA
+            : InventoryLotSource.SOBRANTE;
+        await this.inventoryLotsService.createInboundLot(tx, {
+          productId: product.id,
+          branchId: toBranch!.id,
+          quantity: dto.quantity,
+          sourceType,
+          sourceMovementId: movement.id,
+          expiresAt: dto.expiresAt,
+          alertAt: dto.alertAt,
+        });
+      } else {
+        await this.inventoryLotsService.consumeLots(tx, {
+          productId: product.id,
+          branchId: fromBranch!.id,
+          quantity: dto.quantity,
+          stockMovementId: movement.id,
+          allowExpired: dto.type === StockMovementType.MERMA || dto.type === StockMovementType.PERDIDA_ROBO,
+        });
+      }
 
       // Auditoría
       this.logger.auditStockMovement(
@@ -101,6 +146,10 @@ export class StockMovementsService {
       );
 
       return movement;
+    }, {
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+      maxWait: 5000,
+      timeout: 10000,
     });
 
     // Enviar alertas si hay merma o robo
@@ -256,7 +305,7 @@ export class StockMovementsService {
         }
 
         // Registrar movimiento
-        await tx.stockMovement.create({
+        const movement = await tx.stockMovement.create({
           data: {
             productId: item.productId,
             fromBranchId: diff < 0 ? branch.id : undefined,
@@ -267,6 +316,24 @@ export class StockMovementsService {
             note: dto.note ? `[Conteo] ${dto.note}` : '[Conteo] Ajuste por reconciliación de inventario',
           },
         });
+
+        if (diff < 0) {
+          await this.inventoryLotsService.consumeLots(tx, {
+            productId: item.productId,
+            branchId: branch.id,
+            quantity: absQty,
+            stockMovementId: movement.id,
+            allowExpired: true,
+          });
+        } else {
+          await this.inventoryLotsService.createInboundLot(tx, {
+            productId: item.productId,
+            branchId: branch.id,
+            quantity: absQty,
+            sourceType: InventoryLotSource.SOBRANTE,
+            sourceMovementId: movement.id,
+          });
+        }
 
         results.push({
           productId: item.productId,

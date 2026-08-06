@@ -3,9 +3,10 @@ import { StockMovementsController } from './stock-movements.controller.js';
 import { StockMovementsService } from './stock-movements.service.js';
 import { PrismaModule } from '../prisma/prisma.module.js';
 import { LoggerService } from '../common/logger/logger.service.js';
+import { InventoryModule } from '../inventory/inventory.module.js';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, InventoryModule],
   controllers: [StockMovementsController],
   providers: [StockMovementsService, LoggerService],
   exports: [StockMovementsService],

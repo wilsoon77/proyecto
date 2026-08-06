@@ -13,6 +13,8 @@ export interface CreateProductData {
   categorySlug: string
   isNew?: boolean
   origin?: 'PRODUCIDO' | 'COMPRADO'
+  tracksExpiration?: boolean
+  expirationAlertDays?: number
   imageUrl?: string
 }
 
@@ -30,6 +32,8 @@ export interface UpdateProductData {
   isActive?: boolean
   isAvailable?: boolean
   origin?: 'PRODUCIDO' | 'COMPRADO'
+  tracksExpiration?: boolean
+  expirationAlertDays?: number
   imageUrl?: string
 }
 
@@ -45,6 +49,8 @@ export interface ProductDetailResponse {
   categorySlug: string
   categoryId: number
   origin: string
+  tracksExpiration: boolean
+  expirationAlertDays: number
   isNew: boolean
   isActive: boolean
   isAvailable: boolean

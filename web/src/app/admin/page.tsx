@@ -29,6 +29,8 @@ interface DashboardResponse {
     monthlyLossesQty: number
     monthlyLossesCount: number
     lowStockAlerts: number
+    outOfStockAlerts: number
+    expiringAlerts: number
   }
   summary: {
     totalOrders: number
@@ -268,8 +270,8 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
-      {/* KPIs Principales (3 tarjetas grandes) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      {/* KPIs Principales (5 tarjetas) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
         {/* Ventas del Día */}
         <div className="bg-gradient-to-br from-success to-success rounded-xl shadow-lg p-6 text-white">
           <div className="flex items-center justify-between">
@@ -315,10 +317,54 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           {(stats?.kpis.lowStockAlerts || 0) > 0 && (
-            <Link href="/admin/inventario?lowStock=true" className="mt-4 flex items-center text-sm text-white/90 hover:text-white font-medium">
+            <Link href="/admin/inventario" className="mt-4 flex items-center text-sm text-white/90 hover:text-white font-medium">
               Ver productos <ArrowUpRight className="h-4 w-4 ml-1" />
             </Link>
           )}
+        </div>
+
+        {/* Productos Agotados */}
+        <div className={`rounded-xl shadow-lg p-6 text-white ${
+          (stats?.kpis.outOfStockAlerts || 0) > 0 
+            ? 'bg-gradient-to-br from-destructive to-destructive' 
+            : 'bg-gradient-to-br from-chart-3 to-chart-3'
+        }`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-white/80 text-sm font-medium">Productos Agotados</p>
+              <p className="text-3xl font-bold mt-2">{stats?.kpis.outOfStockAlerts || 0}</p>
+              <p className="text-white/80 text-sm mt-1">requieren acción urgente</p>
+            </div>
+            <div className="h-16 w-16 bg-white/20 rounded-xl flex items-center justify-center">
+              <Boxes className="h-8 w-8" />
+            </div>
+          </div>
+          {(stats?.kpis.outOfStockAlerts || 0) > 0 && (
+            <Link href="/admin/inventario" className="mt-4 flex items-center text-sm text-white/90 hover:text-white font-medium">
+              Ver agotados <ArrowUpRight className="h-4 w-4 ml-1" />
+            </Link>
+          )}
+        </div>
+
+        {/* Próximos a Vencer */}
+        <div className={`rounded-xl shadow-lg p-6 text-white ${
+          (stats?.kpis.expiringAlerts || 0) > 0 
+            ? 'bg-gradient-to-br from-warning to-warning' 
+            : 'bg-gradient-to-br from-chart-3 to-chart-3'
+        }`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-white/80 text-sm font-medium">Próximos a Vencer</p>
+              <p className="text-3xl font-bold mt-2">{stats?.kpis.expiringAlerts || 0}</p>
+              <p className="text-white/80 text-sm mt-1">lotes vencen en 30 días</p>
+            </div>
+            <div className="h-16 w-16 bg-white/20 rounded-xl flex items-center justify-center">
+              <Calendar className="h-8 w-8" />
+            </div>
+          </div>
+          <Link href="/admin/inventario/caducidades" className="mt-4 flex items-center text-sm text-white/90 hover:text-white font-medium">
+            Ver lotes <ArrowUpRight className="h-4 w-4 ml-1" />
+          </Link>
         </div>
       </div>
 

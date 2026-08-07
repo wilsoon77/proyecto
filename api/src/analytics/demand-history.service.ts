@@ -10,7 +10,14 @@ import {
 } from '../common/time/business-date.js';
 import { reconcileDemand } from './demand-reconciliation.js';
 
-const FULFILLED_STATUSES = [OrderStatus.DELIVERED, OrderStatus.PICKED_UP];
+const FULFILLED_STATUSES = [
+  OrderStatus.CONFIRMED,
+  OrderStatus.PREPARING,
+  OrderStatus.READY,
+  OrderStatus.IN_DELIVERY,
+  OrderStatus.DELIVERED,
+  OrderStatus.PICKED_UP,
+];
 
 type DemandAggregate = {
   orderQty: number;

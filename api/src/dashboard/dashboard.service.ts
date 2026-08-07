@@ -22,7 +22,7 @@ export class DashboardService {
       where: { 
         ...orderBranchFilter,
         status: { in: ['CONFIRMED', 'PREPARING', 'READY', 'IN_DELIVERY', 'DELIVERED', 'PICKED_UP'] },
-        updatedAt: { gte: startOfToday },
+        createdAt: { gte: startOfToday },
       },
       _sum: { total: true },
       _count: true,
@@ -43,23 +43,62 @@ export class DashboardService {
     const monthlyLossesQty = monthlyLossesData._sum.quantity ?? 0;
     const monthlyLossesCount = monthlyLossesData._count ?? 0;
 
-    // Alertas de stock bajo (disponible < 5 y cantidad física > 0)
+    // Alertas de stock bajo (disponible <= 10 y > 0)
     const lowStockResult = branchId
       ? await this.prisma.$queryRaw<Array<{ count: number }>>`
           SELECT COUNT(*)::int as count FROM "Inventory"
-          WHERE ("quantity" - "reserved") < 5 AND "quantity" > 0 AND "branchId" = ${branchId}
+          WHERE ("quantity" - "reserved") <= 10 AND ("quantity" - "reserved") > 0 AND "branchId" = ${branchId}
         `
       : await this.prisma.$queryRaw<Array<{ count: number }>>`
           SELECT COUNT(*)::int as count FROM "Inventory"
-          WHERE ("quantity" - "reserved") < 5 AND "quantity" > 0
+          WHERE ("quantity" - "reserved") <= 10 AND ("quantity" - "reserved") > 0
         `;
-    const lowStockAlerts = Number(lowStockResult[0]?.count || 0);
+    // Alertas de stock bajo de INSUMOS (materias primas)
+    const rawLowStockResult = branchId
+      ? await this.prisma.$queryRaw<Array<{ count: number }>>`
+          SELECT COUNT(*)::int as count FROM "RawMaterialInventory" rmi
+          JOIN "RawMaterial" rm ON rmi."rawMaterialId" = rm.id
+          WHERE rm."minStock" IS NOT NULL AND rmi.quantity <= rm."minStock" AND rmi."branchId" = ${branchId}
+        `
+      : await this.prisma.$queryRaw<Array<{ count: number }>>`
+          SELECT COUNT(*)::int as count FROM "RawMaterialInventory" rmi
+          JOIN "RawMaterial" rm ON rmi."rawMaterialId" = rm.id
+          WHERE rm."minStock" IS NOT NULL AND rmi.quantity <= rm."minStock"
+        `;
+    const rawLowStockAlerts = Number(rawLowStockResult[0]?.count || 0);
+
+    const lowStockAlerts = Number(lowStockResult[0]?.count || 0) + rawLowStockAlerts;
+
+    // Productos agotados (disponible = 0)
+    const outOfStockResult = branchId
+      ? await this.prisma.$queryRaw<Array<{ count: number }>>`
+          SELECT COUNT(*)::int as count FROM "Inventory"
+          WHERE ("quantity" - "reserved") <= 0 AND "branchId" = ${branchId}
+        `
+      : await this.prisma.$queryRaw<Array<{ count: number }>>`
+          SELECT COUNT(*)::int as count FROM "Inventory"
+          WHERE ("quantity" - "reserved") <= 0
+        `;
+    const outOfStockAlerts = Number(outOfStockResult[0]?.count || 0);
+
+    // Alertas de caducidad (próximos 30 días)
+    const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const expiringAlerts = await this.prisma.inventoryLot.count({
+      where: {
+        ...(branchId ? { branchId } : {}),
+        availableQuantity: { gt: 0 },
+        expiresAt: { gte: startOfToday, lte: thirtyDaysFromNow }
+      }
+    });
 
     // ========== ESTADÍSTICAS GENERALES ==========
 
-    // Total de órdenes (con filtro de sucursal si aplica)
+    // Total de órdenes (con filtro de sucursal y estados exitosos)
     const totalOrders = await this.prisma.order.count({
-      where: orderBranchFilter,
+      where: {
+        ...orderBranchFilter,
+        status: { in: ['CONFIRMED', 'PREPARING', 'READY', 'IN_DELIVERY', 'DELIVERED', 'PICKED_UP'] }
+      },
     });
 
     // Ingresos totales (de órdenes pagadas)
@@ -101,7 +140,7 @@ export class DashboardService {
           FROM "Inventory" i
           JOIN "Product" p ON i."productId" = p.id
           JOIN "Branch" b ON i."branchId" = b.id
-          WHERE (i.quantity - i.reserved) < 5 AND i.quantity > 0 AND i."branchId" = ${branchId}
+          WHERE (i.quantity - i.reserved) <= 10 AND i."branchId" = ${branchId}
           ORDER BY available ASC
           LIMIT 10
         `
@@ -116,7 +155,7 @@ export class DashboardService {
           FROM "Inventory" i
           JOIN "Product" p ON i."productId" = p.id
           JOIN "Branch" b ON i."branchId" = b.id
-          WHERE (i.quantity - i.reserved) < 5 AND i.quantity > 0
+          WHERE (i.quantity - i.reserved) <= 10
           ORDER BY available ASC
           LIMIT 10
         `;
@@ -242,6 +281,11 @@ export class DashboardService {
         monthlyLossesQty,
         monthlyLossesCount,
         lowStockAlerts,
+        outOfStockAlerts,
+        expiringAlerts,
+        totalOrders,
+        avgOrderValue,
+        activeProducts,
       },
       summary: {
         totalOrders,

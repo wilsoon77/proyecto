@@ -61,7 +61,7 @@ export default function InventarioResumenPage() {
     const finishedVolume = inventory.reduce((sum, i) => sum + i.quantity, 0)
     const rawVolume = rawInventory.reduce((sum, i) => sum + Number(i.quantity), 0)
 
-    const finishedLow = inventory.filter(i => i.available > 0 && i.available < 10).length
+    const finishedLow = inventory.filter(i => i.available > 0 && i.available <= 10).length
     const rawLow = rawInventory.filter(i => i.isLow).length
 
     const finishedOut = inventory.filter(i => i.available === 0).length
@@ -89,7 +89,7 @@ export default function InventarioResumenPage() {
 
     // Productos terminados con stock bajo o agotado
     inventory
-      .filter(i => i.available < 10)
+      .filter(i => i.available > 0 && i.available <= 10)
       .forEach(i => {
         alerts.push({
           type: "finished",

@@ -187,10 +187,10 @@ export default function PosPage() {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row h-[calc(100dvh-64px)] min-h-[calc(100dvh-64px)] overflow-hidden bg-cream">
+    <div className="w-full min-w-0 flex flex-col lg:flex-row h-[calc(100dvh-64px)] min-h-[calc(100dvh-64px)] overflow-hidden bg-cream">
 
       {/* LEFT: PRODUCTS LISTING */}
-      <div className={`flex-1 min-h-0 flex flex-col h-full border-r border-border ${showCartOnMobile ? 'hidden lg:flex' : 'flex'}`}>
+      <div className={`flex-1 min-w-0 min-h-0 flex flex-col h-full border-r border-border ${showCartOnMobile ? 'hidden lg:flex' : 'flex'}`}>
 
         {/* HEADER: Branches & Search */}
         <div className="p-3 sm:p-4 bg-card border-b flex flex-col lg:flex-row gap-3 lg:gap-4 lg:items-center shadow-sm z-10 shrink-0">
@@ -356,8 +356,8 @@ export default function PosPage() {
         )}
       </div>
 
-      {/* RIGHT: CART & CHECKOUT (Width: 380px fixed on Desktop) */}
-      <div className={`w-full lg:w-[380px] lg:max-w-[40vw] min-h-0 flex flex-col h-full bg-card border-l shadow-2xl z-20 ${showCartOnMobile ? 'flex' : 'hidden lg:flex'}`}>
+      {/* RIGHT: CART & CHECKOUT — fixed responsive basis so it remains visible on desktop */}
+      <div className={`w-full lg:w-[340px] xl:w-[380px] 2xl:w-[420px] shrink-0 min-w-0 min-h-0 flex flex-col h-full bg-card border-l shadow-2xl z-20 ${showCartOnMobile ? 'flex' : 'hidden lg:flex'}`}>
 
         {/* Cart Header */}
         <div className="p-3 sm:p-4 border-b bg-cream flex items-center gap-2 shrink-0">

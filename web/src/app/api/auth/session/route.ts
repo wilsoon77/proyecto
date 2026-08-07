@@ -3,6 +3,7 @@ import {
   backendFetch,
   clearSessionCookies,
   getSessionTokens,
+  isRememberMeSession,
   refreshSession,
   responseFromBackend,
   setSessionCookies,
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
 
     const user = await upstream.json()
     const response = NextResponse.json({ user }, { headers: { 'Cache-Control': 'no-store' } })
-    if (refreshedSession) setSessionCookies(response, refreshedSession)
+    if (refreshedSession) setSessionCookies(response, refreshedSession, isRememberMeSession(request))
     return response
   } catch (error) {
     console.error('[Auth BFF] Session lookup failed:', error)

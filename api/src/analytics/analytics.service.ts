@@ -12,7 +12,14 @@ import {
 } from '../common/time/business-date.js';
 import { DemandHistoryService } from './demand-history.service.js';
 
-const FULFILLED_STATUSES = [OrderStatus.DELIVERED, OrderStatus.PICKED_UP];
+const FULFILLED_STATUSES = [
+  OrderStatus.CONFIRMED,
+  OrderStatus.PREPARING,
+  OrderStatus.READY,
+  OrderStatus.IN_DELIVERY,
+  OrderStatus.DELIVERED,
+  OrderStatus.PICKED_UP,
+];
 
 export type AnalyticsOptions = {
   branchId?: number;

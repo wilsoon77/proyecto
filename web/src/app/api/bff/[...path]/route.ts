@@ -3,6 +3,7 @@ import {
   backendFetch,
   clearSessionCookies,
   getSessionTokens,
+  isRememberMeSession,
   isValidCsrfRequest,
   refreshSession,
   responseFromBackend,
@@ -82,7 +83,7 @@ async function proxy(request: NextRequest, context: RouteContext) {
     response.headers.set('Cache-Control', 'private, no-store')
     response.headers.set('Vary', 'Cookie')
     if (refreshedSession) {
-      setSessionCookies(response, refreshedSession)
+      setSessionCookies(response, refreshedSession, isRememberMeSession(request))
     } else if (upstream.status === 401 && session.refreshToken) {
       clearSessionCookies(response)
     }

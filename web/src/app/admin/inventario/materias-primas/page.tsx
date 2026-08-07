@@ -1,9 +1,9 @@
 "use client"
 
 import { useEffect, useState, useCallback, useMemo } from "react"
-import type { FormEvent } from "react"
+import type { FormEvent, KeyboardEvent } from "react"
 import Link from "next/link"
-import { Package, RefreshCw, Plus, Search, TriangleAlert as AlertTriangle, ChevronLeft, ChevronRight, Warehouse, Pencil } from "lucide-react"
+import { Package, RefreshCw, Plus, Search, TriangleAlert as AlertTriangle, ChevronLeft, ChevronRight, Warehouse, Pencil, PowerOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { 
   branchesService,
@@ -33,7 +33,6 @@ export default function MateriasPrimasPage() {
   const [selectedBranch, setSelectedBranch] = useState<string>("all")
   const [searchQuery, setSearchQuery] = useState("")
   const [showLowStock, setShowLowStock] = useState(false)
-  const [showInactiveMaterials, setShowInactiveMaterials] = useState(false)
 
   // Paginación
   const ITEMS_PER_PAGE = 10
@@ -65,6 +64,7 @@ export default function MateriasPrimasPage() {
   const [editMinStock, setEditMinStock] = useState<number>(0)
   const [editIsActive, setEditIsActive] = useState(true)
   const [isEditSubmitting, setIsEditSubmitting] = useState(false)
+  const [deactivatingMaterialId, setDeactivatingMaterialId] = useState<number | null>(null)
 
   const { showToast } = useToast()
 
@@ -146,14 +146,6 @@ export default function MateriasPrimasPage() {
     currentPage * ITEMS_PER_PAGE
   )
 
-  const filteredMaterialCatalog = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase()
-    return rawMaterialCatalog.filter((material) => {
-      if (!showInactiveMaterials && !material.isActive) return false
-      return !query || material.name.toLowerCase().includes(query)
-    })
-  }, [rawMaterialCatalog, searchQuery, showInactiveMaterials])
-
   const openEditModal = (materialId: number) => {
     const material = rawMaterialCatalog.find((item) => item.id === materialId)
     if (!material) {
@@ -167,6 +159,41 @@ export default function MateriasPrimasPage() {
     setEditMinStock(material.minStock === null ? 0 : Number(material.minStock))
     setEditIsActive(material.isActive)
     setShowEditModal(true)
+  }
+
+  const isRawMaterialActive = (materialId: number) =>
+    rawMaterialCatalog.find((material) => material.id === materialId)?.isActive ?? true
+
+  const handleInventoryRowKeyDown = (event: KeyboardEvent, materialId: number) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault()
+      openEditModal(materialId)
+    }
+  }
+
+  const openPurchaseModal = (item: RawMaterialInventory) => {
+    setPurchaseMaterialId(item.rawMaterial.id)
+    setPurchaseBranchId(item.branch.id)
+    setPurchaseUnit(item.rawMaterial.baseUnit === "LB" ? "LIBRA" : item.rawMaterial.baseUnit === "ML" ? "LITRO" : "UNIDAD")
+    setPurchaseQuantity(0)
+    setShowPurchaseModal(true)
+  }
+
+  const handleDeactivateMaterial = async (materialId: number, materialName: string) => {
+    if (deactivatingMaterialId !== null) return
+    if (!window.confirm(`¿Desactivar "${materialName}"? Se conservarán sus recetas, existencias e historial.`)) return
+
+    setDeactivatingMaterialId(materialId)
+    try {
+      await rawMaterialsService.remove(materialId)
+      showToast("Materia prima desactivada", "success")
+      await loadRawMaterials()
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Error al desactivar materia prima"
+      showToast(msg, "error")
+    } finally {
+      setDeactivatingMaterialId(null)
+    }
   }
 
   const handleEditSubmit = async (e: FormEvent) => {
@@ -316,8 +343,18 @@ export default function MateriasPrimasPage() {
                   <p>No se encontraron registros de materia prima</p>
                 </div>
               ) : (
-                paginatedRawInventory.map((item) => (
-                  <div key={`m-raw-${item.id}`} className="p-4 hover:bg-cream">
+                paginatedRawInventory.map((item) => {
+                  const isActive = isRawMaterialActive(item.rawMaterial.id)
+
+                  return (
+                  <div
+                    key={`m-raw-${item.id}`}
+                    className="p-4 hover:bg-cream cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => openEditModal(item.rawMaterial.id)}
+                    onKeyDown={(event) => handleInventoryRowKeyDown(event, item.rawMaterial.id)}
+                  >
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-3">
                         <div className="h-10 w-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -331,31 +368,52 @@ export default function MateriasPrimasPage() {
                         </div>
                       </div>
                       <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-sm font-bold ${
-                        item.isLow ? 'bg-warning/10 text-warning' : 'bg-success/10 text-success'
+                        !isActive ? 'bg-muted text-muted-foreground' : item.isLow ? 'bg-warning/10 text-warning' : 'bg-success/10 text-success'
                       }`}>
-                        {Number(item.quantity).toFixed(1)} {item.rawMaterial.baseUnit}
+                        {!isActive ? "Inactiva" : `${Number(item.quantity).toFixed(1)} ${item.rawMaterial.baseUnit}`}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between mt-3 border-t border-border pt-2 text-xs">
+                    <div className="flex flex-wrap items-center justify-between gap-2 mt-3 border-t border-border pt-2 text-xs">
                       <span className="text-muted-foreground">
                         Mínimo: <strong className="text-foreground">{item.rawMaterial.minStock ? `${Number(item.rawMaterial.minStock).toFixed(0)} ${item.rawMaterial.baseUnit}` : "N/A"}</strong>
                       </span>
-                      <button
-                        onClick={() => {
-                          setPurchaseMaterialId(item.rawMaterial.id)
-                          setPurchaseBranchId(item.branch.id)
-                          setPurchaseUnit(item.rawMaterial.baseUnit === "LB" ? "LIBRA" : item.rawMaterial.baseUnit === "ML" ? "LITRO" : "UNIDAD")
-                          setPurchaseQuantity(0)
-                          setShowPurchaseModal(true)
-                        }}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-success/10 text-success rounded-lg hover:bg-success/10 transition-colors font-medium text-xs shadow-sm"
-                      >
-                        <Plus className="h-3.5 w-3.5" />
-                        Ingresar Compra
-                      </button>
+                      <div className="flex flex-wrap items-center justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={(event) => { event.stopPropagation(); openEditModal(item.rawMaterial.id) }}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 border border-border text-foreground rounded-lg hover:bg-card transition-colors font-medium text-xs shadow-sm"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                          Editar
+                        </button>
+                        {isActive && (
+                          <button
+                            type="button"
+                            onClick={(event) => { event.stopPropagation(); handleDeactivateMaterial(item.rawMaterial.id, item.rawMaterial.name) }}
+                            disabled={deactivatingMaterialId === item.rawMaterial.id}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-destructive/10 text-destructive rounded-lg hover:bg-destructive/15 transition-colors font-medium text-xs shadow-sm disabled:opacity-50"
+                          >
+                            <PowerOff className="h-3.5 w-3.5" />
+                            {deactivatingMaterialId === item.rawMaterial.id ? "Desactivando..." : "Desactivar"}
+                          </button>
+                        )}
+                        {isActive ? (
+                          <button
+                            type="button"
+                            onClick={(event) => { event.stopPropagation(); openPurchaseModal(item) }}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-success/10 text-success rounded-lg hover:bg-success/10 transition-colors font-medium text-xs shadow-sm"
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                            Ingresar Compra
+                          </button>
+                        ) : (
+                          <span className="text-xs text-muted-foreground/70">Reactiva desde Editar</span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                ))
+                  )
+                })
               )}
             </div>
 
@@ -381,10 +439,17 @@ export default function MateriasPrimasPage() {
                       </td>
                     </tr>
                   ) : (
-                    paginatedRawInventory.map((item, index) => (
-                      <tr 
+                    paginatedRawInventory.map((item, index) => {
+                      const isActive = isRawMaterialActive(item.rawMaterial.id)
+
+                      return (
+                      <tr
                         key={`raw-${item.id}`}
-                        className={`border-b border-border hover:bg-cream ${index % 2 === 0 ? '' : 'bg-cream/50'}`}
+                        className={`border-b border-border hover:bg-cream cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset ${index % 2 === 0 ? '' : 'bg-cream/50'}`}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => openEditModal(item.rawMaterial.id)}
+                        onKeyDown={(event) => handleInventoryRowKeyDown(event, item.rawMaterial.id)}
                       >
                         <td className="py-4 px-6">
                           <div className="flex items-center gap-3">
@@ -410,28 +475,50 @@ export default function MateriasPrimasPage() {
                         </td>
                         <td className="py-4 px-6 text-center">
                           <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
-                            item.isLow ? 'bg-warning/10 text-warning' : 'bg-success/10 text-success'
+                            !isActive ? 'bg-muted text-muted-foreground' : item.isLow ? 'bg-warning/10 text-warning' : 'bg-success/10 text-success'
                           }`}>
-                            {item.isLow ? 'Stock Bajo' : 'Suficiente'}
+                            {!isActive ? 'Inactiva' : item.isLow ? 'Stock Bajo' : 'Suficiente'}
                           </span>
                         </td>
-                        <td className="py-4 px-6 text-center">
-                          <button
-                            onClick={() => {
-                              setPurchaseMaterialId(item.rawMaterial.id)
-                              setPurchaseBranchId(item.branch.id)
-                              setPurchaseUnit(item.rawMaterial.baseUnit === "LB" ? "LIBRA" : item.rawMaterial.baseUnit === "ML" ? "LITRO" : "UNIDAD")
-                              setPurchaseQuantity(0)
-                              setShowPurchaseModal(true)
-                            }}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-success/10 text-success rounded-lg hover:bg-success/10 transition-colors font-medium text-sm shadow-sm"
-                          >
-                            <Plus className="h-4 w-4" />
-                            Ingresar Compra
-                          </button>
+                        <td className="py-4 px-6 text-center whitespace-nowrap">
+                          <div className="flex items-center justify-center gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={(event) => { event.stopPropagation(); openEditModal(item.rawMaterial.id) }}
+                            >
+                              <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                              Editar
+                            </Button>
+                            {isActive && (
+                              <button
+                                type="button"
+                                onClick={(event) => { event.stopPropagation(); handleDeactivateMaterial(item.rawMaterial.id, item.rawMaterial.name) }}
+                                disabled={deactivatingMaterialId === item.rawMaterial.id}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-destructive/10 text-destructive rounded-lg hover:bg-destructive/15 transition-colors font-medium text-sm shadow-sm disabled:opacity-50"
+                              >
+                                <PowerOff className="h-4 w-4" />
+                                {deactivatingMaterialId === item.rawMaterial.id ? "Desactivando..." : "Desactivar"}
+                              </button>
+                            )}
+                            {isActive ? (
+                              <button
+                                type="button"
+                                onClick={(event) => { event.stopPropagation(); openPurchaseModal(item) }}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-success/10 text-success rounded-lg hover:bg-success/10 transition-colors font-medium text-sm shadow-sm"
+                              >
+                                <Plus className="h-4 w-4" />
+                                Ingresar Compra
+                              </button>
+                            ) : (
+                              <span className="text-xs text-muted-foreground/70">Reactiva desde Editar</span>
+                            )}
+                          </div>
                         </td>
                       </tr>
-                    ))
+                      )
+                    })
                   )}
                 </tbody>
               </table>
@@ -466,60 +553,6 @@ export default function MateriasPrimasPage() {
           </>
         )}
       </div>
-
-      {/* Catálogo y configuración de materias primas */}
-      <section className="mt-6 bg-card rounded-xl shadow-sm border border-border overflow-hidden">
-        <div className="px-4 sm:px-6 py-4 border-b border-border flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">Catálogo de materias primas</h2>
-            <p className="text-sm text-muted-foreground">Edita el costo y el umbral de alerta sin modificar el inventario existente.</p>
-          </div>
-          <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
-            <input
-              type="checkbox"
-              checked={showInactiveMaterials}
-              onChange={(e) => setShowInactiveMaterials(e.target.checked)}
-              className="w-4 h-4 text-primary rounded focus:ring-primary"
-            />
-            Mostrar desactivadas
-          </label>
-        </div>
-
-        {filteredMaterialCatalog.length === 0 ? (
-          <div className="p-8 text-center text-muted-foreground/70">
-            No hay materias primas que coincidan con el filtro.
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 p-4 sm:p-6">
-            {filteredMaterialCatalog.map((material) => (
-              <div key={material.id} className="rounded-lg border border-border p-4 bg-cream/30">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="font-semibold text-foreground truncate">{material.name}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Unidad base: {material.baseUnit} · Costo: Q{Number(material.costPerUnit).toFixed(4)}
-                    </p>
-                  </div>
-                  <span className={`shrink-0 rounded-full px-2 py-1 text-[11px] font-semibold ${
-                    material.isActive ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground'
-                  }`}>
-                    {material.isActive ? 'Activa' : 'Inactiva'}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between gap-3 mt-4 pt-3 border-t border-border">
-                  <span className="text-xs text-muted-foreground">
-                    Alerta mínima: <strong className="text-foreground">{material.minStock === null ? 'Sin umbral' : `${Number(material.minStock).toFixed(2)} ${material.baseUnit}`}</strong>
-                  </span>
-                  <Button variant="outline" size="sm" onClick={() => openEditModal(material.id)}>
-                    <Pencil className="h-3.5 w-3.5 mr-1.5" />
-                    Editar
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
 
       {/* MODAL 1: Registrar Compra de Materia Prima */}
       {showPurchaseModal && (

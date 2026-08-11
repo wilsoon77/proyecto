@@ -24,7 +24,10 @@ export class StockMovementsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN', 'MANAGER')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Registrar movimiento', description: 'Crea un movimiento de inventario (solo ADMIN o MANAGER).' })
+  @ApiOperation({
+    summary: 'Registrar movimiento',
+    description: 'Crea un movimiento de inventario. ADMIN y MANAGER pueden registrar movimientos; MANAGER puede transferir entre cualquiera de las dos sucursales. El cierre diario solo bloquea nueva PRODUCCION de la fecha cerrada, no compras, mermas, pérdidas ni ajustes.',
+  })
   @ApiBody({ type: CreateStockMovementDto })
   @ApiResponse({ status: 201, description: 'Movimiento creado', content: { 'application/json': { examples: { ejemplo: { value: { id: 1, type: 'PRODUCCION', quantity: 10 } } } } } })
   @ApiBadRequestResponse({ description: 'Validaciones de negocio', schema: { example: { statusCode: 400, error: 'Bad Request', message: 'fromBranchSlug requerido' } } })
@@ -61,8 +64,8 @@ export class StockMovementsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Listar movimientos', description: 'Listado paginado de movimientos (solo ADMIN o MANAGER).' })
   @ApiQuery({ name: 'productSlug', required: false })
-  @ApiQuery({ name: 'branchSlug', required: false })
-  @ApiQuery({ name: 'type', required: false })
+  @ApiQuery({ name: 'branchSlug', required: false, description: 'Slug de sucursal; MANAGER puede consultar cualquiera de las dos' })
+  @ApiQuery({ name: 'type', required: false, enum: ['PRODUCCION', 'COMPRA', 'VENTA', 'TRANSFERENCIA', 'MERMA', 'PERDIDA_ROBO', 'SOBRANTE'] })
   @ApiQuery({ name: 'from', required: false, description: 'ISO date desde' })
   @ApiQuery({ name: 'to', required: false, description: 'ISO date hasta' })
   @ApiQuery({ name: 'page', required: false })
@@ -121,7 +124,7 @@ export class StockMovementsController {
   @ApiResponse({ status: 201, description: 'Reconciliación completada con resumen de ajustes' })
   @ApiBadRequestResponse({ description: 'Sucursal no encontrada o sin productos' })
   async reconcile(@Req() req: any, @Body() dto: ReconcileInventoryDto) {
-    const branchSlug = await this.branchScope.resolveBranchSlug(req.user, dto.branchSlug);
+    const branchSlug = await this.branchScope.resolveWriteBranchSlug(req.user, dto.branchSlug);
     const result = await this.service.reconcile({ ...dto, branchSlug: branchSlug ?? dto.branchSlug }, req.user?.userId);
 
     // Registrar en auditoría
@@ -147,19 +150,36 @@ export class StockMovementsController {
     return result;
   }
 
+  @Get('activity')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'MANAGER')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Resumen operativo de movimientos', description: 'Agrupa producción, ventas y mermas de los últimos días para el panel Operación.' })
+  @ApiQuery({ name: 'branchSlug', required: false, description: 'Slug de sucursal; MANAGER puede consultar cualquiera de las dos' })
+  @ApiQuery({ name: 'days', required: false, description: 'Cantidad de días a mostrar, entre 1 y 14' })
+  async activity(@Req() req: any, @Query('branchSlug') branchSlug?: string, @Query('days') days?: string) {
+    const scopedBranchSlug = await this.branchScope.resolveBranchSlug(req.user, branchSlug);
+    return this.service.activity(scopedBranchSlug, days ? Number(days) : 7);
+  }
+
   private async scopeMovementDto(dto: CreateStockMovementDto, actor: any): Promise<CreateStockMovementDto> {
     if (actor?.role === 'ADMIN') return dto;
 
     if (dto.type === 'TRANSFERENCIA') {
-      throw new ForbiddenException('Solo ADMIN puede transferir inventario entre sucursales');
+      if (actor?.role !== 'MANAGER') {
+        throw new ForbiddenException('Solo ADMIN o MANAGER pueden transferir inventario entre sucursales');
+      }
+      const fromBranchSlug = await this.branchScope.resolveWriteBranchSlug(actor, dto.fromBranchSlug);
+      const toBranchSlug = await this.branchScope.resolveWriteBranchSlug(actor, dto.toBranchSlug);
+      return { ...dto, fromBranchSlug, toBranchSlug };
     }
 
     if (['VENTA', 'MERMA', 'PERDIDA_ROBO'].includes(dto.type)) {
-      const fromBranchSlug = await this.branchScope.resolveBranchSlug(actor, dto.fromBranchSlug);
+      const fromBranchSlug = await this.branchScope.resolveWriteBranchSlug(actor, dto.fromBranchSlug);
       return { ...dto, fromBranchSlug };
     }
 
-    const toBranchSlug = await this.branchScope.resolveBranchSlug(actor, dto.toBranchSlug);
+    const toBranchSlug = await this.branchScope.resolveWriteBranchSlug(actor, dto.toBranchSlug);
     return { ...dto, toBranchSlug };
   }
 }

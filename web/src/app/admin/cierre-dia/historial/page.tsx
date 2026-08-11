@@ -26,13 +26,13 @@ export default function DailyCloseHistoryPage() {
   const [pageCount, setPageCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
 
-  const effectiveBranchId = user?.role === "ADMIN"
+  const effectiveBranchId = user?.role === "ADMIN" || user?.role === "MANAGER"
     ? branchId
     : user?.branch?.id ?? user?.branchId ?? undefined
 
   useEffect(() => {
     if (!user) return
-    if (user.role === "ADMIN") {
+    if (user.role === "ADMIN" || user.role === "MANAGER") {
       void branchesService.list().then(setBranches).catch((error) => {
         console.error("Error cargando sucursales", error)
         showToast("No fue posible cargar las sucursales", "error")
@@ -41,7 +41,7 @@ export default function DailyCloseHistoryPage() {
   }, [user, showToast])
 
   useEffect(() => {
-    if (!user || (user.role !== "ADMIN" && !effectiveBranchId)) return
+    if (!user || (user.role !== "ADMIN" && user.role !== "MANAGER" && !effectiveBranchId)) return
     let cancelled = false
     void dailyCloseService.list({ branchId: effectiveBranchId, from: from || undefined, to: to || undefined, page, pageSize: 20 })
       .then((response) => {
@@ -83,7 +83,7 @@ export default function DailyCloseHistoryPage() {
         </div>
 
         <div className="mb-6 grid gap-4 rounded-xl border border-border bg-card p-4 shadow-sm md:grid-cols-3">
-          {user?.role === "ADMIN" && (
+          {(user?.role === "ADMIN" || user?.role === "MANAGER") && (
             <label className="block">
               <span className="mb-1 block text-sm font-medium text-foreground">Sucursal</span>
               <div className="relative">

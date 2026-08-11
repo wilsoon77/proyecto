@@ -1,7 +1,8 @@
 import { IsInt, IsPositive, IsString, IsOptional, IsEnum, IsArray, ValidateNested, Min, IsDateString } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { StockMovementType } from '@prisma/client';
 import { Type } from 'class-transformer';
+import { PresentationCountDto } from '../products/dto/presentation.dto.js';
 
 export class CreateStockMovementDto {
   @ApiProperty({ enum: StockMovementType, example: StockMovementType.COMPRA })
@@ -17,12 +18,12 @@ export class CreateStockMovementDto {
   @IsString()
   productSlug!: string;
 
-  @ApiProperty({ example: 'zona-1', required: false })
+  @ApiProperty({ example: 'zona-1', required: false, description: 'Sucursal origen; obligatoria para VENTA, MERMA, PERDIDA_ROBO y TRANSFERENCIA' })
   @IsOptional()
   @IsString()
   fromBranchSlug?: string;
 
-  @ApiProperty({ example: 'zona-10', required: false })
+  @ApiProperty({ example: 'zona-10', required: false, description: 'Sucursal destino; obligatoria para COMPRA, PRODUCCION, SOBRANTE y TRANSFERENCIA' })
   @IsOptional()
   @IsString()
   toBranchSlug?: string;
@@ -37,12 +38,12 @@ export class CreateStockMovementDto {
   @IsString()
   note?: string;
 
-  @ApiProperty({ example: '2026-08-10', required: false, description: 'Fecha de caducidad del lote comprado; solo aplica si el producto tiene activado el control de caducidad' })
+  @ApiProperty({ example: '2026-08-10', required: false, description: 'Fecha de caducidad del lote comprado; solo se guarda para movimientos COMPRA de productos de origen COMPRADO con control de caducidad' })
   @IsOptional()
   @IsDateString()
   expiresAt?: string;
 
-  @ApiProperty({ example: '2026-08-07', required: false, description: 'Fecha personalizada de alerta; si se omite se calcula automáticamente' })
+  @ApiProperty({ example: '2026-08-07', required: false, description: 'Fecha personalizada de alerta para el lote comprado; si se omite se calcula automáticamente' })
   @IsOptional()
   @IsDateString()
   alertAt?: string;
@@ -57,6 +58,13 @@ export class ReconcileItemDto {
   @IsInt()
   @Min(0)
   actualQuantity!: number;
+
+  @ApiPropertyOptional({ type: [PresentationCountDto], description: 'Conteo por presentación; se convierte a unidad base' })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PresentationCountDto)
+  presentationCounts?: PresentationCountDto[];
 }
 
 export class ReconcileInventoryDto {

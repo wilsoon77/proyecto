@@ -11,6 +11,7 @@ import { formatPrice } from "@/lib/utils"
 import { ORDER_CONFIG, ROUTES } from "@/lib/constants"
 import { useSystemConfig } from "@/context/SystemConfigContext"
 import { Trash2, Plus, Minus, ShoppingCart, Cookie } from "lucide-react"
+import { presentationUnitPrice } from "@/lib/presentation-quantities"
 
 export default function CarritoPage() {
   const { items, itemCount, subtotal, updateQuantity, removeItem, clearCart } = useCart()
@@ -35,8 +36,8 @@ export default function CarritoPage() {
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           {/* Items */}
           <div className="lg:col-span-2 space-y-4">
-            {items.map(({ product, quantity }) => (
-              <div key={product.id} className="flex flex-col sm:flex-row sm:items-center gap-4 rounded-xl border border-border bg-card p-4 shadow-card transition-shadow hover:shadow-card-hover">
+            {items.map(({ product, quantity, presentation }) => (
+              <div key={`${product.id}:${presentation?.id ?? 'base'}`} className="flex flex-col sm:flex-row sm:items-center gap-4 rounded-xl border border-border bg-card p-4 shadow-card transition-shadow hover:shadow-card-hover">
                 <div className="flex items-center gap-4 flex-1 min-w-0">
                   <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg bg-muted">
                     {product.imageUrl ? (
@@ -49,13 +50,13 @@ export default function CarritoPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-card-foreground truncate">{product.name}</h3>
-                    <p className="text-sm text-muted-foreground">{product.category}</p>
+                    <p className="text-sm text-muted-foreground">{presentation?.name ?? product.category}</p>
                   </div>
                 </div>
                 <div className="flex items-center justify-between sm:justify-end gap-3">
                   <div className="flex items-center gap-3">
                     <div className="flex items-center rounded-md border">
-                      <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => updateQuantity(product.id, quantity - 1)} aria-label="Disminuir">
+                      <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => updateQuantity(product.id, quantity - 1, presentation?.id)} aria-label="Disminuir">
                         <Minus className="h-4 w-4" />
                       </Button>
                       <Input
@@ -64,20 +65,20 @@ export default function CarritoPage() {
                         value={quantity}
                         onChange={(e) => {
                           const val = parseInt(e.target.value, 10)
-                          if (!isNaN(val) && val >= 1) updateQuantity(product.id, val)
+                           if (!isNaN(val) && val >= 1) updateQuantity(product.id, val, presentation?.id)
                         }}
                         className="h-9 w-14 border-0 text-center"
                       />
-                      <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => updateQuantity(product.id, quantity + 1)} aria-label="Aumentar">
+                      <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => updateQuantity(product.id, quantity + 1, presentation?.id)} aria-label="Aumentar">
                         <Plus className="h-4 w-4" />
                       </Button>
                     </div>
-                    <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => removeItem(product.id)} aria-label="Eliminar">
+                    <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => removeItem(product.id, presentation?.id)} aria-label="Eliminar">
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-bold text-primary">{formatPrice(product.price * quantity)}</p>
+                    <p className="text-lg font-bold text-primary">{formatPrice(presentationUnitPrice(product, presentation) * quantity)}</p>
                   </div>
                 </div>
               </div>

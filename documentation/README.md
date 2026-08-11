@@ -88,13 +88,26 @@ proyecto-panaderia/
 
 ---
 
+### **7. Presentaciones comerciales de productos**
+**Archivo:** `PRESENTACIONES_PRODUCTO.md`
+
+**Contenido:**
+- Modelo `ProductPresentation` y relación con el producto base
+- Configuración del Pan Francés: tira completa y media tira
+- Precios dinámicos, catálogo, pedidos, inventario, cierre diario y producción
+- Migración, seed y despliegue en Supabase
+
+**Estado:** Implementado. Este es el documento funcional vigente para presentaciones comerciales.
+
+---
+
 ## Documentos en la Raíz
 
 ### **context.md** (Recomendado)
 Contexto arquitectónico actualizado del proyecto. **Punto de partida recomendado.**
 - Reglas de negocio clave
 - Lógica de producción (amasijos/latas)
-- Estado actual del proyecto (Marzo 2026)
+- Estado actual del proyecto (Agosto 2026)
 
 ### **README.md**
 README principal con stack, configuración y desarrollo local.
@@ -113,12 +126,12 @@ Guía rápida de pruebas de seguridad.
 
 ---
 
-## Estadísticas del Proyecto (Marzo 2026)
+## Estadísticas del Proyecto (Agosto 2026)
 
 ### **Base de Datos (Prisma)**
-- **Modelos:** 16
+- **Modelos:** 33
 - **Enums:** 7
-- **Migraciones:** 10
+- **Migraciones:** 22
 - **Base:** PostgreSQL en Supabase
 
 ### **Backend (NestJS)**
@@ -159,6 +172,7 @@ Guía rápida de pruebas de seguridad.
 | Entender el proyecto | `context.md` |
 | Configurar desarrollo local | `README.md` (raíz) |
 | Ver el schema de BD | `api/prisma/schema.prisma` |
+| Configurar presentaciones y precios | `documentation/PRESENTACIONES_PRODUCTO.md` |
 | Entender un flujo de usuario | `documentation/3_CASOS_DE_USO.md` |
 | Desplegar a producción | `GUIA_DESPLIEGUE.md` |
 | Ejecutar tests de seguridad | `TESTING.md` |
@@ -168,4 +182,4 @@ Guía rápida de pruebas de seguridad.
 
 **Nota:** Esta documentación es un documento vivo. Los documentos de planificación (1-5) reflejan el diseño original; el código es la fuente de verdad.
 
-**Última actualización:** 23 de Marzo de 2026
+**Última actualización:** 11 de Agosto de 2026

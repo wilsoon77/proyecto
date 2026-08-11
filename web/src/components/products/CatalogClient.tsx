@@ -12,6 +12,7 @@ import { productsService } from '@/lib/api'
 import { apiProductToProduct } from '@/lib/api/transformers'
 import type { ApiCategory, PaginatedResponse, ProductFilters } from '@/lib/api/types'
 import type { Product } from '@/types'
+import { defaultSalePresentation } from '@/lib/presentation-quantities'
 
 interface CatalogClientProps {
   initialCatalog: PaginatedResponse<import('@/lib/api/types').ApiProduct>
@@ -50,7 +51,7 @@ export function CatalogClient({ initialCatalog, categories, filters }: CatalogCl
 
   const handleAddToCart = (productId: number) => {
     const product = products.find((item) => item.id === productId)
-    if (product) addItem(product, 1)
+    if (product) addItem(product, 1, defaultSalePresentation(product))
   }
 
   const changeCategory = (category?: string) => {

@@ -16,7 +16,7 @@ interface SearchResult {
 
 // Páginas del sistema para búsqueda rápida
 const PAGES: SearchResult[] = [
-  { id: "page-dashboard", title: "Dashboard", subtitle: "Panel principal", type: "page", href: "/admin", icon: <Package className="h-4 w-4" /> },
+  { id: "page-operations", title: "Operación", subtitle: "Alertas y tareas", type: "page", href: "/admin", icon: <Package className="h-4 w-4" /> },
   { id: "page-products", title: "Productos", subtitle: "Gestión de productos", type: "page", href: "/admin/productos", icon: <Package className="h-4 w-4" /> },
   { id: "page-orders", title: "Pedidos", subtitle: "Gestión de órdenes", type: "page", href: "/admin/ordenes", icon: <ShoppingCart className="h-4 w-4" /> },
   { id: "page-inventory", title: "Inventario", subtitle: "Stock por sucursal", type: "page", href: "/admin/inventario", icon: <Warehouse className="h-4 w-4" /> },

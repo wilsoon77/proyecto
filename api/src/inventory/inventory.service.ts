@@ -2,6 +2,37 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { addDays, dateKeyToUtcDate, todayBusinessDate } from '../common/time/business-date.js';
 
+function mapInventoryProduct(product: any, available = 0) {
+  const mapped = {
+    id: product.id,
+    name: product.name,
+    slug: product.slug,
+  };
+
+  // Mantener la forma histórica cuando el servicio recibe objetos parciales
+  // (por ejemplo, mocks o integraciones antiguas). Las consultas reales de
+  // inventario siempre incluyen estos campos nuevos.
+  if (Object.prototype.hasOwnProperty.call(product, 'stockUnitLabel')) {
+    (mapped as any).stockUnitLabel = product.stockUnitLabel ?? 'unidades';
+  }
+  if (Object.prototype.hasOwnProperty.call(product, 'presentations')) {
+    (mapped as any).presentations = (product.presentations ?? []).map((presentation: any) => ({
+      id: presentation.id,
+      name: presentation.name,
+      unitsInStock: presentation.unitsInStock,
+      price: presentation.price === null || presentation.price === undefined ? null : Number(presentation.price),
+      isForSale: presentation.isForSale,
+      isForProduction: presentation.isForProduction,
+      isDefault: presentation.isDefault,
+      isActive: presentation.isActive,
+      sortOrder: presentation.sortOrder,
+      available: Math.max(0, Math.floor(available / presentation.unitsInStock)),
+    }));
+  }
+
+  return mapped;
+}
+
 /**
  * InventoryService — Servicio puro para consultas de inventario de producto terminado.
  * 
@@ -33,11 +64,14 @@ export class InventoryService {
 
     const inventories = await this.prisma.inventory.findMany({
       where,
-      include: { product: true, branch: true },
+      include: {
+        product: { include: { presentations: { where: { isActive: true }, orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] } } },
+        branch: true,
+      },
     });
 
     return inventories.map(i => ({
-      product: { id: i.product.id, name: i.product.name, slug: i.product.slug },
+      product: mapInventoryProduct(i.product, i.quantity - i.reserved),
       branch: { id: i.branch.id, name: i.branch.name, slug: i.branch.slug },
       quantity: i.quantity,
       reserved: i.reserved,
@@ -52,7 +86,10 @@ export class InventoryService {
   async getByProductAndBranch(productId: number, branchId: number) {
     const inventory = await this.prisma.inventory.findUnique({
       where: { productId_branchId: { productId, branchId } },
-      include: { product: true, branch: true },
+      include: {
+        product: { include: { presentations: { where: { isActive: true }, orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] } } },
+        branch: true,
+      },
     });
 
     if (!inventory) {
@@ -62,7 +99,7 @@ export class InventoryService {
     }
 
     return {
-      product: { id: inventory.product.id, name: inventory.product.name, slug: inventory.product.slug },
+      product: mapInventoryProduct(inventory.product, inventory.quantity - inventory.reserved),
       branch: { id: inventory.branch.id, name: inventory.branch.name, slug: inventory.branch.slug },
       quantity: inventory.quantity,
       reserved: inventory.reserved,
@@ -73,7 +110,7 @@ export class InventoryService {
 
   /**
    * Obtener productos con stock bajo (quantity - reserved <= minThreshold).
-   * Útil para alertas en el dashboard.
+   * Útil para consultas operativas de stock.
    */
   async getLowStock(branchId?: number, threshold: number = 10) {
     const where: any = {};
@@ -81,13 +118,16 @@ export class InventoryService {
 
     const inventories = await this.prisma.inventory.findMany({
       where,
-      include: { product: true, branch: true },
+      include: {
+        product: { include: { presentations: { where: { isActive: true }, orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] } } },
+        branch: true,
+      },
     });
 
     return inventories
       .filter(i => (i.quantity - i.reserved) <= threshold)
       .map(i => ({
-        product: { id: i.product.id, name: i.product.name, slug: i.product.slug },
+        product: mapInventoryProduct(i.product, i.quantity - i.reserved),
         branch: { id: i.branch.id, name: i.branch.name, slug: i.branch.slug },
         quantity: i.quantity,
         reserved: i.reserved,
@@ -117,7 +157,7 @@ export class InventoryService {
     const baseWhere: any = {
       availableQuantity: { gt: 0 },
       ...(branch ? { branchId: branch.id } : {}),
-      product: { tracksExpiration: true },
+      product: { origin: 'COMPRADO', tracksExpiration: true },
     };
 
     if (status === 'expired') baseWhere.expiresAt = { lt: today };

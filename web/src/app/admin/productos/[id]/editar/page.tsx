@@ -6,9 +6,11 @@ import Link from "next/link"
 import Image from "next/image"
 import { ArrowLeft, Upload, X, Loader as Loader2, Save, Image as ImageIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { ProductPresentationsEditor } from "@/components/admin/ProductPresentationsEditor"
 import { useToast } from "@/components/ui/toast"
 import { adminService, categoriesService, ApiClientError } from "@/lib/api"
 import type { ProductDetailResponse } from "@/lib/api/admin.service"
+import type { ApiProductPresentationInput } from "@/lib/api/types"
 
 interface Category {
   id: number
@@ -61,6 +63,7 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
   const [expirationAlertDays, setExpirationAlertDays] = useState("3")
   const [isActive, setIsActive] = useState(true)
   const [isAvailable, setIsAvailable] = useState(true)
+  const [presentations, setPresentations] = useState<ApiProductPresentationInput[]>([])
 
   useEffect(() => {
     loadData()
@@ -106,6 +109,17 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
       setOrigin(data.origin === 'COMPRADO' ? 'COMPRADO' : 'PRODUCIDO')
       setTracksExpiration(data.origin === 'COMPRADO' && data.tracksExpiration === true)
       setExpirationAlertDays((data.expirationAlertDays ?? 3).toString())
+      setPresentations((data.presentations ?? []).map((presentation) => ({
+        id: presentation.id,
+        name: presentation.name,
+        unitsInStock: presentation.unitsInStock,
+        price: presentation.price,
+        isForSale: presentation.isForSale,
+        isForProduction: presentation.isForProduction,
+        isDefault: presentation.isDefault,
+        isActive: presentation.isActive,
+        sortOrder: presentation.sortOrder,
+      })))
       
       // Usar categoryId directamente
       setCategoryId(data.categoryId.toString())
@@ -224,6 +238,7 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
         comboQuantity: comboQuantity ? parseInt(comboQuantity) : undefined,
         comboPrice: comboPrice ? parseFloat(comboPrice) : undefined,
         unitsPerTray: unitsPerTray ? parseInt(unitsPerTray) : undefined,
+        presentations,
         imageUrl: imageUrl || undefined,
       })
 
@@ -470,7 +485,7 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
 
           {/* Visibility toggles */}
           <div className="bg-cream rounded-lg p-4 space-y-3">
-            <h3 className="text-sm font-semibold text-foreground">Visibilidad</h3>
+            <h3 className="text-sm font-semibold text-foreground">Visibilidad en e-commerce</h3>
             <div className="flex items-center gap-3">
               <input
                 id="isActive"
@@ -480,7 +495,7 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
                 className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
               />
               <label htmlFor="isActive" className="text-sm text-foreground">
-                Producto visible en catálogo
+                Mostrar producto en el catálogo del e-commerce
               </label>
             </div>
             <div className="flex items-center gap-3">
@@ -495,6 +510,7 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
                 Disponible para venta (desmarcar para productos de temporada)
               </label>
             </div>
+            <p className="text-xs text-muted-foreground">Ocultar en e-commerce no afecta inventario ni cierre diario.</p>
           </div>
 
           {/* Origen y caducidad */}
@@ -533,6 +549,8 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
               </div>
             )}
           </div>
+
+          <ProductPresentationsEditor value={presentations} onChange={setPresentations} />
 
           {/* Combo Pricing */}
           <div className="bg-accent rounded-lg p-4 space-y-4">

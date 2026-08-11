@@ -3,9 +3,10 @@ import 'reflect-metadata';
 import { NestFactory, HttpAdapterHost } from '@nestjs/core';
 import { AppModule } from './app.module.js';
 import { ValidationPipe } from '@nestjs/common';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { SwaggerModule } from '@nestjs/swagger';
 import { HttpErrorFilter } from './common/filters/http-exception.filter.js';
 import { SentryExceptionFilter } from './common/filters/sentry-exception.filter.js';
+import { createSwaggerConfig } from './common/swagger.config.js';
 import helmet from 'helmet';
 import * as Sentry from '@sentry/node';
 
@@ -75,23 +76,7 @@ async function bootstrap() {
   const swaggerEnabled = process.env.SWAGGER_ENABLED === 'true' || (!isProduction && process.env.SWAGGER_ENABLED !== 'false');
   
   if (swaggerEnabled) {
-    const config = new DocumentBuilder()
-      .setTitle('Panaderia Svetlana API')
-      .setDescription('API para gestión de productos, inventario y pedidos de la panadería')
-      .setVersion('0.1.0')
-      .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' })
-      .addTag('auth')
-      .addTag('products')
-      .addTag('categories')
-      .addTag('branches')
-      .addTag('users')
-      .addTag('addresses')
-      .addTag('inventory')
-      .addTag('stock-movements')
-      .addTag('orders')
-      .addTag('dashboard')
-      .addTag('health')
-      .build();
+    const config = createSwaggerConfig();
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('docs', app, document);
     console.log('📘 Swagger docs: /docs');

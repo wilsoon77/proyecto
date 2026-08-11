@@ -1,605 +1,310 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
-import { Package, ShoppingCart, Users, Banknote, Clock, TriangleAlert as AlertTriangle, ArrowUpRight, ChartPie as PieChartIcon, TrendingDown, Store, MapPin, ChartLine as LineChartIcon, RefreshCw, Calendar, Boxes, Tag } from "lucide-react"
 import {
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  LineChart,
-  Line,
-} from "recharts"
-import { api, branchesService } from "@/lib/api"
+  AlertTriangle,
+  BarChart3,
+  Bell,
+  CalendarClock,
+  CheckCircle2,
+  ClipboardCheck,
+  Factory,
+  Package,
+  RefreshCw,
+  Wheat,
+} from "lucide-react"
+import {
+  inventoryService,
+  notificationsService,
+  productionService,
+  rawMaterialsService,
+} from "@/lib/api"
+import type {
+  ExpirationLot,
+  Notification,
+  ProductionLog,
+  RawMaterialInventory,
+} from "@/lib/api"
 import { useAuth } from "@/context/AuthContext"
-import { formatCurrency, formatDateChart } from "@/lib/utils"
-import AnalyticsPreview from "@/components/admin/AnalyticsPreview"
 import TelegramAssistantButton from "@/components/admin/TelegramAssistantButton"
 
-// Interfaces actualizadas según nuevo backend
-interface DashboardResponse {
-  kpis: {
-    todaySales: number
-    todayOrdersCount: number
-    monthlyLossesQty: number
-    monthlyLossesCount: number
-    lowStockAlerts: number
-    outOfStockAlerts: number
-    expiringAlerts: number
-  }
-  summary: {
-    totalOrders: number
-    totalRevenue: number
-    avgOrderValue: number
-    pendingOrders: number
-    activeProducts: number
-    totalCategories: number
-    totalBranches: number
-    totalUsers: number
-  }
-  last30Days: {
-    ordersCount: number
-    revenue: number
-    avgOrderValue: number
-  }
-  ordersByStatus: Array<{ status: string; count: number }>
-  topProducts: Array<{ productId: number; name: string; totalSold: number }>
-  lowStockProducts: Array<{ productId: number; productName: string; branchName: string; available: number }>
-  salesByBranch: Array<{ branchId: number; branchName: string; totalSales: number; orderCount: number }>
-  weeklySales: Array<{ date: string; totalSales: number; orderCount: number }>
+const ALERT_TYPES = new Set([
+  "inventory.raw_material_low",
+  "inventory.expiration_warning",
+])
+
+function asNumber(value: string | number | null | undefined) {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : 0
 }
 
-interface Branch {
-  id: number
-  name: string
-  slug: string
-}
-
-const STATUS_COLORS: Record<string, string> = {
-  PENDING: "#f59e0b",
-  CONFIRMED: "#3b82f6",
-  PREPARING: "#8b5cf6",
-  READY: "#10b981",
-  DELIVERED: "#22c55e",
-  PICKED_UP: "#14b8a6",
-  CANCELLED: "#ef4444",
-}
-
-const STATUS_LABELS: Record<string, string> = {
-  PENDING: "Pendiente",
-  CONFIRMED: "Confirmada",
-  PREPARING: "Preparando",
-  READY: "Lista",
-  DELIVERED: "Entregada",
-  PICKED_UP: "Recogida",
-  CANCELLED: "Cancelada",
+function formatDate(value: string) {
+  return new Date(value).toLocaleString("es-GT", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  })
 }
 
 export default function AdminDashboardPage() {
   const { user } = useAuth()
-  const [stats, setStats] = useState<DashboardResponse | null>(null)
-  const [branches, setBranches] = useState<Branch[]>([])
-  const [selectedBranch, setSelectedBranch] = useState<string>("global")
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [rawMaterials, setRawMaterials] = useState<RawMaterialInventory[]>([])
+  const [expiringLots, setExpiringLots] = useState<ExpirationLot[]>([])
+  const [production, setProduction] = useState<ProductionLog[]>([])
+  const [activity, setActivity] = useState<Array<{ date: string; produced: number; sold: number; waste: number }>>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [isCheckingExpirations, setIsCheckingExpirations] = useState(false)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [clock, setClock] = useState<Date | null>(null)
 
-  const isAdmin = user?.role === "ADMIN"
-  const isOperational = ['MANAGER', 'BAKER', 'CASHIER'].includes(user?.role || '')
-
-  // Obtener saludo según hora del día
-  const getGreeting = () => {
-    const hour = new Date().getHours()
-    if (hour < 12) return "Buenos días"
-    if (hour < 18) return "Buenas tardes"
-    return "Buenas noches"
-  }
-
-  // Obtener fecha actual formateada
-  const getCurrentDate = () => {
-    return new Date().toLocaleDateString("es-GT", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric"
-    })
-  }
-
-  // Cargar sucursales y configurar branch inicial según rol
   useEffect(() => {
-    const loadBranches = async () => {
-      try {
-        const data = await branchesService.list()
-        setBranches(data)
-        
-        // Si es empleado, usar su sucursal asignada
-        if (isOperational && user?.branchId) {
-          setSelectedBranch(user.branchId.toString())
-        } else if (isOperational && data.length > 0) {
-          // Fallback: primera sucursal si no tiene asignada
-          setSelectedBranch(data[0].id.toString())
-        }
-      } catch (err) {
-        console.error("Error loading branches:", err)
-      }
-    }
-    loadBranches()
-  }, [isOperational, user?.branchId])
+    const updateClock = () => setClock(new Date())
+    updateClock()
+    const timer = window.setInterval(updateClock, 60_000)
+    return () => window.clearInterval(timer)
+  }, [])
 
-  // Cargar estadísticas cuando cambia la sucursal seleccionada
-  useEffect(() => {
-    const loadStats = async () => {
-      setIsLoading(true)
-      try {
-        const branchParam = selectedBranch !== "global" ? `?branchId=${selectedBranch}` : ""
-        const response = await api.get<DashboardResponse>(`/dashboard/stats${branchParam}`)
-        setStats(response)
-        setError(null)
-        setLastUpdated(new Date())
-      } catch (err) {
-        console.error("Error loading dashboard stats:", err)
-        setError("Error al cargar las estadísticas")
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    loadStats()
-  }, [selectedBranch])
-
-  const refreshStats = async () => {
+  const loadOperationalData = useCallback(async () => {
     setIsLoading(true)
+    const results = await Promise.allSettled([
+      notificationsService.getHistory(1, 20),
+      rawMaterialsService.getInventory(user?.branchId ?? undefined),
+      inventoryService.listExpirations({
+        branch: user?.branch?.slug,
+        status: "expiring",
+        days: 7,
+      }),
+      productionService.getTodayProduction(user?.role === "ADMIN" || user?.role === "MANAGER" ? undefined : user?.branchId ?? undefined),
+      inventoryService.getOperationalActivity({
+        branchSlug: user?.role === "ADMIN" || user?.role === "MANAGER" ? undefined : user?.branch?.slug,
+        days: 7,
+      }),
+    ])
+
+    const history = results[0]
+    if (history.status === "fulfilled") {
+      setNotifications(history.value.data.filter((item) => ALERT_TYPES.has(item.type)))
+    }
+    const raw = results[1]
+    if (raw.status === "fulfilled") setRawMaterials(raw.value)
+    const expirations = results[2]
+    if (expirations.status === "fulfilled") setExpiringLots(expirations.value.data)
+    const productionResult = results[3]
+    if (productionResult.status === "fulfilled") setProduction(productionResult.value)
+    const activityResult = results[4]
+    if (activityResult.status === "fulfilled") setActivity(activityResult.value.data)
+
+    setLastUpdated(new Date())
+    setIsLoading(false)
+  }, [user?.role, user?.branchId, user?.branch?.slug])
+
+  useEffect(() => {
+    void loadOperationalData()
+  }, [loadOperationalData])
+
+  const checkExpirations = async () => {
+    setIsCheckingExpirations(true)
     try {
-      const branchParam = selectedBranch !== "global" ? `?branchId=${selectedBranch}` : ""
-      const response = await api.get<DashboardResponse>(`/dashboard/stats${branchParam}`)
-      setStats(response)
-      setError(null)
-      setLastUpdated(new Date())
-    } catch (err) {
-      console.error("Error loading dashboard stats:", err)
-      setError("Error al cargar las estadísticas")
+      await inventoryService.checkExpirations()
+      await loadOperationalData()
     } finally {
-      setIsLoading(false)
+      setIsCheckingExpirations(false)
     }
   }
 
+  const lowMaterials = rawMaterials.filter((item) => item.isLow)
+  const hour = clock?.getHours() ?? -1
+  const timeGreeting = hour >= 5 && hour < 12 ? "Buenos días" : hour >= 12 && hour < 19 ? "Buenas tardes" : "Buenas noches"
+  const greeting = user?.firstName ? `${timeGreeting}, ${user.firstName}` : "Panel operativo"
+  const producedUnits = production.reduce((sum, item) => sum + asNumber(item.unitsProduced), 0)
+  const maxActivity = Math.max(1, ...activity.flatMap((item) => [item.produced, item.sold, item.waste]))
 
+  return (
+    <div className="space-y-6 p-4 sm:p-6 lg:p-8">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <p className="text-sm text-muted-foreground">{greeting}</p>
+          <p className="mt-1 text-xs font-medium uppercase tracking-wide text-primary">
+            {clock ? clock.toLocaleTimeString("es-GT", { hour: "2-digit", minute: "2-digit" }) : "--:--"}
+          </p>
+          <h1 className="mt-1 text-2xl font-bold text-foreground sm:text-3xl">Operación de la panadería</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Alertas y tareas de inventario, producción y cierre.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={checkExpirations}
+            disabled={isCheckingExpirations}
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-muted disabled:opacity-60"
+          >
+            <RefreshCw className={"h-4 w-4 " + (isCheckingExpirations ? "animate-spin" : "")} />
+            Revisar caducidades
+          </button>
+          <TelegramAssistantButton />
+        </div>
+      </div>
 
-  if (isLoading && !stats) {
-    return (
-      <div className="p-4 sm:p-6 lg:p-8">
-        <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-border rounded w-48"></div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-card rounded-xl p-6 h-32">
-                <div className="h-4 bg-border rounded w-24 mb-4"></div>
-                <div className="h-8 bg-border rounded w-16"></div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Link href="/admin/inventario/materias-primas" className="rounded-xl border border-amber-200 bg-amber-50 p-4 shadow-sm transition hover:border-amber-400 hover:shadow-md">
+          <div className="flex items-center justify-between">
+            <Wheat className="h-5 w-5 text-amber-600" />
+            <span className="text-3xl font-bold text-amber-950">{lowMaterials.length}</span>
+          </div>
+          <p className="mt-3 text-sm font-semibold text-amber-950">Materias primas bajas</p>
+          <p className="text-xs text-amber-800">Revisar y reabastecer</p>
+        </Link>
+        <Link href="/admin/inventario/caducidades?status=expiring" className="rounded-xl border border-orange-200 bg-orange-50 p-4 shadow-sm transition hover:border-orange-400 hover:shadow-md">
+          <div className="flex items-center justify-between">
+            <CalendarClock className="h-5 w-5 text-orange-600" />
+            <span className="text-3xl font-bold text-orange-950">{expiringLots.length}</span>
+          </div>
+          <p className="mt-3 text-sm font-medium">Próximos a vencer</p>
+          <p className="text-xs text-muted-foreground">Productos comprados, próximos 7 días</p>
+        </Link>
+        <Link href="/admin/produccion" className="rounded-xl border border-primary/20 bg-primary/5 p-4 shadow-sm transition hover:border-primary hover:shadow-md">
+          <div className="flex items-center justify-between">
+            <Factory className="h-5 w-5 text-primary" />
+            <span className="text-3xl font-bold text-primary">{producedUnits}</span>
+          </div>
+          <p className="mt-3 text-sm font-semibold">Unidades producidas hoy</p>
+          <p className="text-xs text-muted-foreground">Amasijos registrados: {production.length}</p>
+        </Link>
+        <Link href="/admin/cierre-dia" className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm transition hover:border-emerald-400 hover:shadow-md">
+          <div className="flex items-center justify-between">
+            <ClipboardCheck className="h-5 w-5 text-emerald-600" />
+            <CheckCircle2 className="h-5 w-5 text-emerald-700" />
+          </div>
+          <p className="mt-3 text-sm font-semibold text-emerald-950">Cierre diario</p>
+          <p className="text-xs text-emerald-800">Conciliar existencias antes de terminar</p>
+        </Link>
+      </div>
+
+      <section className="rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-primary" />
+            <h2 className="font-semibold">Movimiento operativo</h2>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Últimos 7 días · {user?.role === "ADMIN" || user?.role === "MANAGER" ? "ambas sucursales" : "sucursal asignada"}
+          </p>
+        </div>
+        <div className="mt-5 flex h-48 items-end gap-2 border-b border-border pb-1">
+          {activity.map((day) => {
+            const label = new Date(`${day.date}T12:00:00`).toLocaleDateString("es-GT", { weekday: "short" }).replace(".", "")
+            return (
+              <div key={day.date} className="flex min-w-0 flex-1 flex-col items-center justify-end gap-2" title={`${day.date}: ${day.produced} producidas, ${day.sold} vendidas, ${day.waste} mermas`}>
+                <div className="flex h-36 w-full items-end justify-center gap-0.5 sm:gap-1">
+                  <span className="w-1/4 rounded-t bg-primary/80" style={{ height: `${Math.max(2, (day.produced / maxActivity) * 100)}%` }} />
+                  <span className="w-1/4 rounded-t bg-chart-3/80" style={{ height: `${Math.max(2, (day.sold / maxActivity) * 100)}%` }} />
+                  <span className="w-1/4 rounded-t bg-orange-400/80" style={{ height: `${Math.max(2, (day.waste / maxActivity) * 100)}%` }} />
+                </div>
+                <span className="text-[10px] capitalize text-muted-foreground">{label}</span>
+              </div>
+            )
+          })}
+        </div>
+        <div className="mt-3 flex flex-wrap gap-4 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-primary/80" />Producción</span>
+          <span className="inline-flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-chart-3/80" />Ventas</span>
+          <span className="inline-flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-orange-400/80" />Mermas</span>
+        </div>
+      </section>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <section className="rounded-xl border border-border bg-card shadow-sm">
+          <div className="flex items-center justify-between border-b border-border p-4">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-600" />
+              <h2 className="font-semibold">Alertas activas</h2>
+            </div>
+            <Link href="/admin/historial" className="text-xs font-medium text-primary hover:underline">
+              Ver historial
+            </Link>
+          </div>
+          <div className="divide-y divide-border">
+            {isLoading ? (
+              <p className="p-4 text-sm text-muted-foreground">Cargando alertas...</p>
+            ) : notifications.length === 0 ? (
+              <p className="p-4 text-sm text-muted-foreground">No hay alertas recientes.</p>
+            ) : (
+              notifications.slice(0, 8).map((item) => (
+                <div key={item.id} className="flex gap-3 p-4">
+                  <Bell className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">{item.title}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{item.message}</p>
+                    <p className="mt-1 text-[11px] text-muted-foreground/70">{formatDate(item.createdAt)}</p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
+
+        <section className="rounded-xl border border-border bg-card shadow-sm">
+          <div className="flex items-center justify-between border-b border-border p-4">
+            <div className="flex items-center gap-2">
+              <Package className="h-5 w-5 text-orange-600" />
+              <h2 className="font-semibold">Productos próximos a vencer</h2>
+            </div>
+            <Link href="/admin/inventario/caducidades" className="text-xs font-medium text-primary hover:underline">
+              Ver lotes
+            </Link>
+          </div>
+          <div className="divide-y divide-border">
+            {expiringLots.length === 0 ? (
+              <p className="p-4 text-sm text-muted-foreground">No hay lotes próximos a vencer.</p>
+            ) : (
+              expiringLots.slice(0, 8).map((lot) => (
+                <div key={lot.id} className="flex items-center justify-between gap-4 p-4">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{lot.product.name}</p>
+                    <p className="text-xs text-muted-foreground">{lot.branch.name} · vence {lot.expiresAt}</p>
+                  </div>
+                  <span className="shrink-0 text-sm font-semibold">{lot.availableQuantity} uds.</span>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
+      </div>
+
+      <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Wheat className="h-5 w-5 text-amber-600" />
+            <h2 className="font-semibold">Materias primas bajo mínimo</h2>
+          </div>
+          <Link href="/admin/inventario/materias-primas" className="text-xs font-medium text-primary hover:underline">
+            Gestionar inventario
+          </Link>
+        </div>
+        {lowMaterials.length === 0 ? (
+          <p className="mt-4 text-sm text-muted-foreground">No hay materias primas bajo mínimo en la sucursal consultada.</p>
+        ) : (
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {lowMaterials.slice(0, 9).map((item) => (
+              <div key={item.id} className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                <p className="text-sm font-medium text-amber-950">{item.rawMaterial.name}</p>
+                <p className="mt-1 text-xs text-amber-800">
+                  {asNumber(item.quantity).toFixed(1)} {item.rawMaterial.baseUnit} · mínimo {asNumber(item.rawMaterial.minStock).toFixed(1)}
+                </p>
+                <p className="mt-1 text-[11px] text-amber-700">{item.branch.name}</p>
               </div>
             ))}
           </div>
-        </div>
-      </div>
-    )
-  }
+        )}
+      </section>
 
-  // Preparar datos para gráficas
-  const orderStatusData = stats?.ordersByStatus.map(item => ({
-    name: STATUS_LABELS[item.status] || item.status,
-    value: item.count,
-    color: STATUS_COLORS[item.status] || "#94a3b8"
-  })) || []
-
-  const weeklySalesData = stats?.weeklySales?.map(d => ({
-    date: formatDateChart(d.date),
-    ventas: d.totalSales,
-    ordenes: d.orderCount
-  })) || []
-
-  return (
-    <div className="p-4 sm:p-6 lg:p-8 bg-cream min-h-screen">
-      {/* Header con saludo y fecha */}
-      <div className="mb-8">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl lg:text-3xl font-bold text-foreground">
-              {getGreeting()}, {user?.firstName || "Usuario"}
-            </h1>
-            <div className="flex items-center gap-3 mt-2 text-muted-foreground">
-              <div className="flex items-center gap-1.5">
-                <Calendar className="h-4 w-4" />
-                <span className="text-sm capitalize">{getCurrentDate()}</span>
-              </div>
-              {lastUpdated && (
-                <div className="flex items-center gap-1.5 text-sm">
-                  <span>•</span>
-                  <span>Actualizado {lastUpdated.toLocaleTimeString("es-GT", { hour: "2-digit", minute: "2-digit" })}</span>
-                </div>
-              )}
-            </div>
-          </div>
-          
-          {/* Selector de Vista (Admin) o Badge fijo (Empleado) + Botón actualizar */}
-          <div className="flex items-center gap-3">
-            {(user?.role === "ADMIN" || user?.role === "MANAGER") && <TelegramAssistantButton />}
-            <button
-              onClick={refreshStats}
-              disabled={isLoading}
-              className="flex items-center gap-2 bg-card rounded-lg shadow-sm border border-border px-4 py-2 hover:bg-cream transition-colors disabled:opacity-50"
-            >
-              <RefreshCw className={`h-4 w-4 text-muted-foreground ${isLoading ? "animate-spin" : ""}`} />
-              <span className="text-sm text-muted-foreground font-medium hidden sm:inline">Actualizar</span>
-            </button>
-            {isAdmin ? (
-              <div className="flex items-center gap-2 bg-card rounded-lg shadow-sm border border-border px-4 py-2">
-                <Store className="h-4 w-4 text-muted-foreground/60" />
-                <span className="text-sm text-muted-foreground hidden sm:inline">Vista:</span>
-                <select
-                  value={selectedBranch}
-                  onChange={(e) => setSelectedBranch(e.target.value)}
-                  className="border-0 bg-transparent font-medium text-foreground focus:outline-none focus:ring-0 pr-8"
-                >
-                  <option value="global">Global (Todas)</option>
-                  {branches.map(branch => (
-                    <option key={branch.id} value={branch.id.toString()}>
-                      {branch.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 bg-primary/10 text-primary rounded-lg px-4 py-2">
-                <MapPin className="h-4 w-4" />
-                <span className="text-sm font-medium">
-                  {user?.branch?.name || branches.find(b => b.id.toString() === selectedBranch)?.name || "Sin asignar"}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {error && (
-        <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive">
-          {error}
-        </div>
-      )}
-
-      {/* KPIs Principales (5 tarjetas) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
-        {/* Ventas del Día */}
-        <div className="bg-gradient-to-br from-success to-success rounded-xl shadow-lg p-6 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-white/80 text-sm font-medium">Ventas del Día</p>
-              <p className="text-3xl font-bold mt-2">{formatCurrency(stats?.kpis.todaySales || 0)}</p>
-              <p className="text-white/80 text-sm mt-1">{stats?.kpis.todayOrdersCount || 0} órdenes completadas</p>
-            </div>
-            <div className="h-16 w-16 bg-white/20 rounded-xl flex items-center justify-center">
-              <Banknote className="h-8 w-8" />
-            </div>
-          </div>
-        </div>
-
-        {/* Mermas del Mes */}
-        <div className="bg-gradient-to-br from-destructive to-destructive rounded-xl shadow-lg p-6 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-white/80 text-sm font-medium">Mermas del Mes</p>
-              <p className="text-3xl font-bold mt-2">{stats?.kpis.monthlyLossesQty || 0} uds</p>
-              <p className="text-white/80 text-sm mt-1">{stats?.kpis.monthlyLossesCount || 0} movimientos registrados</p>
-            </div>
-            <div className="h-16 w-16 bg-white/20 rounded-xl flex items-center justify-center">
-              <TrendingDown className="h-8 w-8" />
-            </div>
-          </div>
-        </div>
-
-        {/* Alertas de Stock */}
-        <div className={`rounded-xl shadow-lg p-6 text-white ${
-          (stats?.kpis.lowStockAlerts || 0) > 0 
-            ? 'bg-gradient-to-br from-warning to-warning' 
-            : 'bg-gradient-to-br from-chart-3 to-chart-3'
-        }`}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-white/80 text-sm font-medium">Alertas de Stock</p>
-              <p className="text-3xl font-bold mt-2">{stats?.kpis.lowStockAlerts || 0}</p>
-              <p className="text-white/80 text-sm mt-1">productos con stock bajo</p>
-            </div>
-            <div className="h-16 w-16 bg-white/20 rounded-xl flex items-center justify-center">
-              <AlertTriangle className="h-8 w-8" />
-            </div>
-          </div>
-          {(stats?.kpis.lowStockAlerts || 0) > 0 && (
-            <Link href="/admin/inventario" className="mt-4 flex items-center text-sm text-white/90 hover:text-white font-medium">
-              Ver productos <ArrowUpRight className="h-4 w-4 ml-1" />
-            </Link>
-          )}
-        </div>
-
-        {/* Productos Agotados */}
-        <div className={`rounded-xl shadow-lg p-6 text-white ${
-          (stats?.kpis.outOfStockAlerts || 0) > 0 
-            ? 'bg-gradient-to-br from-destructive to-destructive' 
-            : 'bg-gradient-to-br from-chart-3 to-chart-3'
-        }`}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-white/80 text-sm font-medium">Productos Agotados</p>
-              <p className="text-3xl font-bold mt-2">{stats?.kpis.outOfStockAlerts || 0}</p>
-              <p className="text-white/80 text-sm mt-1">requieren acción urgente</p>
-            </div>
-            <div className="h-16 w-16 bg-white/20 rounded-xl flex items-center justify-center">
-              <Boxes className="h-8 w-8" />
-            </div>
-          </div>
-          {(stats?.kpis.outOfStockAlerts || 0) > 0 && (
-            <Link href="/admin/inventario" className="mt-4 flex items-center text-sm text-white/90 hover:text-white font-medium">
-              Ver agotados <ArrowUpRight className="h-4 w-4 ml-1" />
-            </Link>
-          )}
-        </div>
-
-        {/* Próximos a Vencer */}
-        <div className={`rounded-xl shadow-lg p-6 text-white ${
-          (stats?.kpis.expiringAlerts || 0) > 0 
-            ? 'bg-gradient-to-br from-warning to-warning' 
-            : 'bg-gradient-to-br from-chart-3 to-chart-3'
-        }`}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-white/80 text-sm font-medium">Próximos a Vencer</p>
-              <p className="text-3xl font-bold mt-2">{stats?.kpis.expiringAlerts || 0}</p>
-              <p className="text-white/80 text-sm mt-1">lotes vencen en 30 días</p>
-            </div>
-            <div className="h-16 w-16 bg-white/20 rounded-xl flex items-center justify-center">
-              <Calendar className="h-8 w-8" />
-            </div>
-          </div>
-          <Link href="/admin/inventario/caducidades" className="mt-4 flex items-center text-sm text-white/90 hover:text-white font-medium">
-            Ver lotes <ArrowUpRight className="h-4 w-4 ml-1" />
-          </Link>
-        </div>
-      </div>
-
-      {/* Stats secundarias */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-card rounded-xl shadow-sm p-4 border border-border">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 bg-chart-3/10 rounded-lg flex items-center justify-center">
-              <ShoppingCart className="h-5 w-5 text-chart-3" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">{stats?.summary.totalOrders || 0}</p>
-              <p className="text-xs text-muted-foreground">Órdenes totales</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-card rounded-xl shadow-sm p-4 border border-border">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 bg-warning/10 rounded-lg flex items-center justify-center">
-              <Clock className="h-5 w-5 text-warning" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">{stats?.summary.pendingOrders || 0}</p>
-              <p className="text-xs text-muted-foreground">Pendientes</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-card rounded-xl shadow-sm p-4 border border-border">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 bg-primary/10 rounded-lg flex items-center justify-center">
-              <Package className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">{stats?.summary.activeProducts || 0}</p>
-              <p className="text-xs text-muted-foreground">Productos</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-card rounded-xl shadow-sm p-4 border border-border">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 bg-chart-5/10 rounded-lg flex items-center justify-center">
-              <Users className="h-5 w-5 text-chart-5" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">{stats?.summary.totalUsers || 0}</p>
-              <p className="text-xs text-muted-foreground">Usuarios</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <AnalyticsPreview />
-
-      {/* Gráficas principales */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Resumen operativo: el análisis histórico detallado vive en Reportes */}
-        <div className="bg-card rounded-xl shadow-sm p-6 border border-border">
-          <div className="flex items-center justify-between gap-3 mb-6">
-            <div className="flex items-center gap-2">
-              <LineChartIcon className="h-5 w-5 text-muted-foreground/60" />
-              <h3 className="font-semibold text-foreground">Ventas de los últimos 7 días</h3>
-            </div>
-            <Link href="/admin/reportes" className="text-xs text-primary hover:underline whitespace-nowrap">Ver análisis</Link>
-          </div>
-          {weeklySalesData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={280}>
-              <LineChart data={weeklySalesData} margin={{ left: 20, right: 20, top: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-                <YAxis tickFormatter={(v) => `Q${v}`} />
-                <Tooltip 
-                  formatter={(value, name) => [
-                    name === 'ventas' ? formatCurrency(Number(value)) : value,
-                    name === 'ventas' ? 'Ventas' : 'Órdenes'
-                  ]}
-                  contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }}
-                />
-                <Line type="monotone" dataKey="ventas" stroke="#10b981" strokeWidth={3} dot={{ fill: '#10b981' }} />
-              </LineChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="h-64 flex items-center justify-center text-muted-foreground/60">
-              <p>No hay datos de ventas disponibles</p>
-            </div>
-          )}
-        </div>
-
-        {/* Gráfico circular - órdenes por estado */}
-        <div className="bg-card rounded-xl shadow-sm p-6 border border-border">
-          <div className="flex items-center gap-2 mb-6">
-            <PieChartIcon className="h-5 w-5 text-muted-foreground/60" />
-            <h3 className="font-semibold text-foreground">Órdenes por Estado</h3>
-          </div>
-          {orderStatusData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={280}>
-              <PieChart>
-                <Pie
-                  data={orderStatusData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
-                  paddingAngle={2}
-                  dataKey="value"
-                  label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
-                  labelLine={false}
-                >
-                  {orderStatusData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  formatter={(value) => [`${value} órdenes`, '']}
-                  contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="h-64 flex items-center justify-center text-muted-foreground/60">
-              <p>No hay órdenes registradas</p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Acciones operativas: el stock bajo conserva prioridad en el dashboard */}
-      <div className="grid grid-cols-1 gap-6 mb-8">
-        <div className="bg-card rounded-xl shadow-sm p-6 border border-border">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-destructive" />
-              <h3 className="font-semibold text-foreground">Stock Bajo</h3>
-            </div>
-            <Link href="/admin/inventario" className="text-sm text-primary hover:text-primary font-medium">
-              Ver inventario
-            </Link>
-          </div>
-          {stats?.lowStockProducts && stats.lowStockProducts.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="text-left text-sm text-muted-foreground border-b">
-                    <th className="pb-3 font-medium">Producto</th>
-                    <th className="pb-3 font-medium">Sucursal</th>
-                    <th className="pb-3 font-medium text-right">Stock</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {stats.lowStockProducts.slice(0, 5).map((item, index) => (
-                    <tr key={index} className="border-b last:border-0">
-                      <td className="py-3 font-medium text-foreground">{item.productName}</td>
-                      <td className="py-3 text-muted-foreground">{item.branchName}</td>
-                      <td className="py-3 text-right">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          item.available === 0 ? 'bg-destructive/10 text-destructive' : 'bg-warning/10 text-warning'
-                        }`}>
-                          {item.available} uds
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="h-48 flex items-center justify-center text-muted-foreground/60">
-              <div className="text-center">
-                <Package className="h-12 w-12 mx-auto mb-2 text-success/40" />
-                <p>Todos los productos tienen stock suficiente</p>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Acciones Rápidas - Estilo OrangeHRM */}
-      <div className="bg-card rounded-xl shadow-sm p-6 border border-border">
-        <h3 className="font-semibold text-foreground mb-6">Accesos Rápidos</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          <Link
-            href="/admin/inventario"
-            className="flex flex-col items-center gap-3 p-4 rounded-xl bg-success/10 hover:bg-success/10 transition-all group"
-          >
-            <div className="h-12 w-12 bg-success/100 rounded-xl flex items-center justify-center">
-              <Boxes className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-sm font-medium text-foreground text-center">Inventario</span>
-          </Link>
-          <Link
-            href="/admin/productos/nuevo"
-            className="flex flex-col items-center gap-3 p-4 rounded-xl bg-accent hover:bg-primary/10 transition-all group"
-          >
-            <div className="h-12 w-12 bg-accent0 rounded-xl flex items-center justify-center">
-              <Package className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-sm font-medium text-foreground text-center">Nuevo Producto</span>
-          </Link>
-          <Link
-            href="/admin/ordenes?status=PENDING"
-            className="flex flex-col items-center gap-3 p-4 rounded-xl bg-chart-3/10 hover:bg-chart-3/10 transition-all group"
-          >
-            <div className="h-12 w-12 bg-chart-3/100 rounded-xl flex items-center justify-center">
-              <Clock className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-sm font-medium text-foreground text-center">Pendientes</span>
-          </Link>
-          <Link
-            href="/admin/ordenes"
-            className="flex flex-col items-center gap-3 p-4 rounded-xl bg-chart-5/10 hover:bg-chart-5/10 transition-all group"
-          >
-            <div className="h-12 w-12 bg-chart-5/100 rounded-xl flex items-center justify-center">
-              <ShoppingCart className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-sm font-medium text-foreground text-center">Órdenes</span>
-          </Link>
-          <Link
-            href="/admin/categorias"
-            className="flex flex-col items-center gap-3 p-4 rounded-xl bg-chart-5/10 hover:bg-chart-5/10 transition-all group"
-          >
-            <div className="h-12 w-12 bg-chart-5/100 rounded-xl flex items-center justify-center">
-              <Tag className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-sm font-medium text-foreground text-center">Categorías</span>
-          </Link>
-          <Link
-            href="/admin/usuarios"
-            className="flex flex-col items-center gap-3 p-4 rounded-xl bg-indigo-50 hover:bg-indigo-100 transition-all group"
-          >
-            <div className="h-12 w-12 bg-indigo-500 rounded-xl flex items-center justify-center">
-              <Users className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-sm font-medium text-foreground text-center">Usuarios</span>
-          </Link>
-        </div>
-      </div>
+      <p className="text-right text-xs text-muted-foreground">
+        {lastUpdated ? "Actualizado " + lastUpdated.toLocaleTimeString("es-GT") : "Sin actualizar"}
+      </p>
     </div>
   )
 }

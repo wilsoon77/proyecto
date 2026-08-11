@@ -66,7 +66,7 @@ export class LoggerService implements NestLoggerService {
   }
 
   auditOrderPickup(orderId: number, userId?: string) {
-    this.info('Orden entregada/recogida', { orderId, userId, action: 'ORDER_PICKUP', resource: 'order' });
+    this.info('Orden recogida en sucursal', { orderId, userId, action: 'ORDER_PICKUP', resource: 'order' });
   }
 
   auditStockMovement(productId: number, type: string, quantity: number, fromBranchId?: number, toBranchId?: number, userId?: string) {

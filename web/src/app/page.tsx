@@ -12,6 +12,7 @@ import { apiProductToProduct } from "@/lib/api/transformers"
 import type { Product } from "@/types"
 import { ProductCard } from "@/components/products/ProductCard"
 import { Calendar, Store, Wheat } from "lucide-react"
+import { defaultSalePresentation } from "@/lib/presentation-quantities"
 
 export default function Home() {
   const router = useRouter()
@@ -160,7 +161,7 @@ export default function Home() {
                 product={product}
                 onAddToCart={(id) => {
                   const p = featuredProducts.find(x => x.id === id)
-                  if (p) addItem(p, 1)
+                  if (p) addItem(p, 1, defaultSalePresentation(p))
                 }}
               />
             ))}

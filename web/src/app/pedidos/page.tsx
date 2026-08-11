@@ -20,7 +20,6 @@ const STATUS_ICONS: Record<string, React.ComponentType<{ className?: string }>> 
   'CONFIRMED': Check,
   'PREPARING': Wrench,
   'READY': Package,
-  'DELIVERED': CheckCircle2,
   'CANCELLED': XCircle,
   'PICKED_UP': Home,
 }
@@ -127,7 +126,7 @@ export default function PedidosPage() {
                 </div>
                 <div>
                   <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium ${
-                    order.status === 'DELIVERED' || order.status === 'PICKED_UP' 
+                    order.status === 'PICKED_UP'
                       ? 'bg-success/10 text-success' 
                       : order.status === 'CANCELLED' 
                         ? 'bg-destructive/10 text-destructive' 
@@ -156,8 +155,14 @@ export default function PedidosPage() {
                 <div className="mt-4 max-h-32 space-y-1 overflow-auto border-t pt-3 text-sm">
                   {order.items.map((item, idx) => (
                     <div key={idx} className="flex justify-between">
-                      <span>{item.productName || `Producto #${item.productId}`} × {item.quantity}</span>
-                      <span className="font-medium">{formatPrice(Number(item.unitPrice) * item.quantity)}</span>
+                      <span>
+                        {item.productName || `Producto #${item.productId}`}
+                        {item.presentationName ? ` (${item.presentationName})` : ''}
+                        {' × '}{item.presentationQuantity ?? item.quantity}
+                      </span>
+                      <span className="font-medium">
+                        {formatPrice(Number(item.unitPrice) * (item.presentationQuantity ?? item.quantity))}
+                      </span>
                     </div>
                   ))}
                 </div>

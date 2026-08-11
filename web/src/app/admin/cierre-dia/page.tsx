@@ -13,10 +13,16 @@ import {
 import { useAuth } from "@/context/AuthContext"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
+import { PresentationCountFields } from "@/components/admin/PresentationCountFields"
+import { baseQuantityFromCounts, breakdownBaseQuantity } from "@/lib/presentation-quantities"
 
 interface CloseEntry extends DailyClosePreviewItem {
   countedInput: string
   wasteInput: string
+  countedPresentationInputs: Record<string, string>
+  wastePresentationInputs: Record<string, string>
+  countedLooseInput: string
+  wasteLooseInput: string
 }
 
 interface Projection {
@@ -73,7 +79,7 @@ export default function DailyClosePage() {
 
     const loadBranches = async () => {
       try {
-        if (user.role === "ADMIN") {
+        if (user.role === "ADMIN" || user.role === "MANAGER") {
           const data = await branchesService.list()
           if (!cancelled) {
             setBranches(data)
@@ -118,11 +124,20 @@ export default function DailyClosePage() {
         const preview = await dailyCloseService.preview(branchId, closeDate)
         if (cancelled) return
         setSnapshotAt(preview.snapshotAt)
-        setEntries(preview.items.map((item) => ({
-          ...item,
-          countedInput: String(item.countedQty),
-          wasteInput: String(item.wasteQty),
-        })))
+        setEntries(preview.items.map((item) => {
+          const presentations = item.presentations ?? []
+          const countedBreakdown = breakdownBaseQuantity(item.countedQty, presentations)
+          const wasteBreakdown = breakdownBaseQuantity(item.wasteQty, presentations)
+          return {
+            ...item,
+            countedInput: String(item.countedQty),
+            wasteInput: String(item.wasteQty),
+            countedPresentationInputs: presentations.length > 0 ? countedBreakdown.counts : {},
+            wastePresentationInputs: presentations.length > 0 ? wasteBreakdown.counts : {},
+            countedLooseInput: presentations.length > 0 ? countedBreakdown.loose : "",
+            wasteLooseInput: presentations.length > 0 ? wasteBreakdown.loose : "",
+          }
+        }))
       } catch (loadError: unknown) {
         console.error("Error cargando vista previa del cierre", loadError)
         if (!cancelled) {
@@ -142,10 +157,15 @@ export default function DailyClosePage() {
   }, [branchId, closeDate])
 
   const projections = useMemo<Projection[]>(() => entries.map((entry) => {
-    const countedValid = isWholeNumber(entry.countedInput)
-    const wasteValid = isWholeNumber(entry.wasteInput)
-    const countedQty = countedValid ? Number(entry.countedInput) : 0
-    const wasteQty = wasteValid ? Number(entry.wasteInput) : 0
+    const hasPresentations = (entry.presentations?.length ?? 0) > 0
+    const countedQty = hasPresentations
+      ? baseQuantityFromCounts(entry.countedPresentationInputs, entry.presentations ?? [], entry.countedLooseInput)
+      : (isWholeNumber(entry.countedInput) ? Number(entry.countedInput) : Number.NaN)
+    const wasteQty = hasPresentations
+      ? baseQuantityFromCounts(entry.wastePresentationInputs, entry.presentations ?? [], entry.wasteLooseInput)
+      : (isWholeNumber(entry.wasteInput) ? Number(entry.wasteInput) : Number.NaN)
+    const countedValid = Number.isInteger(countedQty) && countedQty >= 0
+    const wasteValid = Number.isInteger(wasteQty) && wasteQty >= 0
     const afterWaste = entry.systemQty - wasteQty
     const valid = countedValid && wasteValid && countedQty >= entry.reservedQty && wasteQty <= entry.systemQty
 
@@ -182,6 +202,17 @@ export default function DailyClosePage() {
     )))
   }
 
+  const updatePresentationEntry = (productId: number, field: "countedPresentationInputs" | "wastePresentationInputs", presentationId: number, value: string) => {
+    setEntries((current) => current.map((entry) => entry.productId === productId
+      ? { ...entry, [field]: { ...entry[field], [String(presentationId)]: value } }
+      : entry
+    ))
+  }
+
+  const updateLooseEntry = (productId: number, field: "countedLooseInput" | "wasteLooseInput", value: string) => {
+    setEntries((current) => current.map((entry) => entry.productId === productId ? { ...entry, [field]: value } : entry))
+  }
+
   const handleSubmit = async () => {
     if (!branchId || !snapshotAt || entries.length === 0) {
       showToast("No hay inventario disponible para cerrar", "error")
@@ -199,11 +230,20 @@ export default function DailyClosePage() {
         closeDate,
         snapshotAt,
         note: note.trim() || undefined,
-        items: projections.map((projection) => ({
-          productId: projection.productId,
-          countedQty: projection.countedQty,
-          wasteQty: projection.wasteQty,
-        })),
+        items: entries.map((entry) => {
+          const projection = projectionMap.get(entry.productId)!
+          return {
+            productId: entry.productId,
+            countedQty: projection.countedQty,
+            wasteQty: projection.wasteQty,
+            countedPresentations: entry.presentations?.length && Number(entry.countedLooseInput || 0) === 0
+              ? Object.entries(entry.countedPresentationInputs).filter(([, quantity]) => quantity !== "").map(([presentationId, quantity]) => ({ presentationId: Number(presentationId), quantity: Number(quantity) }))
+              : undefined,
+            wastePresentations: entry.presentations?.length && Number(entry.wasteLooseInput || 0) === 0
+              ? Object.entries(entry.wastePresentationInputs).filter(([, quantity]) => quantity !== "").map(([presentationId, quantity]) => ({ presentationId: Number(presentationId), quantity: Number(quantity) }))
+              : undefined,
+          }
+        }),
       })
       setResult(close)
       showToast("Cierre diario registrado correctamente", "success")
@@ -289,7 +329,7 @@ export default function DailyClosePage() {
               <ClipboardCheck className="h-7 w-7 text-primary" />Cierre del día
             </h1>
             <p className="mt-1 max-w-2xl text-muted-foreground">
-              Registra el conteo físico al final de la jornada. El sistema calcula las ventas que no pasaron por POS o pedidos y mantiene las alertas de inventario.
+              Registra el conteo físico al final de la jornada. El sistema calcula ventas no registradas, mermas y sobrantes a partir del conteo físico.
             </p>
           </div>
           {(user?.role === "ADMIN" || user?.role === "MANAGER") && (
@@ -304,7 +344,7 @@ export default function DailyClosePage() {
             <span className="mb-1 block text-sm font-medium text-foreground">Sucursal</span>
             <div className="relative">
               <Store className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
-              {user?.role === "ADMIN" ? (
+              {user?.role === "ADMIN" || user?.role === "MANAGER" ? (
                 <select
                   value={branchId ?? ""}
                   onChange={(event) => setBranchId(Number(event.target.value) || null)}
@@ -333,7 +373,7 @@ export default function DailyClosePage() {
 
           <div className="flex items-end text-sm text-muted-foreground">
             <p className="rounded-lg bg-accent p-3 text-primary">
-              Puedes registrar ventas de mostrador al cierre sin alterar los descuentos de materia prima de producción.
+              El cierre concilia existencias y bloquea nuevas producciones para esa jornada. Las compras y ajustes de inventario siguen disponibles si aparece una corrección posterior.
             </p>
           </div>
         </div>
@@ -394,6 +434,17 @@ export default function DailyClosePage() {
                           <td className="px-3 py-3 text-center font-semibold text-foreground">{entry.systemQty}</td>
                           <td className="px-3 py-3 text-center text-primary">{entry.reservedQty}</td>
                           <td className="px-3 py-3">
+                            {entry.presentations?.length ? (
+                              <PresentationCountFields
+                                presentations={entry.presentations}
+                                values={entry.countedPresentationInputs}
+                                looseValue={entry.countedLooseInput}
+                                unitLabel={entry.stockUnitLabel ?? "piezas"}
+                                label="Conteo"
+                                onChange={(presentationId, value) => updatePresentationEntry(entry.productId, "countedPresentationInputs", presentationId, value)}
+                                onLooseChange={(value) => updateLooseEntry(entry.productId, "countedLooseInput", value)}
+                              />
+                            ) : (
                             <input
                               type="number"
                               min="0"
@@ -402,9 +453,21 @@ export default function DailyClosePage() {
                               onChange={(event) => updateEntry(entry.productId, "countedInput", event.target.value)}
                               className={`w-28 rounded-lg border px-3 py-2 text-center font-semibold focus:outline-none focus:ring-2 focus:ring-primary ${hasValidationIssue ? "border-destructive/30 bg-destructive/10" : "border-border"}`}
                               aria-label={`Conteo físico de ${entry.productName}`}
-                            />
-                          </td>
-                          <td className="px-3 py-3">
+                             />
+                             )}
+                           </td>
+                           <td className="px-3 py-3">
+                            {entry.presentations?.length ? (
+                              <PresentationCountFields
+                                presentations={entry.presentations}
+                                values={entry.wastePresentationInputs}
+                                looseValue={entry.wasteLooseInput}
+                                unitLabel={entry.stockUnitLabel ?? "piezas"}
+                                label="Merma"
+                                onChange={(presentationId, value) => updatePresentationEntry(entry.productId, "wastePresentationInputs", presentationId, value)}
+                                onLooseChange={(value) => updateLooseEntry(entry.productId, "wasteLooseInput", value)}
+                              />
+                            ) : (
                             <input
                               type="number"
                               min="0"
@@ -413,9 +476,10 @@ export default function DailyClosePage() {
                               onChange={(event) => updateEntry(entry.productId, "wasteInput", event.target.value)}
                               className={`w-24 rounded-lg border px-3 py-2 text-center focus:outline-none focus:ring-2 focus:ring-primary ${hasValidationIssue ? "border-destructive/30 bg-destructive/10" : "border-border"}`}
                               aria-label={`Merma de ${entry.productName}`}
-                            />
-                          </td>
-                          <td className="px-3 py-3 text-center font-semibold text-chart-3">{projection.soldQty}</td>
+                             />
+                             )}
+                           </td>
+                           <td className="px-3 py-3 text-center font-semibold text-chart-3">{projection.soldQty}</td>
                           <td className="px-3 py-3 text-center font-semibold text-success">{projection.surplusQty}</td>
                         </tr>
                       )

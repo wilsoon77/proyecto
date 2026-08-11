@@ -1,14 +1,35 @@
-import { Body, Controller, Param, ParseIntPipe, Post, Get, Query, UseGuards, Req, Res, Patch, ForbiddenException } from '@nestjs/common';
-import { ApiTags, ApiBody, ApiQuery, ApiBearerAuth, ApiOperation, ApiResponse, ApiBadRequestResponse } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  ForbiddenException,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import type { Response } from 'express';
 import { OrdersService } from './orders.service.js';
-import { POSOrderDto, ReserveOrderDto } from './dto.js';
+import { ReserveOrderDto } from './dto.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/roles.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
 import { setPaginationHeaders } from '../common/utils/pagination.util.js';
 import { AuditService } from '../audit/audit.service.js';
 import { getClientIp } from '../common/utils/audit.util.js';
-import type { Response } from 'express';
 import { BranchScopeService } from '../branch-scope/branch-scope.service.js';
 
 const ORDER_OPERATOR_ROLES = new Set(['MANAGER', 'CASHIER']);
@@ -25,46 +46,21 @@ export class OrdersController {
   @Post('reserve')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Reservar orden', description: 'Crea una orden y bloquea stock como reserva.' })
+  @ApiOperation({
+    summary: 'Reservar pedido para recoger en sucursal',
+    description: 'Crea una reserva para retiro en la sucursal indicada y descuenta el stock disponible. Si permanece en PENDING sin confirmarse, se cancela automáticamente después de 2 horas por defecto y libera la reserva.',
+  })
   @ApiBody({ type: ReserveOrderDto })
-  @ApiResponse({ status: 201, description: 'Orden creada y reservada', content: { 'application/json': { examples: { ejemplo: { value: { id: 123, orderNumber: 'ORD-000123', status: 'PENDING', subtotal: 100, total: 100 } } } } } })
-  @ApiBadRequestResponse({ description: 'Validación o stock insuficiente', schema: { example: { statusCode: 400, error: 'Bad Request', message: 'Stock insuficiente: Concha' } } })
+  @ApiResponse({ status: 201, description: 'Pedido creado y stock reservado' })
+  @ApiBadRequestResponse({ description: 'Validación o stock insuficiente' })
   async reserve(@Req() req: any, @Body() dto: ReserveOrderDto) {
-    // El endpoint tambien sirve a clientes, pero un empleado no puede usarlo
-    // para reservar inventario de una sucursal ajena.
     const branchSlug = ORDER_OPERATOR_ROLES.has(req.user?.role) || req.user?.role === 'BAKER'
       ? await this.branchScope.resolveBranchSlug(req.user, dto.branchSlug)
       : dto.branchSlug;
-    const order = await this.service.reserve({ ...dto, branchSlug: branchSlug ?? dto.branchSlug }, req.user?.userId);
-    
-    // Registrar en auditoría
-    const userName = await this.auditService.getUserName(req.user?.userId);
-    await this.auditService.log({
-      userId: req.user?.userId,
-      userName,
-      action: 'CREATE',
-      entity: 'Order',
-      entityId: String(order.id),
-      entityName: order.orderNumber,
-      details: { branchSlug: branchSlug ?? dto.branchSlug, itemsCount: dto.items?.length, total: order.total },
-      ipAddress: getClientIp(req),
-      userAgent: req.headers?.['user-agent'],
-    });
-    
-    return order;
-  }
-
-  @Post('pos')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN', 'MANAGER', 'CASHIER')
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Venta directa en POS', description: 'Crea una orden entregada instantáneamente y descuenta stock.' })
-  @ApiBody({ type: POSOrderDto })
-  @ApiResponse({ status: 201, description: 'Venta registrada exitosamente' })
-  @ApiBadRequestResponse({ description: 'Stock insuficiente' })
-  async posSale(@Req() req: any, @Body() dto: POSOrderDto) {
-    const branchSlug = await this.branchScope.resolveBranchSlug(req.user, dto.branchSlug);
-    const order = await this.service.directSale({ ...dto, branchSlug: branchSlug ?? dto.branchSlug }, req.user?.userId);
+    const order = await this.service.reserve(
+      { ...dto, branchSlug: branchSlug ?? dto.branchSlug },
+      req.user?.userId,
+    );
 
     const userName = await this.auditService.getUserName(req.user?.userId);
     await this.auditService.log({
@@ -74,7 +70,11 @@ export class OrdersController {
       entity: 'Order',
       entityId: String(order.id),
       entityName: order.orderNumber,
-      details: { action: 'POS_SALE', branchSlug: branchSlug ?? dto.branchSlug, itemsCount: dto.items?.length, total: order.total },
+      details: {
+        branchSlug: branchSlug ?? dto.branchSlug,
+        itemsCount: dto.items?.length,
+        total: order.total,
+      },
       ipAddress: getClientIp(req),
       userAgent: req.headers?.['user-agent'],
     });
@@ -85,7 +85,10 @@ export class OrdersController {
   @Post(':id/cancel')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Cancelar orden', description: 'Libera las reservas de inventario y marca la orden como CANCELLED. El cliente puede cancelar su propia orden; ADMIN puede cancelar cualquiera.' })
+  @ApiOperation({
+    summary: 'Cancelar pedido y liberar la reserva',
+    description: 'Cancela manualmente el pedido y libera las unidades reservadas. La expiración automática solo aplica a pedidos PENDING sin confirmar; los demás estados se cancelan manualmente.',
+  })
   async cancel(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
     const role = req.user?.role;
     if (ORDER_OPERATOR_ROLES.has(role)) {
@@ -97,11 +100,10 @@ export class OrdersController {
       role === 'ADMIN' || ORDER_OPERATOR_ROLES.has(role) ? undefined : req.user?.userId,
     );
     if (role !== 'ADMIN' && !ORDER_OPERATOR_ROLES.has(role) && orderInfo?.userId !== req.user?.userId) {
-      throw new ForbiddenException('No tienes permiso para cancelar esta orden');
+      throw new ForbiddenException('No tienes permiso para cancelar este pedido');
     }
+
     const result = await this.service.cancel(id, req.user?.userId);
-    
-    // Registrar en auditoría
     const userName = await this.auditService.getUserName(req.user?.userId);
     await this.auditService.log({
       userId: req.user?.userId,
@@ -109,12 +111,12 @@ export class OrdersController {
       action: 'UPDATE',
       entity: 'Order',
       entityId: String(id),
-      entityName: orderInfo?.orderNumber || `Order #${id}`,
+      entityName: orderInfo?.orderNumber || 'Order #' + id,
       details: { action: 'CANCEL', newStatus: 'CANCELLED' },
       ipAddress: getClientIp(req),
       userAgent: req.headers?.['user-agent'],
     });
-    
+
     return result;
   }
 
@@ -122,13 +124,11 @@ export class OrdersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN', 'MANAGER', 'CASHIER')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Confirmar recogida', description: 'Descuenta inventario con movimiento VENTA y marca PICKED_UP. La orden debe estar READY.' })
+  @ApiOperation({ summary: 'Confirmar recogida en sucursal' })
   async pickup(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
     await this.branchScope.assertOrderAccess(req.user, id);
     const orderInfo = await this.service.detail(id);
     const result = await this.service.pickup(id, req.user?.userId);
-    
-    // Registrar en auditoría
     const userName = await this.auditService.getUserName(req.user?.userId);
     await this.auditService.log({
       userId: req.user?.userId,
@@ -136,34 +136,8 @@ export class OrdersController {
       action: 'UPDATE',
       entity: 'Order',
       entityId: String(id),
-      entityName: orderInfo?.orderNumber || `Order #${id}`,
+      entityName: orderInfo?.orderNumber || 'Order #' + id,
       details: { action: 'PICKUP', newStatus: 'PICKED_UP' },
-      ipAddress: getClientIp(req),
-      userAgent: req.headers?.['user-agent'],
-    });
-    
-    return result;
-  }
-
-  @Post(':id/deliver')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN', 'MANAGER', 'CASHIER')
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Confirmar entrega', description: 'Descuenta inventario con movimiento VENTA y marca DELIVERED. La orden debe estar IN_DELIVERY.' })
-  async deliver(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
-    await this.branchScope.assertOrderAccess(req.user, id);
-    const orderInfo = await this.service.detail(id);
-    const result = await this.service.deliver(id, req.user?.userId);
-
-    const userName = await this.auditService.getUserName(req.user?.userId);
-    await this.auditService.log({
-      userId: req.user?.userId,
-      userName,
-      action: 'UPDATE',
-      entity: 'Order',
-      entityId: String(id),
-      entityName: orderInfo?.orderNumber || `Order #${id}`,
-      details: { action: 'DELIVER', newStatus: 'DELIVERED' },
       ipAddress: getClientIp(req),
       userAgent: req.headers?.['user-agent'],
     });
@@ -175,82 +149,72 @@ export class OrdersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN', 'MANAGER', 'CASHIER')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Listar órdenes', description: 'Listado paginado con filtros por sucursal y estado. Requiere rol ADMIN, MANAGER o CASHIER.' })
-  @ApiQuery({ name: 'branchSlug', required: false })
-  @ApiQuery({ name: 'status', required: false })
+  @ApiOperation({ summary: 'Listar pedidos para retiro', description: 'ADMIN y MANAGER pueden consultar ambas sucursales; CASHIER queda limitado a su sucursal asignada.' })
+  @ApiQuery({ name: 'branchSlug', required: false, description: 'Slug de sucursal; MANAGER puede elegir cualquiera de las dos sucursales' })
+  @ApiQuery({ name: 'status', required: false, enum: ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'PICKED_UP', 'CANCELLED'] })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'pageSize', required: false })
-  @ApiResponse({
-    status: 200,
-    description: 'Listado paginado de órdenes',
-    schema: {
-      type: 'object',
-      properties: {
-        data: { type: 'array', items: { type: 'object' } },
-        meta: {
-          type: 'object',
-          properties: {
-            total: { type: 'integer' },
-            pageCount: { type: 'integer' },
-            page: { type: 'integer' },
-            pageSize: { type: 'integer' },
-          },
-        },
-      },
-    },
-  })
-  async list(@Req() req: any, @Res({ passthrough: true }) res: Response, @Query('branchSlug') branchSlug?: string, @Query('status') status?: string, @Query('page') page?: string, @Query('pageSize') pageSize?: string) {
+  @ApiResponse({ status: 200, description: 'Listado paginado de pedidos' })
+  async list(
+    @Req() req: any,
+    @Res({ passthrough: true }) res: Response,
+    @Query('branchSlug') branchSlug?: string,
+    @Query('status') status?: string,
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
+  ) {
     const scopedBranchSlug = await this.branchScope.resolveBranchSlug(req.user, branchSlug);
-    const result = this.service.list({ branchSlug: scopedBranchSlug, status, page: page ? Number(page) : undefined, pageSize: pageSize ? Number(pageSize) : undefined });
-    return Promise.resolve(result).then((r: any) => {
-      setPaginationHeaders({
-        res,
-        baseUrl: req.originalUrl?.split('?')[0] || req.url,
-        query: req.query || {},
-        total: r.meta.total,
-        page: r.meta.page,
-        pageSize: r.meta.pageSize,
-      });
-      return r;
+    const result = await this.service.list({
+      branchSlug: scopedBranchSlug,
+      status,
+      page: page ? Number(page) : undefined,
+      pageSize: pageSize ? Number(pageSize) : undefined,
     });
+    setPaginationHeaders({
+      res,
+      baseUrl: req.originalUrl?.split('?')[0] || req.url,
+      query: req.query || {},
+      total: result.meta.total,
+      page: result.meta.page,
+      pageSize: result.meta.pageSize,
+    });
+    return result;
   }
 
   @Get('my-orders')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Mis órdenes', description: 'Lista las órdenes del usuario autenticado.' })
+  @ApiOperation({ summary: 'Listar mis pedidos' })
   @ApiQuery({ name: 'status', required: false })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'pageSize', required: false })
-  @ApiResponse({ status: 200, description: 'Listado de mis órdenes' })
-  myOrders(
+  async myOrders(
     @Req() req: any,
     @Res({ passthrough: true }) res: Response,
     @Query('status') status?: string,
     @Query('page') page?: string,
-    @Query('pageSize') pageSize?: string
+    @Query('pageSize') pageSize?: string,
   ) {
-    const result = this.service.findByUser(
-      req.user.userId,
-      { status, page: page ? Number(page) : undefined, pageSize: pageSize ? Number(pageSize) : undefined }
-    );
-    return Promise.resolve(result).then((r: any) => {
-      setPaginationHeaders({
-        res,
-        baseUrl: req.originalUrl?.split('?')[0] || req.url,
-        query: req.query || {},
-        total: r.meta.total,
-        page: r.meta.page,
-        pageSize: r.meta.pageSize,
-      });
-      return r;
+    const result = await this.service.findByUser(req.user.userId, {
+      status,
+      page: page ? Number(page) : undefined,
+      pageSize: pageSize ? Number(pageSize) : undefined,
     });
+    setPaginationHeaders({
+      res,
+      baseUrl: req.originalUrl?.split('?')[0] || req.url,
+      query: req.query || {},
+      total: result.meta.total,
+      page: result.meta.page,
+      pageSize: result.meta.pageSize,
+    });
+    return result;
   }
 
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Detalle de orden', description: 'Obtiene una orden con items y sucursal. Usuarios solo ven sus órdenes.' })
+  @ApiOperation({ summary: 'Detalle de pedido' })
   async detail(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
     if (ORDER_OPERATOR_ROLES.has(req.user?.role)) {
       await this.branchScope.assertOrderAccess(req.user, id);
@@ -264,14 +228,10 @@ export class OrdersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN', 'MANAGER', 'CASHIER')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Confirmar orden', description: 'Cambia estado de PENDING a CONFIRMED (pago recibido). Requiere rol ADMIN, MANAGER o CASHIER.' })
-  @ApiResponse({ status: 200, description: 'Orden confirmada' })
-  @ApiBadRequestResponse({ description: 'Solo se pueden confirmar órdenes PENDING' })
+  @ApiOperation({ summary: 'Confirmar pedido' })
   async confirmOrder(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
     await this.branchScope.assertOrderAccess(req.user, id);
     const order = await this.service.confirm(id);
-    
-    // Registrar en auditoría
     const userName = await this.auditService.getUserName(req.user?.userId);
     await this.auditService.log({
       userId: req.user?.userId,
@@ -284,7 +244,6 @@ export class OrdersController {
       ipAddress: getClientIp(req),
       userAgent: req.headers?.['user-agent'],
     });
-    
     return order;
   }
 
@@ -292,15 +251,30 @@ export class OrdersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN', 'MANAGER')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Avanzar estado de orden', description: 'Solo permite transiciones no terminales del flujo. Cancelación, recogida y entrega usan comandos propios para mantener inventario consistente.' })
-  @ApiBody({ schema: { example: { status: 'PREPARING' }, properties: { status: { type: 'string', description: 'Siguiente estado no terminal (CONFIRMED, PREPARING, READY, IN_DELIVERY)' } } } })
-  @ApiResponse({ status: 200, description: 'Estado actualizado' })
-  @ApiBadRequestResponse({ description: 'Estado inválido o error en la actualización' })
-  async updateStatus(@Req() req: any, @Param('id', ParseIntPipe) id: number, @Body() { status }: { status: string }) {
+  @ApiOperation({
+    summary: 'Avanzar estado del pedido',
+    description: 'Aplica las transiciones válidas del flujo de retiro: PENDING → CONFIRMED → PREPARING → READY → PICKED_UP. CANCELLED se usa para cancelaciones manuales.',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['status'],
+      properties: {
+        status: {
+          type: 'string',
+          enum: ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'PICKED_UP', 'CANCELLED'],
+          example: 'PREPARING',
+        },
+      },
+    },
+  })
+  async updateStatus(
+    @Req() req: any,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() { status }: { status: string },
+  ) {
     await this.branchScope.assertOrderAccess(req.user, id);
     const order = await this.service.updateStatus(id, status);
-    
-    // Registrar en auditoría
     const userName = await this.auditService.getUserName(req.user?.userId);
     await this.auditService.log({
       userId: req.user?.userId,
@@ -313,7 +287,6 @@ export class OrdersController {
       ipAddress: getClientIp(req),
       userAgent: req.headers?.['user-agent'],
     });
-    
     return order;
   }
 }

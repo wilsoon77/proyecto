@@ -70,11 +70,3 @@ export function formatDateString(
     options ?? { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' },
   ).format(date)
 }
-
-/**
- * Formato corto para ejes de gráficas del dashboard: "Lun 5"
- */
-export function formatDateChart(dateString: string): string {
-  return formatDateString(dateString, { weekday: 'short', day: 'numeric' })
-}
-

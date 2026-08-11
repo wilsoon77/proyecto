@@ -21,7 +21,7 @@ export class ProductsController {
   ) {}
 
   @Get()
-  @ApiOperation({ summary: 'Listar productos activos', description: 'Devuelve productos activos con buscador, filtros y paginación.' })
+  @ApiOperation({ summary: 'Listar productos', description: 'Por defecto devuelve únicamente productos visibles en el e-commerce. Admite filtros de estado para la consulta administrativa del catálogo.' })
   @ApiResponse({
     status: 200,
     description: 'Listado paginado de productos',
@@ -47,6 +47,8 @@ export class ProductsController {
   @ApiQuery({ name: 'branch', required: false })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'pageSize', required: false })
+  @ApiQuery({ name: 'all', required: false, type: Boolean, description: 'Incluye productos activos e inactivos (consulta administrativa)' })
+  @ApiQuery({ name: 'status', required: false, enum: ['active', 'inactive', 'all'], description: 'Filtra la visibilidad del producto en el e-commerce' })
   findAll(
     @Req() req: any,
     @Res({ passthrough: true }) res: Response,

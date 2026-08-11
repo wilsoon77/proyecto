@@ -102,6 +102,14 @@ Después del primer deploy, ejecuta las migraciones:
 2. Ejecuta: `npm run prisma:deploy`
 3. Opcional - Seed: `npm run seed`
 
+### Migración de presentaciones comerciales
+
+La migración `20260811110000_add_product_presentations` crea el modelo de presentaciones, agrega la unidad base del producto y configura inicialmente Pan Francés con `Tira completa` (6 piezas, Q2.50) y `Media tira` (3 piezas, Q1.25).
+
+Después de aplicar la migración, verifica en el panel de productos que las presentaciones y sus precios sean correctos. Los precios pueden cambiarse desde **Administración → Productos → Editar → Presentaciones** sin modificar el inventario.
+
+El seed es opcional y restablece los precios iniciales del Pan Francés si se ejecuta nuevamente. Consulta [`documentation/PRESENTACIONES_PRODUCTO.md`](documentation/PRESENTACIONES_PRODUCTO.md) para el flujo completo y las reglas de compatibilidad.
+
 ---
 
 ## 3. Desplegar Frontend en Vercel

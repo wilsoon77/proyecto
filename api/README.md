@@ -1,6 +1,6 @@
 # Panaderia Svetlana API (NestJS + Prisma)
 
-Backend para el sistema ERP/POS de panaderías multi-sucursal.
+Backend operativo para una panadería de dos sucursales: catálogo, pedidos para retiro, inventario, producción y alertas.
 
 ## Documentacion API
 
@@ -17,23 +17,26 @@ Backend para el sistema ERP/POS de panaderías multi-sucursal.
 - Métricas: prom-client (Prometheus)
 - Seguridad: Helmet, CORS, ThrottlerModule (Rate Limiting), JWT Access+Refresh tokens, bcrypt
 
-## Módulos Implementados (19)
+## Módulos implementados
 
 | Módulo | Descripción |
 |--------|-------------|
 | `AuthModule` | Registro, login, refresh tokens, logout, perfil |
-| `ProductsModule` | CRUD de productos con filtros, paginación, búsqueda |
+| `ProductsModule` | Catálogo, CRUD de productos y visibilidad en e-commerce |
 | `CategoriesModule` | CRUD de categorías |
 | `BranchesModule` | CRUD de sucursales |
 | `UsersModule` | Gestión de usuarios (ADMIN) |
-| `AddressesModule` | Direcciones de envío |
-| `OrdersModule` | Reserva, cancelación, pickup, listado de pedidos |
-| `InventoryModule` | Inventario de producto terminado por sucursal |
+| `OrdersModule` | Reservas para retiro, cancelación, confirmación y recogida |
+| `InventoryModule` | Inventario, lotes y caducidades |
 | `StockMovementsModule` | Movimientos de inventario (producción, ventas, merma, etc.) |
-| `DashboardModule` | Estadísticas agregadas para dashboard admin |
+| `DailyCloseModule` | Cierre diario y conciliación de producto terminado |
+| `NotificationsModule` | Alertas de materia prima baja y caducidad próxima |
+| `SystemConfigModule` | Configuración operativa |
+| `TelegramModule` | Vinculación y asistente de consultas por Telegram |
 | `RecipesModule` | CRUD de recetas (amasijos) |
 | `ProductionModule` | Registro de producción (logs de horneos) |
 | `RawMaterialsModule` | Gestión de materia prima |
+| `TasksModule` | Expiración automática de reservas PENDING no confirmadas |
 | `StorageModule` | Upload/gestión de imágenes (Appwrite) |
 | `SupabaseModule` | Integración con Supabase Auth |
 | `AuditModule` | Registro de auditoría de acciones |
@@ -41,7 +44,7 @@ Backend para el sistema ERP/POS de panaderías multi-sucursal.
 | `MetricsModule` | Métricas Prometheus (`/metrics`) |
 | `PrismaModule` | Servicio Prisma compartido |
 
-## Endpoints (44+)
+## Endpoints principales
 
 ### Auth (7)
 - `POST /auth/register` — Registro con hCaptcha
@@ -52,30 +55,40 @@ Backend para el sistema ERP/POS de panaderías multi-sucursal.
 - `PATCH /auth/me` — Actualizar perfil
 - `POST /auth/deactivate` — Desactivar cuenta
 
-### Products (7)
+### Products
 - `GET /products` — Listado con filtros, búsqueda, paginación
 - `GET /products/:slug` — Detalle por slug
 - `GET /products/featured` — Productos destacados
-- `POST /products` — Crear (ADMIN/MANAGER)
-- `PATCH /products/:slug` — Actualizar (ADMIN/MANAGER)
-- `PUT /products/:slug` — Reemplazar (ADMIN/MANAGER)
+- `POST /products` — Crear (ADMIN)
+- `PATCH /products/:slug` — Actualizar (ADMIN), incluyendo visibilidad en e-commerce
+- `PUT /products/:slug` — Reemplazar (ADMIN)
 - `DELETE /products/:slug` — Eliminar (ADMIN)
 
-### Categories (5)
+### Presentaciones comerciales
+
+Los productos pueden incluir `presentations`, donde cada elemento define `name`, `unitsInStock`, `price`, `isForSale`, `isForProduction`, `isDefault` e `isActive`. El inventario siempre se almacena en la unidad base del producto.
+
+En `POST /orders/reserve`, cada item puede enviar `presentationId`. La cantidad recibida es comercial; el servicio convierte automáticamente a unidades base para reservar y descontar inventario. Las órdenes guardan una copia del nombre, precio y cantidad comercial para conservar el historial.
+
+El registro de producción acepta `productionPresentationId` y `productionQuantity`. El cierre diario y la reconciliación de inventario aceptan conteos por presentación y los convierten antes de generar movimientos.
+
+La configuración funcional completa está en [`documentation/PRESENTACIONES_PRODUCTO.md`](../documentation/PRESENTACIONES_PRODUCTO.md).
+
+### Categories
 - `GET /categories` — Listado
 - `GET /categories/:slug` — Detalle
-- `POST /categories` — Crear (ADMIN/MANAGER)
-- `PATCH /categories/:slug` — Actualizar (ADMIN/MANAGER)
+- `POST /categories` — Crear (ADMIN)
+- `PATCH /categories/:slug` — Actualizar (ADMIN)
 - `DELETE /categories/:slug` — Eliminar (ADMIN)
 
-### Branches (5)
+### Branches
 - `GET /branches` — Listado de sucursales
 - `GET /branches/:id` — Detalle
 - `POST /branches` — Crear (ADMIN)
 - `PATCH /branches/:id` — Actualizar (ADMIN)
 - `DELETE /branches/:id` — Eliminar (ADMIN)
 
-### Users (6)
+### Users
 - `GET /users` — Listado (ADMIN)
 - `GET /users/:id` — Detalle (ADMIN)
 - `POST /users` — Crear (ADMIN)
@@ -83,34 +96,47 @@ Backend para el sistema ERP/POS de panaderías multi-sucursal.
 - `DELETE /users/:id/deactivate` — Desactivar (ADMIN)
 - `POST /users/:id/reactivate` — Reactivar (ADMIN)
 
-### Addresses (5)
-- `GET /addresses` — Mis direcciones (o todas para ADMIN)
-- `GET /addresses/:id` — Detalle
-- `POST /addresses` — Crear
-- `PATCH /addresses/:id` — Actualizar
-- `DELETE /addresses/:id` — Eliminar
-
-### Orders (5)
-- `POST /orders/reserve` — Reservar pedido
+### Orders
+- `POST /orders/reserve` — Reservar pedido para recoger en sucursal; una reserva PENDING expira por defecto en 2 horas si no se confirma
 - `POST /orders/:id/cancel` — Cancelar
+- `POST /orders/:id/confirm` — Confirmar pedido
 - `POST /orders/:id/pickup` — Marcar recogido
-- `GET /orders` — Listado con filtros
+- `PATCH /orders/:id/status` — Avanzar estado válido del flujo de retiro
+- `GET /orders` — Listado de pedidos para retiro
+- `GET /orders/my-orders` — Pedidos del cliente autenticado
 - `GET /orders/:id` — Detalle
 
-### Inventory & Stock (3)
+### Inventory & Stock
 - `GET /inventory` — Inventario con filtros por sucursal
+- `GET /inventory/low-stock` — Productos con stock bajo
+- `GET /inventory/expirations` — Lotes próximos a vencer, vencidos o sin fecha
+- `POST /inventory/expirations/check` — Ejecutar revisión de caducidades
 - `POST /stock-movements` — Registrar movimiento
 - `GET /stock-movements` — Historial de movimientos
+- `POST /stock-movements/reconcile` — Conciliar conteo físico
+- `GET /stock-movements/activity` — Resumen operativo para Operación
 
-### Dashboard (1)
-- `GET /dashboard/stats` — Estadísticas (ADMIN/MANAGER)
+### Daily close
+- `GET /daily-close/preview` — Vista previa del inventario a cerrar
+- `POST /daily-close` — Registrar el cierre; bloquea nueva producción de la fecha cerrada
+- `GET /daily-close` — Historial (ADMIN/MANAGER)
+- `GET /daily-close/:id` — Detalle (ADMIN/MANAGER)
 
-### Health & Metrics (2)
+### Notifications, Telegram and operation
+- `GET /notifications` — Historial de las dos alertas operativas
+- `GET /notifications/config` — Configuraciones de materia prima baja y caducidad próxima
+- `POST /notifications/test` — Prueba de una de esas dos alertas (ADMIN)
+- `POST /telegram/link-session` — Vincular el asistente de Telegram
+- `GET /stock-movements/activity` — Actividad resumida para el panel Operación
+
+### Health & Metrics
 - `GET /health` — Health check
 - `GET /metrics` — Métricas Prometheus (ADMIN)
 
 ### Recipes, Production, Raw Materials
 - Endpoints CRUD para recetas, producción y materia prima
+
+La lista completa y los esquemas de request/response se generan desde los controladores actuales con `npm run openapi:gen:dist` y se visualizan en `/docs`.
 
 ## Requisitos previos
 - Node.js >= 20
@@ -135,7 +161,8 @@ Backend para el sistema ERP/POS de panaderías multi-sucursal.
 | `prisma:deploy` | Aplica migraciones en producción |
 | `prisma:generate` | Genera el cliente Prisma |
 | `seed` | Ejecuta el script de seed inicial |
-| `openapi:gen:dist` | Genera `openapi.json` sin conectar a DB |
+| `openapi:gen` | Genera `openapi.json` desde TypeScript sin conectar a DB |
+| `openapi:gen:dist` | Compila y genera `openapi.json` sin conectar a DB |
 | `test` / `test:e2e` | Ejecuta tests con Jest |
 
 ## Seguridad Implementada
@@ -145,7 +172,7 @@ Backend para el sistema ERP/POS de panaderías multi-sucursal.
 - **JWT** — Access tokens (15min) + Refresh tokens (7 días) con rotación
 - **bcrypt** — Hash de contraseñas
 - **hCaptcha** — Protección de registro/login
-- **forbidNonWhitelisted** — Validación estricta de DTOs
+- **whitelist** — Elimina campos no declarados en los DTOs (`forbidNonWhitelisted=false`)
 - **Swagger deshabilitado en producción**
 - **Audit Log** — Registro de acciones con IP y User-Agent
 
@@ -158,10 +185,10 @@ Se usa GitHub Actions para validar y publicar `openapi.json` en Scalar. Ver `.gi
 | Rol | Descripción |
 |-----|-------------|
 | `ADMIN` | Acceso total al sistema |
-| `MANAGER` | Dueños/familia — ventas, inventario, producción |
+| `MANAGER` | Dueños/familia — ambas sucursales, inventario, producción, transferencias y pedidos |
 | `BAKER` | Panadero — producción y materia prima |
-| `CASHIER` | Cajero — solo punto de venta |
+| `CASHIER` | Cajero — pedidos para retiro, conteo y cierre de su sucursal |
 | `CUSTOMER` | Cliente — catálogo, pedidos, perfil |
 
 ---
-Última actualización: Marzo 2026
+Última actualización: Agosto 2026

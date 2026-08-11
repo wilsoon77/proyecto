@@ -8,7 +8,7 @@ function isOperatingDay(value: number): value is OperatingDay {
 }
 
 /**
- * Returns the store weekdays that participate in analytics and forecasting.
+ * Returns the store weekdays that participate in daily operational tracking.
  * JavaScript weekday numbers are used: Sunday=0, Monday=1, ..., Saturday=6.
  * Invalid or empty configuration falls back to Monday-Saturday.
  */

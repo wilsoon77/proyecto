@@ -6,8 +6,6 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   CONFIRMED: 'CONFIRMADO',
   PREPARING: 'EN PREPARACIÓN',
   READY: 'LISTO PARA RECOGER',
-  IN_DELIVERY: 'EN CAMINO',
-  DELIVERED: 'ENTREGADO',
   CANCELLED: 'CANCELADO',
   PICKED_UP: 'RECOGIDO',
 };
@@ -16,16 +14,13 @@ export const ORDER_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
   PENDING: [OrderStatus.CONFIRMED, OrderStatus.CANCELLED],
   CONFIRMED: [OrderStatus.PREPARING, OrderStatus.CANCELLED],
   PREPARING: [OrderStatus.READY, OrderStatus.CANCELLED],
-  READY: [OrderStatus.PICKED_UP, OrderStatus.IN_DELIVERY, OrderStatus.CANCELLED],
-  IN_DELIVERY: [OrderStatus.DELIVERED],
-  DELIVERED: [],
+  READY: [OrderStatus.PICKED_UP, OrderStatus.CANCELLED],
   CANCELLED: [],
   PICKED_UP: [],
 };
 
 export const FULFILLMENT_STATUSES = new Set<OrderStatus>([
   OrderStatus.PICKED_UP,
-  OrderStatus.DELIVERED,
 ]);
 
 export function assertOrderTransition(current: OrderStatus, next: OrderStatus) {

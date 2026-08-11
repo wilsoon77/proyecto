@@ -12,6 +12,7 @@ import {
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
+import { PresentationCountDto } from '../../products/dto/presentation.dto.js';
 
 export class DailyCloseItemDto {
   @ApiProperty({ example: 1, description: 'ID del producto' })
@@ -29,10 +30,24 @@ export class DailyCloseItemDto {
   @IsInt()
   @Min(0)
   wasteQty?: number;
+
+  @ApiPropertyOptional({ type: [PresentationCountDto], description: 'Conteo por presentación; se convierte a unidad base' })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PresentationCountDto)
+  countedPresentations?: PresentationCountDto[];
+
+  @ApiPropertyOptional({ type: [PresentationCountDto], description: 'Merma por presentación; se convierte a unidad base' })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PresentationCountDto)
+  wastePresentations?: PresentationCountDto[];
 }
 
 export class CreateDailyCloseDto {
-  @ApiPropertyOptional({ example: 1, description: 'ID de sucursal. Se valida contra la sucursal asignada.' })
+  @ApiPropertyOptional({ example: 1, description: 'ID de sucursal. ADMIN y MANAGER pueden seleccionar cualquiera de las dos; los demás roles quedan limitados a su sucursal asignada.' })
   @IsOptional()
   @IsInt()
   @Min(1)

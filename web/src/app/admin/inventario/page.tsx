@@ -1,134 +1,124 @@
 "use client"
 
-import { useEffect, useState, useCallback, useMemo } from "react"
+import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
-import { Package, RefreshCw, TriangleAlert as AlertTriangle, Warehouse, Building2, ArrowRightLeft, ChevronRight, ClipboardCheck, TrendingUp, TrendingDown } from "lucide-react"
-import { 
-  inventoryService, 
-  branchesService,
-  rawMaterialsService,
-  type InventoryItem,
-  type RawMaterialInventory
-} from "@/lib/api"
+import {
+  AlertTriangle,
+  ArrowRightLeft,
+  CalendarClock,
+  CheckCircle2,
+  ClipboardCheck,
+  Package,
+  RefreshCw,
+  Warehouse,
+} from "lucide-react"
+import { inventoryService, rawMaterialsService } from "@/lib/api"
+import type { ExpirationLot, RawMaterialInventory } from "@/lib/api"
+import { useAuth } from "@/context/AuthContext"
 import { useToast } from "@/components/ui/toast"
 
-interface Branch {
-  id: number
-  name: string
-  slug: string
+const INVENTORY_TOOLS = [
+  {
+    href: "/admin/inventario/productos",
+    title: "Productos terminados",
+    description: "Consulta existencias, reservas y disponibilidad por sucursal.",
+    icon: Package,
+  },
+  {
+    href: "/admin/inventario/materias-primas",
+    title: "Materias primas",
+    description: "Registra compras y revisa cantidades contra el mínimo configurado.",
+    icon: Warehouse,
+  },
+  {
+    href: "/admin/inventario/caducidades",
+    title: "Caducidades",
+    description: "Revisa lotes comprados próximos a vencer.",
+    icon: CalendarClock,
+  },
+  {
+    href: "/admin/inventario/movimiento",
+    title: "Movimientos",
+    description: "Registra compras, mermas, ajustes y transferencias.",
+    icon: ArrowRightLeft,
+  },
+  {
+    href: "/admin/inventario/conteo",
+    title: "Conteo físico",
+    description: "Concilia el conteo real al cierre de la jornada.",
+    icon: ClipboardCheck,
+  },
+]
+
+function formatDate(value: string) {
+  return new Date(value).toLocaleDateString("es-GT", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  })
 }
 
 export default function InventarioResumenPage() {
-  const [inventory, setInventory] = useState<InventoryItem[]>([])
+  const { user } = useAuth()
+  const { showToast } = useToast()
   const [rawInventory, setRawInventory] = useState<RawMaterialInventory[]>([])
-  const [branches, setBranches] = useState<Branch[]>([])
+  const [expiringLots, setExpiringLots] = useState<ExpirationLot[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isCheckingExpirations, setIsCheckingExpirations] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const { showToast } = useToast()
-
-  // Cargar datos consolidados
   const loadData = useCallback(async () => {
     setIsLoading(true)
     setError(null)
     try {
-      const [inventoryData, rawInvData, branchesData] = await Promise.all([
-        inventoryService.list(),
-        rawMaterialsService.getInventory(),
-        branchesService.list()
+      const globalScope = user?.role === "ADMIN" || user?.role === "MANAGER"
+      const [rawData, expirationData] = await Promise.all([
+        rawMaterialsService.getInventory(globalScope ? undefined : user?.branchId ?? undefined),
+        inventoryService.listExpirations({
+          branch: globalScope ? undefined : user?.branch?.slug,
+          status: "expiring",
+          days: 7,
+        }),
       ])
-      setInventory(inventoryData)
-      setRawInventory(rawInvData)
-      setBranches(branchesData)
-    } catch (err) {
-      console.error("Error loading inventory resume:", err)
-      setError("Error al cargar los datos del resumen")
-      showToast("Error al consolidar datos del inventario", "error")
+      setRawInventory(rawData)
+      setExpiringLots(expirationData.data)
+    } catch (loadError) {
+      console.error("Error cargando inventario operativo:", loadError)
+      setError("No se pudo cargar el estado del inventario")
+      showToast("Error al cargar el inventario", "error")
     } finally {
       setIsLoading(false)
     }
-  }, [showToast])
+  }, [showToast, user?.role, user?.branch?.slug, user?.branchId])
 
   useEffect(() => {
-    loadData()
+    void loadData()
   }, [loadData])
 
-  // Estadísticas unificadas
-  const stats = useMemo(() => {
-    const totalFinishedProducts = new Set(inventory.map(i => i.product.id)).size
-    const totalRawMaterials = new Set(rawInventory.map(i => i.rawMaterial.id)).size
-    
-    const finishedVolume = inventory.reduce((sum, i) => sum + i.quantity, 0)
-    const rawVolume = rawInventory.reduce((sum, i) => sum + Number(i.quantity), 0)
-
-    const finishedLow = inventory.filter(i => i.available > 0 && i.available <= 10).length
-    const rawLow = rawInventory.filter(i => i.isLow).length
-
-    const finishedOut = inventory.filter(i => i.available === 0).length
-
-    return {
-      totalFinishedProducts,
-      totalRawMaterials,
-      finishedVolume,
-      rawVolume,
-      totalAlerts: finishedLow + rawLow,
-      finishedOut
+  const checkExpirations = async () => {
+    setIsCheckingExpirations(true)
+    try {
+      await inventoryService.checkExpirations()
+      await loadData()
+      showToast("Caducidades revisadas", "success")
+    } catch (checkError) {
+      console.error("Error revisando caducidades:", checkError)
+      showToast("No se pudieron revisar las caducidades", "error")
+    } finally {
+      setIsCheckingExpirations(false)
     }
-  }, [inventory, rawInventory])
+  }
 
-  // Alertas consolidadas (máximo 6 para mantenerlo limpio)
-  const consolidatedAlerts = useMemo(() => {
-    const alerts: {
-      type: "finished" | "raw"
-      id: string
-      name: string
-      branch: string
-      quantity: string
-      isOutOfStock: boolean
-    }[] = []
+  const lowMaterials = rawInventory.filter((item) => item.isLow)
 
-    // Productos terminados con stock bajo o agotado
-    inventory
-      .filter(i => i.available > 0 && i.available <= 10)
-      .forEach(i => {
-        alerts.push({
-          type: "finished",
-          id: `f-${i.product.id}-${i.branch.id}`,
-          name: i.product.name,
-          branch: i.branch.name,
-          quantity: `${i.available} disp.`,
-          isOutOfStock: i.available === 0
-        })
-      })
-
-    // Materias primas con stock bajo
-    rawInventory
-      .filter(i => i.isLow)
-      .forEach(i => {
-        alerts.push({
-          type: "raw",
-          id: `r-${i.id}`,
-          name: i.rawMaterial.name,
-          branch: i.branch.name,
-          quantity: `${Number(i.quantity).toFixed(1)} ${i.rawMaterial.baseUnit}`,
-          isOutOfStock: Number(i.quantity) <= 0
-        })
-      })
-
-    return alerts.slice(0, 6)
-  }, [inventory, rawInventory])
-
-  if (isLoading && inventory.length === 0) {
+  if (isLoading && rawInventory.length === 0 && expiringLots.length === 0) {
     return (
       <div className="p-4 sm:p-6 lg:p-8">
-        <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-border rounded w-48"></div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[1,2,3,4].map(i => <div key={i} className="h-28 bg-border rounded-xl"></div>)}
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-card rounded-xl h-64"></div>
-            <div className="bg-card rounded-xl h-64"></div>
+        <div className="animate-pulse space-y-5">
+          <div className="h-8 w-64 rounded bg-border" />
+          <div className="grid gap-5 lg:grid-cols-2">
+            <div className="h-64 rounded-xl bg-border" />
+            <div className="h-64 rounded-xl bg-border" />
           </div>
         </div>
       </div>
@@ -136,260 +126,149 @@ export default function InventarioResumenPage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 bg-cream min-h-screen">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
+    <div className="min-h-screen bg-cream p-4 sm:p-6 lg:p-8">
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-3">
-            <Warehouse className="h-7 w-7 sm:h-8 sm:w-8 text-primary" />
-            Resumen de Inventario
+          <h1 className="flex items-center gap-3 text-2xl font-bold text-foreground sm:text-3xl">
+            <Warehouse className="h-7 w-7 text-primary sm:h-8 sm:w-8" />
+            Inventario operativo
           </h1>
-          <p className="text-muted-foreground mt-1">Dashboard consolidado del inventario general de la panadería</p>
+          <p className="mt-1 text-muted-foreground">
+            Revisa las dos alertas que requieren atención: materia prima baja y caducidades próximas.
+          </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap gap-2">
           <button
-            onClick={loadData}
+            onClick={() => void loadData()}
             disabled={isLoading}
-            className="flex items-center gap-2 px-4 py-2 bg-card border border-border rounded-lg text-foreground hover:bg-cream disabled:opacity-50 w-full sm:w-auto justify-center shadow-sm text-sm font-medium transition-all"
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground shadow-sm transition hover:bg-cream disabled:opacity-50"
           >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            Actualizar Dashboard
+            <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+            Actualizar
+          </button>
+          <button
+            onClick={() => void checkExpirations()}
+            disabled={isCheckingExpirations}
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:opacity-50"
+          >
+            <CalendarClock className={`h-4 w-4 ${isCheckingExpirations ? "animate-spin" : ""}`} />
+            Revisar caducidades
           </button>
         </div>
       </div>
 
       {error && (
-        <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive flex items-center gap-2">
+        <div className="mb-6 flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
           <AlertTriangle className="h-5 w-5" />
           {error}
         </div>
       )}
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className="bg-card rounded-xl shadow-sm border border-border p-5 transition-transform hover:scale-[1.01]">
-          <div className="flex items-center justify-between">
+      <div className="mb-8 grid gap-5 lg:grid-cols-2">
+        <section className="rounded-xl border border-border bg-card p-6 shadow-sm">
+          <div className="mb-4 flex items-center justify-between gap-3">
             <div>
-              <p className="text-sm text-muted-foreground font-medium">Productos Activos</p>
-              <p className="text-2xl font-bold text-foreground mt-1">
-                {stats.totalFinishedProducts}
-              </p>
-              <p className="text-xs text-muted-foreground/60 mt-1">Existencias: {stats.finishedVolume.toLocaleString()} uds</p>
+              <h2 className="flex items-center gap-2 text-lg font-bold text-foreground">
+                <AlertTriangle className="h-5 w-5 text-warning" />
+                Materia prima baja
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">Se alerta al llegar al mínimo configurado.</p>
             </div>
-            <div className="h-12 w-12 bg-accent rounded-xl flex items-center justify-center">
-              <Package className="h-6 w-6 text-primary" />
+            <span className="rounded-full bg-warning/10 px-3 py-1 text-sm font-bold text-warning">
+              {lowMaterials.length}
+            </span>
+          </div>
+          {lowMaterials.length === 0 ? (
+            <div className="flex items-center gap-2 rounded-lg bg-success/10 p-4 text-sm text-success">
+              <CheckCircle2 className="h-5 w-5" />
+              No hay materias primas por debajo del mínimo.
             </div>
-          </div>
-        </div>
-
-        <div className="bg-card rounded-xl shadow-sm border border-border p-5 transition-transform hover:scale-[1.01]">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground font-medium">Insumos de Materia Prima</p>
-              <p className="text-2xl font-bold text-foreground mt-1">
-                {stats.totalRawMaterials}
-              </p>
-              <p className="text-xs text-muted-foreground/60 mt-1">Existencias: {stats.rawVolume.toLocaleString(undefined, { maximumFractionDigits: 1 })} uds</p>
-            </div>
-            <div className="h-12 w-12 bg-success/10 rounded-xl flex items-center justify-center">
-              <Warehouse className="h-6 w-6 text-success" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-card rounded-xl shadow-sm border border-border p-5 transition-transform hover:scale-[1.01]">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground font-medium">Alertas de Stock</p>
-              <p className={`text-2xl font-bold mt-1 ${stats.totalAlerts > 0 ? 'text-warning' : 'text-foreground'}`}>
-                {stats.totalAlerts}
-              </p>
-              <p className="text-xs text-muted-foreground/60 mt-1">Insumos y productos bajos</p>
-            </div>
-            <div className="h-12 w-12 bg-warning/10 rounded-xl flex items-center justify-center">
-              <AlertTriangle className="h-6 w-6 text-warning" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-card rounded-xl shadow-sm border border-border p-5 transition-transform hover:scale-[1.01]">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground font-medium">Productos Agotados</p>
-              <p className={`text-2xl font-bold mt-1 ${stats.finishedOut > 0 ? 'text-destructive' : 'text-foreground'}`}>
-                {stats.finishedOut}
-              </p>
-              <p className="text-xs text-muted-foreground/60 mt-1">Requieren producción urgente</p>
-            </div>
-            <div className="h-12 w-12 bg-destructive/10 rounded-xl flex items-center justify-center">
-              <TrendingDown className="h-6 w-6 text-destructive" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Visual Navigation Menu */}
-      <h2 className="text-lg font-bold text-foreground mb-4">Módulos y Herramientas</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <Link 
-          href="/admin/inventario/productos" 
-          className="bg-card p-6 rounded-xl border border-border shadow-sm hover:shadow-md hover:border-primary/20 transition-all group flex flex-col justify-between"
-        >
-          <div>
-            <div className="h-10 w-10 bg-accent0 rounded-xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110">
-              <Package className="h-5 w-5 text-white" />
-            </div>
-            <h3 className="font-bold text-foreground text-lg group-hover:text-primary transition-colors">Productos Terminados</h3>
-            <p className="text-sm text-muted-foreground mt-2">Consulta existencias, productos reservados y disponibles de panadería en cada sucursal.</p>
-          </div>
-          <div className="mt-4 flex items-center gap-1 text-sm font-bold text-primary group-hover:translate-x-1 transition-transform">
-            Ver Productos <ChevronRight className="h-4 w-4" />
-          </div>
-        </Link>
-
-        <Link 
-          href="/admin/inventario/materias-primas" 
-          className="bg-card p-6 rounded-xl border border-border shadow-sm hover:shadow-md hover:border-success/20 transition-all group flex flex-col justify-between"
-        >
-          <div>
-            <div className="h-10 w-10 bg-success/100 rounded-xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110">
-              <Warehouse className="h-5 w-5 text-white" />
-            </div>
-            <h3 className="font-bold text-foreground text-lg group-hover:text-success transition-colors">Materias Primas</h3>
-            <p className="text-sm text-muted-foreground mt-2">Controla el stock de harina, azúcar, mantecas e insumos. Registra nuevas compras del local.</p>
-          </div>
-          <div className="mt-4 flex items-center gap-1 text-sm font-bold text-success group-hover:translate-x-1 transition-transform">
-            Ver Materias Primas <ChevronRight className="h-4 w-4" />
-          </div>
-        </Link>
-
-        <Link 
-          href="/admin/inventario/movimiento" 
-          className="bg-card p-6 rounded-xl border border-border shadow-sm hover:shadow-md hover:border-chart-3/20 transition-all group flex flex-col justify-between"
-        >
-          <div>
-            <div className="h-10 w-10 bg-chart-3/100 rounded-xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110">
-              <ArrowRightLeft className="h-5 w-5 text-white" />
-            </div>
-            <h3 className="font-bold text-foreground text-lg group-hover:text-chart-3 transition-colors">Movimientos de Stock</h3>
-            <p className="text-sm text-muted-foreground mt-2">Ingresa entradas y salidas manuales de stock, o realiza transferencias ordenadas entre sucursales.</p>
-          </div>
-          <div className="mt-4 flex items-center gap-1 text-sm font-bold text-chart-3 group-hover:translate-x-1 transition-transform">
-            Ir a Movimientos <ChevronRight className="h-4 w-4" />
-          </div>
-        </Link>
-
-        <Link 
-          href="/admin/inventario/conteo" 
-          className="bg-card p-6 rounded-xl border border-border shadow-sm hover:shadow-md hover:border-chart-5/20 transition-all group flex flex-col justify-between"
-        >
-          <div>
-            <div className="h-10 w-10 bg-chart-5/100 rounded-xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110">
-              <ClipboardCheck className="h-5 w-5 text-white" />
-            </div>
-            <h3 className="font-bold text-foreground text-lg group-hover:text-chart-5 transition-colors">Conteo Físico</h3>
-            <p className="text-sm text-muted-foreground mt-2">Reconcilia el inventario físico real con los datos del sistema. Registra mermas y sobrantes.</p>
-          </div>
-          <div className="mt-4 flex items-center gap-1 text-sm font-bold text-chart-5 group-hover:translate-x-1 transition-transform">
-            Iniciar Conteo <ChevronRight className="h-4 w-4" />
-          </div>
-        </Link>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        {/* Alertas Consolidadas */}
-        <div className="bg-card rounded-xl shadow-sm border border-border p-6 flex flex-col justify-between h-full">
-          <div>
-            <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-warning" />
-              Alertas Recientes
-            </h3>
-            {consolidatedAlerts.length === 0 ? (
-              <div className="py-8 text-center text-muted-foreground/60 text-sm">
-                <TrendingUp className="h-8 w-8 text-success mx-auto mb-2" />
-                Todo al día. No hay alertas de stock bajo.
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {consolidatedAlerts.map(alert => (
-                  <div 
-                    key={alert.id}
-                    className={`flex items-center justify-between p-3 rounded-lg border text-sm ${
-                      alert.isOutOfStock 
-                        ? 'bg-destructive/10 border-destructive/10 text-destructive' 
-                        : 'bg-warning/10 border-warning/10 text-warning'
-                    }`}
-                  >
-                    <div>
-                      <p className="font-semibold truncate max-w-[180px]">{alert.name}</p>
-                      <p className="text-xs text-muted-foreground font-medium">{alert.branch}</p>
-                    </div>
-                    <span className={`px-2 py-0.5 rounded text-xs font-bold ${
-                      alert.isOutOfStock ? 'bg-destructive/10 text-destructive' : 'bg-warning/10 text-warning'
-                    }`}>
-                      {alert.isOutOfStock ? 'Agotado' : alert.quantity}
-                    </span>
+          ) : (
+            <div className="space-y-2">
+              {lowMaterials.slice(0, 6).map((item) => (
+                <div key={item.id} className="flex items-center justify-between rounded-lg border border-warning/20 bg-warning/5 p-3">
+                  <div>
+                    <p className="font-medium text-foreground">{item.rawMaterial.name}</p>
+                    <p className="text-xs text-muted-foreground">{item.branch.name}</p>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-          {consolidatedAlerts.length > 0 && (
-            <div className="mt-4 pt-3 border-t border-border text-right">
-              <Link 
-                href="/admin/inventario/productos?showLowStock=true" 
-                className="text-xs font-bold text-primary hover:text-primary"
-              >
-                Ver todas las alertas
-              </Link>
+                  <span className="text-sm font-bold text-warning">
+                    {Number(item.quantity).toFixed(1)} {item.rawMaterial.baseUnit}
+                  </span>
+                </div>
+              ))}
+              {lowMaterials.length > 6 && (
+                <p className="pt-2 text-xs text-muted-foreground">Hay {lowMaterials.length - 6} alertas más.</p>
+              )}
             </div>
           )}
-        </div>
+          <Link href="/admin/inventario/materias-primas" className="mt-4 inline-flex text-sm font-semibold text-primary hover:underline">
+            Gestionar materias primas →
+          </Link>
+        </section>
 
-        {/* Existencias por Sucursal */}
-        <div className="lg:col-span-2 bg-card rounded-xl shadow-sm border border-border p-6">
-          <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-            <Building2 className="h-5 w-5 text-primary" />
-            Consolidado por Sucursal
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {branches.map(branch => {
-              const finishedQty = inventory
-                .filter(i => i.branch.id === branch.id)
-                .reduce((sum, i) => sum + i.quantity, 0)
-              const rawQty = rawInventory
-                .filter(i => i.branch.id === branch.id)
-                .reduce((sum, i) => sum + Number(i.quantity), 0)
-
-              const finishedAlerts = inventory.filter(i => i.branch.id === branch.id && i.available < 10).length
-              const rawAlerts = rawInventory.filter(i => i.branch.id === branch.id && i.isLow).length
-              const totalAlerts = finishedAlerts + rawAlerts
-
-              return (
-                <div 
-                  key={branch.id}
-                  className="p-4 bg-cream/50 hover:bg-cream rounded-xl border border-border transition-colors"
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="font-bold text-foreground">{branch.name}</p>
-                      <div className="mt-2 space-y-1 text-xs text-muted-foreground font-medium">
-                        <p>Panadería: <strong className="text-foreground">{finishedQty.toLocaleString()} uds</strong></p>
-                        <p>Materia Prima: <strong className="text-foreground">{rawQty.toLocaleString(undefined, { maximumFractionDigits: 1 })} uds</strong></p>
-                      </div>
-                    </div>
-                    {totalAlerts > 0 && (
-                      <span className="px-2 py-0.5 bg-warning/10 text-warning rounded-full text-[10px] font-bold">
-                        {totalAlerts} alertas
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
+        <section className="rounded-xl border border-border bg-card p-6 shadow-sm">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="flex items-center gap-2 text-lg font-bold text-foreground">
+                <CalendarClock className="h-5 w-5 text-destructive" />
+                Próximos vencimientos
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">Solo lotes de productos comprados dentro de 7 días.</p>
+            </div>
+            <span className="rounded-full bg-destructive/10 px-3 py-1 text-sm font-bold text-destructive">
+              {expiringLots.length}
+            </span>
           </div>
-        </div>
+          {expiringLots.length === 0 ? (
+            <div className="flex items-center gap-2 rounded-lg bg-success/10 p-4 text-sm text-success">
+              <CheckCircle2 className="h-5 w-5" />
+              No hay lotes próximos a vencer.
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {expiringLots.slice(0, 6).map((lot) => (
+                <div key={lot.id} className="flex items-center justify-between rounded-lg border border-destructive/20 bg-destructive/5 p-3">
+                  <div>
+                    <p className="font-medium text-foreground">{lot.product.name}</p>
+                    <p className="text-xs text-muted-foreground">{lot.branch.name} · {lot.availableQuantity} disponibles</p>
+                  </div>
+                  <span className="text-right text-sm font-bold text-destructive">
+                    {lot.expiresAt ? formatDate(lot.expiresAt) : "Sin fecha"}
+                    {lot.daysLeft !== null && <span className="block text-xs font-normal">{lot.daysLeft} días</span>}
+                  </span>
+                </div>
+              ))}
+              {expiringLots.length > 6 && (
+                <p className="pt-2 text-xs text-muted-foreground">Hay {expiringLots.length - 6} lotes más.</p>
+              )}
+            </div>
+          )}
+          <Link href="/admin/inventario/caducidades" className="mt-4 inline-flex text-sm font-semibold text-primary hover:underline">
+            Ver caducidades →
+          </Link>
+        </section>
       </div>
+
+      <section>
+        <h2 className="mb-4 text-lg font-bold text-foreground">Operaciones de inventario</h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {INVENTORY_TOOLS.map((tool) => {
+            const Icon = tool.icon
+            return (
+              <Link key={tool.href} href={tool.href} className="group rounded-xl border border-border bg-card p-5 shadow-sm transition hover:border-primary/30 hover:shadow-md">
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <span className="text-muted-foreground transition group-hover:translate-x-1 group-hover:text-primary">→</span>
+                </div>
+                <h3 className="font-semibold text-foreground">{tool.title}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{tool.description}</p>
+              </Link>
+            )
+          })}
+        </div>
+      </section>
     </div>
   )
 }

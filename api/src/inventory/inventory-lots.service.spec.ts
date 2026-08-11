@@ -1,5 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import { InventoryLotSource } from '@prisma/client';
+import { InventoryLotSource, ProductOrigin } from '@prisma/client';
 import { InventoryLotsService } from './inventory-lots.service.js';
 
 function createTransactionMock() {
@@ -30,7 +30,7 @@ describe('InventoryLotsService', () => {
 
   it('no solicita caducidad para un producto producido', async () => {
     const tx = createTransactionMock();
-    tx.product.findUnique.mockResolvedValue({ tracksExpiration: true, expirationAlertDays: 3 });
+    tx.product.findUnique.mockResolvedValue({ origin: ProductOrigin.PRODUCIDO, tracksExpiration: true, expirationAlertDays: 3 });
 
     await service.createInboundLot(tx, {
       productId: 1,
@@ -48,9 +48,26 @@ describe('InventoryLotsService', () => {
     });
   });
 
+  it('ignora fechas de caducidad para productos producidos aunque el movimiento sea una compra', async () => {
+    const tx = createTransactionMock();
+    tx.product.findUnique.mockResolvedValue({ origin: ProductOrigin.PRODUCIDO, tracksExpiration: true, expirationAlertDays: 3 });
+
+    await service.createInboundLot(tx, {
+      productId: 1,
+      branchId: 2,
+      quantity: 12,
+      sourceType: InventoryLotSource.COMPRA,
+      expiresAt: '2026-08-20',
+    });
+
+    expect(tx.inventoryLot.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ expiresAt: undefined, alertAt: undefined }),
+    });
+  });
+
   it('exige caducidad únicamente para compras de productos configurados', async () => {
     const tx = createTransactionMock();
-    tx.product.findUnique.mockResolvedValue({ tracksExpiration: true, expirationAlertDays: 3 });
+    tx.product.findUnique.mockResolvedValue({ origin: ProductOrigin.COMPRADO, tracksExpiration: true, expirationAlertDays: 3 });
 
     await expect(service.createInboundLot(tx, {
       productId: 1,
@@ -62,7 +79,7 @@ describe('InventoryLotsService', () => {
 
   it('calcula la fecha de alerta a partir de la caducidad de una compra', async () => {
     const tx = createTransactionMock();
-    tx.product.findUnique.mockResolvedValue({ tracksExpiration: true, expirationAlertDays: 5 });
+    tx.product.findUnique.mockResolvedValue({ origin: ProductOrigin.COMPRADO, tracksExpiration: true, expirationAlertDays: 5 });
 
     await service.createInboundLot(tx, {
       productId: 1,
@@ -82,7 +99,7 @@ describe('InventoryLotsService', () => {
 
   it('permite retirar un lote vencido cuando se registra una merma', async () => {
     const tx = createTransactionMock();
-    tx.product.findUnique.mockResolvedValue({ tracksExpiration: true });
+    tx.product.findUnique.mockResolvedValue({ origin: ProductOrigin.COMPRADO, tracksExpiration: true });
     tx.inventoryLot.findMany.mockResolvedValue([{
       id: 10,
       availableQuantity: 4,
@@ -109,7 +126,7 @@ describe('InventoryLotsService', () => {
 
   it('calcula el stock vendible ignorando lotes vencidos', async () => {
     const tx = createTransactionMock();
-    tx.product.findUnique.mockResolvedValue({ tracksExpiration: true });
+    tx.product.findUnique.mockResolvedValue({ origin: ProductOrigin.COMPRADO, tracksExpiration: true });
     tx.inventoryLot.findMany.mockResolvedValue([
       { availableQuantity: 5 },
       { availableQuantity: 2 },

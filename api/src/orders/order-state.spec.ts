@@ -10,10 +10,8 @@ describe('order state machine', () => {
     ]);
     expect(ORDER_TRANSITIONS[OrderStatus.READY]).toEqual([
       OrderStatus.PICKED_UP,
-      OrderStatus.IN_DELIVERY,
       OrderStatus.CANCELLED,
     ]);
-    expect(ORDER_TRANSITIONS[OrderStatus.DELIVERED]).toEqual([]);
   });
 
   it('rejects state jumps and terminal-state transitions', () => {

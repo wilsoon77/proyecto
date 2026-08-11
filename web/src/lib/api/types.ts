@@ -48,6 +48,31 @@ export interface UpdateMeDto {
 }
 
 // ==================== PRODUCTOS ====================
+export interface ApiProductPresentation {
+  id: number
+  name: string
+  unitsInStock: number
+  price: number | null
+  isForSale: boolean
+  isForProduction: boolean
+  isDefault: boolean
+  isActive: boolean
+  sortOrder: number
+  available?: number
+}
+
+export interface ApiProductPresentationInput {
+  id?: number
+  name: string
+  unitsInStock: number
+  price?: number | null
+  isForSale?: boolean
+  isForProduction?: boolean
+  isDefault?: boolean
+  isActive?: boolean
+  sortOrder?: number
+}
+
 export interface ApiProduct {
   id: number
   sku: string
@@ -70,6 +95,8 @@ export interface ApiProduct {
   available?: number // Stock disponible (si se incluye branch)
   createdAt: string
   updatedAt: string
+  stockUnitLabel?: string
+  presentations?: ApiProductPresentation[]
 }
 
 export interface ApiProductImage {
@@ -90,8 +117,11 @@ export interface CreateProductDto {
   isNew?: boolean
   categoryId: number
   origin?: 'PRODUCIDO' | 'COMPRADO'
+  isActive?: boolean
   tracksExpiration?: boolean
   expirationAlertDays?: number
+  stockUnitLabel?: string
+  presentations?: ApiProductPresentationInput[]
 }
 
 export interface UpdateProductDto {
@@ -108,6 +138,8 @@ export interface UpdateProductDto {
   isAvailable?: boolean
   tracksExpiration?: boolean
   expirationAlertDays?: number
+  stockUnitLabel?: string
+  presentations?: ApiProductPresentationInput[]
 }
 
 // ==================== CATEGORÍAS ====================
@@ -138,33 +170,12 @@ export interface ApiBranch {
 }
 
 // ==================== DIRECCIONES ====================
-export interface ApiAddress {
-  id: number
-  userId?: string
-  street: string
-  city: string
-  state?: string
-  zone?: string
-  reference?: string
-  createdAt: string
-}
-
-export interface CreateAddressDto {
-  street: string
-  city: string
-  state?: string
-  zone?: string
-  reference?: string
-}
-
 // ==================== ÓRDENES ====================
 export type OrderStatus = 
   | 'PENDING'
   | 'CONFIRMED'
   | 'PREPARING'
   | 'READY'
-  | 'IN_DELIVERY'
-  | 'DELIVERED'
   | 'CANCELLED'
   | 'PICKED_UP'
 
@@ -173,14 +184,11 @@ export interface ApiOrder {
   orderNumber: string
   status: OrderStatus
   subtotal: number
-  deliveryFee: number
   discount: number
   total: number
   paymentMethod?: string
-  shippingMethod?: string
   customerNotes?: string
   branch?: ApiBranch
-  address?: ApiAddress
   items: ApiOrderItem[]
   createdAt: string
   updatedAt: string
@@ -192,19 +200,17 @@ export interface ApiOrderItem {
   productName: string
   quantity: number
   unitPrice: number
+  presentationId?: number | null
+  presentationName?: string | null
+  presentationQuantity?: number | null
+  presentationUnits?: number | null
 }
 
 export interface ReserveOrderDto {
   branchSlug: string
   paymentMethod?: string
-  items: { productSlug: string; quantity: number }[]
-}
-
-export interface POSOrderDto {
-  branchSlug: string
-  paymentMethod: string
-  amountTendered?: number
-  items: { productSlug: string; quantity: number }[]
+  customerNotes?: string
+  items: { productSlug: string; quantity: number; presentationId?: number }[]
 }
 
 // ==================== INVENTARIO ====================
@@ -237,27 +243,6 @@ export interface ApiError {
   statusCode: number
   message: string | string[]
   error?: string
-}
-
-// ==================== DASHBOARD ====================
-export interface DashboardStats {
-  summary: {
-    totalOrders: number
-    totalRevenue: number
-    avgOrderValue: number
-    pendingOrders: number
-    activeProducts: number
-    totalCategories: number
-    totalBranches: number
-  }
-  last30Days: {
-    ordersCount: number
-    revenue: number
-    avgOrderValue: number
-  }
-  ordersByStatus: { status: string; count: number }[]
-  topProducts: { productId: number; name: string; slug: string; totalSold: number }[]
-  lowStockProducts: { productId: number; productName: string; branchName: string; available: number }[]
 }
 
 // ==================== FILTROS ====================

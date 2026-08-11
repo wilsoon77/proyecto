@@ -38,16 +38,8 @@ import { useNotifications } from "@/context/NotificationContext"
 import type { NotificationConfig } from "@/lib/api/types"
 
 const PLACEHOLDERS_HELP: Record<string, string[]> = {
-  'order.status_changed': ['{orderNumber}', '{status}'],
-  'order.new_pending': ['{orderNumber}'],
-  'order.cancelled': ['{orderNumber}'],
-  'inventory.low_stock': ['{productName}', '{current}', '{branchName}'],
   'inventory.raw_material_low': ['{materialName}', '{current}', '{unit}', '{branchName}'],
-  'inventory.loss_detected': ['{type}', '{quantity}', '{productName}'],
   'inventory.expiration_warning': ['{productName}', '{quantity}', '{expiresAt}', '{branchName}'],
-  'inventory.expired_stock': ['{productName}', '{quantity}', '{expiresAt}', '{branchName}'],
-  'production.assigned': ['{recipeName}', '{branchName}'],
-  'system.audit_alert': ['{count}', '{ip}']
 }
 
 interface Branch {

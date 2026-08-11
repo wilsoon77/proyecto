@@ -5,6 +5,22 @@ import webpush from 'web-push';
 import { TelegramDeliveryService } from '../telegram/telegram-delivery.service.js';
 import { AlertType } from '@prisma/client';
 
+/**
+ * Reglas de negocio que generan notificaciones automáticas.
+ * El resto de eventos del sistema se consulta en sus respectivos módulos;
+ * no deben convertirse en alertas operativas para los dueños.
+ */
+export const OPERATIONAL_NOTIFICATION_CONFIG_KEYS = [
+  'inventory.raw_material_low',
+  'inventory.expiration_warning',
+] as const;
+
+type OperationalNotificationConfigKey = typeof OPERATIONAL_NOTIFICATION_CONFIG_KEYS[number];
+
+function isOperationalNotificationConfigKey(key: string): key is OperationalNotificationConfigKey {
+  return (OPERATIONAL_NOTIFICATION_CONFIG_KEYS as readonly string[]).includes(key);
+}
+
 @Injectable()
 export class NotificationsService {
   constructor(
@@ -59,6 +75,7 @@ export class NotificationsService {
    */
   async getConfigs() {
     return this.prisma.notificationConfig.findMany({
+      where: { key: { in: [...OPERATIONAL_NOTIFICATION_CONFIG_KEYS] } },
       orderBy: { category: 'asc' },
     });
   }
@@ -67,6 +84,10 @@ export class NotificationsService {
    * Actualiza una configuración de notificación (ADMIN)
    */
   async updateConfig(key: string, data: any) {
+    if (!isOperationalNotificationConfigKey(key)) {
+      throw new BadRequestException('Solo se pueden configurar alertas de materia prima baja y caducidad próxima');
+    }
+
     const config = await this.prisma.notificationConfig.findUnique({
       where: { key },
     });
@@ -88,12 +109,12 @@ export class NotificationsService {
     const skip = (page - 1) * pageSize;
     const [data, total] = await Promise.all([
       this.prisma.notification.findMany({
-        where: { userId },
+        where: { userId, type: { in: [...OPERATIONAL_NOTIFICATION_CONFIG_KEYS] } },
         orderBy: { createdAt: 'desc' },
         skip,
         take: pageSize,
       }),
-      this.prisma.notification.count({ where: { userId } }),
+      this.prisma.notification.count({ where: { userId, type: { in: [...OPERATIONAL_NOTIFICATION_CONFIG_KEYS] } } }),
     ]);
 
     return {
@@ -157,7 +178,7 @@ export class NotificationsService {
    */
   async markAsRead(id: number, userId: string): Promise<void> {
     const notif = await this.prisma.notification.findFirst({
-      where: { id, userId },
+      where: { id, userId, type: { in: [...OPERATIONAL_NOTIFICATION_CONFIG_KEYS] } },
     });
 
     if (!notif) {
@@ -175,7 +196,7 @@ export class NotificationsService {
    */
   async markAllAsRead(userId: string): Promise<void> {
     await this.prisma.notification.updateMany({
-      where: { userId, isRead: false },
+      where: { userId, isRead: false, type: { in: [...OPERATIONAL_NOTIFICATION_CONFIG_KEYS] } },
       data: { isRead: true, readAt: new Date() },
     });
   }
@@ -190,6 +211,10 @@ export class NotificationsService {
     url?: string,
     icon?: string
   ): Promise<void> {
+    if (!isOperationalNotificationConfigKey(configKey)) {
+      throw new BadRequestException(`Regla de notificación no permitida: ${configKey}`);
+    }
+
     const config = await this.prisma.notificationConfig.findUnique({
       where: { key: configKey },
     });
@@ -287,7 +312,9 @@ export class NotificationsService {
     if (Number.isInteger(requestedBranchId) && requestedBranchId > 0) {
       where.OR = [
         { role: 'ADMIN' },
-        { role: 'MANAGER', assistantAccess: { is: { enabled: true, scope: 'ALL_BRANCHES' } } },
+        // Los MANAGER son los dueños operativos y reciben las alertas de las
+        // dos sucursales. AssistantAccess controla el bot, no estas alertas.
+        { role: 'MANAGER' },
         { branchId: requestedBranchId },
       ];
     }
@@ -313,6 +340,8 @@ export class NotificationsService {
     url?: string,
     icon?: string
   ): Promise<void> {
+    if (!isOperationalNotificationConfigKey(configKey)) return;
+
     const config = await this.prisma.notificationConfig.findUnique({
       where: { key: configKey },
     });
@@ -333,6 +362,8 @@ export class NotificationsService {
    * Compara un valor contra el umbral configurado
    */
   async checkThreshold(configKey: string, currentValue: number): Promise<boolean> {
+    if (!isOperationalNotificationConfigKey(configKey)) return false;
+
     const config = await this.prisma.notificationConfig.findUnique({
       where: { key: configKey },
     });
@@ -352,10 +383,10 @@ export class NotificationsService {
    * recurso vuelve a notificar después de resolverse y cruzar nuevamente.
    */
   async sendLowStockIfNeeded(options: {
-    alertType: 'RAW_MATERIAL_LOW' | 'PRODUCT_LOW';
+    alertType: 'RAW_MATERIAL_LOW';
     branchId: number;
     resourceKey: string;
-    configKey: string;
+    configKey: 'inventory.raw_material_low';
     currentValue: number;
     threshold?: number | null;
     placeholders: Record<string, any>;
@@ -420,7 +451,7 @@ export class NotificationsService {
   async sendExpirationIfNeeded(options: {
     branchId: number;
     resourceKey: string;
-    configKey: 'inventory.expiration_warning' | 'inventory.expired_stock';
+    configKey: 'inventory.expiration_warning';
     placeholders: Record<string, any>;
     url?: string;
     icon?: string;
@@ -463,6 +494,18 @@ export class NotificationsService {
       options.icon,
     );
     return true;
+  }
+
+  async resolveExpirationAlert(branchId: number, resourceKey: string): Promise<void> {
+    await this.prisma.alertState.updateMany({
+      where: {
+        branchId,
+        alertType: AlertType.PRODUCT_EXPIRY,
+        resourceKey,
+        active: true,
+      },
+      data: { active: false, resolvedAt: new Date() },
+    });
   }
 
   /**

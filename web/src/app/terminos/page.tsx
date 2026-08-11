@@ -11,7 +11,7 @@ export default function TerminosPage() {
         <h2>Pedidos</h2>
         <ul>
           <li>Los precios se muestran en Quetzales (GTQ).</li>
-          <li>Los tiempos de preparación y entrega son estimados.</li>
+          <li>Los tiempos de preparación y disponibilidad para retiro son estimados.</li>
           <li>Nos reservamos el derecho de cancelar pedidos por causas justificadas.</li>
         </ul>
 

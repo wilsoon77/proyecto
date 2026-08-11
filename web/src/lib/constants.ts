@@ -51,7 +51,6 @@ export const ORDER_STATUS = {
   PREPARING: 'preparing',
   READY: 'ready',
   PICKED_UP: 'picked_up',
-  DELIVERED: 'delivered',
   CANCELLED: 'cancelled',
 } as const
 
@@ -61,7 +60,6 @@ export const ORDER_STATUS_LABELS: Record<string, string> = {
   [ORDER_STATUS.PREPARING]: 'En Preparación',
   [ORDER_STATUS.READY]: 'Listo para Recoger',
   [ORDER_STATUS.PICKED_UP]: 'Recogido',
-  [ORDER_STATUS.DELIVERED]: 'Entregado',
   [ORDER_STATUS.CANCELLED]: 'Cancelado',
 } as const
 

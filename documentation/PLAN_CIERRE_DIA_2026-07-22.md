@@ -1,5 +1,7 @@
 # Plan: Cierre de Día (registro de ventas por diferencia)
 
+> **Estado actual (2026-08-11):** El cierre diario ya está implementado. Para productos con presentaciones comerciales, el formulario permite registrar tiras, medias tiras y piezas sueltas; la API convierte el conteo a unidades base antes de ajustar `Inventory`. Este archivo conserva el plan original como referencia histórica. Para el comportamiento vigente, consultar [`PRESENTACIONES_PRODUCTO.md`](PRESENTACIONES_PRODUCTO.md) y el código de `api/src/daily-close/`.
+
 ## 1. Objetivo
 
 Resolver el problema actual: la producción suma unidades al inventario de producto terminado (`Inventory`), pero como las ventas del día no se registran una a una, el stock de productos **crece indefinidamente** y deja de reflejar la realidad.

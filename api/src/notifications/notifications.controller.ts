@@ -21,6 +21,7 @@ import {
   ApiBearerAuth,
   ApiNotFoundResponse,
   ApiBadRequestResponse,
+  ApiParam,
 } from '@nestjs/swagger';
 import { NotificationsService } from './notifications.service.js';
 import { SubscribePushDto } from './dto/subscribe-push.dto.js';
@@ -128,7 +129,7 @@ export class NotificationsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Listar configuraciones de notificaciones', description: 'Obtiene todas las reglas de notificación. Requiere rol ADMIN.' })
+  @ApiOperation({ summary: 'Listar configuraciones de notificaciones', description: 'Obtiene únicamente las dos reglas operativas: materia prima baja y caducidad próxima. Requiere rol ADMIN.' })
   @ApiResponse({ status: 200, description: 'Listado de configuraciones' })
   getConfigs() {
     return this.notificationsService.getConfigs();
@@ -138,7 +139,8 @@ export class NotificationsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Actualizar configuración de notificaciones', description: 'Actualiza una regla de notificación (habilitación, umbral, etc.). Requiere rol ADMIN.' })
+  @ApiOperation({ summary: 'Actualizar configuración de notificaciones', description: 'Actualiza una de las dos reglas operativas (materia prima baja o caducidad próxima), incluyendo habilitación, umbral, canales y destinatarios. Requiere rol ADMIN.' })
+  @ApiParam({ name: 'key', enum: ['inventory.raw_material_low', 'inventory.expiration_warning'] })
   @ApiResponse({ status: 200, description: 'Configuración actualizada con éxito' })
   @ApiNotFoundResponse({ description: 'Configuración no encontrada' })
   async updateConfig(
@@ -152,7 +154,7 @@ export class NotificationsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Enviar notificación de prueba', description: 'Dispara una notificación simulada de un tipo específico para pruebas. Requiere rol ADMIN.' })
+  @ApiOperation({ summary: 'Enviar notificación de prueba', description: 'Dispara una notificación simulada de materia prima baja o caducidad próxima. Requiere rol ADMIN.' })
   @ApiResponse({ status: 200, description: 'Notificación de prueba enviada con éxito' })
   @ApiNotFoundResponse({ description: 'Configuración no encontrada' })
   async sendTestNotification(@Req() req: any, @Body() testDto: TestNotificationDto) {

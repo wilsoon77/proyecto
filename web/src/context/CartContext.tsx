@@ -3,15 +3,16 @@
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect, useRef } from "react"
 import { Product, CartItem } from "@/types"
 import { useToast } from "@/context/ToastContext"
+import { cartLineKey, defaultSalePresentation, maxPresentationQuantity, presentationUnitPrice } from "@/lib/presentation-quantities"
 
 interface CartContextType {
   items: CartItem[]
   itemCount: number
   subtotal: number
   total: number
-  addItem: (product: Product, quantity?: number) => void
-  removeItem: (productId: number) => void
-  updateQuantity: (productId: number, quantity: number) => void
+  addItem: (product: Product, quantity?: number, presentation?: CartItem['presentation']) => void
+  removeItem: (productId: number, presentationId?: number) => void
+  updateQuantity: (productId: number, quantity: number, presentationId?: number) => void
   clearCart: () => void
 }
 
@@ -21,7 +22,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([])
   const hydrated = useRef(false)
   const { show } = useToast()
-  const quantityToastTimers = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map())
+  const quantityToastTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
 
   // Hydrate from localStorage on mount
   useEffect(() => {
@@ -30,7 +31,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (raw) {
         const parsed: CartItem[] = JSON.parse(raw)
         if (Array.isArray(parsed)) {
-          setItems(parsed)
+          setItems(parsed.map((item) => ({
+            ...item,
+            presentation: item.presentation ?? defaultSalePresentation(item.product),
+          })))
         }
       }
     } catch (e) {
@@ -55,7 +59,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   // Calcular subtotal
   const subtotal = items.reduce((total, item) => {
-    const price = item.product.price
+    const price = presentationUnitPrice(item.product, item.presentation)
     return total + price * item.quantity
   }, 0)
 
@@ -63,13 +67,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const total = subtotal
 
   // Agregar producto al carrito (con validación de stock)
-  const addItem = useCallback((product: Product, quantity: number = 1) => {
+  const addItem = useCallback((product: Product, quantity: number = 1, presentation?: CartItem['presentation']) => {
     if (quantity <= 0 || isNaN(quantity)) return
+    const selectedPresentation = presentation ?? defaultSalePresentation(product)
+    const lineKey = cartLineKey(product.id, selectedPresentation?.id)
 
     setItems((prevItems) => {
-      const existingItem = prevItems.find((item) => item.product.id === product.id)
+      const existingItem = prevItems.find((item) => cartLineKey(item.product.id, item.presentation?.id) === lineKey)
       const currentQty = existingItem ? existingItem.quantity : 0
-      const maxStock = product.stock > 0 ? product.stock : Infinity
+      const maxStock = product.stock > 0 ? maxPresentationQuantity(product, selectedPresentation) : Infinity
 
       // Verificar que no exceda el stock disponible
       if (currentQty + quantity > maxStock) {
@@ -84,59 +90,62 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
       if (existingItem) {
         return prevItems.map((item) =>
-          item.product.id === product.id
+          cartLineKey(item.product.id, item.presentation?.id) === lineKey
             ? { ...item, quantity: item.quantity + quantity }
             : item
         )
       } else {
-        return [...prevItems, { product, quantity }]
+        return [...prevItems, { product, quantity, presentation: selectedPresentation }]
       }
     })
     try { show(`Agregado: ${product.name} × ${quantity}`, { variant: 'success' }) } catch {}
   }, [show])
 
   // Remover producto del carrito
-  const removeItem = useCallback((productId: number) => {
-    const prod = items.find(i => i.product.id === productId)?.product
-    setItems((prevItems) => prevItems.filter((item) => item.product.id !== productId))
+  const removeItem = useCallback((productId: number, presentationId?: number) => {
+    const lineKey = cartLineKey(productId, presentationId)
+    const prod = items.find(i => cartLineKey(i.product.id, i.presentation?.id) === lineKey)?.product
+    setItems((prevItems) => prevItems.filter((item) => cartLineKey(item.product.id, item.presentation?.id) !== lineKey))
     if (prod) {
       try { show(`Eliminado: ${prod.name}`, { variant: 'error' }) } catch {}
     }
   }, [items, show])
 
   // Actualizar cantidad de un producto (con validación de stock y NaN)
-  const updateQuantity = useCallback((productId: number, quantity: number) => {
+  const updateQuantity = useCallback((productId: number, quantity: number, presentationId?: number) => {
     // Sanitizar: NaN o negativo → ignorar
     if (isNaN(quantity) || quantity < 0) return
 
     if (quantity <= 0) {
-      removeItem(productId)
+      removeItem(productId, presentationId)
       return
     }
 
     let prodName: string | undefined
     setItems((prevItems) => {
-      const found = prevItems.find(i => i.product.id === productId)
+      const lineKey = cartLineKey(productId, presentationId)
+      const found = prevItems.find(i => cartLineKey(i.product.id, i.presentation?.id) === lineKey)
       if (!found) return prevItems
       prodName = found.product.name
-      const maxStock = found.product.stock > 0 ? found.product.stock : Infinity
+      const maxStock = found.product.stock > 0 ? maxPresentationQuantity(found.product, found.presentation) : Infinity
       const clampedQty = Math.min(quantity, maxStock)
       if (clampedQty < quantity) {
         try { show(`Stock máximo: ${maxStock} unidades`, { variant: 'info' }) } catch {}
       }
       return prevItems.map((item) =>
-        item.product.id === productId ? { ...item, quantity: clampedQty } : item
+        cartLineKey(item.product.id, item.presentation?.id) === lineKey ? { ...item, quantity: clampedQty } : item
       )
     })
     // Debounce toast to avoid spamming on rapid clicks
     if (prodName) {
-      const existing = quantityToastTimers.current.get(productId)
+      const timerKey = `${productId}:${presentationId ?? 'base'}`
+      const existing = quantityToastTimers.current.get(timerKey)
       if (existing) clearTimeout(existing)
       const t = setTimeout(() => {
         try { show(`Cantidad de ${prodName}: ${quantity}`, { variant: 'info' }) } catch {}
-        quantityToastTimers.current.delete(productId)
+        quantityToastTimers.current.delete(timerKey)
       }, 500)
-      quantityToastTimers.current.set(productId, t)
+      quantityToastTimers.current.set(timerKey, t)
     }
   }, [removeItem, show])
 

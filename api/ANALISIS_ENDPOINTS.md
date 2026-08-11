@@ -1,123 +1,89 @@
-# Analisis de Endpoints — Estado Actual
+# Análisis de endpoints — alcance operativo actual
 
-> **Actualizado: Marzo 2026**
+> Actualizado: agosto de 2026. La fuente de verdad para esquemas y respuestas es Swagger/OpenAPI en `/docs`.
 
-## Endpoints Implementados (44+ total)
+## Alcance
 
-### Auth (7)
-- POST /auth/register
-- POST /auth/login
-- POST /auth/refresh
-- POST /auth/logout
-- GET /auth/me
-- PATCH /auth/me
-- POST /auth/deactivate
+La API cubre el flujo mínimo de una panadería con dos sucursales:
 
-### Products (7)
-- GET /products (con filtros, búsqueda, paginación)
-- GET /products/:slug
-- GET /products/featured
-- POST /products (ADMIN/MANAGER)
-- PATCH /products/:slug (ADMIN/MANAGER)
-- PUT /products/:slug (ADMIN/MANAGER)
-- DELETE /products/:slug (ADMIN)
+- catálogo, carrito y pedidos para retiro en sucursal;
+- recetas, producción y consumo de materia prima;
+- inventario de producto terminado y materia prima;
+- alertas operativas de materia prima baja y caducidad próxima;
+- cierres diarios y consulta por Telegram.
 
-### Categories (5)
-- GET /categories
-- GET /categories/:slug
-- POST /categories (ADMIN/MANAGER)
-- PATCH /categories/:slug (ADMIN/MANAGER)
-- DELETE /categories/:slug (ADMIN)
+No se exponen módulos de POS, dashboard predictivo, analíticas de demanda, direcciones de envío ni entregas a domicilio.
 
-### Branches (5)
-- GET /branches
-- GET /branches/:id
-- POST /branches (ADMIN)
-- PATCH /branches/:id (ADMIN)
-- DELETE /branches/:id (ADMIN)
+## Endpoints implementados
 
-### Users (6)
-- GET /users (ADMIN)
-- GET /users/:id (ADMIN)
-- POST /users (ADMIN)
-- PATCH /users/:id (ADMIN)
-- DELETE /users/:id/deactivate (ADMIN)
-- POST /users/:id/reactivate (ADMIN)
+### Autenticación y usuarios
 
-### Addresses (5)
-- GET /addresses (usuario ve sus direcciones, ADMIN ve todas)
-- GET /addresses/:id
-- POST /addresses
-- PATCH /addresses/:id
-- DELETE /addresses/:id
+- `/auth/register`, `/auth/login`, `/auth/refresh`, `/auth/logout`
+- `/auth/me`, `/auth/deactivate`, `/auth/oauth-callback`
+- `/auth/reset-password`, `/auth/reset-password/recovery`
+- CRUD administrativo de `/users`
 
-### Inventory (1)
-- GET /inventory (con filtros por sucursal y producto)
+### Catálogo
 
-### Stock Movements (2)
-- POST /stock-movements
-- GET /stock-movements (con filtros)
+- CRUD administrativo de `/products` y `/categories`.
+- `GET /products` y `GET /products/:slug` para el catálogo.
+- `isActive=false` oculta el producto del e-commerce, pero no lo elimina del inventario ni del cierre diario.
+- Las presentaciones comerciales convierten cantidades de venta a la unidad base.
 
-### Orders (5)
-- POST /orders/reserve
-- POST /orders/:id/cancel
-- POST /orders/:id/pickup
-- GET /orders (con filtros, clientes ven solo sus pedidos)
-- GET /orders/:id
+### Pedidos para retiro
 
-### Dashboard (1)
-- GET /dashboard/stats (ADMIN/MANAGER)
+- `POST /orders/reserve`
+- `POST /orders/:id/confirm`
+- `PATCH /orders/:id/status`
+- `POST /orders/:id/cancel`
+- `POST /orders/:id/pickup`
+- `GET /orders`, `GET /orders/my-orders`, `GET /orders/:id`
 
-### Health & Metrics (2)
-- GET /health
-- GET /metrics (ADMIN)
+Estados válidos: `PENDING`, `CONFIRMED`, `PREPARING`, `READY`, `PICKED_UP` y `CANCELLED`. Una reserva `PENDING` sin confirmar se cancela automáticamente después de 2 horas por defecto y libera su reserva de inventario. Los demás estados no expiran automáticamente.
 
-### Recipes
-- CRUD completo de recetas (amasijos)
+### Inventario y producción
 
-### Production
-- CRUD de registros de producción (horneos)
+- `GET /inventory`, `GET /inventory/low-stock`
+- `GET /inventory/expirations`, `POST /inventory/expirations/check`
+- `POST /stock-movements`, `GET /stock-movements`
+- `POST /stock-movements/reconcile`, `GET /stock-movements/activity`
+- CRUD de `/recipes`, `/production` y `/raw-materials`
+- `POST /raw-materials/purchase` para compras de materia prima
 
-### Raw Materials
-- CRUD de gestión de materia prima
+La caducidad solo aplica a lotes de productos de origen `COMPRADO` con control de caducidad activo. Los lotes vencidos permanecen visibles para registrar una `MERMA`; no desaparecen por una tarea automática.
 
----
+### Cierre diario
 
-## Mejoras Potenciales (Futuro)
+- `GET /daily-close/preview`
+- `POST /daily-close`
+- `GET /daily-close`, `GET /daily-close/:id`
 
-### Endpoints que podrian agregarse:
-1. **GET /categories/:slug/products** — Productos filtrados por categoría (se puede lograr con `GET /products?category=slug`)
-2. **POST /auth/forgot-password** y **POST /auth/reset-password** — Recuperación de contraseña (parcialmente implementado en frontend)
-3. **POST /products/:slug/images** — Upload de imágenes (se usa Appwrite directamente)
-4. **GET /branches/:id/inventory** — Vista de inventario por sucursal (se puede lograr con `GET /inventory?branchId=X`)
-5. **Metodos de pago adicionales** — No se implementarán pasarelas de pago externas ya que el pago es únicamente en tienda o transferencia directa.
+El cierre concilia el conteo y la merma de producto terminado. Una vez cerrado el día, se bloquea nueva `PRODUCCION` para esa fecha; las compras, mermas, pérdidas, transferencias y otros ajustes siguen disponibles para registrar movimientos reales.
 
-### Validaciones que podrian mejorarse:
-- Endpoint de búsqueda dedicado (`GET /products/search`) — actualmente se usa `?search=` en `GET /products`
-- Paginación en endpoints de categorías relacionadas
+### Alertas y asistentes
 
----
+Las únicas configuraciones de notificación son:
 
-## Estado del Backend
+1. `inventory.raw_material_low`
+2. `inventory.expiration_warning`
 
-| Aspecto | Estado |
-|---------|--------|
-| **Funcionalidad** | 95%+ completada |
-| **Seguridad** | Helmet, CORS, Rate Limiting, JWT, bcrypt, audit log |
-| **Documentacion API** | Swagger completo en `/docs` |
-| **Testing** | Tests e2e de seguridad implementados, expandir cobertura |
-| **Produccion** | Módulos operativos, compilación sin errores |
+Los usuarios `MANAGER` reciben alertas de ambas sucursales. Los endpoints `/notifications` exponen el historial, configuración y pruebas de estas dos alertas. `/telegram` permite vincular el asistente para consultas operativas.
 
----
+## Roles y sucursales
 
-## Roles del Sistema
+| Rol | Alcance |
+|---|---|
+| `ADMIN` | Acceso administrativo global |
+| `MANAGER` | Lectura y operación de ambas sucursales; puede transferir inventario entre ellas |
+| `BAKER` | Producción y operación de su sucursal asignada |
+| `CASHIER` | Pedidos para retiro, conteo y cierre de su sucursal |
+| `CUSTOMER` | Catálogo, carrito, reservas, pedidos y perfil |
 
-| Rol | Acceso |
-|-----|--------|
-| `ADMIN` | Acceso total |
-| `MANAGER` | Ventas, inventario, producción, reportes |
-| `BAKER` | Producción y materia prima |
-| `CASHIER` | Punto de venta |
-| `CUSTOMER` | Catálogo, pedidos, perfil |
+## Generación y verificación
 
-> **Nota:** No existe rol `EMPLOYEE`. Las funciones de empleado se dividen en `MANAGER`, `BAKER` y `CASHIER` según la responsabilidad operativa.
+```bash
+npm run openapi:gen
+npm run openapi:gen:dist
+```
+
+Ambos comandos generan `openapi.json` sin conectar a la base de datos. El pipeline de CI valida el artefacto antes de publicarlo en Scalar.

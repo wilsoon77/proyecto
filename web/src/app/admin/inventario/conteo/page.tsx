@@ -12,6 +12,8 @@ import {
 import { useAuth } from "@/context/AuthContext"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
+import { PresentationCountFields } from "@/components/admin/PresentationCountFields"
+import { baseQuantityFromCounts, breakdownBaseQuantity } from "@/lib/presentation-quantities"
 
 interface Branch {
   id: number
@@ -23,10 +25,20 @@ interface CountEntry {
   productId: number
   productName: string
   productSlug: string
+  stockUnitLabel?: string
+  presentations: NonNullable<InventoryItem['product']['presentations']>
+  presentationInputs: Record<string, string>
+  looseInput: string
   systemQuantity: number
   reserved: number
   actualQuantity: string // string para permitir campo vacío mientras se escribe
   touched: boolean // true si el usuario lo modificó
+}
+
+function actualCount(entry: CountEntry) {
+  return entry.presentations.length > 0
+    ? baseQuantityFromCounts(entry.presentationInputs, entry.presentations, entry.looseInput)
+    : (parseInt(entry.actualQuantity, 10) || 0)
 }
 
 type ReconcileResult = {
@@ -72,7 +84,7 @@ export default function ConteoPage() {
         // Auto-seleccionar sucursal del usuario
         if (user?.branch?.slug) {
           setSelectedBranch(user.branch.slug)
-        } else if (branchesData.length > 0 && user?.role === 'ADMIN') {
+        } else if (branchesData.length > 0 && (user?.role === 'ADMIN' || user?.role === 'MANAGER')) {
           setSelectedBranch(branchesData[0].slug)
         }
       } catch (err) {
@@ -93,15 +105,23 @@ export default function ConteoPage() {
         const data = await inventoryService.list({ branchSlug: selectedBranch })
         setInventory(data)
         // Inicializar entradas con la cantidad del sistema
-        setEntries(data.map(item => ({
-          productId: item.product.id,
-          productName: item.product.name,
-          productSlug: item.product.slug,
-          systemQuantity: item.quantity,
-          reserved: item.reserved,
-          actualQuantity: String(item.quantity),
-          touched: false,
-        })))
+        setEntries(data.map(item => {
+          const presentations = item.product.presentations ?? []
+          const breakdown = breakdownBaseQuantity(item.quantity, presentations)
+          return {
+            productId: item.product.id,
+            productName: item.product.name,
+            productSlug: item.product.slug,
+            systemQuantity: item.quantity,
+            reserved: item.reserved,
+            actualQuantity: String(item.quantity),
+            touched: false,
+            stockUnitLabel: item.product.stockUnitLabel,
+            presentations,
+            presentationInputs: presentations.length > 0 ? breakdown.counts : {},
+            looseInput: presentations.length > 0 ? breakdown.loose : "",
+          }
+        }))
       } catch (err) {
         console.error("Error cargando inventario:", err)
       } finally {
@@ -123,7 +143,7 @@ export default function ConteoPage() {
     const touched = entries.filter(e => e.touched)
     let sobrantes = 0, mermas = 0, sinCambio = 0
     touched.forEach(e => {
-      const actual = parseInt(e.actualQuantity) || 0
+      const actual = actualCount(e)
       const diff = actual - e.systemQuantity
       if (diff > 0) sobrantes++
       else if (diff < 0) mermas++
@@ -140,6 +160,17 @@ export default function ConteoPage() {
     ))
   }
 
+  const updatePresentationEntry = (productId: number, presentationId: number, value: string) => {
+    setEntries(prev => prev.map(e => e.productId === productId
+      ? { ...e, presentationInputs: { ...e.presentationInputs, [String(presentationId)]: value }, touched: true }
+      : e
+    ))
+  }
+
+  const updateLooseEntry = (productId: number, value: string) => {
+    setEntries(prev => prev.map(e => e.productId === productId ? { ...e, looseInput: value, touched: true } : e))
+  }
+
   const handleSubmit = async () => {
     const touchedEntries = entries.filter(e => e.touched)
     if (touchedEntries.length === 0) {
@@ -148,7 +179,7 @@ export default function ConteoPage() {
     }
 
     // Validar que todos los valores sean números
-    const invalid = touchedEntries.find(e => isNaN(parseInt(e.actualQuantity)) || parseInt(e.actualQuantity) < 0)
+    const invalid = touchedEntries.find(e => !Number.isInteger(actualCount(e)) || actualCount(e) < 0)
     if (invalid) {
       showToast(`Cantidad inválida para ${invalid.productName}`, 'error')
       return
@@ -160,7 +191,10 @@ export default function ConteoPage() {
         branchSlug: selectedBranch,
         items: touchedEntries.map(e => ({
           productId: e.productId,
-          actualQuantity: parseInt(e.actualQuantity),
+          actualQuantity: actualCount(e),
+          presentationCounts: e.presentations.length > 0 && Number(e.looseInput || 0) === 0
+            ? Object.entries(e.presentationInputs).filter(([, quantity]) => quantity !== "").map(([presentationId, quantity]) => ({ presentationId: Number(presentationId), quantity: Number(quantity) }))
+            : undefined,
         })),
         note: note || undefined,
       })
@@ -309,7 +343,7 @@ export default function ConteoPage() {
               className="flex-1 border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary bg-card font-medium"
               value={selectedBranch}
               onChange={(e) => setSelectedBranch(e.target.value)}
-              disabled={user?.role !== 'ADMIN'}
+              disabled={user?.role !== 'ADMIN' && user?.role !== 'MANAGER'}
             >
               <option value="" disabled>Seleccionar sucursal</option>
               {branches.map(b => (
@@ -383,7 +417,7 @@ export default function ConteoPage() {
           {/* Mobile Cards */}
           <div className="md:hidden divide-y divide-gray-100">
             {filteredEntries.map(entry => {
-              const actual = parseInt(entry.actualQuantity) || 0
+              const actual = actualCount(entry)
               const diff = entry.touched ? actual - entry.systemQuantity : 0
               return (
                 <div key={entry.productId} className={`p-4 ${entry.touched && diff !== 0 ? (diff > 0 ? 'bg-success/10/50' : 'bg-primary/10/50') : ''}`}>
@@ -401,6 +435,17 @@ export default function ConteoPage() {
                       {entry.reserved > 0 && <span className="text-primary ml-1">({entry.reserved} res.)</span>}
                     </div>
                     <div className="flex-1">
+                      {entry.presentations.length > 0 ? (
+                        <PresentationCountFields
+                          presentations={entry.presentations}
+                          values={entry.presentationInputs}
+                          looseValue={entry.looseInput}
+                          unitLabel={entry.stockUnitLabel ?? "piezas"}
+                          label="Conteo"
+                          onChange={(presentationId, value) => updatePresentationEntry(entry.productId, presentationId, value)}
+                          onLooseChange={(value) => updateLooseEntry(entry.productId, value)}
+                        />
+                      ) : (
                       <input
                         type="number"
                         min="0"
@@ -412,6 +457,7 @@ export default function ConteoPage() {
                             : 'border-border'
                         }`}
                       />
+                      )}
                     </div>
                   </div>
                 </div>
@@ -435,7 +481,7 @@ export default function ConteoPage() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {filteredEntries.map(entry => {
-                  const actual = parseInt(entry.actualQuantity) || 0
+                  const actual = actualCount(entry)
                   const diff = entry.touched ? actual - entry.systemQuantity : 0
                   return (
                     <tr
@@ -458,6 +504,17 @@ export default function ConteoPage() {
                         </span>
                       </td>
                       <td className="py-3 px-4">
+                        {entry.presentations.length > 0 ? (
+                          <PresentationCountFields
+                            presentations={entry.presentations}
+                            values={entry.presentationInputs}
+                            looseValue={entry.looseInput}
+                            unitLabel={entry.stockUnitLabel ?? "piezas"}
+                            label="Conteo"
+                            onChange={(presentationId, value) => updatePresentationEntry(entry.productId, presentationId, value)}
+                            onLooseChange={(value) => updateLooseEntry(entry.productId, value)}
+                          />
+                        ) : (
                         <input
                           type="number"
                           min="0"
@@ -469,6 +526,7 @@ export default function ConteoPage() {
                               : 'border-border'
                           }`}
                         />
+                        )}
                       </td>
                       <td className="py-3 px-4 text-center">
                         {entry.touched && diff !== 0 ? (

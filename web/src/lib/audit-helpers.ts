@@ -58,7 +58,6 @@ const FIELD_LABELS: Record<string, string> = {
   itemsCount: "Productos",
   deleted: "Eliminado",
   active: "Activo",
-  address: "Dirección",
   zone: "Zona",
 }
 
@@ -69,9 +68,7 @@ const VALUE_LABELS: Record<string, string> = {
   PREPARING: "En preparación",
   READY: "Listo para recoger",
   PICKED_UP: "Recogido",
-  DELIVERED: "Entregado",
   CANCELLED: "Cancelado",
-  IN_DELIVERY: "En camino",
   ADMIN: "Administrador",
   MANAGER: "Gerente",
   BAKER: "Panadero",
@@ -81,7 +78,7 @@ const VALUE_LABELS: Record<string, string> = {
   ACTIVATE: "Activar",
   CANCEL: "Cancelar",
   CONFIRM: "Confirmar",
-  PICKUP: "Entregar/Recoger",
+  PICKUP: "Recoger en sucursal",
   STATUS_CHANGE: "Cambio de estado",
 }
 

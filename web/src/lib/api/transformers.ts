@@ -29,6 +29,19 @@ export function apiProductToProduct(apiProduct: ApiProduct): Product {
     comboQuantity: apiProduct.comboQuantity,
     comboPrice: apiProduct.comboPrice ? Number(apiProduct.comboPrice) : undefined,
     unitsPerTray: apiProduct.unitsPerTray,
+    stockUnitLabel: apiProduct.stockUnitLabel || 'unidades',
+    presentations: apiProduct.presentations?.map(presentation => ({
+      id: presentation.id,
+      name: presentation.name,
+      unitsInStock: presentation.unitsInStock,
+      price: presentation.price === null || presentation.price === undefined ? null : Number(presentation.price),
+      isForSale: presentation.isForSale,
+      isForProduction: presentation.isForProduction,
+      isDefault: presentation.isDefault,
+      isActive: presentation.isActive,
+      sortOrder: presentation.sortOrder,
+      available: presentation.available,
+    })),
   }
 }
 
@@ -78,14 +91,25 @@ export function apiOrderToOrder(apiOrder: ApiOrder): Order {
         isAvailable: true,
         isFeatured: false,
       },
-      quantity: item.quantity,
+      quantity: item.presentationQuantity ?? item.quantity,
+      presentation: item.presentationId && item.presentationName
+        ? {
+            id: item.presentationId,
+            name: item.presentationName,
+            unitsInStock: item.presentationUnits ?? 1,
+            price: Number(item.unitPrice),
+            isForSale: true,
+            isForProduction: false,
+            isDefault: false,
+            isActive: true,
+            sortOrder: 0,
+          }
+        : undefined,
     })),
     subtotal: Number(apiOrder.subtotal),
-    deliveryFee: Number(apiOrder.deliveryFee),
     discount: Number(apiOrder.discount),
     total: Number(apiOrder.total),
     paymentMethod: apiOrder.paymentMethod as Order['paymentMethod'],
-    shippingMethod: apiOrder.shippingMethod as Order['shippingMethod'],
     createdAt: apiOrder.createdAt,
   }
 }

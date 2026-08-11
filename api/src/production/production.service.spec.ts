@@ -36,6 +36,9 @@ function createMockPrisma() {
     stockMovement: {
       create: jest.fn(),
     },
+    dailyClose: {
+      findUnique: jest.fn().mockResolvedValue(null),
+    },
     user: {
       findUnique: jest.fn(),
     },
@@ -141,6 +144,18 @@ describe('ProductionService', () => {
       await expect(
         service.registerProduction({ recipeId: 1, traysProduced: 10 }, 'user-1'),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws ConflictException when the branch has already been closed for the business day', async () => {
+      mockPrisma.recipe.findUnique.mockResolvedValue(RECIPE_FRANCES);
+      mockPrisma.user.findUnique.mockResolvedValue({ branchId: 1 });
+      mockPrisma.dailyClose.findUnique.mockResolvedValue({ id: 77 });
+
+      await expect(
+        service.registerProduction({ recipeId: 1, traysProduced: 1 }, 'user-1'),
+      ).rejects.toThrow('La jornada de esta sucursal ya está cerrada');
+
+      expect(mockPrisma.rawMaterialInventory.findUnique).not.toHaveBeenCalled();
     });
 
     it('throws BadRequestException when stock is insufficient', async () => {

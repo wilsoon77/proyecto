@@ -14,15 +14,20 @@ interface OrderDetail {
   orderNumber: string
   status: OrderStatus
   subtotal: number
-  deliveryFee: number
   discount: number
   total: number
   paymentMethod?: string
-  shippingMethod?: string
   customerNotes?: string
   branch?: { id: number; name: string; slug: string; address: string; phone?: string }
-  address?: { street: string; city: string; state?: string; zone?: string; reference?: string }
-  items: Array<{ id: number; productId: number; productName: string; quantity: number; unitPrice: number }>
+  items: Array<{
+    id: number
+    productId: number
+    productName: string
+    quantity: number
+    unitPrice: number
+    presentationName?: string | null
+    presentationQuantity?: number | null
+  }>
   createdAt: string
   updatedAt: string
   user?: { id: string; firstName: string; lastName: string; email: string; phone?: string }
@@ -33,8 +38,6 @@ const STATUS_OPTIONS: { value: OrderStatus; label: string; icon: React.ElementTy
   { value: "CONFIRMED", label: "Confirmada", icon: CheckCircle, color: "text-chart-3", bgColor: "bg-chart-3/10" },
   { value: "PREPARING", label: "Preparando", icon: ChefHat, color: "text-chart-5", bgColor: "bg-chart-5/10" },
   { value: "READY", label: "Lista para Recoger", icon: Package, color: "text-success", bgColor: "bg-success/10" },
-  { value: "IN_DELIVERY", label: "En camino", icon: Package, color: "text-indigo-700", bgColor: "bg-indigo-100" },
-  { value: "DELIVERED", label: "Entregada", icon: CheckCircle, color: "text-emerald-700", bgColor: "bg-emerald-100" },
   { value: "PICKED_UP", label: "Recogida", icon: CheckCircle, color: "text-teal-700", bgColor: "bg-teal-100" },
   { value: "CANCELLED", label: "Cancelada", icon: XCircle, color: "text-destructive", bgColor: "bg-destructive/10" },
 ]
@@ -49,9 +52,7 @@ const STATUS_FLOW: Record<OrderStatus, OrderStatus[]> = {
   PENDING: ['CONFIRMED', 'CANCELLED'],
   CONFIRMED: ['PREPARING', 'CANCELLED'],
   PREPARING: ['READY', 'CANCELLED'],
-  READY: ['PICKED_UP', 'IN_DELIVERY', 'CANCELLED'],
-  IN_DELIVERY: ['DELIVERED'],
-  DELIVERED: [],
+  READY: ['PICKED_UP', 'CANCELLED'],
   PICKED_UP: [],
   CANCELLED: [],
 }
@@ -94,9 +95,7 @@ export default function DetalleOrdenPage() {
         ? await ordersService.cancel(orderId)
         : newStatus === 'PICKED_UP'
           ? await ordersService.pickup(orderId)
-          : newStatus === 'DELIVERED'
-            ? await ordersService.deliver(orderId)
-            : await ordersService.updateStatus(orderId, newStatus)
+          : await ordersService.updateStatus(orderId, newStatus)
       setOrder({ ...order, status: updated.status, updatedAt: new Date().toISOString() })
       showToast(`Estado actualizado a ${STATUS_MAP[newStatus].label}`, "success")
     } catch (error) {
@@ -182,16 +181,18 @@ export default function DetalleOrdenPage() {
                   {order.items.map((item) => (
                     <tr key={item.id}>
                       <td className="px-6 py-4">
-                        <p className="font-medium text-foreground">{item.productName}</p>
+                        <p className="font-medium text-foreground">
+                          {item.productName}{item.presentationName ? ` (${item.presentationName})` : ''}
+                        </p>
                       </td>
                       <td className="px-6 py-4 text-center text-muted-foreground">
-                        {item.quantity}
+                        {item.presentationQuantity ?? item.quantity}
                       </td>
                       <td className="px-6 py-4 text-right text-muted-foreground">
                         {formatCurrency(item.unitPrice)}
                       </td>
                       <td className="px-6 py-4 text-right font-medium text-foreground">
-                        {formatCurrency(item.unitPrice * item.quantity)}
+                        {formatCurrency(item.unitPrice * (item.presentationQuantity ?? item.quantity))}
                       </td>
                     </tr>
                   ))}
@@ -205,10 +206,12 @@ export default function DetalleOrdenPage() {
                 <div key={item.id} className="px-4 py-3 flex items-center justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-foreground truncate">{item.productName}</p>
-                    <p className="text-sm text-muted-foreground">{item.quantity} × {formatCurrency(item.unitPrice)}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {item.presentationQuantity ?? item.quantity} × {formatCurrency(item.unitPrice)}
+                    </p>
                   </div>
                   <p className="text-sm font-semibold text-foreground whitespace-nowrap">
-                    {formatCurrency(item.unitPrice * item.quantity)}
+                    {formatCurrency(item.unitPrice * (item.presentationQuantity ?? item.quantity))}
                   </p>
                 </div>
               ))}
@@ -221,12 +224,6 @@ export default function DetalleOrdenPage() {
                   <span className="text-muted-foreground">Subtotal</span>
                   <span className="text-foreground">{formatCurrency(order.subtotal)}</span>
                 </div>
-                {order.deliveryFee > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Envío</span>
-                    <span className="text-foreground">{formatCurrency(order.deliveryFee)}</span>
-                  </div>
-                )}
                 {order.discount > 0 && (
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Descuento</span>

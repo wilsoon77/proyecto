@@ -34,8 +34,6 @@ enum OrderStatus {
   CONFIRMED
   PREPARING
   READY
-  IN_DELIVERY
-  DELIVERED
   CANCELLED
   PICKED_UP
 }
@@ -106,7 +104,6 @@ model User {
   branchId           Int?
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
-  addresses          Address[]
   orders             Order[]
   stockMovements     StockMovement[]
   productionLogs     ProductionLog[]
@@ -119,19 +116,6 @@ model User {
   assistantAccess    AssistantAccess?
   telegramLink       TelegramLink?
   telegramLinkTokens TelegramLinkToken[]
-}
-
-model Address {
-  id        Int      @id @default(autoincrement())
-  user      User?    @relation(fields: [userId], references: [id])
-  userId    String?
-  street    String
-  city      String
-  state     String?
-  zone      String?
-  reference String?
-  createdAt DateTime @default(now())
-  orders    Order[]
 }
 
 model RefreshToken {
@@ -199,6 +183,7 @@ model Product {
   basePrice           Decimal          @db.Decimal(10, 2) // Precio unitario (ej: Q0.50)
   comboQuantity       Int? // Cantidad del combo (ej: 3 para "3x1.25")
   comboPrice          Decimal?         @db.Decimal(10, 2) // Precio del combo (ej: Q1.25)
+  stockUnitLabel      String           @default("unidades") // Nombre de la unidad física base (piezas, unidades, etc.)
   // ── Producción ──
   origin              ProductOrigin    @default(PRODUCIDO)
   unitsPerTray        Int? // Unidades por lata (ej: 36). Solo para PRODUCIDO.
@@ -218,8 +203,7 @@ model Product {
   stockMovements      StockMovement[]
   inventoryLots       InventoryLot[]
   dailyCloseItems     DailyCloseItem[]
-  demandDaily         DemandDaily[]
-  forecastItems       ForecastItem[]
+  presentations       ProductPresentation[]
   createdAt           DateTime         @default(now())
   updatedAt           DateTime         @updatedAt
 
@@ -227,6 +211,32 @@ model Product {
   @@index([categoryId]) // Filtro por categoría (catálogo, POS)
   @@index([origin]) // Filtro PRODUCIDO vs COMPRADO
   @@index([isActive, isAvailable]) // Productos activos y disponibles (POS)
+}
+
+// Presentación comercial/operativa de un producto.
+// Ejemplos: "Media tira" = 3 piezas, "Tira completa" = 6 piezas.
+// El inventario siempre se conserva en la unidad física base del producto.
+model ProductPresentation {
+  id             Int      @id @default(autoincrement())
+  product        Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId      Int
+  name           String
+  unitsInStock   Int      // Piezas físicas que consume una presentación
+  price          Decimal? @db.Decimal(10, 2)
+  isForSale      Boolean  @default(true)
+  isForProduction Boolean @default(false)
+  isDefault      Boolean  @default(false)
+  isActive       Boolean  @default(true)
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  orderItems     OrderItem[]
+  productionLogs ProductionLog[]
+
+  @@unique([productId, name])
+  @@index([productId, isActive, isForSale])
+  @@index([productId, isActive, isForProduction])
 }
 
 model ProductImage {
@@ -321,6 +331,11 @@ model ProductionLog {
   userId         String
   traysProduced  Int // Latas reales producidas (ej: 33)
   unitsProduced  Int // Calculado: traysProduced × product.unitsPerTray (ej: 1188)
+  presentationId       Int?
+  presentation         ProductPresentation? @relation(fields: [presentationId], references: [id], onDelete: SetNull)
+  presentationName     String?
+  presentationQuantity Int?
+  presentationUnits    Int?
   note           String?
   createdAt      DateTime        @default(now())
   // Relaciones inversas
@@ -329,6 +344,7 @@ model ProductionLog {
   @@index([recipeId])
   @@index([branchId])
   @@index([createdAt])
+  @@index([presentationId])
 }
 
 // ─────────────────────────────────────────────
@@ -447,8 +463,6 @@ model Branch {
   orders                 Order[]
   employees              User[]
   dailyCloses            DailyClose[]
-  demandDaily            DemandDaily[]
-  forecastRuns           ForecastRun[]
   alertStates            AlertState[]
 }
 
@@ -490,95 +504,29 @@ model DailyCloseItem {
 }
 
 // ─────────────────────────────────────────────
-model DemandDaily {
-  id              Int      @id @default(autoincrement())
-  branch          Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  branchId        Int
-  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  productId       Int
-  businessDate    DateTime @db.Date
-  orderQty        Int      @default(0)
-  dailyCloseQty   Int      @default(0)
-  totalDemandQty  Int      @default(0)
-  productionQty   Int      @default(0)
-  wasteQty        Int      @default(0)
-  stockout        Boolean  @default(false)
-  dataQuality     String   @default("NO_DATA")
-  sourceBreakdown Json?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@unique([branchId, productId, businessDate])
-  @@index([branchId, businessDate])
-  @@index([productId, businessDate])
-  @@index([businessDate])
-}
-
-model ForecastRun {
-  id           Int            @id @default(autoincrement())
-  branch       Branch         @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  branchId     Int
-  generatedAt  DateTime       @default(now())
-  periodStart  DateTime       @db.Date
-  periodEnd    DateTime       @db.Date
-  horizonDays  Int
-  modelVersion String
-  status       String         @default("RUNNING")
-  errorMessage String?
-  parameters   Json?
-  items        ForecastItem[]
-
-  @@index([branchId, generatedAt])
-  @@index([branchId, status, generatedAt])
-}
-
-model ForecastItem {
-  id                       Int         @id @default(autoincrement())
-  forecastRun              ForecastRun @relation(fields: [forecastRunId], references: [id], onDelete: Cascade)
-  forecastRunId            Int
-  product                  Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
-  productId                Int
-  forecastDate             DateTime    @db.Date
-  predictedQty             Float
-  lowerBound               Float
-  upperBound               Float
-  confidence               Float
-  recommendedProductionQty Int         @default(0)
-  recommendedTrays         Int?
-  rawMaterialRisk          Json?
-
-  @@unique([forecastRunId, productId, forecastDate])
-  @@index([productId, forecastDate])
-  @@index([forecastRunId, forecastDate])
-}
-
 // PEDIDOS Y VENTAS
 // ─────────────────────────────────────────────
 
 model Order {
-  id             Int         @id @default(autoincrement())
-  orderNumber    String      @unique
-  user           User?       @relation(fields: [userId], references: [id])
-  userId         String?
-  status         OrderStatus @default(PENDING)
-  subtotal       Decimal     @db.Decimal(10, 2)
-  deliveryFee    Decimal     @db.Decimal(10, 2)
-  discount       Decimal     @default(0) @db.Decimal(10, 2)
-  total          Decimal     @db.Decimal(10, 2)
-  paymentMethod  String?
-  shippingMethod String?
-  branch         Branch?     @relation(fields: [branchId], references: [id])
-  branchId       Int?
-  customerNotes  String?     @db.Text
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
-  items          OrderItem[]
-  address        Address?    @relation(fields: [addressId], references: [id])
-  addressId      Int?
+  id            Int         @id @default(autoincrement())
+  orderNumber   String      @unique
+  user          User?       @relation(fields: [userId], references: [id])
+  userId        String?
+  status        OrderStatus @default(PENDING)
+  subtotal      Decimal     @db.Decimal(10, 2)
+  discount      Decimal     @default(0) @db.Decimal(10, 2)
+  total         Decimal     @db.Decimal(10, 2)
+  paymentMethod String?
+  branch        Branch?     @relation(fields: [branchId], references: [id])
+  branchId      Int?
+  customerNotes String?     @db.Text
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  items         OrderItem[]
 
   // supabase-postgres-best-practices: indexes para queries frecuentes
   @@index([userId]) // Historial de pedidos del usuario
-  @@index([status]) // Filtro por estado (dashboard)
+  @@index([status]) // Filtro por estado operativo
   @@index([branchId]) // Pedidos por sucursal
   @@index([createdAt]) // Ordenamiento cronológico
 }
@@ -592,9 +540,15 @@ model OrderItem {
   productName String
   quantity    Int
   unitPrice   Decimal @db.Decimal(10, 2)
+  presentationId       Int?
+  presentation         ProductPresentation? @relation(fields: [presentationId], references: [id], onDelete: SetNull)
+  presentationName     String?
+  presentationQuantity Int?
+  presentationUnits    Int?
 
   @@index([orderId]) // JOIN con Order
   @@index([productId]) // Reportes por producto
+  @@index([presentationId])
 }
 
 // ─────────────────────────────────────────────
@@ -644,7 +598,7 @@ model SystemConfig {
 // Configuración administrable de cada tipo de notificación
 model NotificationConfig {
   id          Int      @id @default(autoincrement())
-  key         String   @unique // 'order.status_changed', 'inventory.low_stock'
+  key         String   @unique // 'inventory.raw_material_low', 'inventory.expiration_warning'
   name        String // "Cambio de estado de orden"
   description String?
   category    String // 'ORDERS', 'INVENTORY', 'PRODUCTION', 'SYSTEM'

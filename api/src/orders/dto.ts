@@ -1,5 +1,5 @@
-import { IsArray, IsOptional, IsString, IsInt, IsPositive, ValidateNested } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsArray, IsOptional, IsString, IsInt, IsPositive, ValidateNested, Min } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
 export class ReserveItem {
@@ -11,6 +11,12 @@ export class ReserveItem {
   @IsInt()
   @IsPositive()
   quantity!: number;
+
+  @ApiPropertyOptional({ example: 12, description: 'Presentación comercial seleccionada' })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  presentationId?: number;
 }
 
 export class ReserveOrderDto {
@@ -33,24 +39,4 @@ export class ReserveOrderDto {
   @IsOptional()
   @IsString()
   customerNotes?: string;
-}
-
-export class POSOrderDto {
-  @ApiProperty({ example: 'zona-1' })
-  @IsString()
-  branchSlug!: string;
-
-  @ApiProperty({ type: [ReserveItem], example: [{ productSlug: 'concha', quantity: 2 }] })
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => ReserveItem)
-  items!: ReserveItem[];
-
-  @ApiProperty({ example: 'EFECTIVO' })
-  @IsString()
-  paymentMethod!: string;
-
-  @ApiProperty({ example: 50.00, required: false })
-  @IsOptional()
-  amountTendered?: number; // Para el vuelto
 }

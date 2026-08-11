@@ -10,7 +10,6 @@ import { ConfigService } from '@nestjs/config';
 import { createHash, randomBytes } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
-import { NotificationsService } from '../notifications/notifications.service.js';
 import { AssistantPolicyService } from '../assistant/assistant-policy.service.js';
 
 function hashToken(value: string): string {
@@ -23,7 +22,6 @@ export class TelegramLinkService {
     private readonly config: ConfigService,
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
-    private readonly notifications: NotificationsService,
     private readonly policy: AssistantPolicyService,
   ) {}
 
@@ -160,10 +158,6 @@ export class TelegramLinkService {
       entity: 'TelegramLink',
       entityId: chatId,
       details: { username: linked.username },
-    });
-
-    await this.notifications.sendToUser(linked.userId, 'telegram.linked', {
-      username: linked.username ? `@${linked.username}` : 'tu chat',
     });
 
     return linked;

@@ -25,7 +25,7 @@ export class ProductionController {
   })
   async registerProduction(@Body() dto: CreateProductionLogDto, @Req() req: any) {
     const userId = req.user.userId || req.user.sub;
-    const branchId = await this.branchScope.resolveBranchId(req.user, dto.branchId);
+    const branchId = await this.branchScope.resolveWriteBranchId(req.user, dto.branchId);
     return this.productionService.registerProduction({ ...dto, branchId }, userId);
   }
 

@@ -70,7 +70,7 @@ export class RawMaterialsController {
   })
   async registerPurchase(@Body() dto: PurchaseRawMaterialDto, @Req() req: any) {
     const userId = req.user?.userId || req.user?.sub;
-    const branchId = await this.branchScope.resolveBranchId(req.user, dto.branchId);
+    const branchId = await this.branchScope.resolveWriteBranchId(req.user, dto.branchId);
     return this.rawMaterialsService.registerPurchase({ ...dto, branchId: branchId ?? dto.branchId }, userId);
   }
 }

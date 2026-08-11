@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/toast"
 import { useAuth } from "@/context/AuthContext"
 import { branchesService, productionService } from "@/lib/api"
 import type { ApiBranch, Recipe, ProductionLog } from "@/lib/api"
+import { productionPresentations } from "@/lib/presentation-quantities"
 
 export default function ProduccionPage() {
   const router = useRouter()
@@ -24,6 +25,7 @@ export default function ProduccionPage() {
   // Form state
   const [selectedRecipeId, setSelectedRecipeId] = useState<number | null>(null)
   const [traysProduced, setTraysProduced] = useState(0)
+  const [productionQuantity, setProductionQuantity] = useState(0)
   const [note, setNote] = useState("")
 
   // Guard: solo BAKER, MANAGER, ADMIN
@@ -41,14 +43,14 @@ export default function ProduccionPage() {
       const [recipesData, logsData, branchesData] = await Promise.all([
         productionService.getRecipes(),
         productionService.getTodayProduction(),
-        user.role === 'ADMIN' ? branchesService.list() : Promise.resolve([] as ApiBranch[]),
+        user.role === 'ADMIN' || user.role === 'MANAGER' ? branchesService.list() : Promise.resolve([] as ApiBranch[]),
       ])
       setRecipes(recipesData)
       setTodayLogs(logsData)
       setBranches(branchesData)
 
       const assignedBranchId = user.branch?.id ?? user.branchId ?? null
-      setBranchId((current) => user.role === 'ADMIN'
+      setBranchId((current) => user.role === 'ADMIN' || user.role === 'MANAGER'
         ? current ?? assignedBranchId ?? (branchesData.length === 1 ? branchesData[0].id : null)
         : assignedBranchId
       )
@@ -65,18 +67,42 @@ export default function ProduccionPage() {
   }, [loadData])
 
   const selectedRecipe = recipes.find(r => r.id === selectedRecipeId)
+  const selectedProductionPresentation = selectedRecipe
+    ? [...productionPresentations({
+        id: selectedRecipe.product.id,
+        name: selectedRecipe.product.name,
+        slug: selectedRecipe.product.slug,
+        description: '',
+        price: 0,
+        mainImage: '',
+        category: '',
+        stock: 1,
+        isAvailable: true,
+        isFeatured: false,
+        presentations: selectedRecipe.product.presentations,
+      })].sort((a, b) => b.unitsInStock - a.unitsInStock)[0]
+    : undefined
+  const presentationsPerTray = selectedProductionPresentation && selectedRecipe?.product.unitsPerTray
+    ? selectedRecipe.product.unitsPerTray / selectedProductionPresentation.unitsInStock
+    : 0
 
   // Auto-set trays to standardTrays when selecting a recipe
   const handleSelectRecipe = (recipe: Recipe) => {
     setSelectedRecipeId(recipe.id)
     setTraysProduced(recipe.standardTrays)
+    const productionPresentation = [...(recipe.product.presentations ?? [])]
+      .filter((presentation) => presentation.isActive && presentation.isForProduction)
+      .sort((a, b) => b.unitsInStock - a.unitsInStock)[0]
+    setProductionQuantity(productionPresentation && recipe.product.unitsPerTray
+      ? recipe.standardTrays * recipe.product.unitsPerTray / productionPresentation.unitsInStock
+      : 0)
   }
 
   const handleSubmit = async () => {
-    if (!selectedRecipeId || traysProduced <= 0 || isSubmitting) return
+    if (!selectedRecipeId || (selectedProductionPresentation ? productionQuantity <= 0 : traysProduced <= 0) || isSubmitting) return
     if (!branchId) {
       showToast(
-        user?.role === 'ADMIN'
+        user?.role === 'ADMIN' || user?.role === 'MANAGER'
           ? 'Selecciona la sucursal donde se registrará el horneado'
           : 'Tu usuario no tiene una sucursal asignada',
         'error'
@@ -88,7 +114,9 @@ export default function ProduccionPage() {
     try {
       const result = await productionService.registerProduction({
         recipeId: selectedRecipeId,
-        traysProduced,
+        traysProduced: selectedProductionPresentation && presentationsPerTray > 0 ? productionQuantity / presentationsPerTray : traysProduced,
+        productionPresentationId: selectedProductionPresentation?.id,
+        productionQuantity: selectedProductionPresentation ? productionQuantity : undefined,
         branchId,
         note: note.trim() || undefined,
       })
@@ -101,6 +129,7 @@ export default function ProduccionPage() {
       // Reset and reload
       setSelectedRecipeId(null)
       setTraysProduced(0)
+      setProductionQuantity(0)
       setNote("")
       const logsData = await productionService.getTodayProduction()
       setTodayLogs(logsData)
@@ -138,7 +167,7 @@ export default function ProduccionPage() {
         </div>
       </div>
 
-      {user?.role === 'ADMIN' && (
+      {(user?.role === 'ADMIN' || user?.role === 'MANAGER') && (
         <div className="mb-6 rounded-xl border border-primary/20 bg-primary/5 p-4">
           <label htmlFor="production-branch" className="block text-sm font-semibold text-foreground mb-2">
             Sucursal donde se horneará
@@ -212,10 +241,15 @@ export default function ProduccionPage() {
       {/* ─── PASO 2: Latas Producidas ─── */}
       {selectedRecipe && (
         <div className="mb-6 bg-card rounded-xl border border-border p-6">
-          <h2 className="text-lg font-semibold text-foreground mb-4">2. ¿Cuántas latas salieron?</h2>
+          <p className="mb-2 text-sm font-medium text-primary">
+            Registro por: {selectedProductionPresentation?.name ?? 'latas'}
+          </p>
+          <h2 className="text-lg font-semibold text-foreground mb-4">2. ¿Cuántas {selectedProductionPresentation?.name.toLowerCase() ?? 'latas'} salieron?</h2>
           <div className="flex items-center justify-center gap-6">
             <button
-              onClick={() => setTraysProduced(Math.max(0, traysProduced - 1))}
+              onClick={() => selectedProductionPresentation
+                ? setProductionQuantity(Math.max(0, productionQuantity - presentationsPerTray))
+                : setTraysProduced(Math.max(0, traysProduced - 1))}
               className="h-16 w-16 rounded-full bg-muted hover:bg-border flex items-center justify-center transition-colors active:scale-95"
             >
               <Minus className="h-8 w-8 text-muted-foreground" />
@@ -223,19 +257,31 @@ export default function ProduccionPage() {
             <div className="text-center">
               <input
                 type="number"
-                value={traysProduced}
-                onChange={(e) => setTraysProduced(Math.max(0, parseInt(e.target.value) || 0))}
+                value={selectedProductionPresentation ? productionQuantity : traysProduced}
+                step={selectedProductionPresentation ? presentationsPerTray : 1}
+                onChange={(e) => selectedProductionPresentation
+                  ? setProductionQuantity(Math.max(0, parseInt(e.target.value) || 0))
+                  : setTraysProduced(Math.max(0, parseInt(e.target.value) || 0))}
                 className="text-5xl font-bold text-primary w-28 text-center bg-transparent border-b-2 border-primary/30 focus:outline-none focus:border-primary"
               />
-              <p className="text-sm text-muted-foreground mt-1">latas</p>
+              <p className="text-sm text-muted-foreground mt-1">{selectedProductionPresentation?.name ?? 'latas'}</p>
               {selectedRecipe.product.unitsPerTray && (
                 <p className="text-lg font-medium text-primary mt-2">
-                  = {(traysProduced * selectedRecipe.product.unitsPerTray).toLocaleString()} unidades
+                  = {(selectedProductionPresentation
+                    ? productionQuantity * selectedProductionPresentation.unitsInStock
+                    : traysProduced * selectedRecipe.product.unitsPerTray).toLocaleString()} {selectedRecipe.product.stockUnitLabel ?? 'unidades'}
+                </p>
+              )}
+              {selectedProductionPresentation && presentationsPerTray > 0 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  {presentationsPerTray} {selectedProductionPresentation.name.toLowerCase()} por lata
                 </p>
               )}
             </div>
             <button
-              onClick={() => setTraysProduced(traysProduced + 1)}
+              onClick={() => selectedProductionPresentation
+                ? setProductionQuantity(productionQuantity + presentationsPerTray)
+                : setTraysProduced(traysProduced + 1)}
               className="h-16 w-16 rounded-full bg-primary/10 hover:bg-primary/20 flex items-center justify-center transition-colors active:scale-95"
             >
               <Plus className="h-8 w-8 text-primary" />
@@ -255,7 +301,7 @@ export default function ProduccionPage() {
       )}
 
       {/* ─── PASO 3: Registrar ─── */}
-      {selectedRecipe && traysProduced > 0 && (
+      {selectedRecipe && (selectedProductionPresentation ? productionQuantity > 0 : traysProduced > 0) && (
         <div className="mb-8">
           <Button
             onClick={handleSubmit}
@@ -311,7 +357,7 @@ export default function ProduccionPage() {
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-foreground">{log.traysProduced} latas</p>
+                  <p className="font-bold text-foreground">{log.presentationQuantity && log.presentationName ? `${log.presentationQuantity} ${log.presentationName}` : `${log.traysProduced} latas`}</p>
                   <p className="text-xs text-primary font-medium">{log.unitsProduced.toLocaleString()} uds</p>
                 </div>
               </div>

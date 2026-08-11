@@ -10,7 +10,19 @@ export class RecipesService {
     return this.prisma.recipe.findMany({
       where: activeOnly ? { isActive: true } : undefined,
       include: {
-        product: { select: { id: true, name: true, slug: true, unitsPerTray: true } },
+        product: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            unitsPerTray: true,
+            stockUnitLabel: true,
+            presentations: {
+              where: { isActive: true, isForProduction: true },
+              orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+            },
+          },
+        },
         ingredients: {
           include: {
             rawMaterial: { select: { id: true, name: true, baseUnit: true } },
@@ -25,7 +37,19 @@ export class RecipesService {
     const recipe = await this.prisma.recipe.findUnique({
       where: { id },
       include: {
-        product: { select: { id: true, name: true, slug: true, unitsPerTray: true } },
+        product: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            unitsPerTray: true,
+            stockUnitLabel: true,
+            presentations: {
+              where: { isActive: true, isForProduction: true },
+              orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+            },
+          },
+        },
         ingredients: {
           include: {
             rawMaterial: { select: { id: true, name: true, baseUnit: true, costPerUnit: true } },

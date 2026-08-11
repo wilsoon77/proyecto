@@ -98,7 +98,7 @@ export default function ContactoPage() {
             <div className="space-y-3">
               <details className="rounded-lg border border-gray-100 p-3 bg-gray-50/50">
                 <summary className="cursor-pointer font-medium text-sm text-gray-900">¿Cómo funciona el pedido en línea?</summary>
-                <p className="mt-2 text-xs text-gray-600">Eliges tus productos en la web, seleccionas la sucursal de tu preferencia y los recoges. El pago se realiza al momento de la entrega.</p>
+                <p className="mt-2 text-xs text-gray-600">Eliges tus productos en la web, seleccionas la sucursal de tu preferencia y los recoges. El pago se realiza al momento del retiro.</p>
               </details>
               <details className="rounded-lg border border-gray-100 p-3 bg-gray-50/50">
                 <summary className="cursor-pointer font-medium text-sm text-gray-900">¿Con cuánto tiempo pido un pastel?</summary>

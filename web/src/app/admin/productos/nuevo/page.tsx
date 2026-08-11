@@ -6,6 +6,8 @@ import Link from "next/link"
 import Image from "next/image"
 import { ArrowLeft, Upload, X, Loader as Loader2, Save, Image as ImageIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { ProductPresentationsEditor } from "@/components/admin/ProductPresentationsEditor"
+import type { ApiProductPresentationInput } from "@/lib/api/types"
 import { useToast } from "@/components/ui/toast"
 import { adminService, categoriesService, ApiClientError } from "@/lib/api"
 
@@ -43,6 +45,7 @@ export default function NuevoProductoPage() {
   const [price, setPrice] = useState("")
   const [categoryId, setCategoryId] = useState("")
   const [isNew, setIsNew] = useState(true)
+  const [isActive, setIsActive] = useState(true)
   const [imageUrl, setImageUrl] = useState("")
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [uploadedFileId, setUploadedFileId] = useState<string | null>(null)
@@ -54,6 +57,7 @@ export default function NuevoProductoPage() {
   const [tracksExpiration, setTracksExpiration] = useState(false)
   const [expirationAlertDays, setExpirationAlertDays] = useState("3")
   const [initialExpirationDate, setInitialExpirationDate] = useState("")
+  const [presentations, setPresentations] = useState<ApiProductPresentationInput[]>([])
 
   useEffect(() => {
     loadCategories()
@@ -181,11 +185,16 @@ export default function NuevoProductoPage() {
         slug: slug.trim(),
         description: description.trim() || undefined,
         basePrice: parseFloat(price),
+        comboQuantity: comboQuantity ? parseInt(comboQuantity, 10) : undefined,
+        comboPrice: comboPrice ? parseFloat(comboPrice) : undefined,
+        unitsPerTray: origin === 'PRODUCIDO' && unitsPerTray ? parseInt(unitsPerTray, 10) : undefined,
         categorySlug: selectedCategory?.slug || '',
         isNew,
+        isActive,
         origin,
         tracksExpiration: origin === 'COMPRADO' && tracksExpiration,
         expirationAlertDays: origin === 'COMPRADO' ? Math.max(0, parseInt(expirationAlertDays || "3", 10)) : 3,
+        presentations: presentations.length > 0 ? presentations : undefined,
         imageUrl: imageUrl || undefined,
       })
 
@@ -412,6 +421,24 @@ export default function NuevoProductoPage() {
             </label>
           </div>
 
+          {/* Visibilidad en e-commerce */}
+          <div className="bg-cream rounded-lg p-4 space-y-3">
+            <h3 className="text-sm font-semibold text-foreground">Visibilidad en e-commerce</h3>
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                id="isActive"
+                type="checkbox"
+                checked={isActive}
+                onChange={(e) => setIsActive(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-input text-primary focus:ring-primary"
+              />
+              <span>
+                <span className="block text-sm font-medium text-foreground">Mostrar este producto en el catálogo</span>
+                <span className="block text-xs text-muted-foreground">Ocultarlo solo lo quita del e-commerce; seguirá disponible para inventario y cierre diario.</span>
+              </span>
+            </label>
+          </div>
+
           {/* Origen y caducidad */}
           <div className="bg-cream rounded-lg p-4 space-y-4">
             <div>
@@ -461,6 +488,8 @@ export default function NuevoProductoPage() {
               </div>
             )}
           </div>
+
+          <ProductPresentationsEditor value={presentations} onChange={setPresentations} />
 
           {/* Combo Pricing */}
           <div className="bg-accent rounded-lg p-4 space-y-4">

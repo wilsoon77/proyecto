@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { AlertType, InventoryLotSource, Prisma } from '@prisma/client';
+import { AlertType, InventoryLotSource, ProductOrigin, Prisma } from '@prisma/client';
 import {
   addDays,
   dateKeyToUtcDate,
@@ -35,13 +35,15 @@ export class InventoryLotsService {
 
     const product = await tx.product.findUnique({
       where: { id: options.productId },
-      select: { tracksExpiration: true, expirationAlertDays: true },
+      select: { origin: true, tracksExpiration: true, expirationAlertDays: true },
     });
     if (!product) throw new BadRequestException('Producto no encontrado');
 
     // La caducidad aplica únicamente a productos comprados (jugos, galletas,
     // etc.). Los panes producidos siguen usando el flujo de producción actual.
-    const requiresExpiration = product.tracksExpiration && options.sourceType === InventoryLotSource.COMPRA;
+    const requiresExpiration = product.origin === ProductOrigin.COMPRADO
+      && product.tracksExpiration
+      && options.sourceType === InventoryLotSource.COMPRA;
 
     let expiresAt: Date | undefined;
     let alertAt: Date | undefined;
@@ -93,17 +95,18 @@ export class InventoryLotsService {
 
     const product = await tx.product.findUnique({
       where: { id: options.productId },
-      select: { tracksExpiration: true },
+      select: { origin: true, tracksExpiration: true },
     });
     if (!product) throw new BadRequestException('Producto no encontrado');
 
+    const tracksExpiration = product.origin === ProductOrigin.COMPRADO && product.tracksExpiration;
     const where: Prisma.InventoryLotWhereInput = {
       productId: options.productId,
       branchId: options.branchId,
       availableQuantity: { gt: 0 },
     };
 
-    const lots = product.tracksExpiration
+    const lots = tracksExpiration
       ? options.allowExpired
         ? await tx.inventoryLot.findMany({
             where,
@@ -125,14 +128,14 @@ export class InventoryLotsService {
         });
 
     const representedQuantity = lots.reduce((sum, lot) => sum + lot.availableQuantity, 0);
-    if (product.tracksExpiration && representedQuantity < options.quantity) {
+    if (tracksExpiration && representedQuantity < options.quantity) {
       throw new BadRequestException(
         'No hay suficientes unidades vigentes. Revisa los productos vencidos o registra una entrada con fecha.',
       );
     }
 
     // For products without lot history we preserve the legacy aggregate behavior.
-    if (lots.length === 0 && !product.tracksExpiration) return [];
+    if (lots.length === 0 && !tracksExpiration) return [];
 
     let remaining = options.quantity;
     const allocations: Array<{ lotId: number; quantity: number }> = [];
@@ -168,7 +171,7 @@ export class InventoryLotsService {
     }
 
     if (remaining > 0) {
-      if (product.tracksExpiration) {
+      if (tracksExpiration) {
         throw new BadRequestException('El inventario por lote no coincide con el inventario general');
       }
       return allocations;
@@ -184,9 +187,9 @@ export class InventoryLotsService {
   async getSellableQuantity(tx: Transaction, productId: number, branchId: number): Promise<number | null> {
     const product = await tx.product.findUnique({
       where: { id: productId },
-      select: { tracksExpiration: true },
+      select: { origin: true, tracksExpiration: true },
     });
-    if (!product || !product.tracksExpiration) return null;
+    if (!product || product.origin !== ProductOrigin.COMPRADO || !product.tracksExpiration) return null;
 
     const today = dateKeyToUtcDate(todayBusinessDate());
     const lots = await tx.inventoryLot.findMany({
@@ -216,9 +219,9 @@ export class InventoryLotsService {
   ) {
     const product = await tx.product.findUnique({
       where: { id: options.productId },
-      select: { tracksExpiration: true },
+      select: { origin: true, tracksExpiration: true },
     });
-    if (!product || !product.tracksExpiration) return [];
+    if (!product || product.origin !== ProductOrigin.COMPRADO || !product.tracksExpiration) return [];
 
     const lots = await tx.inventoryLot.findMany({
       where: {

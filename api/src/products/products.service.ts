@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service.js';
 import { generateSlug } from '../common/utils/slug.util.js';
 import { ProductOrigin } from '@prisma/client';
+import { ProductPresentationInputDto } from './dto/presentation.dto.js';
 
 function normalizeOrigin(value: string | undefined, fallback: ProductOrigin): ProductOrigin {
   if (value === undefined) return fallback;
@@ -9,6 +10,92 @@ function normalizeOrigin(value: string | undefined, fallback: ProductOrigin): Pr
     throw new BadRequestException('El origen debe ser PRODUCIDO o COMPRADO');
   }
   return value;
+}
+
+type PresentationInput = ProductPresentationInputDto;
+
+function normalizePresentations(input: PresentationInput[] | undefined) {
+  if (input === undefined) return undefined;
+
+  const names = new Set<string>();
+  const normalized = input.map((presentation, index) => {
+    const name = presentation.name.trim();
+    if (!name) throw new BadRequestException('El nombre de la presentación es obligatorio');
+    const nameKey = name.toLocaleLowerCase();
+    if (names.has(nameKey)) throw new BadRequestException(`La presentación "${name}" está repetida`);
+    names.add(nameKey);
+    if (!Number.isInteger(presentation.unitsInStock) || presentation.unitsInStock < 1) {
+      throw new BadRequestException(`La presentación "${name}" debe consumir al menos una unidad`);
+    }
+    const isForSale = presentation.isForSale ?? true;
+    const price = presentation.price === null || presentation.price === undefined ? null : Number(presentation.price);
+    if (isForSale && (price === null || !Number.isFinite(price) || price < 0)) {
+      throw new BadRequestException(`La presentación "${name}" necesita un precio de venta`);
+    }
+    return {
+      name,
+      unitsInStock: presentation.unitsInStock,
+      price,
+      isForSale,
+      isForProduction: presentation.isForProduction ?? false,
+      isDefault: presentation.isDefault ?? false,
+      isActive: presentation.isActive ?? true,
+      sortOrder: presentation.sortOrder ?? index,
+    };
+  });
+
+  const salePresentations = normalized.filter((presentation) => presentation.isForSale && presentation.isActive);
+  const defaults = salePresentations.filter((presentation) => presentation.isDefault);
+  if (defaults.length > 1) throw new BadRequestException('Solo puede existir una presentación de venta predeterminada');
+  if (salePresentations.length > 0 && defaults.length === 0) {
+    salePresentations[0].isDefault = true;
+  }
+
+  return normalized;
+}
+
+function mapPresentations(presentations: any[] | undefined, available: number) {
+  return (presentations ?? []).map((presentation) => ({
+    id: presentation.id,
+    name: presentation.name,
+    unitsInStock: presentation.unitsInStock,
+    price: presentation.price === null || presentation.price === undefined ? null : Number(presentation.price),
+    isForSale: presentation.isForSale,
+    isForProduction: presentation.isForProduction,
+    isDefault: presentation.isDefault,
+    isActive: presentation.isActive,
+    sortOrder: presentation.sortOrder,
+    available: Math.max(0, Math.floor(available / presentation.unitsInStock)),
+  }));
+}
+
+function mapProduct(product: any, available: number) {
+  return {
+    id: product.id,
+    sku: product.sku,
+    name: product.name,
+    slug: product.slug,
+    description: product.description ?? undefined,
+    basePrice: Number(product.basePrice),
+    category: product.category?.name,
+    categorySlug: product.category?.slug,
+    categoryId: product.categoryId,
+    origin: product.origin,
+    isNew: product.isNew ?? false,
+    isActive: product.isActive,
+    isAvailable: product.isAvailable,
+    comboQuantity: product.comboQuantity ?? undefined,
+    comboPrice: product.comboPrice === null || product.comboPrice === undefined ? undefined : Number(product.comboPrice),
+    unitsPerTray: product.unitsPerTray ?? undefined,
+    tracksExpiration: product.tracksExpiration,
+    expirationAlertDays: product.expirationAlertDays,
+    stockUnitLabel: product.stockUnitLabel ?? 'unidades',
+    available,
+    presentations: mapPresentations(product.presentations, available),
+    images: (product.images ?? []).map((img: any) => ({ id: img.id, url: img.url, position: img.position })),
+    createdAt: product.createdAt,
+    updatedAt: product.updatedAt,
+  };
 }
 
 export interface ProductDTO {
@@ -20,19 +107,23 @@ export interface ProductDTO {
   category: string;
   origin?: string;
   isNew?: boolean;
+  isActive?: boolean;
+  isAvailable?: boolean;
   comboQuantity?: number;
   comboPrice?: number;
   unitsPerTray?: number;
   tracksExpiration?: boolean;
   expirationAlertDays?: number;
   available?: number; // stock disponible (quantity - reserved)
+  stockUnitLabel?: string;
+  presentations?: ReturnType<typeof mapPresentations>;
 }
 
 @Injectable()
 export class ProductsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(query: { search?: string; category?: string; min?: number; max?: number; sort?: string; branch?: string; page?: number; pageSize?: number; all?: boolean; status?: string }) {
+  async findAll(query: { search?: string; category?: string; min?: number; max?: number; sort?: string; branch?: string; page?: number; pageSize?: number; all?: boolean; status?: string }): Promise<any> {
     const where: any = {};
     if (query.status === 'active') {
       where.isActive = true;
@@ -82,7 +173,14 @@ export class ProductsService {
       this.prisma.product.findMany({
       where,
       orderBy,
-      include: { category: true, images: true },
+      include: {
+        category: true,
+        images: true,
+        presentations: {
+          where: { isActive: true, isForSale: true },
+          orderBy: [{ isDefault: 'desc' }, { sortOrder: 'asc' }, { id: 'asc' }],
+        },
+      },
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
@@ -112,26 +210,7 @@ export class ProductsService {
     const mapped = products.map(p => {
       const list = inventoriesByProduct[p.id] || [];
       const available = list.reduce((sum, r) => sum + (r.quantity - r.reserved), 0);
-      return {
-        id: p.id,
-        name: p.name,
-        slug: p.slug,
-        description: p.description ?? undefined,
-        basePrice: Number(p.basePrice),
-        category: p.category.name,
-        categorySlug: p.category.slug,
-        origin: p.origin,
-        isNew: p.isNew ?? undefined,
-        isActive: p.isActive,
-        isAvailable: p.isAvailable,
-        comboQuantity: p.comboQuantity ?? undefined,
-        comboPrice: p.comboPrice ? Number(p.comboPrice) : undefined,
-        unitsPerTray: p.unitsPerTray ?? undefined,
-        tracksExpiration: p.tracksExpiration,
-        expirationAlertDays: p.expirationAlertDays,
-        available,
-        images: p.images.map(img => ({ id: img.id, url: img.url, position: img.position })),
-      };
+      return mapProduct(p, available);
     });
 
     return {
@@ -148,7 +227,14 @@ export class ProductsService {
   async findOne(slug: string, branch?: string) {
     const p = await this.prisma.product.findUnique({
       where: { slug },
-      include: { category: true, images: true },
+      include: {
+        category: true,
+        images: true,
+        presentations: {
+          where: { isActive: true, isForSale: true },
+          orderBy: [{ isDefault: 'desc' }, { sortOrder: 'asc' }, { id: 'asc' }],
+        },
+      },
     });
     if (!p || !p.isActive) return null;
     
@@ -160,30 +246,7 @@ export class ProductsService {
     
     const inv = await this.prisma.inventory.findMany({ where: whereInv });
     const available = inv.reduce((sum, i) => sum + (i.quantity - i.reserved), 0);
-    return {
-      id: p.id,
-      name: p.name,
-      slug: p.slug,
-      description: p.description ?? undefined,
-      basePrice: Number(p.basePrice),
-      category: p.category.name,
-      categorySlug: p.category.slug,
-      origin: p.origin,
-      isNew: p.isNew ?? undefined,
-      isActive: p.isActive,
-      isAvailable: p.isAvailable,
-      comboQuantity: p.comboQuantity ?? undefined,
-      comboPrice: p.comboPrice ? Number(p.comboPrice) : undefined,
-      unitsPerTray: p.unitsPerTray ?? undefined,
-      tracksExpiration: p.tracksExpiration,
-      expirationAlertDays: p.expirationAlertDays,
-      available,
-      images: p.images.map((img: any) => ({
-        id: img.id,
-        url: img.url,
-        position: img.position,
-      })),
-    };
+    return mapProduct(p, available);
   }
 
   // ==================== MÉTODOS POR ID ====================
@@ -191,7 +254,7 @@ export class ProductsService {
   async findById(id: number, branch?: string) {
     const p = await this.prisma.product.findUnique({
       where: { id },
-      include: { category: true, images: true },
+      include: { category: true, images: true, presentations: true },
     });
     if (!p) return null;
     
@@ -203,33 +266,10 @@ export class ProductsService {
     
     const inv = await this.prisma.inventory.findMany({ where: whereInv });
     const available = inv.reduce((sum, i) => sum + (i.quantity - i.reserved), 0);
-    return {
-      id: p.id,
-      sku: p.sku,
-      name: p.name,
-      slug: p.slug,
-      description: p.description ?? undefined,
-      basePrice: Number(p.basePrice),
-      category: p.category.name,
-      categorySlug: p.category.slug,
-      categoryId: p.categoryId,
-      origin: p.origin,
-      isNew: p.isNew ?? false,
-      isActive: p.isActive,
-      isAvailable: p.isAvailable,
-      comboQuantity: p.comboQuantity ?? undefined,
-      comboPrice: p.comboPrice ? Number(p.comboPrice) : undefined,
-      unitsPerTray: p.unitsPerTray ?? undefined,
-      tracksExpiration: p.tracksExpiration,
-      expirationAlertDays: p.expirationAlertDays,
-      images: p.images.map(img => ({ id: img.id, url: img.url, position: img.position })),
-      available,
-      createdAt: p.createdAt,
-      updatedAt: p.updatedAt,
-    };
+    return mapProduct(p, available);
   }
 
-  async updateById(id: number, data: { sku?: string; name?: string; description?: string; basePrice?: number; comboQuantity?: number; comboPrice?: number; unitsPerTray?: number; categorySlug?: string; origin?: string; isNew?: boolean; isActive?: boolean; isAvailable?: boolean; tracksExpiration?: boolean; expirationAlertDays?: number; imageUrl?: string }) {
+  async updateById(id: number, data: { sku?: string; name?: string; description?: string; basePrice?: number; comboQuantity?: number; comboPrice?: number; unitsPerTray?: number; categorySlug?: string; origin?: string; isNew?: boolean; isActive?: boolean; isAvailable?: boolean; tracksExpiration?: boolean; expirationAlertDays?: number; stockUnitLabel?: string; presentations?: ProductPresentationInputDto[]; imageUrl?: string }) {
     const prod = await this.prisma.product.findUnique({ where: { id } });
     if (!prod) throw new NotFoundException('Producto no encontrado');
     
@@ -265,27 +305,37 @@ export class ProductsService {
     const expirationAlertDays = nextOrigin === ProductOrigin.COMPRADO
       ? Math.max(0, data.expirationAlertDays ?? prod.expirationAlertDays)
       : 3;
+    const presentationData = normalizePresentations(data.presentations);
     
-    const updated = await this.prisma.product.update({ 
-      where: { id }, 
-      data: { 
-        sku: data.sku, 
-        name: data.name,
-        slug: newSlug,
-        description: data.description, 
-        basePrice: data.basePrice, 
-        comboQuantity: data.comboQuantity, 
-        comboPrice: data.comboPrice, 
-        unitsPerTray: nextOrigin === ProductOrigin.COMPRADO ? null : data.unitsPerTray,
-        categoryId, 
-        origin: nextOrigin,
-        tracksExpiration,
-        expirationAlertDays,
-        isNew: data.isNew, 
-        isActive: data.isActive, 
-        isAvailable: data.isAvailable 
-      },
-      include: { category: true },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const product = await tx.product.update({
+        where: { id },
+        data: {
+          sku: data.sku,
+          name: data.name,
+          slug: newSlug,
+          description: data.description,
+          basePrice: data.basePrice,
+          comboQuantity: data.comboQuantity,
+          comboPrice: data.comboPrice,
+          unitsPerTray: nextOrigin === ProductOrigin.COMPRADO ? null : data.unitsPerTray,
+          stockUnitLabel: data.stockUnitLabel?.trim() || undefined,
+          categoryId,
+          origin: nextOrigin,
+          tracksExpiration,
+          expirationAlertDays,
+          isNew: data.isNew,
+          isActive: data.isActive,
+          isAvailable: data.isAvailable,
+        },
+      });
+      if (presentationData !== undefined) {
+        await tx.productPresentation.deleteMany({ where: { productId: id } });
+        if (presentationData.length > 0) {
+          await tx.productPresentation.createMany({ data: presentationData.map((presentation) => ({ productId: id, ...presentation })) });
+        }
+      }
+      return product;
     });
     
     // Actualizar imagen si se proporciona URL
@@ -301,21 +351,9 @@ export class ProductsService {
       });
     }
     
-    return {
-      id: updated.id,
-      sku: updated.sku,
-      name: updated.name,
-      slug: updated.slug,
-      description: updated.description ?? undefined,
-      basePrice: Number(updated.basePrice),
-      category: updated.category.name,
-      categorySlug: updated.category.slug,
-      origin: updated.origin,
-      tracksExpiration: updated.tracksExpiration,
-      expirationAlertDays: updated.expirationAlertDays,
-      isNew: updated.isNew,
-      isActive: updated.isActive,
-    };
+    const result = await this.findById(updated.id);
+    if (!result) throw new NotFoundException('Producto actualizado no encontrado');
+    return result;
   }
 
   async deactivateById(id: number) {
@@ -352,7 +390,7 @@ export class ProductsService {
     return invAll.reduce((sum, i) => sum + (i.quantity - i.reserved), 0);
   }
 
-  async create(data: { sku: string; name: string; description?: string; basePrice: number; comboQuantity?: number; comboPrice?: number; unitsPerTray?: number; categorySlug: string; origin?: string; isNew?: boolean; isAvailable?: boolean; tracksExpiration?: boolean; expirationAlertDays?: number; imageUrl?: string }) {
+  async create(data: { sku: string; name: string; description?: string; basePrice: number; comboQuantity?: number; comboPrice?: number; unitsPerTray?: number; categorySlug: string; origin?: string; isNew?: boolean; isActive?: boolean; isAvailable?: boolean; tracksExpiration?: boolean; expirationAlertDays?: number; stockUnitLabel?: string; presentations?: ProductPresentationInputDto[]; imageUrl?: string }) {
     const category = await this.prisma.category.findUnique({ where: { slug: data.categorySlug } });
     if (!category) throw new BadRequestException('Categoría no encontrada');
     
@@ -373,9 +411,14 @@ export class ProductsService {
     const expirationAlertDays = origin === ProductOrigin.COMPRADO
       ? Math.max(0, data.expirationAlertDays ?? 3)
       : 3;
+    const presentationData = normalizePresentations(
+      data.presentations ?? (data.comboQuantity && data.comboPrice !== undefined
+        ? [{ name: `Combo de ${data.comboQuantity}`, unitsInStock: data.comboQuantity, price: data.comboPrice, isDefault: true }]
+        : undefined),
+    );
     
     // Usar transacción para crear producto + inventarios en todas las sucursales
-    return this.prisma.$transaction(async (tx) => {
+    const created = await this.prisma.$transaction(async (tx) => {
       // Paso 1: Crear el producto
       const product = await tx.product.create({ 
         data: { 
@@ -386,13 +429,16 @@ export class ProductsService {
           basePrice: data.basePrice, 
           comboQuantity: data.comboQuantity, 
           comboPrice: data.comboPrice, 
+          stockUnitLabel: data.stockUnitLabel?.trim() || 'unidades',
           unitsPerTray: origin === ProductOrigin.COMPRADO ? null : data.unitsPerTray,
           categoryId: category.id, 
           origin,
           tracksExpiration,
           expirationAlertDays,
-          isNew: data.isNew ?? false, 
-          isAvailable: data.isAvailable ?? true 
+          isNew: data.isNew ?? false,
+          isActive: data.isActive ?? true,
+          isAvailable: data.isAvailable ?? true,
+          presentations: presentationData ? { create: presentationData } : undefined,
         } 
       });
       
@@ -424,11 +470,17 @@ export class ProductsService {
       
       return product;
     });
+    const result = await this.findById(created.id);
+    if (!result) throw new NotFoundException('Producto creado no encontrado');
+    return result;
   }
 
-  async update(slug: string, data: { sku?: string; name?: string; description?: string; basePrice?: number; comboQuantity?: number; comboPrice?: number; unitsPerTray?: number; categorySlug?: string; origin?: string; isNew?: boolean; isActive?: boolean; isAvailable?: boolean; tracksExpiration?: boolean; expirationAlertDays?: number }) {
+  async update(slug: string, data: { sku?: string; name?: string; description?: string; basePrice?: number; comboQuantity?: number; comboPrice?: number; unitsPerTray?: number; categorySlug?: string; origin?: string; isNew?: boolean; isActive?: boolean; isAvailable?: boolean; tracksExpiration?: boolean; expirationAlertDays?: number; stockUnitLabel?: string; presentations?: ProductPresentationInputDto[] }) {
     const prod = await this.prisma.product.findUnique({ where: { slug } });
     if (!prod) throw new NotFoundException('Producto no encontrado');
+    if (data.presentations !== undefined || data.stockUnitLabel !== undefined) {
+      return this.updateById(prod.id, data);
+    }
     if (data.sku && data.sku !== prod.sku) {
       const existingSku = await this.prisma.product.findUnique({ where: { sku: data.sku } });
       if (existingSku) throw new BadRequestException('SKU ya existe');
@@ -482,9 +534,12 @@ export class ProductsService {
     return { deleted: true, slug };
   }
 
-  async putUpdate(slug: string, data: { name: string; description?: string; basePrice: number; comboQuantity?: number; comboPrice?: number; unitsPerTray?: number; categorySlug: string; origin?: string; isNew?: boolean; tracksExpiration?: boolean; expirationAlertDays?: number }) {
+  async putUpdate(slug: string, data: { name: string; description?: string; basePrice: number; comboQuantity?: number; comboPrice?: number; unitsPerTray?: number; categorySlug: string; origin?: string; isNew?: boolean; tracksExpiration?: boolean; expirationAlertDays?: number; stockUnitLabel?: string; presentations?: ProductPresentationInputDto[] }) {
     const prod = await this.prisma.product.findUnique({ where: { slug } });
     if (!prod) throw new NotFoundException('Producto no encontrado');
+    if (data.presentations !== undefined || data.stockUnitLabel !== undefined) {
+      return this.updateById(prod.id, data);
+    }
     const category = await this.prisma.category.findUnique({ where: { slug: data.categorySlug } });
     if (!category) throw new BadRequestException('Categoría no encontrada');
     const nextOrigin = normalizeOrigin(data.origin, prod.origin);
@@ -521,7 +576,14 @@ export class ProductsService {
           { comboQuantity: { not: null } },
         ],
       },
-      include: { category: true, images: true },
+      include: {
+        category: true,
+        images: true,
+        presentations: {
+          where: { isActive: true, isForSale: true },
+          orderBy: [{ isDefault: 'desc' }, { sortOrder: 'asc' }, { id: 'asc' }],
+        },
+      },
       orderBy: [
         { isNew: 'desc' },
         { createdAt: 'desc' },
@@ -551,22 +613,7 @@ export class ProductsService {
     return products.map(p => {
       const list = inventoriesByProduct[p.id] || [];
       const available = list.reduce((sum, r) => sum + (r.quantity - r.reserved), 0);
-      return {
-        id: p.id,
-        name: p.name,
-        slug: p.slug,
-        description: p.description ?? undefined,
-        basePrice: Number(p.basePrice),
-        category: p.category.name,
-        categorySlug: p.category.slug,
-        isNew: p.isNew ?? undefined,
-        isActive: p.isActive,
-        isAvailable: p.isAvailable,
-        comboQuantity: p.comboQuantity ?? undefined,
-        comboPrice: p.comboPrice ? Number(p.comboPrice) : undefined,
-        available,
-        images: p.images.map(img => ({ id: img.id, url: img.url, position: img.position })),
-      };
+      return mapProduct(p, available);
     });
   }
 
@@ -602,7 +649,13 @@ export class ProductsService {
       this.prisma.product.findMany({
         where,
         orderBy,
-        include: { category: true },
+        include: {
+          category: true,
+          presentations: {
+            where: { isActive: true, isForSale: true },
+            orderBy: [{ isDefault: 'desc' }, { sortOrder: 'asc' }, { id: 'asc' }],
+          },
+        },
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
@@ -623,18 +676,7 @@ export class ProductsService {
     const mapped = products.map(p => {
       const list = inventoriesByProduct[p.id] || [];
       const available = list.reduce((sum, r) => sum + (r.quantity - r.reserved), 0);
-      return {
-        id: p.id,
-        name: p.name,
-        slug: p.slug,
-        description: p.description ?? undefined,
-        basePrice: Number(p.basePrice),
-        category: p.category.name,
-        isNew: p.isNew ?? undefined,
-        comboQuantity: p.comboQuantity ?? undefined,
-        comboPrice: p.comboPrice ? Number(p.comboPrice) : undefined,
-        available,
-      };
+      return mapProduct(p, available);
     });
 
     return {

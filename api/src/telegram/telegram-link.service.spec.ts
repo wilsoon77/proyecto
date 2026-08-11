@@ -12,7 +12,6 @@ describe('TelegramLinkService security limits', () => {
     log: jest.fn().mockResolvedValue(undefined),
     getUserName: jest.fn().mockResolvedValue('Sistema'),
   };
-  const notifications = { sendToUser: jest.fn().mockResolvedValue(undefined) };
   const policy = { assertEligible: jest.fn() };
   const tx = {
     telegramLinkToken: { findFirst: jest.fn() },
@@ -33,7 +32,6 @@ describe('TelegramLinkService security limits', () => {
       config as never,
       prisma as never,
       audit as never,
-      notifications as never,
       policy as never,
     );
   });

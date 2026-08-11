@@ -19,31 +19,19 @@ const openApiLocalServerUrl = process.env.OPENAPI_LOCAL_SERVER_URL || 'http://lo
 (async () => {
   console.log('[OPENAPI_GEN] Importando módulos...');
   const { NestFactory } = await import('@nestjs/core');
-  const { DocumentBuilder, SwaggerModule } = await import('@nestjs/swagger');
+  const { SwaggerModule } = await import('@nestjs/swagger');
   const { AppModule } = await import('../dist/src/app.module.js');
+  const { createSwaggerConfig } = await import('../dist/src/common/swagger.config.js');
 
   console.log('[OPENAPI_GEN] Creando aplicación NestJS en modo SKIP_DB...');
   const app = await NestFactory.create(AppModule, { logger: ['error', 'warn'] });
   
   console.log('[OPENAPI_GEN] Generando documento Swagger...');
-  const config = new DocumentBuilder()
-    .setTitle('Panaderia Svetlana API')
-    .setDescription('Especificación OpenAPI para la panadería')
-    .setVersion('0.1.0')
-    .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' })
-    .addServer(openApiServerUrl, 'Produccion')
-    .addServer(openApiLocalServerUrl, 'Local')
-    .addTag('auth')
-    .addTag('products')
-    .addTag('inventory')
-    .addTag('stock-movements')
-    .addTag('orders')
-    .build();
-  const doc = SwaggerModule.createDocument(app, config);
-  doc.servers = [
-    { url: openApiServerUrl, description: 'Produccion' },
+  const config = createSwaggerConfig([
+    { url: openApiServerUrl, description: 'Producción' },
     { url: openApiLocalServerUrl, description: 'Local' },
-  ];
+  ]);
+  const doc = SwaggerModule.createDocument(app, config);
   writeFileSync('openapi.json', JSON.stringify(doc, null, 2));
   
   const stats = statSync('openapi.json');

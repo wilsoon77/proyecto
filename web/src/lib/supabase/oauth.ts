@@ -1,10 +1,10 @@
 import { createClient } from './client'
 
 /**
- * Inicia sesión con un proveedor OAuth (Google, GitHub).
+ * Inicia sesión con un proveedor OAuth (Google).
  * Redirige al usuario al flujo de autenticación del proveedor.
  */
-export async function signInWithOAuth(provider: 'google' | 'github', nextPath: string = '/') {
+export async function signInWithOAuth(provider: 'google', nextPath: string = '/') {
   const supabase = createClient()
   const redirectUrl = new URL('/auth/callback', window.location.origin)
   redirectUrl.searchParams.set('next', nextPath)

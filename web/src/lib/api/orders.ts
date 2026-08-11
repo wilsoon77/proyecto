@@ -7,7 +7,6 @@ import type {
   ApiOrder, 
   PaginatedResponse, 
   ReserveOrderDto,
-  POSOrderDto,
   OrderFilters,
   OrderStatus
 } from './types'
@@ -31,13 +30,6 @@ export const ordersService = {
    */
   async reserve(data: ReserveOrderDto): Promise<ApiOrder> {
     return api.post<ApiOrder>('/orders/reserve', data)
-  },
-
-  /**
-   * Venta directa en POS (crear y entregar pedido)
-   */
-  async posSale(data: POSOrderDto): Promise<ApiOrder> {
-    return api.post<ApiOrder>('/orders/pos', data)
   },
 
   /**
@@ -85,11 +77,6 @@ export const ordersService = {
   /** Confirmar recogida en sucursal; requiere estado READY. */
   async pickup(id: number): Promise<ApiOrder> {
     return api.post<ApiOrder>(`/orders/${id}/pickup`)
-  },
-
-  /** Confirmar entrega a domicilio; requiere estado IN_DELIVERY. */
-  async deliver(id: number): Promise<ApiOrder> {
-    return api.post<ApiOrder>(`/orders/${id}/deliver`)
   },
 
   /**

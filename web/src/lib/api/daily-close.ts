@@ -1,4 +1,5 @@
 import api from './client'
+import type { ApiProductPresentation } from './types'
 
 export interface DailyClosePreviewItem {
   productId: number
@@ -10,6 +11,8 @@ export interface DailyClosePreviewItem {
   countedQty: number
   wasteQty: number
   inventoryUpdatedAt: string | null
+  stockUnitLabel?: string
+  presentations?: ApiProductPresentation[]
 }
 
 export interface DailyClosePreview {
@@ -23,6 +26,8 @@ export interface CreateDailyCloseItem {
   productId: number
   countedQty: number
   wasteQty?: number
+  countedPresentations?: Array<{ presentationId: number; quantity: number }>
+  wastePresentations?: Array<{ presentationId: number; quantity: number }>
 }
 
 export interface CreateDailyClosePayload {

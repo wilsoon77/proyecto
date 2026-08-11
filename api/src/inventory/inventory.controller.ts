@@ -27,7 +27,7 @@ export class InventoryController {
   @Get()
   @ApiOperation({ summary: 'Consultar inventario', description: 'Niveles de stock por producto y sucursal. Requiere rol ADMIN o MANAGER.' })
   @ApiQuery({ name: 'product', required: false, description: 'slug del producto' })
-  @ApiQuery({ name: 'branch', required: false, description: 'slug de la sucursal' })
+  @ApiQuery({ name: 'branch', required: false, description: 'Slug de la sucursal; MANAGER puede consultar cualquiera de las dos sucursales' })
   async list(@Req() req: any, @Query('product') productSlug?: string, @Query('branch') branchSlug?: string) {
     const scopedBranchSlug = await this.branchScope.resolveBranchSlug(req.user, branchSlug);
     return this.inventoryService.list(productSlug, scopedBranchSlug);
@@ -51,10 +51,13 @@ export class InventoryController {
   }
 
   @Get('expirations')
-  @ApiOperation({ summary: 'Consultar caducidades', description: 'Lista lotes próximos a vencer, vencidos o sin fecha registrada.' })
-  @ApiQuery({ name: 'branch', required: false, description: 'slug de la sucursal' })
-  @ApiQuery({ name: 'status', required: false, description: 'all, expired, expiring o no-date' })
-  @ApiQuery({ name: 'days', required: false, description: 'Días hacia adelante para considerar próximos a vencer' })
+  @ApiOperation({
+    summary: 'Consultar caducidades',
+    description: 'Lista lotes próximos a vencer, vencidos o sin fecha. La caducidad solo se registra para productos de origen COMPRADO con control por lote. Un lote vencido permanece visible para registrar la MERMA; no desaparece por sí solo del inventario.',
+  })
+  @ApiQuery({ name: 'branch', required: false, description: 'Slug de la sucursal; MANAGER puede consultar cualquiera de las dos sucursales' })
+  @ApiQuery({ name: 'status', required: false, enum: ['all', 'expired', 'expiring', 'no-date'], description: 'Filtro de estado del lote' })
+  @ApiQuery({ name: 'days', required: false, type: Number, description: 'Días hacia adelante para considerar próximos a vencer (por defecto: 7)' })
   async getExpirations(
     @Req() req: any,
     @Query('branch') branchSlug?: string,

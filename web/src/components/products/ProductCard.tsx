@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { formatPrice } from "@/lib/utils"
 import { Product } from "@/types"
 import { Badge } from "@/components/ui/badge"
+import { defaultSalePresentation, maxPresentationQuantity, presentationUnitPrice } from "@/lib/presentation-quantities"
 
 interface ProductCardProps {
   product: Product
@@ -32,13 +33,16 @@ function getCategoryEmoji(category: string): string {
 }
 
 export function ProductCard({ product, onAddToCart, onToggleFavorite }: ProductCardProps) {
-  const isOutOfStock = product.stock === 0
-  const isLowStock = product.stock > 0 && product.stock <= 5
   const [imageError, setImageError] = useState(false)
   const [isFavorite, setIsFavorite] = useState(false)
   const [cartAnimating, setCartAnimating] = useState(false)
 
   const hasValidImage = product.imageUrl && !imageError
+  const defaultPresentation = defaultSalePresentation(product)
+  const displayPrice = presentationUnitPrice(product, defaultPresentation)
+  const presentationStock = defaultPresentation ? maxPresentationQuantity(product, defaultPresentation) : product.stock
+  const isOutOfStock = product.stock === 0 || presentationStock === 0
+  const isLowStock = presentationStock > 0 && presentationStock <= 5
 
   const handleAddToCart = () => {
     setCartAnimating(true)
@@ -79,9 +83,9 @@ export function ProductCard({ product, onAddToCart, onToggleFavorite }: ProductC
             {product.isNew && (
               <Badge className="bg-success text-white shadow-sm">Nuevo</Badge>
             )}
-            {product.comboQuantity && product.comboPrice ? (
+            {defaultPresentation ? (
               <Badge className="bg-primary text-primary-foreground shadow-sm">
-                {product.comboQuantity}x Q{Number(product.comboPrice).toFixed(2)}
+                {defaultPresentation.name}: Q{Number(displayPrice).toFixed(2)}
               </Badge>
             ) : null}
             {isOutOfStock && (
@@ -89,7 +93,7 @@ export function ProductCard({ product, onAddToCart, onToggleFavorite }: ProductC
             )}
             {isLowStock && (
               <Badge className="bg-warning text-white shadow-sm">
-                ¡Últimas {product.stock}!
+                ¡Últimas {presentationStock}!
               </Badge>
             )}
           </div>
@@ -114,7 +118,7 @@ export function ProductCard({ product, onAddToCart, onToggleFavorite }: ProductC
             <div className="absolute bottom-0 left-0 right-0 h-1 bg-muted">
               <div
                 className="h-full bg-warning transition-all duration-500"
-                style={{ width: `${(product.stock / 5) * 100}%` }}
+                style={{ width: `${(presentationStock / 5) * 100}%` }}
               />
             </div>
           )}
@@ -159,11 +163,11 @@ export function ProductCard({ product, onAddToCart, onToggleFavorite }: ProductC
         {/* Price */}
         <div className="mb-3 flex items-baseline gap-2">
           <span className="text-lg font-bold text-primary">
-            {formatPrice(product.price)}
+            {formatPrice(displayPrice)}
           </span>
-          {product.comboQuantity && product.comboPrice ? (
+          {defaultPresentation ? (
             <span className="text-xs text-primary/70 font-medium">
-              {product.comboQuantity}x Q{Number(product.comboPrice).toFixed(2)}
+              {defaultPresentation.name}
             </span>
           ) : null}
         </div>

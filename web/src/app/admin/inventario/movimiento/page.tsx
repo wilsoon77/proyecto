@@ -171,8 +171,7 @@ function MovimientoForm() {
   const [submitSuccess, setSubmitSuccess] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
-  const isManager = user?.role === 'MANAGER'
-  const managerBranchSlug = user?.branch?.slug || ""
+  const canSelectAnyBranch = user?.role === 'ADMIN' || user?.role === 'MANAGER'
 
   // Stock actual del producto seleccionado en la sucursal
   const currentStock = inventory.find(
@@ -336,27 +335,13 @@ function MovimientoForm() {
 
   // Auto-seleccionar sucursales según el tipo y rol
   useEffect(() => {
-    if (isManager && managerBranchSlug) {
-      if (movementType === 'TRANSFERENCIA') {
-        setMovementFromBranch(managerBranchSlug)
-      } else {
-        const config = MOVEMENT_TYPES[movementType]
-        if (config.requiresFromBranch) {
-          setMovementFromBranch(managerBranchSlug)
-        }
-        if (config.requiresToBranch) {
-          setMovementToBranch(managerBranchSlug)
-        }
-      }
-    } else {
-      const config = MOVEMENT_TYPES[movementType]
-      if (config.requiresFromBranch && !config.requiresToBranch) {
-        setMovementToBranch("")
-      } else if (config.requiresToBranch && !config.requiresFromBranch) {
-        setMovementFromBranch("")
-      }
+    const config = MOVEMENT_TYPES[movementType]
+    if (config.requiresFromBranch && !config.requiresToBranch) {
+      setMovementToBranch("")
+    } else if (config.requiresToBranch && !config.requiresFromBranch) {
+      setMovementFromBranch("")
     }
-  }, [movementType, isManager, managerBranchSlug])
+  }, [movementType])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -619,7 +604,7 @@ function MovimientoForm() {
                   <select
                     value={movementFromBranch}
                     onChange={(e) => setMovementFromBranch(e.target.value)}
-                    disabled={isManager}
+                    disabled={!canSelectAnyBranch}
                     className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:text-muted-foreground"
                     required
                   >
@@ -640,7 +625,7 @@ function MovimientoForm() {
                   <select
                     value={movementToBranch}
                     onChange={(e) => setMovementToBranch(e.target.value)}
-                    disabled={isManager && movementType !== 'TRANSFERENCIA'}
+                    disabled={!canSelectAnyBranch}
                     className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:text-muted-foreground"
                     required
                   >

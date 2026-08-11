@@ -1,4 +1,5 @@
 import api from './client'
+import type { ApiProductPresentation } from './types'
 
 // ─────────────────────────────────────────────
 // Types
@@ -14,6 +15,8 @@ export interface Recipe {
     name: string
     slug: string
     unitsPerTray: number | null
+    stockUnitLabel?: string
+    presentations?: ApiProductPresentation[]
   }
   ingredients: {
     rawMaterialId: number
@@ -30,6 +33,10 @@ export interface ProductionLog {
   id: number
   traysProduced: number
   unitsProduced: number
+  presentationId?: number | null
+  presentationName?: string | null
+  presentationQuantity?: number | null
+  presentationUnits?: number | null
   note: string | null
   createdAt: string
   recipe: {
@@ -57,6 +64,9 @@ export interface ProductionResult {
   productName: string
   traysProduced: number
   unitsProduced: number
+  productionPresentationId?: number
+  productionPresentationName?: string
+  productionQuantity?: number
   message: string
 }
 
@@ -73,7 +83,9 @@ export const productionService = {
   /** Registrar un horneado */
   async registerProduction(data: {
     recipeId: number
-    traysProduced: number
+    traysProduced?: number
+    productionPresentationId?: number
+    productionQuantity?: number
     branchId?: number
     note?: string
   }): Promise<ProductionResult> {

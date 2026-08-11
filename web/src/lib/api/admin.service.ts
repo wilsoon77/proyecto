@@ -1,5 +1,5 @@
 import { api } from "./client"
-import type { ApiProduct } from "./types"
+import type { ApiProduct, ApiProductPresentation } from "./types"
 
 export interface CreateProductData {
   sku?: string
@@ -12,9 +12,12 @@ export interface CreateProductData {
   unitsPerTray?: number
   categorySlug: string
   isNew?: boolean
+  isActive?: boolean
   origin?: 'PRODUCIDO' | 'COMPRADO'
   tracksExpiration?: boolean
   expirationAlertDays?: number
+  stockUnitLabel?: string
+  presentations?: Array<Partial<ApiProductPresentation> & { name: string; unitsInStock: number }>
   imageUrl?: string
 }
 
@@ -34,6 +37,8 @@ export interface UpdateProductData {
   origin?: 'PRODUCIDO' | 'COMPRADO'
   tracksExpiration?: boolean
   expirationAlertDays?: number
+  stockUnitLabel?: string
+  presentations?: Array<Partial<ApiProductPresentation> & { name: string; unitsInStock: number }>
   imageUrl?: string
 }
 
@@ -61,6 +66,8 @@ export interface ProductDetailResponse {
   available: number
   createdAt: string
   updatedAt: string
+  stockUnitLabel?: string
+  presentations?: ApiProductPresentation[]
 }
 
 export interface UploadImageResponse {
@@ -97,16 +104,6 @@ export const adminService = {
 
   deleteImage: (fileId: string): Promise<void> => 
     api.delete(`/storage/${fileId}`),
-
-  // Dashboard stats
-  getDashboardStats: (): Promise<{
-    totalProducts: number
-    totalOrders: number
-    totalUsers: number
-    totalRevenue: number
-    pendingOrders: number
-    lowStockProducts: number
-  }> => api.get("/dashboard/stats"),
 
   // Categories
   getCategories: (): Promise<Array<{ id: number; name: string; slug: string }>> => 

@@ -1,4 +1,3 @@
-import { ForbiddenException } from '@nestjs/common';
 import { BranchScopeService } from './branch-scope.service.js';
 
 describe('BranchScopeService', () => {
@@ -14,11 +13,13 @@ describe('BranchScopeService', () => {
     prisma.user.findUnique.mockResolvedValue({ branch: { id: 10, slug: 'central' } });
   });
 
-  it('forces the assigned branch for an operational role', async () => {
-    await expect(service.resolveBranchSlug(manager)).resolves.toBe('central');
-    await expect(service.resolveBranchId(manager)).resolves.toBe(10);
-    await expect(service.resolveBranchSlug(manager, 'north')).rejects.toBeInstanceOf(ForbiddenException);
-    await expect(service.resolveBranchId(manager, 20)).rejects.toBeInstanceOf(ForbiddenException);
+  it('gives MANAGER global read scope and keeps an assigned write default', async () => {
+    await expect(service.resolveBranchSlug(manager)).resolves.toBeUndefined();
+    await expect(service.resolveBranchId(manager)).resolves.toBeUndefined();
+    await expect(service.resolveBranchSlug(manager, 'north')).resolves.toBe('north');
+    await expect(service.resolveBranchId(manager, 20)).resolves.toBe(20);
+    await expect(service.resolveWriteBranchSlug(manager)).resolves.toBe('central');
+    await expect(service.resolveWriteBranchId(manager)).resolves.toBe(10);
   });
 
   it('keeps global scope only for ADMIN', async () => {
@@ -27,9 +28,9 @@ describe('BranchScopeService', () => {
     expect(prisma.user.findUnique).not.toHaveBeenCalled();
   });
 
-  it('rejects an operational actor trying to access an order in another branch', async () => {
+  it('allows MANAGER to access an order in either branch', async () => {
     prisma.order.findUnique.mockResolvedValue({ branchId: 20 });
 
-    await expect(service.assertOrderAccess(manager, 123)).rejects.toBeInstanceOf(ForbiddenException);
+    await expect(service.assertOrderAccess(manager, 123)).resolves.toBeUndefined();
   });
 });

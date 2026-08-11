@@ -8,8 +8,8 @@ import {
 import { InventoryLotSource, Prisma, StockMovementType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateDailyCloseDto } from './dto/create-daily-close.dto.js';
-import { NotificationsService } from '../notifications/notifications.service.js';
 import { InventoryLotsService } from '../inventory/inventory-lots.service.js';
+import { calculateBaseQuantity } from '../products/presentation.helpers.js';
 
 const BUSINESS_TIMEZONE = process.env.STORE_TIMEZONE || 'America/Guatemala';
 const DEFAULT_MAX_RETRO_DAYS = 3;
@@ -96,7 +96,6 @@ export class DailyCloseService {
   constructor(
     private readonly prisma: PrismaService,
     @Optional() private readonly inventoryLotsService?: InventoryLotsService,
-    @Optional() private readonly notificationsService?: NotificationsService,
   ) {}
 
   async preview(branchId: number, closeDate?: string) {
@@ -118,6 +117,11 @@ export class DailyCloseService {
         sku: true,
         name: true,
         isActive: true,
+        stockUnitLabel: true,
+        presentations: {
+          where: { isActive: true },
+          orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+        },
         inventories: {
           where: { branchId },
           select: { quantity: true, reserved: true, updatedAt: true },
@@ -142,6 +146,18 @@ export class DailyCloseService {
           reservedQty: inventory?.reserved ?? 0,
           countedQty: inventory?.quantity ?? 0,
           wasteQty: 0,
+          stockUnitLabel: product.stockUnitLabel,
+          presentations: product.presentations.map((presentation) => ({
+            id: presentation.id,
+            name: presentation.name,
+            unitsInStock: presentation.unitsInStock,
+            price: presentation.price === null ? null : Number(presentation.price),
+            isForSale: presentation.isForSale,
+            isForProduction: presentation.isForProduction,
+            isDefault: presentation.isDefault,
+            isActive: presentation.isActive,
+            sortOrder: presentation.sortOrder,
+          })),
           inventoryUpdatedAt: inventory?.updatedAt?.toISOString() ?? null,
         };
       }),
@@ -182,7 +198,14 @@ export class DailyCloseService {
 
           const products = await tx.product.findMany({
             where: { id: { in: productIds } },
-            select: { id: true, name: true },
+            select: {
+              id: true,
+              name: true,
+              presentations: {
+                where: { isActive: true },
+                orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+              },
+            },
           });
           const productMap = new Map(products.map((product) => [product.id, product]));
           const missingProduct = productIds.find((productId) => !productMap.has(productId));
@@ -229,8 +252,13 @@ export class DailyCloseService {
             const inventory = inventoryMap.get(item.productId);
             const systemQty = inventory?.quantity ?? 0;
             const reservedQty = inventory?.reserved ?? 0;
-            const countedQty = item.countedQty;
-            const wasteQty = item.wasteQty ?? 0;
+            const product = productMap.get(item.productId)!;
+            const countedQty = item.countedPresentations !== undefined
+              ? calculateBaseQuantity(product.presentations, item.countedPresentations)
+              : item.countedQty;
+            const wasteQty = item.wastePresentations !== undefined
+              ? calculateBaseQuantity(product.presentations, item.wastePresentations)
+              : (item.wasteQty ?? 0);
 
             if (countedQty < reservedQty) {
               throw new BadRequestException(
@@ -246,7 +274,7 @@ export class DailyCloseService {
             const afterWaste = systemQty - wasteQty;
             const soldQty = Math.max(afterWaste - countedQty, 0);
             const surplusQty = Math.max(countedQty - afterWaste, 0);
-            const productName = productMap.get(item.productId)!.name;
+            const productName = product.name;
 
             if (inventory && inventory.updatedAt > snapshotAt && closeDate.getTime() === parseDateOnly(businessDateKey()).getTime()) {
               throw new ConflictException(
@@ -369,15 +397,6 @@ export class DailyCloseService {
       );
 
       const summary = summarize(created.items);
-      if (this.notificationsService) {
-        const branch = await this.prisma.branch.findUnique({ where: { id: branchId }, select: { name: true } });
-        await this.notificationsService.sendByConfig('daily_close.completed', {
-          branchId,
-          branchName: branch?.name || `Sucursal ${branchId}`,
-          ...summary,
-        }, '/admin/cierre-dia');
-      }
-
       return {
         ...created,
         summary,

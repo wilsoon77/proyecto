@@ -14,6 +14,7 @@ import { ordersService, branchesService, authService } from "@/lib/api"
 import type { ApiBranch } from "@/lib/api/types"
 import { useToast } from "@/context/ToastContext"
 import { Lightbulb } from "lucide-react"
+import { presentationUnitPrice } from "@/lib/presentation-quantities"
 
 export default function CheckoutPage() {
   const { items, subtotal, clearCart } = useCart()
@@ -127,7 +128,8 @@ export default function CheckoutPage() {
         customerNotes: customerNotes.trim() || undefined,
         items: items.map(item => ({
           productSlug: item.product.slug,
-          quantity: item.quantity
+          quantity: item.quantity,
+          presentationId: item.presentation?.id,
         }))
       }
 
@@ -316,10 +318,10 @@ export default function CheckoutPage() {
           <div className="rounded-xl border border-border bg-card p-6 shadow-card">
             <h2 className="mb-4 font-display text-xl font-semibold">Resumen del pedido</h2>
             <div className="mb-4 max-h-52 space-y-2 overflow-auto pr-1 text-sm">
-              {items.map(({ product, quantity }) => (
-                <div key={product.id} className="flex items-center justify-between">
-                  <div className="truncate pr-2">{product.name} × {quantity}</div>
-                  <div className="font-medium">{formatPrice(product.price * quantity)}</div>
+              {items.map(({ product, quantity, presentation }) => (
+                <div key={`${product.id}:${presentation?.id ?? 'base'}`} className="flex items-center justify-between">
+<div className="truncate pr-2">{product.name}{presentation ? ` (${presentation.name})` : ''} × {quantity}</div>
+                  <div className="font-medium">{formatPrice(presentationUnitPrice(product, presentation) * quantity)}</div>
                 </div>
               ))}
             </div>

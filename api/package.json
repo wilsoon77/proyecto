@@ -13,7 +13,7 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "seed": "node --loader ts-node/esm prisma/seed.ts",
-    "openapi:gen": "node --loader ts-node/esm scripts/generate-openapi.ts",
+    "openapi:gen": "node --loader ts-node/esm/transpile-only scripts/generate-openapi.ts",
     "openapi:gen:dist": "npm run build && node scripts/generate-openapi-runtime.js",
     "test": "jest -c jest.config.cjs",
     "test:e2e": "jest -c jest.config.cjs"

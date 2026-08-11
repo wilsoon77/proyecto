@@ -2,6 +2,19 @@
  * Tipos TypeScript para la aplicación
  */
 
+export interface ProductPresentation {
+  id: number
+  name: string
+  unitsInStock: number
+  price: number | null
+  isForSale: boolean
+  isForProduction: boolean
+  isDefault: boolean
+  isActive: boolean
+  sortOrder: number
+  available?: number
+}
+
 export interface Product {
   id: number
   name: string
@@ -20,6 +33,8 @@ export interface Product {
   comboQuantity?: number // Ej: 3 (para "3x Q1.25")
   comboPrice?: number // Ej: 1.25
   unitsPerTray?: number // Unidades por lata (solo PRODUCIDO)
+  stockUnitLabel?: string
+  presentations?: ProductPresentation[]
   rating?: number
   reviewCount?: number
   tags?: string[]
@@ -37,6 +52,7 @@ export interface Category {
 export interface CartItem {
   product: Product
   quantity: number
+  presentation?: ProductPresentation
 }
 
 export interface Cart {
@@ -55,25 +71,12 @@ export interface User {
   avatar?: string
 }
 
-export interface Address {
-  id: number
-  street: string
-  number: string
-  apartment?: string
-  city: string
-  state: string
-  postalCode: string
-  isDefault: boolean
-}
-
 export type OrderStatus = 
   | 'pending'
   | 'confirmed'
   | 'preparing'
   | 'ready'
-  | 'in_delivery'
   | 'picked_up'
-  | 'delivered'
   | 'cancelled'
 
 export interface Order {
@@ -86,10 +89,5 @@ export interface Order {
   total: number
   branchSlug?: string
   createdAt: string
-  /** @deprecated kept for backward compat with existing localStorage orders */
-  deliveryFee?: number
-  /** @deprecated */
   paymentMethod?: string
-  /** @deprecated */
-  shippingMethod?: string
 }

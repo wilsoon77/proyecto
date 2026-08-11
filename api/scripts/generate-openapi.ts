@@ -1,7 +1,8 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../src/app.module.js';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { SwaggerModule } from '@nestjs/swagger';
+import { createSwaggerConfig } from '../src/common/swagger.config.js';
 import { writeFileSync } from 'fs';
 import dotenv from 'dotenv';
 
@@ -16,24 +17,11 @@ const openApiLocalServerUrl = process.env.OPENAPI_LOCAL_SERVER_URL || 'http://lo
 
 async function run() {
   const app = await NestFactory.create(AppModule, { logger: false });
-  const config = new DocumentBuilder()
-    .setTitle('Panaderia Svetlana API')
-    .setDescription('Especificación OpenAPI para la panadería')
-    .setVersion('0.1.0')
-    .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' })
-    .addServer(openApiServerUrl, 'Produccion')
-    .addServer(openApiLocalServerUrl, 'Local')
-    .addTag('auth')
-    .addTag('products')
-    .addTag('inventory')
-    .addTag('stock-movements')
-    .addTag('orders')
-    .build();
-  const doc = SwaggerModule.createDocument(app, config);
-  doc.servers = [
-    { url: openApiServerUrl, description: 'Produccion' },
+  const config = createSwaggerConfig([
+    { url: openApiServerUrl, description: 'Producción' },
     { url: openApiLocalServerUrl, description: 'Local' },
-  ];
+  ]);
+  const doc = SwaggerModule.createDocument(app, config);
   const outPath = 'openapi.json';
   writeFileSync(outPath, JSON.stringify(doc, null, 2), { encoding: 'utf-8' });
   await app.close();

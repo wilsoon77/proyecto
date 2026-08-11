@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
+import { ProductOrigin } from '@prisma/client';
 import { dateKeyToUtcDate, todayBusinessDate } from '../common/time/business-date.js';
 
 @Injectable()
@@ -19,7 +20,7 @@ export class ExpirationService {
       where: {
         availableQuantity: { gt: 0 },
         ...(branchId ? { branchId } : {}),
-        product: { tracksExpiration: true },
+        product: { origin: ProductOrigin.COMPRADO, tracksExpiration: true },
         expiresAt: { not: null },
       },
       include: {
@@ -38,13 +39,19 @@ export class ExpirationService {
       const daysLeft = Math.round((expiresAt.getTime() - today.getTime()) / 86_400_000);
       const isExpired = expiresAt.getTime() < today.getTime();
       const isWarning = !isExpired && (!lot.alertAt || lot.alertAt.getTime() <= today.getTime());
-      if (!isExpired && !isWarning) continue;
+      if (isExpired) {
+        // Los vencidos siguen visibles en Inventario, pero la alerta automática
+        // solicitada por el cliente es únicamente la de próxima caducidad.
+        expiredCount += 1;
+        await this.notifications.resolveExpirationAlert(lot.branchId, `lot:${lot.id}:warning`);
+        continue;
+      }
+      if (!isWarning) continue;
 
-      const stage = isExpired ? 'expired' : 'warning';
       const notified = await this.notifications.sendExpirationIfNeeded({
         branchId: lot.branchId,
-        resourceKey: `lot:${lot.id}:${stage}`,
-        configKey: isExpired ? 'inventory.expired_stock' : 'inventory.expiration_warning',
+        resourceKey: `lot:${lot.id}:warning`,
+        configKey: 'inventory.expiration_warning',
         placeholders: {
           productName: lot.product.name,
           quantity: lot.availableQuantity,
@@ -57,8 +64,7 @@ export class ExpirationService {
       });
 
       if (notified) {
-        if (isExpired) expiredCount += 1;
-        else warningCount += 1;
+        warningCount += 1;
       }
     }
 

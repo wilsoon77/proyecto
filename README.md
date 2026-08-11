@@ -118,6 +118,12 @@ Las rutas de listado devuelven `{ data, meta }` y además cabeceras:
 
 Para detalles completos, ver `GUIA_DESPLIEGUE.md`.
 
+## Presentaciones comerciales
+
+Los productos pueden venderse en presentaciones como combos, medias tiras o tiras completas sin duplicar productos. El inventario se conserva en la unidad física base y cada presentación tiene su propio precio y equivalencia.
+
+Consulta la guía funcional en [`documentation/PRESENTACIONES_PRODUCTO.md`](documentation/PRESENTACIONES_PRODUCTO.md).
+
 ## Notas
 - Este monorepo permite trabajar de forma independiente en `api/` y `web/` sin interferencias.
 - El archivo `.gitignore` en la raíz excluye artefactos de build y dependencias de ambos proyectos.

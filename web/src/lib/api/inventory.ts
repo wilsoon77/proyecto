@@ -20,6 +20,19 @@ export interface InventoryItem {
     id: number
     name: string
     slug: string
+    stockUnitLabel?: string
+    presentations?: Array<{
+      id: number
+      name: string
+      unitsInStock: number
+      price: number | null
+      isForSale: boolean
+      isForProduction: boolean
+      isDefault: boolean
+      isActive: boolean
+      sortOrder: number
+      available?: number
+    }>
   }
   branch: {
     id: number
@@ -89,6 +102,12 @@ export interface StockMovementsListResponse {
   }
 }
 
+export interface OperationalActivityResponse {
+  from: string
+  to: string
+  data: Array<{ date: string; produced: number; sold: number; waste: number }>
+}
+
 export const inventoryService = {
   /**
    * Listar inventario con filtros opcionales
@@ -131,6 +150,14 @@ export const inventoryService = {
     return api.get<StockMovementsListResponse>(url)
   },
 
+  async getOperationalActivity(params?: { branchSlug?: string; days?: number }): Promise<OperationalActivityResponse> {
+    const searchParams = new URLSearchParams()
+    if (params?.branchSlug) searchParams.set('branchSlug', params.branchSlug)
+    if (params?.days) searchParams.set('days', String(params.days))
+    const query = searchParams.toString()
+    return api.get<OperationalActivityResponse>(`/stock-movements/activity${query ? `?${query}` : ''}`)
+  },
+
   /**
    * Crear movimiento de stock
    */
@@ -160,7 +187,11 @@ export const inventoryService = {
    */
   async reconcile(data: {
     branchSlug: string
-    items: Array<{ productId: number; actualQuantity: number }>
+    items: Array<{
+      productId: number
+      actualQuantity: number
+      presentationCounts?: Array<{ presentationId: number; quantity: number }>
+    }>
     note?: string
   }): Promise<{
     branchName: string

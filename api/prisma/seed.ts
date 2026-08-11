@@ -89,7 +89,7 @@ async function main() {
   for (const c of categories) {
     await prisma.category.upsert({
       where: { slug: c.slug },
-      update: {},
+      update: { name: c.name, description: c.description },
       create: c,
     });
   }
@@ -134,7 +134,7 @@ async function main() {
   if (panCat) {
     await prisma.product.upsert({
       where: { slug: 'pan-frances' },
-      update: {},
+      update: { stockUnitLabel: 'piezas' },
       create: {
         sku: 'PAN-001',
         name: 'Pan Francés', 
@@ -142,6 +142,7 @@ async function main() {
         basePrice: 0.50,
         comboQuantity: 3,
         comboPrice: 1.25,
+        stockUnitLabel: 'piezas',
         unitsPerTray: 36,
         description: 'Pan tradicional fresco', 
         categoryId: panCat.id, 
@@ -169,9 +170,22 @@ async function main() {
   }
 
   // Inventario inicial (bloqueo lógico): todo físico en quantity
+  const panFrances = await prisma.product.findUnique({ where: { slug: 'pan-frances' } });
+  if (panFrances) {
+    await prisma.productPresentation.upsert({
+      where: { productId_name: { productId: panFrances.id, name: 'Media tira' } },
+      update: { unitsInStock: 3, price: 1.25, isForSale: true, isForProduction: true, isDefault: false, isActive: true, sortOrder: 0 },
+      create: { productId: panFrances.id, name: 'Media tira', unitsInStock: 3, price: 1.25, isForSale: true, isForProduction: true, isDefault: false, isActive: true, sortOrder: 0 },
+    });
+    await prisma.productPresentation.upsert({
+      where: { productId_name: { productId: panFrances.id, name: 'Tira completa' } },
+      update: { unitsInStock: 6, price: 2.50, isForSale: true, isForProduction: true, isDefault: true, isActive: true, sortOrder: 1 },
+      create: { productId: panFrances.id, name: 'Tira completa', unitsInStock: 6, price: 2.50, isForSale: true, isForProduction: true, isDefault: true, isActive: true, sortOrder: 1 },
+    });
+  }
+
   const central = await prisma.branch.findUnique({ where: { slug: 'central' } });
   const norte = await prisma.branch.findUnique({ where: { slug: 'norte' } });
-  const panFrances = await prisma.product.findUnique({ where: { slug: 'pan-frances' } });
   const pastelChocolate = await prisma.product.findUnique({ where: { slug: 'pastel-chocolate' } });
 
   if (central && panFrances) {
@@ -453,57 +467,9 @@ async function main() {
   // ─────────────────────────────────────────────
   const notificationConfigs = [
     {
-      key: 'order.status_changed',
-      name: 'Cambio de estado de orden',
-      description: 'Notifica al cliente cuando el estado de su orden cambia (ej. de PENDIENTE a CONFIRMADO).',
-      category: 'ORDERS',
-      isEnabled: true,
-      title: 'Estado de tu pedido',
-      message: 'Tu pedido #{orderNumber} cambió a: {status}',
-      targetRoles: ['CUSTOMER'],
-      thresholds: null,
-      soundType: 'suave',
-    },
-    {
-      key: 'order.new_pending',
-      name: 'Nueva orden pendiente',
-      description: 'Alerta al personal operativo cuando ingresa un nuevo pedido del sitio web.',
-      category: 'ORDERS',
-      isEnabled: true,
-      title: 'Nuevo pedido pendiente',
-      message: 'Nueva orden entrante #{orderNumber} pendiente de confirmar',
-      targetRoles: ['ADMIN', 'CASHIER', 'MANAGER'],
-      thresholds: null,
-      soundType: 'alerta',
-    },
-    {
-      key: 'order.cancelled',
-      name: 'Orden cancelada',
-      description: 'Notifica a administración cuando una orden se cancela.',
-      category: 'ORDERS',
-      isEnabled: true,
-      title: 'Pedido cancelado',
-      message: 'La orden #{orderNumber} fue cancelada',
-      targetRoles: ['ADMIN', 'CASHIER', 'MANAGER'],
-      thresholds: null,
-      soundType: 'alerta',
-    },
-    {
-      key: 'inventory.low_stock',
-      name: 'Stock de producto bajo',
-      description: 'Notifica cuando el stock físico de un producto horneado o de reventa cae por debajo del umbral.',
-      category: 'INVENTORY',
-      isEnabled: true,
-      title: 'Stock de producto bajo',
-      message: 'Stock bajo: {productName} tiene {current} unidades en {branchName}',
-      targetRoles: ['MANAGER', 'ADMIN'],
-      thresholds: { threshold: 10 },
-      soundType: 'alerta',
-    },
-    {
       key: 'inventory.raw_material_low',
       name: 'Materia prima baja',
-      description: 'Alerta a panaderos y gerentes cuando la materia prima en inventario cae por debajo del umbral mínimo.',
+      description: 'Alerta cuando la materia prima disponible cae por debajo del mínimo configurado.',
       category: 'INVENTORY',
       isEnabled: true,
       title: 'Materia prima baja',
@@ -513,21 +479,9 @@ async function main() {
       soundType: 'importante',
     },
     {
-      key: 'inventory.loss_detected',
-      name: 'Merma o pérdida registrada',
-      description: 'Alerta cuando se registra un movimiento de merma, robo, o pérdida.',
-      category: 'INVENTORY',
-      isEnabled: true,
-      title: 'Merma/Pérdida registrada',
-      message: 'Se registró {type}: {quantity} unidades de {productName} en {branchName}',
-      targetRoles: ['MANAGER', 'ADMIN'],
-      thresholds: null,
-      soundType: 'suave',
-    },
-    {
       key: 'inventory.expiration_warning',
       name: 'Producto próximo a caducar',
-      description: 'Avisa cuando un lote comprado está dentro del período configurado antes de caducar.',
+      description: 'Avisa cuando un lote comprado entra en el período configurado antes de caducar.',
       category: 'INVENTORY',
       isEnabled: true,
       title: 'Producto próximo a caducar',
@@ -536,84 +490,30 @@ async function main() {
       thresholds: null,
       soundType: 'alerta',
     },
-    {
-      key: 'inventory.expired_stock',
-      name: 'Producto comprado vencido',
-      description: 'Avisa cuando existe inventario comprado con fecha de caducidad vencida.',
-      category: 'INVENTORY',
-      isEnabled: true,
-      title: 'Producto vencido en inventario',
-      message: '{productName}: hay {quantity} unidades vencidas desde el {expiresAt} en {branchName}',
-      targetRoles: ['MANAGER', 'ADMIN'],
-      thresholds: null,
-      soundType: 'importante',
-    },
-    {
-      key: 'production.assigned',
-      name: 'Producción asignada',
-      description: 'Notifica al panadero cuando se le asigna un nuevo amasijo.',
-      category: 'PRODUCTION',
-      isEnabled: true,
-      title: 'Nueva producción asignada',
-      message: 'Nueva producción asignada: {recipeName} en {branchName}',
-      targetRoles: ['BAKER'],
-      thresholds: null,
-      soundType: 'suave',
-    },
-    {
-      key: 'forecast.risk',
-      name: 'Riesgo de producción previsto',
-      description: 'Notifica cuando la predicción detecta falta de receta o materia prima para la producción recomendada.',
-      category: 'PRODUCTION',
-      isEnabled: true,
-      title: 'Riesgo en producción prevista',
-      message: '{riskCount} recomendación(es) requieren revisar materia prima o receta en {branchName} para {forecastDate}',
-      targetRoles: ['MANAGER', 'ADMIN'],
-      thresholds: null,
-      soundType: 'importante',
-    },
-    {
-      key: 'telegram.linked',
-      name: 'Telegram vinculado',
-      description: 'Confirma que una cuenta fue vinculada a un chat privado de Telegram.',
-      category: 'SYSTEM',
-      isEnabled: true,
-      title: 'Telegram vinculado',
-      message: 'Tu cuenta se vinculó al bot de Telegram {username}',
-      targetRoles: ['ADMIN', 'MANAGER'],
-      thresholds: null,
-      soundType: 'suave',
-    },
-    {
-      key: 'daily_close.completed',
-      name: 'Cierre de día completado',
-      description: 'Resume las unidades vendidas, merma y sobrantes de un cierre.',
-      category: 'SYSTEM',
-      isEnabled: true,
-      title: 'Cierre de día completado',
-      message: 'Cierre de {branchName}: {totalSold} vendidos, {totalWaste} de merma y {totalSurplus} sobrantes',
-      targetRoles: ['ADMIN', 'MANAGER'],
-      thresholds: null,
-      soundType: 'suave',
-    },
-    {
-      key: 'system.audit_alert',
-      name: 'Alerta de auditoría',
-      description: 'Notifica al administrador sobre múltiples intentos fallidos de inicio de sesión o acciones sospechosas.',
-      category: 'SYSTEM',
-      isEnabled: true,
-      title: 'Alerta de seguridad',
-      message: 'Se detectaron {count} intentos fallidos de login desde {ip}',
-      targetRoles: ['ADMIN'],
-      thresholds: { threshold: 5 },
-      soundType: 'importante',
-    },
   ];
 
-  for (const config of notificationConfigs) {
+  const operationalNotificationKeys = [
+    'inventory.raw_material_low',
+    'inventory.expiration_warning',
+  ];
+  await prisma.notificationConfig.deleteMany({
+    where: { key: { notIn: operationalNotificationKeys } },
+  });
+
+  for (const config of notificationConfigs.filter((config) => operationalNotificationKeys.includes(config.key))) {
     await prisma.notificationConfig.upsert({
       where: { key: config.key },
-      update: {},
+      update: {
+        name: config.name,
+        description: config.description,
+        category: config.category,
+        isEnabled: config.isEnabled,
+        title: config.title,
+        message: config.message,
+        targetRoles: config.targetRoles as any,
+        thresholds: config.thresholds as any,
+        soundType: config.soundType,
+      },
       create: {
         ...config,
         targetRoles: config.targetRoles as any,

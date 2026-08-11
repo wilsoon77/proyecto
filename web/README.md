@@ -30,6 +30,12 @@ Crear `web/.env.local`:
 NEXT_PUBLIC_API_URL=http://localhost:4000
 ```
 
+## Presentaciones comerciales
+
+El catálogo permite seleccionar presentaciones como `Tira completa` y `Media tira`. El carrito y checkout envían la presentación seleccionada; el precio mostrado corresponde a esa presentación y no al precio base por pieza.
+
+El flujo administrativo de conteo de inventario y cierre diario permite capturar presentaciones y piezas sueltas. Consulta [`documentation/PRESENTACIONES_PRODUCTO.md`](../documentation/PRESENTACIONES_PRODUCTO.md) para las reglas funcionales.
+
 ## Estructura del proyecto
 
 ```
@@ -147,4 +153,4 @@ web/src/
 | `CASHIER` | POS (punto de venta) |
 
 ---
-Última actualización: Marzo 2026
+Última actualización: Agosto 2026

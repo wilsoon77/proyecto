@@ -13,13 +13,13 @@ export default function PrivacidadPage() {
         <h2>Datos que recopilamos</h2>
         <ul>
           <li>Datos de contacto: nombre, teléfono, correo.</li>
-          <li>Datos de entrega: dirección, referencias.</li>
+          <li>Datos de contacto: nombre, teléfono y correo.</li>
           <li>Datos de uso: páginas visitadas, productos vistos.</li>
         </ul>
 
         <h2>Cómo usamos tus datos</h2>
         <ul>
-          <li>Procesar tus pedidos y coordinar entregas.</li>
+          <li>Procesar tus pedidos y coordinar el retiro en la sucursal seleccionada.</li>
           <li>Comunicar promociones y novedades (si lo autorizas).</li>
           <li>Mejorar nuestra plataforma y atención al cliente.</li>
         </ul>

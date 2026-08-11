@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { ProductDetailClient } from '@/components/products/ProductDetailClient'
 import { getPublicCatalog, getPublicProduct, getRelatedPublicProducts } from '@/lib/catalog/public-api'
 import { apiProductToProduct } from '@/lib/api/transformers'
+import { defaultSalePresentation, presentationUnitPrice } from '@/lib/presentation-quantities'
 
 export const revalidate = 60
 export const dynamicParams = true
@@ -53,7 +54,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
     sku: apiProduct.sku,
     offers: {
       '@type': 'Offer',
-      price: product.price.toFixed(2),
+    price: presentationUnitPrice(product, defaultSalePresentation(product)).toFixed(2),
       priceCurrency: 'GTQ',
       availability: product.stock > 0 && product.isAvailable ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
     },

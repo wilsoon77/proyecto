@@ -1,9 +1,10 @@
-import { Injectable, BadRequestException, NotFoundException, Optional } from '@nestjs/common';
+import { ConflictException, Injectable, BadRequestException, NotFoundException, Optional } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateProductionLogDto } from './dto/production.dto.js';
 import { InventoryLotSource, Prisma } from '@prisma/client';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { InventoryLotsService } from '../inventory/inventory-lots.service.js';
+import { dateKeyToUtcDate, todayBusinessDate } from '../common/time/business-date.js';
 
 /**
  * ProductionService — Motor de producción del sistema PanaderIA.
@@ -42,7 +43,7 @@ export class ProductionService {
     const recipe = await this.prisma.recipe.findUnique({
       where: { id: dto.recipeId },
       include: {
-        product: true,
+        product: { include: { presentations: { where: { isActive: true } } } },
         ingredients: {
           include: { rawMaterial: true },
         },
@@ -59,12 +60,58 @@ export class ProductionService {
     const branchId = dto.branchId || (await this.getUserBranch(userId));
     if (!branchId) throw new BadRequestException('No se pudo determinar la sucursal. Asigna una sucursal al usuario o envía branchId.');
 
-    const traysProduced = dto.traysProduced;
-    const unitsProduced = traysProduced * recipe.product.unitsPerTray;
+    let traysProduced = dto.traysProduced;
+    let unitsProduced: number;
+    let productionPresentation: (typeof recipe.product)['presentations'][number] | undefined;
+
+    if (dto.productionPresentationId !== undefined || dto.productionQuantity !== undefined) {
+      if (dto.productionPresentationId === undefined || dto.productionQuantity === undefined) {
+        throw new BadRequestException('La presentación y la cantidad producida deben enviarse juntas');
+      }
+      productionPresentation = recipe.product.presentations.find(
+        (presentation) => presentation.id === dto.productionPresentationId && presentation.isForProduction,
+      );
+      if (!productionPresentation) {
+        throw new BadRequestException(`La presentación no está habilitada para producción de ${recipe.product.name}`);
+      }
+      const presentationsPerTray = recipe.product.unitsPerTray / productionPresentation.unitsInStock;
+      if (!Number.isInteger(presentationsPerTray) || presentationsPerTray < 1) {
+        throw new BadRequestException('La equivalencia de la presentación no divide exactamente una lata');
+      }
+      if (dto.productionQuantity % presentationsPerTray !== 0) {
+        throw new BadRequestException(
+          `La producción debe ser múltiplo de ${presentationsPerTray} ${productionPresentation.name.toLowerCase()} por lata`,
+        );
+      }
+      const derivedTrays = dto.productionQuantity / presentationsPerTray;
+      if (traysProduced !== undefined && traysProduced !== derivedTrays) {
+        throw new BadRequestException('La cantidad de latas no coincide con la presentación producida');
+      }
+      traysProduced = derivedTrays;
+      unitsProduced = dto.productionQuantity * productionPresentation.unitsInStock;
+    } else {
+      if (!traysProduced) throw new BadRequestException('Debes indicar las latas producidas');
+      unitsProduced = traysProduced * recipe.product.unitsPerTray;
+    }
 
     // 2-5. Transacción atómica con retry para conflictos de serialización
     const result = await this.executeWithRetry(() =>
       this.prisma.$transaction(async (tx) => {
+        // El cierre es un bloqueo operativo de la jornada: una producción
+        // posterior debe quedar registrada en la siguiente fecha de negocio.
+        // La comprobación vive dentro de la transacción para que compita de
+        // forma segura con un cierre que se esté confirmando en paralelo.
+        const closeDate = dateKeyToUtcDate(todayBusinessDate());
+        const dailyClose = await tx.dailyClose.findUnique({
+          where: { branchId_closeDate: { branchId, closeDate } },
+          select: { id: true },
+        });
+        if (dailyClose) {
+          throw new ConflictException(
+            'La jornada de esta sucursal ya está cerrada. Registra la producción en la siguiente jornada.',
+          );
+        }
+
         // 2. Restar materia prima del inventario de la sucursal
         for (const ingredient of recipe.ingredients) {
           // Leer el inventario actual dentro de la transacción
@@ -129,6 +176,10 @@ export class ProductionService {
             userId,
             traysProduced,
             unitsProduced,
+            presentationId: productionPresentation?.id,
+            presentationName: productionPresentation?.name,
+            presentationQuantity: dto.productionQuantity,
+            presentationUnits: productionPresentation?.unitsInStock,
             note: dto.note,
           },
         });
@@ -201,18 +252,15 @@ export class ProductionService {
     }
 
     // Enviar notificación de producción asignada (horneado completado)
-    await this.notificationsService.sendByConfig('production.assigned', {
-      recipeName: recipe.name,
-      branchName,
-      branchId,
-    }, `/admin/produccion`);
-
     return {
       id: result.id,
       recipeName: recipe.name,
       productName: recipe.product.name,
       traysProduced,
       unitsProduced,
+      productionPresentationId: productionPresentation?.id,
+      productionPresentationName: productionPresentation?.name,
+      productionQuantity: dto.productionQuantity,
       message: `¡Amasijo registrado! Se agregaron ${unitsProduced.toLocaleString()} ${recipe.product.name} al inventario.`,
     };
   }
@@ -232,6 +280,7 @@ export class ProductionService {
     return this.prisma.productionLog.findMany({
       where,
       include: {
+        presentation: true,
         recipe: {
           include: {
             product: { select: { id: true, name: true, slug: true } },
@@ -260,6 +309,7 @@ export class ProductionService {
     return this.prisma.productionLog.findMany({
       where,
       include: {
+        presentation: true,
         recipe: {
           include: {
             product: { select: { id: true, name: true } },

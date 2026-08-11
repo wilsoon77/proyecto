@@ -3,15 +3,15 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateStockMovementDto, ReconcileInventoryDto } from './dto.js';
 import { InventoryLotSource, Prisma, StockMovementType } from '@prisma/client';
 import { LoggerService } from '../common/logger/logger.service.js';
-import { NotificationsService } from '../notifications/notifications.service.js';
 import { InventoryLotsService } from '../inventory/inventory-lots.service.js';
+import { addDays, businessDateStartUtc, dateKeysBetween, formatBusinessDate, todayBusinessDate } from '../common/time/business-date.js';
+import { calculateBaseQuantity } from '../products/presentation.helpers.js';
 
 @Injectable()
 export class StockMovementsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly logger: LoggerService,
-    private readonly notificationsService: NotificationsService,
     private readonly inventoryLotsService: InventoryLotsService,
   ) {}
 
@@ -152,62 +152,7 @@ export class StockMovementsService {
       timeout: 10000,
     });
 
-    // Enviar alertas si hay merma o robo
-    if (dto.type === StockMovementType.MERMA || dto.type === StockMovementType.PERDIDA_ROBO) {
-      const typeLabel = dto.type === StockMovementType.MERMA ? 'MERMA' : 'PÉRDIDA/ROBO';
-      await this.notificationsService.sendByConfig('inventory.loss_detected', {
-        productName: product.name,
-        quantity: dto.quantity,
-        type: typeLabel,
-        branchName: fromBranch?.name || 'Sucursal',
-        branchId: fromBranch?.id,
-      }, `/admin/inventario/movimiento`);
-
-      // Verificar si bajó el stock físico
-      if (fromBranch) {
-        const currentInv = await this.prisma.inventory.findUnique({
-          where: { productId_branchId: { productId: product.id, branchId: fromBranch.id } },
-        });
-        if (currentInv) {
-          await this.notificationsService.sendLowStockIfNeeded({
-            alertType: 'PRODUCT_LOW',
-            branchId: fromBranch.id,
-            resourceKey: `product:${product.id}`,
-            configKey: 'inventory.low_stock',
-            currentValue: currentInv.quantity,
-            placeholders: {
-              productName: product.name,
-              current: currentInv.quantity,
-              branchName: fromBranch.name,
-            },
-            url: `/admin/inventario`,
-          });
-        }
-      }
-    }
-
-    // Verificar stock físico bajo en ventas manuales
-    if (dto.type === StockMovementType.VENTA && fromBranch) {
-      const currentInv = await this.prisma.inventory.findUnique({
-        where: { productId_branchId: { productId: product.id, branchId: fromBranch.id } },
-      });
-      if (currentInv) {
-        await this.notificationsService.sendLowStockIfNeeded({
-          alertType: 'PRODUCT_LOW',
-          branchId: fromBranch.id,
-          resourceKey: `product:${product.id}`,
-          configKey: 'inventory.low_stock',
-          currentValue: currentInv.quantity,
-          placeholders: {
-            productName: product.name,
-            current: currentInv.quantity,
-            branchName: fromBranch.name,
-          },
-          url: `/admin/inventario`,
-        });
-      }
-    }
-
+    // Las alertas automáticas se generan exclusivamente para materia prima baja y caducidad próxima.
     return movement;
   }
 
@@ -241,6 +186,43 @@ export class StockMovementsService {
     return { data, meta: { total, pageCount: Math.ceil(total / pageSize) || 0, page, pageSize } };
   }
 
+  async activity(branchSlug?: string, days = 7) {
+    const normalizedDays = Math.max(1, Math.min(14, Math.floor(days) || 7));
+    const to = todayBusinessDate();
+    const from = addDays(to, 1 - normalizedDays);
+    const branch = branchSlug
+      ? await this.prisma.branch.findUnique({ where: { slug: branchSlug }, select: { id: true } })
+      : null;
+
+    if (branchSlug && !branch) {
+      return { from, to, data: dateKeysBetween(from, to).map((date) => ({ date, produced: 0, sold: 0, waste: 0 })) };
+    }
+
+    const movements = await this.prisma.stockMovement.findMany({
+      where: {
+        createdAt: {
+          gte: businessDateStartUtc(from),
+          lt: businessDateStartUtc(addDays(to, 1)),
+        },
+        ...(branch ? { OR: [{ fromBranchId: branch.id }, { toBranchId: branch.id }] } : {}),
+      },
+      select: { type: true, quantity: true, createdAt: true },
+    });
+
+    const totals = new Map(dateKeysBetween(from, to).map((date) => [date, { date, produced: 0, sold: 0, waste: 0 }]));
+    for (const movement of movements) {
+      const row = totals.get(formatBusinessDate(movement.createdAt));
+      if (!row) continue;
+      if (movement.type === StockMovementType.PRODUCCION) row.produced += movement.quantity;
+      if (movement.type === StockMovementType.VENTA) row.sold += movement.quantity;
+      if (movement.type === StockMovementType.MERMA || movement.type === StockMovementType.PERDIDA_ROBO) {
+        row.waste += movement.quantity;
+      }
+    }
+
+    return { from, to, data: [...totals.values()] };
+  }
+
   /**
    * Reconciliación masiva: compara conteo físico real vs sistema.
    * Genera movimientos SOBRANTE (si hay más de lo esperado) o MERMA (si hay menos).
@@ -262,27 +244,37 @@ export class StockMovementsService {
 
     await this.prisma.$transaction(async (tx) => {
       for (const item of dto.items) {
-        const product = await tx.product.findUnique({ where: { id: item.productId } });
+        const product = await tx.product.findUnique({
+          where: { id: item.productId },
+          include: { presentations: { where: { isActive: true } } },
+        });
         if (!product) continue;
+
+        const actualQuantity = item.presentationCounts?.length
+          ? calculateBaseQuantity(product.presentations, item.presentationCounts)
+          : item.actualQuantity;
+        if (actualQuantity === undefined) {
+          throw new BadRequestException(`Falta el conteo físico de ${product.name}`);
+        }
 
         const inv = await tx.inventory.findUnique({
           where: { productId_branchId: { productId: item.productId, branchId: branch.id } },
         });
 
         const systemQty = inv?.quantity ?? 0;
-        if (inv && item.actualQuantity < inv.reserved) {
+        if (inv && actualQuantity < inv.reserved) {
           throw new BadRequestException(
             `El conteo de ${product.name} no puede ser menor que las ${inv.reserved} unidades reservadas`,
           );
         }
-        const diff = item.actualQuantity - systemQty;
+        const diff = actualQuantity - systemQty;
 
         if (diff === 0) {
           results.push({
             productId: item.productId,
             productName: product.name,
             systemQuantity: systemQty,
-            actualQuantity: item.actualQuantity,
+            actualQuantity,
             difference: 0,
             adjustmentType: 'SIN_CAMBIO',
           });
@@ -296,11 +288,11 @@ export class StockMovementsService {
         if (inv) {
           await tx.inventory.update({
             where: { id: inv.id },
-            data: { quantity: item.actualQuantity },
+            data: { quantity: actualQuantity },
           });
         } else {
           await tx.inventory.create({
-            data: { productId: item.productId, branchId: branch.id, quantity: item.actualQuantity },
+            data: { productId: item.productId, branchId: branch.id, quantity: actualQuantity },
           });
         }
 
@@ -339,7 +331,7 @@ export class StockMovementsService {
           productId: item.productId,
           productName: product.name,
           systemQuantity: systemQty,
-          actualQuantity: item.actualQuantity,
+          actualQuantity,
           difference: diff,
           adjustmentType: diff > 0 ? 'SOBRANTE' : 'MERMA',
         });

@@ -7,8 +7,6 @@ const FULFILLMENT_STATUSES = [
   'CONFIRMED',
   'PREPARING',
   'READY',
-  'IN_DELIVERY',
-  'DELIVERED',
   'PICKED_UP',
 ] as const;
 

@@ -6,7 +6,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useAuth } from "@/context/AuthContext"
 import { ToastProvider } from "@/components/ui/toast"
-import { LayoutDashboard, Package, ShoppingCart, Users, Settings, LogOut, ChevronLeft, ChevronRight, Menu, Bell, User, Warehouse, Tag, Building2, X, Factory as History, Flame, Store, BookOpen, ChartBar as BarChart3, ArrowRightLeft, ChevronDown, ClipboardCheck, CalendarClock } from "lucide-react"
+import { LayoutDashboard, Package, ShoppingCart, Users, Settings, LogOut, ChevronLeft, ChevronRight, Menu, Bell, User, Warehouse, Tag, Building2, X, Factory as History, Flame, BookOpen, ChartBar as BarChart3, ArrowRightLeft, ChevronDown, ClipboardCheck, CalendarClock } from "lucide-react"
 import { GlobalSearch } from "@/components/ui/global-search"
 import NotificationBell from "@/components/layout/NotificationBell"
 
@@ -28,9 +28,7 @@ interface NavItem {
 }
 
 const adminNavItems: NavItem[] = [
-  { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true, roles: ["ADMIN", "MANAGER", "BAKER", "CASHIER"] },
-  { href: "/admin/reportes", label: "Reportes y Analítica", icon: BarChart3, roles: ["ADMIN", "MANAGER"] },
-  { href: "/admin/pos", label: "Caja (POS)", icon: Store, roles: ["ADMIN", "MANAGER", "CASHIER"] },
+  { href: "/admin", label: "Operación", icon: LayoutDashboard, exact: true, roles: ["ADMIN", "MANAGER", "BAKER", "CASHIER"] },
   { href: "/admin/productos", label: "Productos", icon: Package, roles: ["ADMIN", "MANAGER"] },
   { href: "/admin/categorias", label: "Categorías", icon: Tag, roles: ["ADMIN"] },
   { href: "/admin/ordenes", label: "Pedidos", icon: ShoppingCart, roles: ["ADMIN", "MANAGER", "CASHIER"] },

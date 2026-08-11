@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-import { ShoppingCart, Search, Loader as Loader2, Eye, Clock, CircleCheck as CheckCircle, Circle as XCircle, Package, ChefHat, ListFilter as Filter, RefreshCw, Monitor, Globe } from "lucide-react"
+import { ShoppingCart, Search, Loader as Loader2, Eye, Clock, CircleCheck as CheckCircle, Circle as XCircle, Package, ChefHat, ListFilter as Filter, RefreshCw, Globe } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { ordersService, branchesService, type OrderStatus } from "@/lib/api"
@@ -14,16 +14,20 @@ interface Order {
   orderNumber: string
   status: OrderStatus
   subtotal: number
-  deliveryFee: number
   discount: number
   total: number
   paymentMethod?: string
-  shippingMethod?: string
   customerNotes?: string
   branch?: { id: number; name: string; slug: string }
   createdAt: string
   updatedAt: string
-  items: Array<{ productName: string; quantity: number; unitPrice: number }>
+  items: Array<{
+    productName: string
+    quantity: number
+    unitPrice: number
+    presentationName?: string | null
+    presentationQuantity?: number | null
+  }>
 }
 
 interface Branch {
@@ -37,8 +41,6 @@ const STATUS_OPTIONS: { value: OrderStatus; label: string; icon: React.ElementTy
   { value: "CONFIRMED", label: "Confirmada", icon: CheckCircle, color: "bg-chart-3/10 text-chart-3" },
   { value: "PREPARING", label: "Preparando", icon: ChefHat, color: "bg-chart-5/10 text-chart-5" },
   { value: "READY", label: "Lista para recoger", icon: Package, color: "bg-success/10 text-success" },
-  { value: "IN_DELIVERY", label: "En camino", icon: Package, color: "bg-indigo-100 text-indigo-700" },
-  { value: "DELIVERED", label: "Entregada", icon: CheckCircle, color: "bg-emerald-100 text-emerald-700" },
   { value: "PICKED_UP", label: "Recogida", icon: CheckCircle, color: "bg-teal-100 text-teal-700" },
   { value: "CANCELLED", label: "Cancelada", icon: XCircle, color: "bg-destructive/10 text-destructive" },
 ]
@@ -47,9 +49,7 @@ const STATUS_FLOW: Record<OrderStatus, OrderStatus[]> = {
   PENDING: ['CONFIRMED', 'CANCELLED'],
   CONFIRMED: ['PREPARING', 'CANCELLED'],
   PREPARING: ['READY', 'CANCELLED'],
-  READY: ['PICKED_UP', 'IN_DELIVERY', 'CANCELLED'],
-  IN_DELIVERY: ['DELIVERED'],
-  DELIVERED: [],
+  READY: ['PICKED_UP', 'CANCELLED'],
   PICKED_UP: [],
   CANCELLED: [],
 }
@@ -120,9 +120,7 @@ export default function OrdenesPage() {
         ? await ordersService.cancel(orderId)
         : newStatus === 'PICKED_UP'
           ? await ordersService.pickup(orderId)
-          : newStatus === 'DELIVERED'
-            ? await ordersService.deliver(orderId)
-            : await ordersService.updateStatus(orderId, newStatus)
+          : await ordersService.updateStatus(orderId, newStatus)
       setOrders(prev => prev.map(o => 
         o.id === orderId ? { ...o, status: updated.status } : o
       ))
@@ -229,7 +227,7 @@ export default function OrdenesPage() {
 
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        {['PENDING', 'CONFIRMED', 'READY', 'DELIVERED'].map(status => {
+        {['PENDING', 'CONFIRMED', 'PREPARING', 'READY'].map(status => {
           const config = STATUS_MAP[status as OrderStatus]
           const StatusIcon = config.icon
           return (
@@ -277,7 +275,7 @@ export default function OrdenesPage() {
                   color: "bg-muted text-foreground"
                 }
                 const StatusIcon = statusConfig.icon
-                const totalItems = order.items.reduce((sum, i) => sum + i.quantity, 0)
+                const totalItems = order.items.reduce((sum, i) => sum + (i.presentationQuantity ?? i.quantity), 0)
                 
                 return (
                   <div key={order.id} className="p-4 hover:bg-cream">
@@ -285,11 +283,7 @@ export default function OrdenesPage() {
                       <div>
                         <div className="flex items-center gap-2">
                           <p className="font-medium text-foreground">{order.orderNumber}</p>
-                          {order.shippingMethod === 'POS' ? (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-100 text-violet-700"><Monitor className="h-3 w-3" />POS</span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-sky-100 text-sky-700"><Globe className="h-3 w-3" />Web</span>
-                          )}
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-sky-100 text-sky-700"><Globe className="h-3 w-3" />Web · retiro</span>
                         </div>
                         <p className="text-xs text-muted-foreground/60">{formatDate(order.createdAt)}</p>
                       </div>
@@ -349,25 +343,21 @@ export default function OrdenesPage() {
                     color: "bg-muted text-foreground"
                   }
                   const StatusIcon = statusConfig.icon
-                  const totalItems = order.items.reduce((sum, i) => sum + i.quantity, 0)
+                  const totalItems = order.items.reduce((sum, i) => sum + (i.presentationQuantity ?? i.quantity), 0)
                   
                   return (
                     <tr key={order.id} className="hover:bg-cream">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           <p className="font-medium text-foreground">{order.orderNumber}</p>
-                          {order.shippingMethod === 'POS' ? (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-100 text-violet-700"><Monitor className="h-3 w-3" />POS</span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-sky-100 text-sky-700"><Globe className="h-3 w-3" />Web</span>
-                          )}
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-sky-100 text-sky-700"><Globe className="h-3 w-3" />Web · retiro</span>
                         </div>
                         <p className="text-xs text-muted-foreground/60">ID: {order.id}</p>
                       </td>
                       <td className="px-6 py-4">
                         <p className="text-sm text-muted-foreground">{totalItems} producto{totalItems !== 1 ? 's' : ''}</p>
                         <p className="text-xs text-muted-foreground/60 truncate max-w-[200px]">
-                          {order.items.slice(0, 2).map(i => i.productName).join(', ')}
+                          {order.items.slice(0, 2).map(i => `${i.productName}${i.presentationName ? ` (${i.presentationName})` : ''}`).join(', ')}
                           {order.items.length > 2 && '...'}
                         </p>
                       </td>

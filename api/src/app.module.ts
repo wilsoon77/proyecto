@@ -13,8 +13,6 @@ import { MetricsModule } from './metrics/metrics.module.js';
 import { CategoriesModule } from './categories/categories.module.js';
 import { BranchesModule } from './branches/branches.module.js';
 import { UsersModule } from './users/users.module.js';
-import { AddressesModule } from './addresses/addresses.module.js';
-import { DashboardModule } from './dashboard/dashboard.module.js';
 import { StorageModule } from './storage/storage.module.js';
 import { SupabaseModule } from './supabase/supabase.module.js';
 import { AuditModule } from './audit/audit.module.js';
@@ -26,8 +24,6 @@ import { SystemConfigModule } from './system-config/system-config.module.js';
 import { NotificationsModule } from './notifications/notifications.module.js';
 import { BranchScopeModule } from './branch-scope/branch-scope.module.js';
 import { DailyCloseModule } from './daily-close/daily-close.module.js';
-import { AnalyticsModule } from './analytics/analytics.module.js';
-import { ForecastModule } from './forecast/forecast.module.js';
 import { TelegramModule } from './telegram/telegram.module.js';
 
 @Module({
@@ -41,12 +37,10 @@ import { TelegramModule } from './telegram/telegram.module.js';
       ttl: 60000, // 1 minuto en ms
       limit: 100, // 100 peticiones por minuto
     }]),
-    ScheduleModule.forRoot(), // Tareas programadas (expiración de reservas)
+    ScheduleModule.forRoot(), // Revisión programada de caducidades
     AuditModule, // Debe estar primero para que esté disponible globalmente
     BranchScopeModule,
     DailyCloseModule,
-    AnalyticsModule,
-    ForecastModule,
     SystemConfigModule,
     NotificationsModule,
     TelegramModule,
@@ -61,14 +55,12 @@ import { TelegramModule } from './telegram/telegram.module.js';
     CategoriesModule,
     BranchesModule,
     UsersModule,
-    AddressesModule,
-    DashboardModule,
     StorageModule,
     SupabaseModule,
     RecipesModule,
     ProductionModule,
     RawMaterialsModule,
-    TasksModule, // Tareas programadas (expiración de reservas)
+    TasksModule, // Limpieza de reservas PENDING no confirmadas
   ],
   controllers: [],
   providers: [

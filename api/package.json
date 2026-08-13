@@ -32,7 +32,7 @@
     "@nestjs/swagger": "^7.1.10",
     "@nestjs/throttler": "^6.5.0",
     "@prisma/client": "^5.19.0",
-    "@sentry/node": "^10.66.0",
+    "@sentry/node": "^10.70.0",
     "@supabase/supabase-js": "^2.110.7",
     "bcryptjs": "^2.4.3",
     "class-transformer": "^0.5.1",

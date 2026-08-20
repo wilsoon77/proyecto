@@ -1,6 +1,9 @@
-import { IsArray, IsOptional, IsString, IsInt, IsPositive, ValidateNested, Min } from 'class-validator';
+import { IsArray, IsOptional, IsString, IsInt, IsPositive, ValidateNested, Min, IsEnum } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
+import { PaymentMethod } from '@prisma/client';
+
+export const PAYMENT_METHODS = Object.values(PaymentMethod);
 
 export class ReserveItem {
   @ApiProperty({ example: 'concha' })
@@ -30,10 +33,10 @@ export class ReserveOrderDto {
   @Type(() => ReserveItem)
   items!: ReserveItem[];
 
-  @ApiProperty({ example: 'EFECTIVO', required: false })
+  @ApiProperty({ example: 'EFECTIVO', enum: PAYMENT_METHODS, required: false })
   @IsOptional()
-  @IsString()
-  paymentMethod?: string;
+  @IsEnum(PaymentMethod)
+  paymentMethod?: PaymentMethod;
 
   @ApiProperty({ example: 'Por favor no poner mucha azúcar', required: false })
   @IsOptional()

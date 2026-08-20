@@ -10,7 +10,7 @@ import { LayoutDashboard, Package, ShoppingCart, Users, Settings, LogOut, Chevro
 import { GlobalSearch } from "@/components/ui/global-search"
 import NotificationBell from "@/components/layout/NotificationBell"
 
-const OPERATIONAL_ROLES = ['ADMIN', 'MANAGER', 'BAKER', 'CASHIER']
+const OPERATIONAL_ROLES = ['ADMIN', 'MANAGER', 'BAKER']
 
 interface NavItem {
   href: string
@@ -28,11 +28,11 @@ interface NavItem {
 }
 
 const adminNavItems: NavItem[] = [
-  { href: "/admin", label: "Operación", icon: LayoutDashboard, exact: true, roles: ["ADMIN", "MANAGER", "BAKER", "CASHIER"] },
+  { href: "/admin", label: "Operación", icon: LayoutDashboard, exact: true, roles: ["ADMIN", "MANAGER", "BAKER"] },
   { href: "/admin/productos", label: "Productos", icon: Package, roles: ["ADMIN", "MANAGER"] },
   { href: "/admin/categorias", label: "Categorías", icon: Tag, roles: ["ADMIN"] },
-  { href: "/admin/ordenes", label: "Pedidos", icon: ShoppingCart, roles: ["ADMIN", "MANAGER", "CASHIER"] },
-  { href: "/admin/cierre-dia", label: "Cierre del Día", icon: ClipboardCheck, roles: ["ADMIN", "MANAGER", "CASHIER"] },
+  { href: "/admin/ordenes", label: "Pedidos", icon: ShoppingCart, roles: ["ADMIN", "MANAGER"] },
+  { href: "/admin/cierre-dia", label: "Cierre del Día", icon: ClipboardCheck, roles: ["ADMIN", "MANAGER"] },
   { href: "/admin/produccion", label: "Producción", icon: Flame, roles: ["ADMIN", "MANAGER", "BAKER"] },
   { href: "/admin/recetas", label: "Recetas", icon: BookOpen, roles: ["ADMIN", "MANAGER"] },
   { 

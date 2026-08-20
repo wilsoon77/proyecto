@@ -35,8 +35,16 @@ export const productsService = {
    * Listar productos con filtros y paginación
    */
   async list(filters: ProductFilters = {}): Promise<PaginatedResponse<ApiProduct>> {
-    const query = buildQueryString(filters)
+    const query = buildQueryString({ ...filters, all: undefined, status: undefined })
     return api.get<PaginatedResponse<ApiProduct>>(`/products${query}`, { skipAuth: true })
+  },
+
+  /**
+   * Listado administrativo: permite consultar productos ocultos y requiere sesión.
+   */
+  async listAdmin(filters: ProductFilters = {}): Promise<PaginatedResponse<ApiProduct>> {
+    const query = buildQueryString(filters)
+    return api.get<PaginatedResponse<ApiProduct>>(`/products/admin${query}`)
   },
 
   /**
@@ -60,7 +68,7 @@ export const productsService = {
    * Obtener un producto por ID
    */
   async getById(id: number): Promise<ApiProduct> {
-    return api.get<ApiProduct>(`/products/by-id/${id}`, { skipAuth: true })
+    return api.get<ApiProduct>(`/products/by-id/${id}`)
   },
 
   /**

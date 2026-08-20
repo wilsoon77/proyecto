@@ -72,7 +72,6 @@ const VALUE_LABELS: Record<string, string> = {
   ADMIN: "Administrador",
   MANAGER: "Gerente",
   BAKER: "Panadero",
-  CASHIER: "Cajero",
   CUSTOMER: "Cliente",
   DEACTIVATE: "Desactivar",
   ACTIVATE: "Activar",

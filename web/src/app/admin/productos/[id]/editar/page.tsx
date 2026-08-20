@@ -29,6 +29,17 @@ function generateSlug(name: string): string {
     .trim()
 }
 
+function parseExpirationAlertDays(value: string): number[] {
+  const days = value
+    .split(',')
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0)
+    .map(Number)
+    .filter((day) => Number.isInteger(day) && day >= 0 && day <= 3650)
+  const normalized = [...new Set(days)].sort((a, b) => b - a)
+  return normalized.length > 0 ? normalized : [3]
+}
+
 export default function EditarProductoPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params)
   const productId = parseInt(resolvedParams.id) // Ahora usamos ID numérico
@@ -108,7 +119,7 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
       setUnitsPerTray(data.unitsPerTray?.toString() || "")
       setOrigin(data.origin === 'COMPRADO' ? 'COMPRADO' : 'PRODUCIDO')
       setTracksExpiration(data.origin === 'COMPRADO' && data.tracksExpiration === true)
-      setExpirationAlertDays((data.expirationAlertDays ?? 3).toString())
+      setExpirationAlertDays((data.expirationAlertDays ?? [3]).join(', '))
       setPresentations((data.presentations ?? []).map((presentation) => ({
         id: presentation.id,
         name: presentation.name,
@@ -234,7 +245,7 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
         isAvailable,
         origin,
         tracksExpiration: origin === 'COMPRADO' && tracksExpiration,
-        expirationAlertDays: origin === 'COMPRADO' ? Math.max(0, parseInt(expirationAlertDays || "3", 10)) : 3,
+        expirationAlertDays: origin === 'COMPRADO' ? parseExpirationAlertDays(expirationAlertDays) : [],
         comboQuantity: comboQuantity ? parseInt(comboQuantity) : undefined,
         comboPrice: comboPrice ? parseFloat(comboPrice) : undefined,
         unitsPerTray: unitsPerTray ? parseInt(unitsPerTray) : undefined,
@@ -542,8 +553,9 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
                 </label>
                 {tracksExpiration && (
                   <div className="max-w-xs">
-                    <label className="block text-xs font-medium text-muted-foreground mb-1">Avisar con cuántos días de anticipación</label>
-                    <input type="number" min="0" value={expirationAlertDays} onChange={(e) => setExpirationAlertDays(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-sm" />
+                    <label className="block text-xs font-medium text-muted-foreground mb-1">Días de anticipación para avisos</label>
+                    <input type="text" inputMode="numeric" value={expirationAlertDays} onChange={(e) => setExpirationAlertDays(e.target.value)} placeholder="30, 15, 3" className="w-full px-3 py-2 border border-border rounded-lg text-sm" />
+                    <p className="text-xs text-muted-foreground mt-1">Opcionalmente agrega varios separados por comas. Ejemplo: 30, 15 y 3 días antes.</p>
                   </div>
                 )}
               </div>

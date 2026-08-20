@@ -155,7 +155,7 @@ export class CategoriesController {
   async remove(@Param('slug') slug: string, @Req() req: any) {
     // Obtener info de la categoría antes de eliminar
     const categoryInfo = await this.categoriesService.findOne(slug);
-    const result = await this.categoriesService.remove(slug);
+    const result = await this.categoriesService.deactivate(slug);
     
     // Registrar en auditoría
     const userName = await this.auditService.getUserName(req.user?.userId);

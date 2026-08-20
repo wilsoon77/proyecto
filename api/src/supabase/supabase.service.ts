@@ -30,6 +30,17 @@ export class SupabaseService {
     return this.supabase?.auth.admin;
   }
 
+  /**
+   * Password authentication is delegated to Supabase whenever it is enabled.
+   * The API still issues its own short-lived access token after this check.
+   */
+  async signInWithPassword(email: string, password: string) {
+    if (!this.supabase) {
+      throw new ServiceUnavailableException('Supabase Auth no estÃ¡ configurado.');
+    }
+    return this.supabase.auth.signInWithPassword({ email, password });
+  }
+
   isConfigured(): boolean {
     return !!this.supabase;
   }

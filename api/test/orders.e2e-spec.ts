@@ -21,11 +21,11 @@ describe('Orders Lifecycle (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
   let customerToken: string;
-  let cashierToken: string;
+  let managerToken: string;
 
   // IDs para cleanup
   let testCustomerId: string;
-  let testCashierId: string;
+  let testManagerId: string;
   let testBranchId: number;
   let testBranchSlug: string;
   let testCategoryId: number;
@@ -97,18 +97,23 @@ describe('Orders Lifecycle (e2e)', () => {
     const loginCustomer = await request(app.getHttpServer()).post('/auth/login').send({ email: 'customer-test-orders@test.com', password: 'customer-test-123' });
     customerToken = loginCustomer.body.token;
 
-    // 6. Usuario CASHIER (para confirm/pickup)
-    const cashierHash = await bcrypt.hash('cashier-test-123', 10);
-    const cashier = await prisma.user.create({
-      data: { email: 'cashier-test-orders@test.com', passwordHash: cashierHash, firstName: 'Cashier', lastName: 'Test', role: 'CASHIER', isActive: true, branchId: testBranchId },
+    // 6. Usuario MANAGER (para confirmar/entregar pedidos)
+    const managerHash = await bcrypt.hash('manager-test-123', 10);
+    const manager = await prisma.user.create({
+      data: { email: 'manager-test-orders@test.com', passwordHash: managerHash, firstName: 'Manager', lastName: 'Test', role: 'MANAGER', isActive: true, branchId: testBranchId },
     });
-    testCashierId = cashier.id;
-    const loginCashier = await request(app.getHttpServer()).post('/auth/login').send({ email: 'cashier-test-orders@test.com', password: 'cashier-test-123' });
-    cashierToken = loginCashier.body.token;
+    testManagerId = manager.id;
+    const loginManager = await request(app.getHttpServer()).post('/auth/login').send({ email: 'manager-test-orders@test.com', password: 'manager-test-123' });
+    managerToken = loginManager.body.token;
   }, 30000);
 
   // ─── TEARDOWN ────────────────────────────────────────────────
   afterAll(async () => {
+    if (!prisma) {
+      if (app) await app.close();
+      return;
+    }
+
     // Limpiar órdenes y dependencias
     for (const orderId of createdOrderIds) {
       await prisma.stockMovement.deleteMany({ where: { productId: { in: [testProduct1Id, testProduct2Id] } } });
@@ -118,8 +123,8 @@ describe('Orders Lifecycle (e2e)', () => {
     await prisma.inventory.deleteMany({ where: { branchId: testBranchId } });
     await prisma.product.deleteMany({ where: { id: { in: [testProduct1Id, testProduct2Id] } } });
     await prisma.category.deleteMany({ where: { id: testCategoryId } });
-    await prisma.refreshToken.deleteMany({ where: { userId: { in: [testCustomerId, testCashierId] } } });
-    await prisma.user.deleteMany({ where: { id: { in: [testCustomerId, testCashierId] } } });
+    await prisma.refreshToken.deleteMany({ where: { userId: { in: [testCustomerId, testManagerId] } } });
+    await prisma.user.deleteMany({ where: { id: { in: [testCustomerId, testManagerId] } } });
     await prisma.branch.deleteMany({ where: { id: testBranchId } });
     await app.close();
   }, 15000);
@@ -171,10 +176,10 @@ describe('Orders Lifecycle (e2e)', () => {
         .expect(201);
       createdOrderIds.push(reserveRes.body.id);
 
-      // Confirmar con rol CASHIER
+      // Confirmar con rol MANAGER
       const res = await request(app.getHttpServer())
         .post(`/orders/${reserveRes.body.id}/confirm`)
-        .set('Authorization', `Bearer ${cashierToken}`)
+        .set('Authorization', `Bearer ${managerToken}`)
         .expect(201);
 
       expect(res.body.status).toBe('CONFIRMED');
@@ -193,7 +198,7 @@ describe('Orders Lifecycle (e2e)', () => {
 
       await request(app.getHttpServer())
         .post(`/orders/${reserveRes.body.id}/confirm`)
-        .set('Authorization', `Bearer ${cashierToken}`)
+        .set('Authorization', `Bearer ${managerToken}`)
         .expect(201);
 
       // Estado del inventario ANTES del pickup
@@ -202,7 +207,7 @@ describe('Orders Lifecycle (e2e)', () => {
       // Pickup
       const res = await request(app.getHttpServer())
         .post(`/orders/${reserveRes.body.id}/pickup`)
-        .set('Authorization', `Bearer ${cashierToken}`)
+        .set('Authorization', `Bearer ${managerToken}`)
         .expect(201);
       expect(res.body.ok).toBe(true);
 

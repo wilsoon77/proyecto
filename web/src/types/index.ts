@@ -89,5 +89,5 @@ export interface Order {
   total: number
   branchSlug?: string
   createdAt: string
-  paymentMethod?: string
+  paymentMethod?: 'EFECTIVO'
 }

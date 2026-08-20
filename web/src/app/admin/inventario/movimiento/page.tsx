@@ -31,7 +31,7 @@ interface Product {
   categorySlug?: string
   origin?: 'PRODUCIDO' | 'COMPRADO'
   tracksExpiration?: boolean
-  expirationAlertDays?: number
+  expirationAlertDays?: number[]
 }
 
 function getProductUnit(product?: Product | null): string {
@@ -184,10 +184,14 @@ function MovimientoForm() {
     currentProduct?.origin === 'COMPRADO' &&
     currentProduct?.tracksExpiration === true
 
+  const configuredReminderDays = currentProduct?.expirationAlertDays?.length
+    ? currentProduct.expirationAlertDays
+    : [3]
+
   const calculatedAlertDate = movementExpiresAt && currentProduct?.expirationAlertDays !== undefined
     ? (() => {
         const date = new Date(`${movementExpiresAt}T00:00:00Z`)
-        date.setUTCDate(date.getUTCDate() - Math.max(0, currentProduct.expirationAlertDays || 0))
+        date.setUTCDate(date.getUTCDate() - Math.max(...configuredReminderDays))
         return date.toISOString().slice(0, 10)
       })()
     : ""
@@ -668,7 +672,7 @@ function MovimientoForm() {
                         readOnly
                         className="w-full px-4 py-3 border border-border rounded-lg bg-muted text-muted-foreground"
                       />
-                      <p className="text-xs text-muted-foreground mt-1">Se calcula con {currentProduct?.expirationAlertDays ?? 3} día(s) de anticipación.</p>
+                      <p className="text-xs text-muted-foreground mt-1">Primera alerta con {Math.max(...configuredReminderDays)} día(s). También se generarán avisos con: {configuredReminderDays.join(', ')} día(s).</p>
                     </div>
                   </div>
                 </div>

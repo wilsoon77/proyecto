@@ -16,8 +16,6 @@ const PATH_NAMES: Record<string, string> = {
   sucursales: "Sucursales",
   usuarios: "Usuarios",
   historial: "Historial de Cambios",
-  empleado: "Empleado",
-  reportes: "Reportes",
   configuracion: "Configuración",
 }
 
@@ -59,7 +57,7 @@ function BreadcrumbList({ breadcrumbs, homeHref }: { breadcrumbs: BreadcrumbItem
 export function Breadcrumbs() {
   const pathname = usePathname()
 
-  if (pathname === "/" || pathname === "/admin" || pathname === "/empleado") {
+  if (pathname === "/" || pathname === "/admin") {
     return null
   }
 
@@ -87,7 +85,7 @@ export function Breadcrumbs() {
     return { label, href, isCurrent }
   })
 
-  return <BreadcrumbList breadcrumbs={breadcrumbs} homeHref={pathname.startsWith("/empleado") ? "/empleado" : "/admin"} />
+  return <BreadcrumbList breadcrumbs={breadcrumbs} homeHref="/admin" />
 }
 
 interface BreadcrumbsWithTitleProps {
@@ -97,7 +95,7 @@ interface BreadcrumbsWithTitleProps {
 export function BreadcrumbsWithTitle({ currentPageTitle }: BreadcrumbsWithTitleProps) {
   const pathname = usePathname()
 
-  if (pathname === "/" || pathname === "/admin" || pathname === "/empleado") {
+  if (pathname === "/" || pathname === "/admin") {
     return null
   }
 
@@ -127,5 +125,5 @@ export function BreadcrumbsWithTitle({ currentPageTitle }: BreadcrumbsWithTitleP
     return { label, href, isCurrent }
   })
 
-  return <BreadcrumbList breadcrumbs={breadcrumbs} homeHref={pathname.startsWith("/empleado") ? "/empleado" : "/admin"} />
+  return <BreadcrumbList breadcrumbs={breadcrumbs} homeHref="/admin" />
 }

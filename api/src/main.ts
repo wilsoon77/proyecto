@@ -58,7 +58,7 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ 
     whitelist: true, 
     transform: true,
-    forbidNonWhitelisted: false,
+    forbidNonWhitelisted: true,
   }));
   
   // Filtros de excepciones: primero Sentry (si está configurado), luego HTTP
@@ -73,16 +73,13 @@ async function bootstrap() {
   // Swagger: Activo en desarrollo y TEMPORALMENTE en producción para pruebas
   // ⚠️ IMPORTANTE: Deshabilitar en producción después de verificar (SWAGGER_ENABLED=false)
   const isProduction = process.env.NODE_ENV === 'production';
-  const swaggerEnabled = process.env.SWAGGER_ENABLED === 'true' || (!isProduction && process.env.SWAGGER_ENABLED !== 'false');
+  const swaggerEnabled = !isProduction && process.env.SWAGGER_ENABLED !== 'false';
   
   if (swaggerEnabled) {
     const config = createSwaggerConfig();
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('docs', app, document);
     console.log('📘 Swagger docs: /docs');
-    if (isProduction) {
-      console.warn('⚠️  Swagger ACTIVO en PRODUCCIÓN (temporal para pruebas). Deshabilita con SWAGGER_ENABLED=false después de verificar.');
-    }
   } else {
     console.log('📘 Swagger deshabilitado');
   }

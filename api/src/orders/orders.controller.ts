@@ -32,7 +32,7 @@ import { AuditService } from '../audit/audit.service.js';
 import { getClientIp } from '../common/utils/audit.util.js';
 import { BranchScopeService } from '../branch-scope/branch-scope.service.js';
 
-const ORDER_OPERATOR_ROLES = new Set(['MANAGER', 'CASHIER']);
+const ORDER_OPERATOR_ROLES = new Set(['MANAGER']);
 
 @Controller('orders')
 @ApiTags('orders')
@@ -122,7 +122,7 @@ export class OrdersController {
 
   @Post(':id/pickup')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN', 'MANAGER', 'CASHIER')
+  @Roles('ADMIN', 'MANAGER')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Confirmar recogida en sucursal' })
   async pickup(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
@@ -147,9 +147,9 @@ export class OrdersController {
 
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN', 'MANAGER', 'CASHIER')
+  @Roles('ADMIN', 'MANAGER')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Listar pedidos para retiro', description: 'ADMIN y MANAGER pueden consultar ambas sucursales; CASHIER queda limitado a su sucursal asignada.' })
+  @ApiOperation({ summary: 'Listar pedidos para retiro', description: 'ADMIN y MANAGER pueden consultar pedidos de ambas sucursales.' })
   @ApiQuery({ name: 'branchSlug', required: false, description: 'Slug de sucursal; MANAGER puede elegir cualquiera de las dos sucursales' })
   @ApiQuery({ name: 'status', required: false, enum: ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'PICKED_UP', 'CANCELLED'] })
   @ApiQuery({ name: 'page', required: false })
@@ -226,7 +226,7 @@ export class OrdersController {
 
   @Post(':id/confirm')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN', 'MANAGER', 'CASHIER')
+  @Roles('ADMIN', 'MANAGER')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Confirmar pedido' })
   async confirmOrder(@Req() req: any, @Param('id', ParseIntPipe) id: number) {

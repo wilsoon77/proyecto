@@ -107,6 +107,6 @@ export class BranchesController {
   @ApiNotFoundResponse({ description: 'Sucursal no encontrada' })
   @ApiBadRequestResponse({ description: 'La sucursal tiene productos en inventario' })
   remove(@Param('id', ParseIntPipe) id: number) {
-    return this.branchesService.remove(id);
+    return this.branchesService.deactivate(id);
   }
 }

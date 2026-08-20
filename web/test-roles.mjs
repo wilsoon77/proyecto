@@ -13,7 +13,6 @@ const ROLES = {
   admin: { email: 'admin@panaderia.com', pass: 'admin123', label: 'ADMIN' },
   manager: { email: 'gerente@panaderia.com', pass: 'manager123', label: 'MANAGER' },
   baker: { email: 'panadero@panaderia.com', pass: 'panadero123', label: 'BAKER' },
-  cashier: { email: 'cajero@panaderia.com', pass: 'cajero123', label: 'CASHIER' },
   customer: { email: 'cliente@panaderia.com', pass: 'cliente123', label: 'CUSTOMER' }
 };
 
@@ -93,11 +92,11 @@ async function testRole(roleName, creds) {
       await page.screenshot({ path: path.join(outputDir, `${roleName}_6_admin_attempt.png`) });
       
     } else {
-      // Roles operativos (ADMIN, MANAGER, BAKER, CASHIER)
+      // Roles operativos (ADMIN, MANAGER, BAKER)
       console.log(`[${creds.label}] Navegando al Panel Admin / Panel de Trabajo (/admin)...`);
       await page.goto(`${url}/admin`, { waitUntil: 'networkidle' }).catch(() => {});
       await page.waitForTimeout(3000);
-      await page.screenshot({ path: path.join(outputDir, `${roleName}_5_admin_dashboard.png`) });
+      await page.screenshot({ path: path.join(outputDir, `${roleName}_5_operacion.png`) });
       
       // Probar rutas específicas de su rol
       if (creds.label === 'ADMIN') {
@@ -141,20 +140,6 @@ async function testRole(roleName, creds) {
         await page.screenshot({ path: path.join(outputDir, `${roleName}_7_usuarios_attempt.png`) });
       }
       
-      if (creds.label === 'CASHIER') {
-        // POS
-        console.log(`[${creds.label}] Probando acceso al POS (/admin/pos)...`);
-        await page.goto(`${url}/admin/pos`, { waitUntil: 'networkidle' }).catch(() => {});
-        await page.waitForTimeout(2000);
-        await page.screenshot({ path: path.join(outputDir, `${roleName}_6_pos.png`) });
-        
-        // Debería tener bloqueado Usuarios
-        console.log(`[${creds.label}] Intentando entrar a Usuarios (debería denegarse)...`);
-        await page.goto(`${url}/admin/usuarios`, { waitUntil: 'networkidle' }).catch(() => {});
-        await page.waitForTimeout(2000);
-        console.log(`[${creds.label}] URL al intentar entrar a Usuarios: ${page.url()}`);
-        await page.screenshot({ path: path.join(outputDir, `${roleName}_7_usuarios_attempt.png`) });
-      }
     }
     
     // Log out

@@ -13,35 +13,35 @@ En `Productos > Nuevo producto` o al editar:
 
 1. Seleccionar `Producido` o `Comprado`.
 2. Si es `Comprado`, activar `Controlar fecha de caducidad` cuando corresponda.
-3. Al activar el control, indicar la fecha de vencimiento del primer lote y cuántos días antes se debe avisar.
+3. Al activar el control, indicar la fecha de vencimiento del primer lote y uno o varios días de anticipación separados por comas (por ejemplo, `30, 15, 3`).
 4. Al guardar, el sistema abre directamente `Inventario > Registrar movimiento > Compra` con el producto y la fecha precargados. Solo se debe seleccionar la sucursal e ingresar la cantidad para crear el lote.
 
 La fecha se guarda en el lote inicial, no en la ficha del producto, porque cada compra posterior puede tener una fecha de vencimiento diferente.
 
-La fecha de alerta se calcula automáticamente para cada lote: `fecha de caducidad - días configurados`.
+Para cada lote se calculan los recordatorios automáticamente: `fecha de caducidad - cada día configurado`. `InventoryLot.alertAt` conserva la primera fecha que se mostrará como referencia; las demás fechas se evalúan en el escáner diario.
 
 ## Registro operativo
 
 - Producción de pan: se utiliza el flujo existente de producción; no aparece ningún campo de caducidad.
 - Compra de producto comprado con control activo: desde el alta del producto se puede continuar directamente a `Inventario > Registrar movimiento > Compra`; la fecha del primer lote queda precargada y se muestra la fecha de alerta calculada.
-- Venta/POS y pedidos: consumen lotes vigentes en orden FEFO (primero el que caduca antes).
+- Retiro de pedidos y movimientos `VENTA`: consumen lotes vigentes en orden FEFO (primero el que caduca antes).
 - Merma: también puede retirar lotes vencidos para que el inventario no quede bloqueado.
 - Transferencias: conservan la fecha de caducidad del lote entre sucursales.
 
 ## Alertas y consulta
 
-La tarea diaria revisa los lotes con existencia a las 07:00 usando `STORE_TIMEZONE` y genera una alerta por lote cuando entra en el período configurado o ya está vencido. También se puede ejecutar `Revisar alertas` desde `Inventario > Caducidades`.
+La tarea diaria revisa los lotes con existencia a las 07:00 usando `STORE_TIMEZONE` y genera una alerta por cada recordatorio configurado cuando llega su fecha. Los lotes vencidos no generan una alerta nueva ni se eliminan: permanecen visibles para registrar una `MERMA`. También se puede ejecutar `Revisar alertas` desde `Inventario > Caducidades`.
 
 La pantalla permite filtrar por sucursal, vencidos, próximos a vencer y lotes sin fecha. Los productos producidos no se muestran porque no requieren caducidad.
 
 ## Persistencia y migración
 
-La migración `20260804120000_add_product_expiration_lots` agrega:
+Las migraciones `20260804120000_add_product_expiration_lots` y `20260817110000_cash_only_and_multiple_expiration_reminders` agregan:
 
-- configuración de caducidad en `Product`;
+- configuración de caducidad en `Product.expirationAlertDays` como lista de días;
 - `InventoryLot` para conservar entradas y fechas;
 - `InventoryLotConsumption` para auditar consumos;
-- el tipo de alerta `PRODUCT_EXPIRY`.
+- el tipo de alerta `PRODUCT_EXPIRY` y eliminan el estado legado `PRODUCT_LOW` junto con configuraciones de notificación fuera de las dos reglas vigentes.
 
 El inventario positivo existente se conserva como lote `APERTURA` sin inventar fechas. Si posteriormente se activa el control para un producto comprado existente, se debe registrar una compra con fecha para las nuevas entradas.
 
@@ -53,4 +53,4 @@ npm run prisma:deploy
 npm run seed
 ```
 
-`seed` agrega las configuraciones `inventory.expiration_warning` e `inventory.expired_stock`. Debe ejecutarse una vez en el entorno que ya tenga la migración aplicada para que las notificaciones queden habilitadas.
+`seed` conserva únicamente las configuraciones `inventory.raw_material_low` e `inventory.expiration_warning`. Debe ejecutarse una vez en el entorno que ya tenga las migraciones aplicadas para que las notificaciones queden habilitadas.

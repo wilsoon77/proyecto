@@ -189,7 +189,7 @@ export function Navbar() {
                   <DropdownMenuItem asChild>
                     <Link href={ROUTES.orders}>Mis pedidos</Link>
                   </DropdownMenuItem>
-                  {(['ADMIN', 'MANAGER', 'BAKER', 'CASHIER'].includes(user?.role || '')) && (
+                  {(['ADMIN', 'MANAGER', 'BAKER'].includes(user?.role || '')) && (
                     <>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem asChild>
@@ -350,7 +350,7 @@ export function Navbar() {
                       <ChevronRight className="h-4 w-4 text-gray-400" />
                     </Link>
                   </li>
-                  {(['ADMIN', 'MANAGER', 'BAKER', 'CASHIER'].includes(user?.role || '')) && (
+                  {(['ADMIN', 'MANAGER', 'BAKER'].includes(user?.role || '')) && (
                     <li>
                       <Link
                         href="/admin"

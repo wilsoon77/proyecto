@@ -15,7 +15,6 @@ const ROLE_LABELS: Record<UserRole, string> = {
   ADMIN: "Admin",
   MANAGER: "Gerente",
   BAKER: "Panadero",
-  CASHIER: "Cajero",
   CUSTOMER: "Cliente",
 }
 
@@ -23,7 +22,6 @@ const ROLE_COLORS: Record<UserRole, { bg: string; text: string; icon: React.Elem
   ADMIN: { bg: "bg-chart-5/10", text: "text-chart-5", icon: Shield },
   MANAGER: { bg: "bg-chart-3/10", text: "text-chart-3", icon: Shield },
   BAKER: { bg: "bg-primary/10", text: "text-primary", icon: Shield },
-  CASHIER: { bg: "bg-success/10", text: "text-success", icon: Shield },
   CUSTOMER: { bg: "bg-muted", text: "text-foreground", icon: Shield },
 }
 
@@ -191,7 +189,6 @@ export default function UsuariosPage() {
             <option value="CUSTOMER">Clientes</option>
             <option value="MANAGER">Gerentes</option>
             <option value="BAKER">Panaderos</option>
-            <option value="CASHIER">Cajeros</option>
             <option value="ADMIN">Administradores</option>
           </select>
           
@@ -220,7 +217,7 @@ export default function UsuariosPage() {
         </div>
         <div className="bg-card rounded-lg p-4 border border-border">
           <p className="text-sm text-muted-foreground">Empleados</p>
-          <p className="text-2xl font-bold text-chart-3">{users.filter(u => ['MANAGER', 'BAKER', 'CASHIER'].includes(u.role)).length}</p>
+          <p className="text-2xl font-bold text-chart-3">{users.filter(u => ['MANAGER', 'BAKER'].includes(u.role)).length}</p>
         </div>
         <div className="bg-card rounded-lg p-4 border border-border">
           <p className="text-sm text-muted-foreground">Admins</p>

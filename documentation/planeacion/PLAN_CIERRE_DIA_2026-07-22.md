@@ -99,8 +99,8 @@ api/src/daily-close/
 
 | Método | Ruta | Rol | Descripción |
 |---|---|---|---|
-| `GET` | `/daily-close/preview?branchId=&date=` | CASHIER+ | Devuelve la lista de productos con `Inventory.quantity > 0` de la sucursal, para prellenar el formulario de conteo |
-| `POST` | `/daily-close` | CASHIER+ | Ejecuta el cierre (transaccional) |
+| `GET` | `/daily-close/preview?branchId=&date=` | MANAGER+ | Devuelve la lista de productos con `Inventory.quantity > 0` de la sucursal, para prellenar el formulario de conteo |
+| `POST` | `/daily-close` | MANAGER+ | Ejecuta el cierre (transaccional) |
 | `GET` | `/daily-close?branchId=&from=&to=` | MANAGER+ | Historial de cierres con totales (vendido, merma, sobrante por día) |
 | `GET` | `/daily-close/:id` | MANAGER+ | Detalle de un cierre (items, quién lo hizo, movimientos generados) |
 
@@ -152,7 +152,7 @@ Dentro de un `prisma.$transaction`:
 5. Crear `DailyClose` + `DailyCloseItem[]`.
 6. Registrar en auditoría (mismo patrón que producción).
 
-**Validación de scope:** el usuario CASHIER solo puede cerrar su propia sucursal (usar el mismo patrón de scope por sucursal identificado en el análisis anterior).
+**Validación de scope:** solo `ADMIN` y `MANAGER` pueden ejecutar el cierre. `MANAGER` puede seleccionar cualquiera de las dos sucursales; `ADMIN` conserva alcance global.
 
 ### 4.4 Respuesta del endpoint
 

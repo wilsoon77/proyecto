@@ -48,7 +48,7 @@ function formatDate(value: string) {
   })
 }
 
-export default function AdminDashboardPage() {
+export default function AdminOperationPage() {
   const { user } = useAuth()
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [rawMaterials, setRawMaterials] = useState<RawMaterialInventory[]>([])

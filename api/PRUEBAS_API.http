@@ -21,7 +21,6 @@
 @branchId = {{create-branch.response.body.id}}
 @productSlug = {{create-product.response.body.slug}}
 @userId = {{create-user.response.body.id}}
-@addressId = {{create-address.response.body.id}}
 @orderId = {{reserve-order.response.body.id}}
 
 ### ========================================
@@ -166,10 +165,9 @@ Content-Type: application/json
   "name": "Concha de Vainilla",
   "slug": "concha-vainilla",
   "description": "Pan dulce tradicional mexicano con cobertura de vainilla",
-  "price": 12.50,
-  "discountPct": 10,
+  "basePrice": 12.50,
   "isNew": true,
-  "categoryId": 1,
+  "categorySlug": "pan-dulce",
   "origin": "PRODUCIDO"
 }
 
@@ -185,8 +183,7 @@ Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
-  "price": 15.00,
-  "discountPct": 15
+  "basePrice": 15.00
 }
 
 ### 4.5 Desactivar producto (ADMIN)
@@ -294,8 +291,9 @@ Content-Type: application/json
   "password": "Empleado123!",
   "firstName": "María",
   "lastName": "González",
-  "phone": "+58 424-7777777",
-  "role": "EMPLOYEE"
+  "phone": "+502 5555-7777",
+  "role": "BAKER",
+  "branchId": {{branchId}}
 }
 
 ### 8.2 Listar todos los usuarios (ADMIN)
@@ -325,56 +323,13 @@ POST {{baseUrl}}/users/{{userId}}/reactivate
 Authorization: Bearer {{adminToken}}
 
 ### ========================================
-### 9. DIRECCIONES (Addresses)
+### 9. SALUD Y MÉTRICAS
 ### ========================================
 
-### 9.1 Crear dirección (usuario autenticado)
-# @name create-address
-POST {{baseUrl}}/addresses
-Authorization: Bearer {{customToken}}
-Content-Type: application/json
-
-{
-  "street": "Calle 5 #123",
-  "city": "Caracas",
-  "state": "Distrito Capital",
-  "zone": "Centro",
-  "reference": "Edificio azul, piso 3"
-}
-
-### 9.2 Listar mis direcciones (usuario normal ve solo las suyas)
-GET {{baseUrl}}/addresses
-Authorization: Bearer {{customToken}}
-
-### 9.3 Listar TODAS las direcciones (ADMIN ve todas)
-GET {{baseUrl}}/addresses
-Authorization: Bearer {{adminToken}}
-
-### 9.4 Ver dirección específica
-GET {{baseUrl}}/addresses/{{addressId}}
-Authorization: Bearer {{customToken}}
-
-### 9.5 Actualizar dirección
-PATCH {{baseUrl}}/addresses/{{addressId}}
-Authorization: Bearer {{customToken}}
-Content-Type: application/json
-
-{
-  "reference": "Edificio azul, piso 4, apartamento 4B"
-}
-
-### 9.6 Eliminar dirección (solo si no tiene pedidos)
-DELETE {{baseUrl}}/addresses/{{addressId}}
-Authorization: Bearer {{customToken}}
-
-### ========================================
-### 10. SALUD Y MÉTRICAS
-### ========================================
-
-### 10.1 Health check (público)
+### 9.1 Health check (público)
 GET {{baseUrl}}/health
 
-### 10.2 Métricas (solo ADMIN)
+### 9.2 Métricas (solo ADMIN)
 GET {{baseUrl}}/metrics
 Authorization: Bearer {{adminToken}}
 
@@ -390,8 +345,7 @@ Authorization: Bearer {{adminToken}}
 ###    e) Agregar stock (6.1)
 ###    f) Registrar cliente (1.1)
 ###    g) Login cliente (1.3)
-###    h) Crear dirección (9.1)
-###    i) Reservar orden (7.1)
+###    h) Reservar orden (7.1)
 ###
 ### 2. CREAR USUARIO ADMIN MANUALMENTE:
 ###    - Usa Prisma Studio: npm run prisma:studio

@@ -22,7 +22,7 @@ Mostrar claramente al lado del input de cantidad la unidad de medida del product
 Añadir la opción de registrar un movimiento y continuar ingresando otro (ej. mediante un botón "Registrar y agregar otro"), limpiando los campos del producto y cantidad, pero manteniendo la sucursal y el tipo de movimiento seleccionados para evitar tener que salir y volver a entrar al módulo.
 
 ### R5. Verificación de Integridad con Playwright
-Actualizar e integrar las nuevas pantallas y elementos en el script de pruebas automatizadas [test-integration-roles.mjs](file:///c:/Users/wilso/Documents/FrameworksrProjects/React/proyecto-panaderia/web/test-integration-roles.mjs). Ejecutar el script completo para validar que no se rompan las interfaces de ningún rol (BAKER, CASHIER, MANAGER, ADMIN).
+Actualizar e integrar las nuevas pantallas y elementos en el script de pruebas automatizadas [test-integration-roles.mjs](file:///c:/Users/wilso/Documents/FrameworksrProjects/React/proyecto-panaderia/web/test-integration-roles.mjs). Ejecutar el script completo para validar que no se rompan las interfaces de ningún rol operativo (BAKER, MANAGER, ADMIN).
 
 ## Acceptance Criteria
 

@@ -1,5 +1,7 @@
 # Guia de Despliegue a Produccion
 
+> **Alcance vigente:** catálogo/carrito/retiro, inventario, producción, cierres diarios, dos alertas y Telegram de consulta. Después del despliegue se deben aplicar todas las migraciones Prisma, incluida `20260817110000_cash_only_and_multiple_expiration_reminders`; `PaymentMethod` solo acepta `EFECTIVO`.
+
 Este documento describe cómo desplegar el proyecto de Panadería usando:
 - **Frontend (Next.js)**: Vercel
 - **Backend (NestJS)**: Render
@@ -108,7 +110,7 @@ La migración `20260811110000_add_product_presentations` crea el modelo de prese
 
 Después de aplicar la migración, verifica en el panel de productos que las presentaciones y sus precios sean correctos. Los precios pueden cambiarse desde **Administración → Productos → Editar → Presentaciones** sin modificar el inventario.
 
-El seed es opcional y restablece los precios iniciales del Pan Francés si se ejecuta nuevamente. Consulta [`documentation/PRESENTACIONES_PRODUCTO.md`](documentation/PRESENTACIONES_PRODUCTO.md) para el flujo completo y las reglas de compatibilidad.
+El seed es opcional y restablece los precios iniciales del Pan Francés si se ejecuta nuevamente. Consulta [`documentation/planeacion/PRESENTACIONES_PRODUCTO.md`](documentation/planeacion/PRESENTACIONES_PRODUCTO.md) para el flujo completo y las reglas de compatibilidad.
 
 ---
 

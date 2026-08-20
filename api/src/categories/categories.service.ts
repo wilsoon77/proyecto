@@ -8,9 +8,10 @@ export class CategoriesService {
 
   async findAll() {
     const categories = await this.prisma.category.findMany({
+      where: { isActive: true },
       include: {
         _count: {
-          select: { products: true },
+          select: { products: { where: { isActive: true } } },
         },
       },
       orderBy: { name: 'asc' },
@@ -21,6 +22,7 @@ export class CategoriesService {
       name: cat.name,
       slug: cat.slug,
       description: cat.description,
+      isActive: cat.isActive,
       productCount: cat._count.products,
     }));
   }
@@ -30,12 +32,12 @@ export class CategoriesService {
       where: { slug },
       include: {
         _count: {
-          select: { products: true },
+          select: { products: { where: { isActive: true } } },
         },
       },
     });
 
-    if (!category) {
+    if (!category || !category.isActive) {
       throw new NotFoundException('Categoría no encontrada');
     }
 
@@ -44,6 +46,7 @@ export class CategoriesService {
       name: category.name,
       slug: category.slug,
       description: category.description,
+      isActive: category.isActive,
       productCount: category._count.products,
     };
   }
@@ -95,6 +98,7 @@ export class CategoriesService {
         name: data.name,
         slug: data.slug,
         description: data.description,
+        isActive: data.isActive,
       },
     });
 
@@ -122,10 +126,16 @@ export class CategoriesService {
       );
     }
 
-    await this.prisma.category.delete({
-      where: { id: category.id },
-    });
+    return this.deactivate(slug);
+  }
 
-    return { deleted: true, slug };
+  async deactivate(slug: string) {
+    const category = await this.prisma.category.findUnique({ where: { slug } });
+    if (!category) throw new NotFoundException('Categoría no encontrada');
+    const deactivated = await this.prisma.category.update({
+      where: { id: category.id },
+      data: { isActive: false },
+    });
+    return { deleted: true, deactivated: true, slug: deactivated.slug, isActive: deactivated.isActive };
   }
 }

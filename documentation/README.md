@@ -1,185 +1,33 @@
-# INDICE DE DOCUMENTACION - Panaderia Svetlana Smart System
+# Índice de Documentación - Svetlana Smart System
 
-## Guia de Navegacion
+Esta carpeta contiene toda la documentación técnica, de diseño y de planificación del proyecto **Svetlana Smart System**. Se ha estructurado en las siguientes categorías para facilitar su consulta y mantenimiento.
 
-Bienvenido a la documentación completa del proyecto **Panaderia Svetlana Smart System**. Esta carpeta contiene la planificación técnica, diseños y documentación funcional.
+> **Fuente de verdad vigente:** el alcance actual es catálogo con carrito y retiro en sucursal, inventario, materias primas, recetas, producción, cierres diarios y únicamente las alertas de materia prima baja/caducidad próxima. Swagger, `api/prisma/schema.prisma`, `api/ANALISIS_ENDPOINTS.md` y `api/README.md` tienen prioridad sobre documentos históricos.
 
-> **Nota:** La fuente de verdad técnica del proyecto es el código. Los documentos de planificación original (diseño de BD, pantallas, casos de uso, estructura) reflejan el diseño inicial y han sido parcialmente implementados/modificados. Consultar siempre `api/prisma/schema.prisma` para el schema real de la BD.
+## 📂 Archivos Iniciales (`/archivos_iniciales`)
+Contiene los documentos fundamentales de diseño, arquitectura y estructura inicial del sistema.
 
----
+* [1_DISEÑO_BASE_DATOS.md](./archivos_iniciales/1_DISEÑO_BASE_DATOS.md) - Esquema y diseño de la base de datos.
+* [2_DISEÑO_PANTALLAS.md](./archivos_iniciales/2_DISEÑO_PANTALLAS.md) - Especificaciones de diseño de interfaces.
+* [3_CASOS_DE_USO.md](./archivos_iniciales/3_CASOS_DE_USO.md) - Descripción de los casos de uso del sistema.
+* [4_ESTRUCTURA_PROYECTO.md](./archivos_iniciales/4_ESTRUCTURA_PROYECTO.md) - Arquitectura y estructura de directorios del proyecto.
+* [5_MANUAL_DESARROLLO_WEB.md](./archivos_iniciales/5_MANUAL_DESARROLLO_WEB.md) - Guías y estándares para el desarrollo frontend y backend.
+* [DOCUMENTACION_VISUAL.md](./archivos_iniciales/DOCUMENTACION_VISUAL.md) - Referencias a capturas y elementos visuales.
 
-## Documentos Disponibles
+## 📂 Planificación (`/planeacion`)
+Incluye todos los documentos relacionados con la gestión de tareas, control de procesos y nuevas funcionalidades planificadas.
 
-### **1. Diseno de Base de Datos**
-**Archivo:** `1_DISEÑO_BASE_DATOS.md`
+* [PLANIFICACION_SPRINTS_JIRA.md](./planeacion/PLANIFICACION_SPRINTS_JIRA.md) - Plan inicial e histórico de sprints; contiene una nota de alcance actualizado.
+* [PLAN_BOT_TELEGRAM.md](./planeacion/PLAN_BOT_TELEGRAM.md) - Especificaciones para la integración del bot de Telegram.
+* [PLAN_CIERRE_DIA_2026-07-22.md](./planeacion/PLAN_CIERRE_DIA_2026-07-22.md) - Procedimientos y plan para el proceso de cierre de caja/día.
+* [ANALITICA_PREDICCIONES.md](./planeacion/ANALITICA_PREDICCIONES.md) - Documento histórico de un módulo retirado; no es parte del alcance vigente.
+* [CONTROL_CADUCIDAD_Y_ORIGEN_PRODUCTOS.md](./planeacion/CONTROL_CADUCIDAD_Y_ORIGEN_PRODUCTOS.md) - Lógica para el control de inventario y caducidad.
+* [PRESENTACIONES_PRODUCTO.md](./planeacion/PRESENTACIONES_PRODUCTO.md) - Especificaciones sobre las presentaciones de productos (combos, packs, etc.).
 
-**Contenido:**
-- Diseño SQL original (planificación inicial, Noviembre 2025)
-- Incluye disclaimer de rediseño (Marzo 2026)
-- El diseño actual con 16 modelos Prisma está en `api/prisma/schema.prisma`
+## 📂 Informes y Auditorías (`/informe_auditorias`)
+Almacena los reportes de auditorías técnicas, revisiones de seguridad y evaluaciones de arquitectura.
 
-**Estado:** Documento de referencia histórica. El schema Prisma es la fuente de verdad.
-
----
-
-### **2. Diseno de Pantallas**
-**Archivo:** `2_DISEÑO_PANTALLAS.md`
-
-**Contenido:**
-- Sistema de diseño (colores, tipografía)
-- Wireframes ASCII de pantallas principales
-- Componentes reutilizables propuestos
-- Responsive breakpoints
-
-**Estado:** Referencia de diseño. Muchas pantallas ya implementadas en el frontend.
-
----
-
-### **3. Pruebas de Seguridad**
-**Archivo:** `3_PRUEBAS_SEGURIDAD.md`
-
-**Contenido:**
-- Documentación de pruebas realizadas (22/11/2025)
-- Tests de autenticación, rate limiting, tokens
-- Configuración de Helmet, CORS, Throttler
-
-**Estado:** Implementado. Las configuraciones de seguridad están activas en producción.
-
----
-
-### **4. Casos de Uso**
-**Archivo:** `3_CASOS_DE_USO.md`
-
-**Contenido:**
-- 31 Casos de uso
-- 3 Módulos: Clientes, Admin, IA
-- Flujos principales y alternativos
-- 33 Reglas de negocio
-
-**Estado:** Referencia funcional. Parcialmente implementado en el sistema actual.
-
----
-
-### **5. Estructura del Proyecto**
-**Archivo:** `4_ESTRUCTURA_PROYECTO.md`
-
-**Contenido:**
-- Arquitectura propuesta originalmente (apps/, packages/, infrastructure/)
-- La estructura real del proyecto es diferente — ver `README.md` de `api/` y `web/`
-
-**Estado:** Documento de referencia histórica. La estructura real es:
-```
-proyecto-panaderia/
-├── api/          # NestJS Backend (no apps/api/)
-├── web/          # Next.js Frontend (no apps/web/)
-└── documentation/
-```
-
----
-
-### **6. Manual de Desarrollo Web**
-**Archivo:** `5_MANUAL_DESARROLLO_WEB.md`
-
-**Contenido:**
-- Estado del proyecto web y tecnologías
-- Roadmap de desarrollo
-
-**Estado:** Desactualizado desde Noviembre 2025. Ver `web/README.md` para estado actual.
-
----
-
-### **7. Presentaciones comerciales de productos**
-**Archivo:** `PRESENTACIONES_PRODUCTO.md`
-
-**Contenido:**
-- Modelo `ProductPresentation` y relación con el producto base
-- Configuración del Pan Francés: tira completa y media tira
-- Precios dinámicos, catálogo, pedidos, inventario, cierre diario y producción
-- Migración, seed y despliegue en Supabase
-
-**Estado:** Implementado. Este es el documento funcional vigente para presentaciones comerciales.
-
----
-
-## Documentos en la Raíz
-
-### **context.md** (Recomendado)
-Contexto arquitectónico actualizado del proyecto. **Punto de partida recomendado.**
-- Reglas de negocio clave
-- Lógica de producción (amasijos/latas)
-- Estado actual del proyecto (Agosto 2026)
-
-### **README.md**
-README principal con stack, configuración y desarrollo local.
-
-### **GUIA_DESPLIEGUE.md**
-Guía paso a paso de despliegue: Vercel (Web), Render (API), Supabase (DB), Appwrite (Storage).
-
-### **PLANIFICACION_PROYECTO.md**
-Planificación original del proyecto (alcance amplio). Algunas tecnologías propuestas no se implementaron (MongoDB, Redis, React Native, IA, etc.).
-
-### **PLAN_DE_INICIO.md**
-Guía original de inicio del proyecto. La mayoría de los pasos ya fueron completados.
-
-### **TESTING.md**
-Guía rápida de pruebas de seguridad.
-
----
-
-## Estadísticas del Proyecto (Agosto 2026)
-
-### **Base de Datos (Prisma)**
-- **Modelos:** 33
-- **Enums:** 7
-- **Migraciones:** 22
-- **Base:** PostgreSQL en Supabase
-
-### **Backend (NestJS)**
-- **Módulos:** 19
-- **Endpoints:** 44+
-- **Seguridad:** Helmet, CORS, Rate Limiting, JWT, bcrypt, hCaptcha
-
-### **Frontend (Next.js 16)**
-- **Páginas/Rutas:** 22+
-- **Componentes UI:** 11
-- **Componentes Layout:** 3
-- **Hooks:** 5
-- **Contexts:** 3
-- **Servicios API:** 15
-
----
-
-## Cómo Usar Esta Documentación
-
-### **Para entender el proyecto:**
-1. Lee `context.md` (reglas de negocio y estado actual)
-2. Revisa `README.md` (stack y setup)
-
-### **Para implementar una feature:**
-1. Consulta `context.md` para reglas de negocio
-2. Revisa el schema en `api/prisma/schema.prisma`
-3. Lee los casos de uso relevantes en `3_CASOS_DE_USO.md`
-
-### **Para desplegar:**
-1. Sigue `GUIA_DESPLIEGUE.md`
-
----
-
-## Referencia Rápida
-
-| Necesito... | Abro... |
-|-------------|---------|
-| Entender el proyecto | `context.md` |
-| Configurar desarrollo local | `README.md` (raíz) |
-| Ver el schema de BD | `api/prisma/schema.prisma` |
-| Configurar presentaciones y precios | `documentation/PRESENTACIONES_PRODUCTO.md` |
-| Entender un flujo de usuario | `documentation/3_CASOS_DE_USO.md` |
-| Desplegar a producción | `GUIA_DESPLIEGUE.md` |
-| Ejecutar tests de seguridad | `TESTING.md` |
-| Ver diseño original de pantallas | `documentation/2_DISEÑO_PANTALLAS.md` |
-
----
-
-**Nota:** Esta documentación es un documento vivo. Los documentos de planificación (1-5) reflejan el diseño original; el código es la fuente de verdad.
-
-**Última actualización:** 11 de Agosto de 2026
+* [AUDITORIA_MODELO_ENTIDAD_RELACION.md](./informe_auditorias/AUDITORIA_MODELO_ENTIDAD_RELACION.md) - Revisión y sugerencias sobre el modelo ER.
+* [AUDITORIA_TECNICA_2026-07-17.md](./informe_auditorias/AUDITORIA_TECNICA_2026-07-17.md) - Auditoría técnica del estado del proyecto.
+* [AUDITORIA_TECNICA_2026-08-11.md](./informe_auditorias/AUDITORIA_TECNICA_2026-08-11.md) - Auditoría técnica reciente.
+* [3_PRUEBAS_SEGURIDAD.md](./informe_auditorias/3_PRUEBAS_SEGURIDAD.md) - Casos de prueba y validaciones de seguridad.

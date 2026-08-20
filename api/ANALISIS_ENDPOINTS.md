@@ -26,7 +26,8 @@ No se exponen módulos de POS, dashboard predictivo, analíticas de demanda, dir
 ### Catálogo
 
 - CRUD administrativo de `/products` y `/categories`.
-- `GET /products` y `GET /products/:slug` para el catálogo.
+- `GET /products` y `GET /products/:slug` para el catálogo público; siempre filtran productos/categorías activas.
+- `GET /products/admin` para consultar activos y ocultos con sesión (`ADMIN/MANAGER`).
 - `isActive=false` oculta el producto del e-commerce, pero no lo elimina del inventario ni del cierre diario.
 - Las presentaciones comerciales convierten cantidades de venta a la unidad base.
 
@@ -50,7 +51,7 @@ Estados válidos: `PENDING`, `CONFIRMED`, `PREPARING`, `READY`, `PICKED_UP` y `C
 - CRUD de `/recipes`, `/production` y `/raw-materials`
 - `POST /raw-materials/purchase` para compras de materia prima
 
-La caducidad solo aplica a lotes de productos de origen `COMPRADO` con control de caducidad activo. Los lotes vencidos permanecen visibles para registrar una `MERMA`; no desaparecen por una tarea automática.
+La caducidad solo aplica a lotes de productos de origen `COMPRADO` con control de caducidad activo. `Product.expirationAlertDays` admite varios días de anticipación; cada lote genera una alerta única por cada día configurado. Los lotes vencidos permanecen visibles para registrar una `MERMA`; no desaparecen por una tarea automática.
 
 ### Cierre diario
 
@@ -67,7 +68,9 @@ Las únicas configuraciones de notificación son:
 1. `inventory.raw_material_low`
 2. `inventory.expiration_warning`
 
-Los usuarios `MANAGER` reciben alertas de ambas sucursales. Los endpoints `/notifications` exponen el historial, configuración y pruebas de estas dos alertas. `/telegram` permite vincular el asistente para consultas operativas.
+Los usuarios `MANAGER` reciben alertas de ambas sucursales. Los endpoints `/notifications` exponen el historial, configuración y pruebas de estas dos alertas. `/telegram` permite vincular el asistente para consultar inventario, materias primas, producción y cierres del día; no consulta ventas/pedidos ni ejecuta cambios.
+
+Los pedidos se retiran en sucursal y el único método de pago soportado por `Order.paymentMethod` es `EFECTIVO`, cobrado al retirar.
 
 ## Roles y sucursales
 
@@ -76,7 +79,6 @@ Los usuarios `MANAGER` reciben alertas de ambas sucursales. Los endpoints `/noti
 | `ADMIN` | Acceso administrativo global |
 | `MANAGER` | Lectura y operación de ambas sucursales; puede transferir inventario entre ellas |
 | `BAKER` | Producción y operación de su sucursal asignada |
-| `CASHIER` | Pedidos para retiro, conteo y cierre de su sucursal |
 | `CUSTOMER` | Catálogo, carrito, reservas, pedidos y perfil |
 
 ## Generación y verificación

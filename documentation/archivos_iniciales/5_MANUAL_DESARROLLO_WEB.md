@@ -1,5 +1,7 @@
 # Manual de Desarrollo Web - Panaderia Svetlana
 
+> **Documento inicial/histórico:** las referencias a reportes amplios, POS, delivery o predicción no forman parte del alcance vigente. La UI actual usa el panel Operación con KPIs simples.
+
 ## Índice
 1. [Estado Actual del Proyecto](#estado-actual)
 2. [Tecnologías Implementadas](#tecnologias-implementadas)
@@ -362,7 +364,7 @@ Ver la estructura completa en `web/README.md`. Los directorios principales que y
 - [x] `/admin/ordenes` - Lista y gestión de pedidos
 
 #### 5.4 Gestión de Usuarios (Completado)
-- [x] `/admin/usuarios` - CRUD con roles (MANAGER, BAKER, CASHIER)
+- [x] `/admin/usuarios` - CRUD con roles (MANAGER, BAKER)
 
 #### 5.5 Gestión Multi-Sucursal (Completado)
 - [x] `/admin/sucursales` - Gestión de sucursales
@@ -372,13 +374,10 @@ Ver la estructura completa en `web/README.md`. Los directorios principales que y
 - [x] `/admin/historial` - Historial de auditoría
 - [x] `/admin/configuracion` - Configuración
 
-#### 5.6 Reportes y Analytics
-- [ ] `/admin/reportes` - Centro de reportes
-  - Ventas por período
-  - Productos más vendidos
-  - Clientes frecuentes
-  - Rendimiento por sucursal
-- [ ] Exportación a PDF/Excel
+#### 5.6 Reportes y Analytics (retirado del alcance)
+- La ruta `/admin/reportes` no existe en la implementación vigente.
+- El panel `/admin` se limita a **Operación**, con KPIs simples, actividad compacta y las dos alertas operativas.
+- No se implementan reportes de ventas, exportación PDF/Excel ni analítica predictiva.
 
 ---
 
@@ -395,7 +394,7 @@ Ver la estructura completa en `web/README.md`. Los directorios principales que y
 - [x] ToastContext (notificaciones)
 
 #### 6.3 Conexión con Backend (Completado)
-- [x] 15 servicios de API (auth, products, categories, branches, orders, addresses, users, inventory, production, audit, admin, transformers, types)
+- [x] Servicios de API por dominio (auth, products, categories, branches, orders, users, inventory, production, audit, notifications, Telegram, transformers y types)
 - [ ] WebSockets para tiempo real (pendiente)
 
 ---

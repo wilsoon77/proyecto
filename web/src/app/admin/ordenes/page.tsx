@@ -16,7 +16,7 @@ interface Order {
   subtotal: number
   discount: number
   total: number
-  paymentMethod?: string
+  paymentMethod?: 'EFECTIVO'
   customerNotes?: string
   branch?: { id: number; name: string; slug: string }
   createdAt: string

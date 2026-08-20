@@ -15,7 +15,7 @@ import { CaptchaService } from './captcha.service.js';
  * Este servicio orquesta los flujos de: register, login, refresh, logout, OAuth, perfil.
  * La lógica específica vive en:
  *  - TokenService: JWT + refresh tokens
- *  - PasswordService: hashing + reset + Supabase sync
+ *  - PasswordService: local fallback hashing and Supabase password changes
  *  - SessionService: login attempts + captcha + trusted devices
  */
 @Injectable()
@@ -29,6 +29,51 @@ export class AuthService {
     private readonly sessionService: SessionService,
     private readonly captcha: CaptchaService,
   ) {}
+
+  /**
+   * The Supabase trigger and the API can create the local profile concurrently.
+   * Poll the row with bounded backoff instead of relying on a fixed sleep.
+   */
+  private async syncRegisteredUser(
+    supabaseUserId: string,
+    input: { email: string; firstName: string; lastName: string; phone?: string },
+  ) {
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const existingById = await this.prisma.user.findUnique({ where: { id: supabaseUserId } });
+      if (existingById) {
+        return this.prisma.user.update({
+          where: { id: existingById.id },
+          data: { passwordHash: null, firstName: input.firstName, lastName: input.lastName, phone: input.phone },
+        });
+      }
+
+      try {
+        return await this.prisma.user.create({
+          data: {
+            id: supabaseUserId,
+            email: input.email,
+            passwordHash: null,
+            firstName: input.firstName,
+            lastName: input.lastName,
+            phone: input.phone,
+          },
+        });
+      } catch (error: any) {
+        if (error?.code !== 'P2002') throw error;
+        const existingByEmail = await this.prisma.user.findUnique({ where: { email: input.email } });
+        if (existingByEmail) {
+          if (existingByEmail.id !== supabaseUserId) {
+            throw new BadRequestException('El perfil local no coincide con la identidad de Supabase');
+          }
+          return existingByEmail;
+        }
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 100 * (attempt + 1)));
+    }
+
+    throw new BadRequestException('No se pudo sincronizar el perfil local de autenticación');
+  }
 
   // ─── Flujo de Registro ─────────────────────────────────────────
 
@@ -62,29 +107,12 @@ export class AuthService {
         throw new BadRequestException(authError.message);
       }
 
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      user = await this.prisma.user.findUnique({ where: { id: authUser.user.id } });
-
-      if (!user) {
-        const passwordHash = await this.passwordService.hash(input.password);
-        user = await this.prisma.user.create({
-          data: {
-            id: authUser.user.id,
-            email: input.email,
-            passwordHash,
-            firstName: input.firstName,
-            lastName: input.lastName,
-            phone: input.phone,
-          },
-        });
-      } else {
-        const passwordHash = await this.passwordService.hash(input.password);
-        user = await this.prisma.user.update({
-          where: { id: user.id },
-          data: { passwordHash },
-        });
-      }
+      user = await this.syncRegisteredUser(authUser.user.id, {
+        email: input.email,
+        firstName: input.firstName,
+        lastName: input.lastName,
+        phone: input.phone,
+      });
     } else {
       const passwordHash = await this.passwordService.hash(input.password);
       user = await this.prisma.user.create({
@@ -110,7 +138,7 @@ export class AuthService {
     input: { email: string; password: string; rememberMe?: boolean; deviceId?: string; captchaToken?: string },
     metadata?: { userAgent?: string; ip?: string },
   ) {
-    const user = await this.prisma.user.findUnique({ where: { email: input.email } });
+    let user = await this.prisma.user.findUnique({ where: { email: input.email } });
 
     const attemptData = {
       email: input.email,
@@ -128,15 +156,43 @@ export class AuthService {
       await this.captcha.verify(input.captchaToken, metadata?.ip);
     }
 
-    if (!user || !user.isActive) {
+    if (user && !user.isActive) {
       await this.sessionService.recordLoginAttempt(attemptData);
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
-    const ok = await this.passwordService.compare(input.password, user.passwordHash);
-    if (!ok) {
-      await this.sessionService.recordLoginAttempt(attemptData);
-      throw new UnauthorizedException('Credenciales inválidas');
+    if (this.supabase.isConfigured()) {
+      const { data: authData, error: authError } = await this.supabase.signInWithPassword(input.email, input.password);
+      if (authError || !authData.user) {
+        await this.sessionService.recordLoginAttempt(attemptData);
+        throw new UnauthorizedException('Credenciales inválidas');
+      }
+
+      if (!user) {
+        const metadata = authData.user.user_metadata ?? {};
+        user = await this.syncRegisteredUser(authData.user.id, {
+          email: authData.user.email ?? input.email,
+          firstName: String(metadata.first_name ?? metadata.full_name ?? ''),
+          lastName: String(metadata.last_name ?? ''),
+          phone: metadata.phone ? String(metadata.phone) : undefined,
+        });
+      }
+
+      if (!user || user.id !== authData.user.id || !user.isActive) {
+        await this.sessionService.recordLoginAttempt(attemptData);
+        throw new UnauthorizedException('Credenciales inválidas');
+      }
+    } else {
+      if (!user || !user.passwordHash) {
+        await this.sessionService.recordLoginAttempt(attemptData);
+        throw new UnauthorizedException('Credenciales inválidas');
+      }
+
+      const ok = await this.passwordService.compare(input.password, user.passwordHash);
+      if (!ok) {
+        await this.sessionService.recordLoginAttempt(attemptData);
+        throw new UnauthorizedException('Credenciales inválidas');
+      }
     }
 
     // Login exitoso
@@ -289,7 +345,7 @@ export class AuthService {
             data: {
               id: input.supabaseUserId,
               email: input.email,
-              passwordHash: '',
+              passwordHash: null,
               firstName: input.firstName,
               lastName: input.lastName || '',
               phone: null,

@@ -2,6 +2,8 @@
 
 Este documento contiene las capturas de pantalla de las interfaces y pantallas principales del sistema. Todas las capturas fueron tomadas de la versión desplegada en producción.
 
+> **Nota:** documento visual inicial. La vista vigente se llama **Operación** y cubre inventario, producción, cierres y las dos alertas operativas; las referencias históricas a POS o métricas amplias no representan el alcance actual.
+
 ---
 
 ## 1. Inicio (Landing Page)
@@ -31,7 +33,7 @@ Pantalla de autenticación por la cual los administradores o empleados ingresan 
 
 ![Pantalla de Login](./capturas/login.png)
 
-## 6. Panel de Administración (Dashboard)
-El centro de mando del sistema. Esta vista es exclusiva para personal autorizado y permite acceder al inventario, ventas, punto de venta (POS) y métricas importantes de la panadería.
+## 6. Panel de Administración (Operación)
+El centro de mando del sistema. Esta vista es exclusiva para personal autorizado y permite acceder al inventario, producción, cierres y alertas operativas de la panadería.
 
 ![Pantalla de Dashboard](./capturas/dashboard.png)

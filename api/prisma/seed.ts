@@ -9,7 +9,6 @@ async function main() {
   const adminPassword = await bcrypt.hash('admin123', 10);
   const managerPassword = await bcrypt.hash('manager123', 10);
   const bakerPassword = await bcrypt.hash('panadero123', 10);
-  const cashierPassword = await bcrypt.hash('cajero123', 10);
   const customerPassword = await bcrypt.hash('cliente123', 10);
 
   await prisma.user.upsert({
@@ -48,19 +47,6 @@ async function main() {
       firstName: 'Carlos',
       lastName: 'López',
       role: 'BAKER',
-      isActive: true,
-    },
-  });
-
-  await prisma.user.upsert({
-    where: { email: 'cajero@panaderia.com' },
-    update: {},
-    create: {
-      email: 'cajero@panaderia.com',
-      passwordHash: cashierPassword,
-      firstName: 'Ana',
-      lastName: 'Martínez',
-      role: 'CASHIER',
       isActive: true,
     },
   });
@@ -326,7 +312,7 @@ async function main() {
 
     // Asignar sucursal central a los empleados operativos
     await prisma.user.updateMany({
-      where: { email: { in: ['gerente@panaderia.com', 'panadero@panaderia.com', 'cajero@panaderia.com'] } },
+      where: { email: { in: ['gerente@panaderia.com', 'panadero@panaderia.com'] } },
       data: { branchId: central.id },
     });
   }
@@ -485,7 +471,7 @@ async function main() {
       category: 'INVENTORY',
       isEnabled: true,
       title: 'Producto próximo a caducar',
-      message: '{productName}: quedan {quantity} unidades y caduca el {expiresAt} en {branchName}',
+      message: '{productName}: quedan {quantity} unidades y caduca el {expiresAt} ({daysBefore} días de anticipación) en {branchName}',
       targetRoles: ['MANAGER', 'ADMIN'],
       thresholds: null,
       soundType: 'alerta',

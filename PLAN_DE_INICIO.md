@@ -1,5 +1,7 @@
 # PLAN DE INICIO - Por donde empezar
 
+> **Documento inicial/histórico:** conserva la ruta de arranque del proyecto. Para el alcance vigente, no se deben implementar POS, pagos en tienda, delivery, analítica predictiva ni recomendaciones; consultar `README.md`, `requerimientos.md`, `api/ANALISIS_ENDPOINTS.md` y Swagger. El flujo actual es catálogo/carrito/retiro, inventario, materias primas, recetas, producción, cierres, dos alertas y Telegram de consulta.
+
 ## ESTAS AQUI (Fase de Planificacion Completada)
 
 Ya tienes:
@@ -140,20 +142,19 @@ Ya tienes:
 - Backend: CRUD de pedidos
 - Frontend: Carrito de compras
 - Proceso de checkout
-- Selección de sucursal para recogida y método de pago (efectivo/transferencia)
+   - Selección de sucursal para recogida y pago únicamente en efectivo al retirar
 
 **Entregable:**
 - Flujo completo de compra (reserva)
 
 ---
 
-### **PASO 7: Features Avanzadas (2-3 semanas)**
+### **PASO 7: Operación y consultas (2-3 semanas)**
 
 **Qué hacer:**
-- Dashboard admin
-- Reportes y analítica
-- Notificaciones
-- IA básica (recomendaciones)
+- Panel Operación con KPIs simples y gráfica compacta
+- Alertas de materia prima baja y caducidad próxima
+- Asistente privado de Telegram en modo consulta
 
 ---
 
@@ -218,23 +219,7 @@ Definimos cómo se verá la aplicación (pantallas principales)
 
 ## Nota sobre IA
 
-> "Para la IA la podríamos cambiar después esa tecnología"
-
-**Perfecto!** La IA es modular, puede ser:
-
-**Opciones para IA (decides después):**
-
-1. Python + TensorFlow (lo mencionado)
-2. Python + Scikit-learn (más simple)
-3. Node.js + TensorFlow.js (todo en JavaScript)
-4. APIs de terceros:
-   - OpenAI API (GPT-4)
-   - Anthropic Claude
-   - Google Gemini
-   - Hugging Face
-
-**No te preocupes por esto ahora**, la IA la agregas en las últimas fases.  
-Primero tenemos que tener el sistema base funcionando.
+La IA vigente es un asistente privado de Telegram para consultas de inventario, materias primas, producción y cierres del día. No se implementan predicciones de demanda, recomendaciones comerciales ni chatbot público dentro del alcance actual.
 
 ---
 

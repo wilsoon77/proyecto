@@ -85,11 +85,11 @@ export class UsersService {
     }
 
     // Roles operativos que requieren sucursal
-    const branchRoles = ['MANAGER', 'BAKER', 'CASHIER'];
+    const branchRoles = ['MANAGER', 'BAKER'];
 
     // Validar que roles operativos deben tener branchId
     if (branchRoles.includes(createUserDto.role) && !createUserDto.branchId) {
-      throw new BadRequestException('Los roles operativos (MANAGER, BAKER, CASHIER) deben tener una sucursal asignada');
+      throw new BadRequestException('Los roles operativos (MANAGER, BAKER) deben tener una sucursal asignada');
     }
 
     // Si no es rol operativo, no debería tener branchId
@@ -169,11 +169,11 @@ export class UsersService {
     const finalBranchId = updateUserDto.branchId !== undefined ? updateUserDto.branchId : existingUser.branchId;
 
     // Roles operativos que requieren sucursal
-    const branchRoles = ['MANAGER', 'BAKER', 'CASHIER'];
+    const branchRoles = ['MANAGER', 'BAKER'];
 
     // Validar branchId según el rol
     if (branchRoles.includes(finalRole) && !finalBranchId) {
-      throw new BadRequestException('Los roles operativos (MANAGER, BAKER, CASHIER) deben tener una sucursal asignada');
+      throw new BadRequestException('Los roles operativos (MANAGER, BAKER) deben tener una sucursal asignada');
     }
 
     // Verificar que la sucursal existe si se especifica

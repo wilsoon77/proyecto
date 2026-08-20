@@ -1,7 +1,6 @@
-# ENDPOINTS IMPLEMENTADOS
+# ENDPOINTS IMPLEMENTADOS (REFERENCIA HISTÓRICA)
 
-> **Actualizado: Marzo 2026**
-> Todos los endpoints listados aquí están implementados, documentados en Swagger y listos para usar.
+> **Actualizado:** agosto de 2026. Este inventario conserva ejemplos del documento inicial; Swagger en `/docs` y `api/ANALISIS_ENDPOINTS.md` son la fuente de verdad. No existe un módulo POS ni un endpoint predictivo `/dashboard/stats`.
 > **Swagger UI:** `http://localhost:4000/docs`
 
 ---
@@ -11,15 +10,13 @@
 | Módulo | Endpoints | Autenticación |
 |--------|-----------|---------------|
 | Auth | 7 | Parcial (login/register públicos) |
-| Products | 7 | Lectura pública, escritura ADMIN/MANAGER |
-| Categories | 5 | Lectura pública, escritura ADMIN/MANAGER |
+| Products | Catálogo público + consulta administrativa | Lectura pública; administración protegida |
+| Categories | 5 | Lectura pública, escritura ADMIN |
 | Branches | 5 | Lectura pública, escritura ADMIN |
 | Users | 6 | ADMIN |
-| Addresses | 5 | Autenticado |
-| Orders | 5 | Autenticado |
-| Inventory | 1 | Autenticado |
-| Stock Movements | 2 | Autenticado |
-| Dashboard | 1 | ADMIN/MANAGER |
+| Orders | Reservas, estados y retiro | Cliente / ADMIN / MANAGER |
+| Inventory | Inventario, bajo stock y caducidades | ADMIN / MANAGER |
+| Stock Movements | Movimientos, conciliación y actividad | ADMIN / MANAGER |
 | Health & Metrics | 2 | Público / ADMIN |
 | Recipes | CRUD | ADMIN/MANAGER |
 | Production | CRUD | ADMIN/MANAGER/BAKER |
@@ -67,13 +64,12 @@ Clientes ven automáticamente solo sus pedidos. ADMIN/MANAGER ven todos.
 **Autenticación:** Bearer Token (ADMIN/MANAGER)
 **Body:** `{ "status": "CONFIRMED" }`
 
-**Estados válidos:** PENDING, CONFIRMED, PREPARING, READY, IN_DELIVERY, DELIVERED, CANCELLED, PICKED_UP
+**Estados válidos:** PENDING, CONFIRMED, PREPARING, READY, CANCELLED, PICKED_UP. El flujo es únicamente para retiro en sucursal.
 
 ---
 
-### GET /dashboard/stats
-**URL:** `http://localhost:4000/dashboard/stats`
-**Autenticación:** Bearer Token (ADMIN/MANAGER)
+### Operación
+La pantalla `/admin` presenta el panel Operación con KPIs simples, actividad y las dos alertas operativas. La actividad se consulta mediante los endpoints actuales de inventario/cierre; no hay un módulo de dashboard predictivo.
 
 ---
 
@@ -95,7 +91,7 @@ Clientes ven automáticamente solo sus pedidos. ADMIN/MANAGER ven todos.
    - Click "Authorize" en Swagger → pega el token
 
 5. **Prueba endpoints autenticados:**
-   - `GET /orders`, `GET /dashboard/stats`, etc.
+   - `GET /orders`, `GET /inventory`, `GET /daily-close`, etc.
 
 ---
 
@@ -104,9 +100,8 @@ Clientes ven automáticamente solo sus pedidos. ADMIN/MANAGER ven todos.
 | Rol | Acceso |
 |-----|--------|
 | `ADMIN` | Acceso total |
-| `MANAGER` | Ventas, inventario, producción, usuarios |
-| `BAKER` | Producción y materia prima |
-| `CASHIER` | Punto de venta |
+| `MANAGER` | Pedidos para retiro, inventario, producción, transferencias y cierres de ambas sucursales |
+| `BAKER` | Producción y operación de su sucursal asignada |
 | `CUSTOMER` | Catálogo, pedidos, perfil |
 
 **Backend completamente funcional**

@@ -12,6 +12,26 @@ function normalizeOrigin(value: string | undefined, fallback: ProductOrigin): Pr
   return value;
 }
 
+const DEFAULT_EXPIRATION_ALERT_DAYS = [3] as const;
+
+function normalizeExpirationAlertDays(value: unknown, origin: ProductOrigin, fallback?: unknown): number[] {
+  if (origin !== ProductOrigin.COMPRADO) return [];
+
+  const source = value === undefined || value === null ? fallback : value;
+  const values = Array.isArray(source)
+    ? source
+    : source === undefined || source === null
+      ? [...DEFAULT_EXPIRATION_ALERT_DAYS]
+      : [source];
+  const normalized = [...new Set(values
+    .map((item) => Number(item))
+    .filter((item) => Number.isInteger(item) && item >= 0 && item <= 3650))];
+
+  return normalized.length > 0
+    ? normalized.sort((a, b) => b - a)
+    : [...DEFAULT_EXPIRATION_ALERT_DAYS];
+}
+
 type PresentationInput = ProductPresentationInputDto;
 
 function normalizePresentations(input: PresentationInput[] | undefined) {
@@ -88,7 +108,7 @@ function mapProduct(product: any, available: number) {
     comboPrice: product.comboPrice === null || product.comboPrice === undefined ? undefined : Number(product.comboPrice),
     unitsPerTray: product.unitsPerTray ?? undefined,
     tracksExpiration: product.tracksExpiration,
-    expirationAlertDays: product.expirationAlertDays,
+    expirationAlertDays: normalizeExpirationAlertDays(product.expirationAlertDays, product.origin),
     stockUnitLabel: product.stockUnitLabel ?? 'unidades',
     available,
     presentations: mapPresentations(product.presentations, available),
@@ -113,7 +133,7 @@ export interface ProductDTO {
   comboPrice?: number;
   unitsPerTray?: number;
   tracksExpiration?: boolean;
-  expirationAlertDays?: number;
+  expirationAlertDays?: number[];
   available?: number; // stock disponible (quantity - reserved)
   stockUnitLabel?: string;
   presentations?: ReturnType<typeof mapPresentations>;
@@ -123,9 +143,14 @@ export interface ProductDTO {
 export class ProductsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(query: { search?: string; category?: string; min?: number; max?: number; sort?: string; branch?: string; page?: number; pageSize?: number; all?: boolean; status?: string }): Promise<any> {
+  async findAll(query: { search?: string; category?: string; min?: number; max?: number; sort?: string; branch?: string; page?: number; pageSize?: number; all?: boolean; status?: string }, visibility: 'public' | 'admin' = 'public'): Promise<any> {
     const where: any = {};
-    if (query.status === 'active') {
+    const isAdminListing = visibility === 'admin';
+    const includeInactiveCategories = isAdminListing && (query.status === 'all' || query.all === true);
+    if (!isAdminListing) {
+      // This path is used by the public catalog and must never expose hidden products.
+      where.isActive = true;
+    } else if (query.status === 'active') {
       where.isActive = true;
     } else if (query.status === 'inactive') {
       where.isActive = false;
@@ -137,7 +162,9 @@ export class ProductsService {
     }
 
     if (query.category) {
-      where.category = { slug: query.category };
+      where.category = { slug: query.category, ...(includeInactiveCategories ? {} : { isActive: true }) };
+    } else if (!includeInactiveCategories) {
+      where.category = { isActive: true };
     }
     if (query.search) {
       const s = query.search;
@@ -191,7 +218,7 @@ export class ProductsService {
     if (products.length) {
       if (query.branch) {
         const branch = await this.prisma.branch.findUnique({ where: { slug: query.branch } });
-        if (branch) {
+        if (branch?.isActive) {
           const inv = await this.prisma.inventory.findMany({ where: { branchId: branch.id, productId: { in: products.map(p => p.id) } } });
           inventoriesByProduct = inv.reduce((acc, i) => {
             acc[i.productId] = [{ quantity: i.quantity, reserved: i.reserved }];
@@ -199,7 +226,10 @@ export class ProductsService {
           }, {} as Record<number, { quantity: number; reserved: number }[]>);
         }
       } else {
-        const invAll = await this.prisma.inventory.findMany({ where: { productId: { in: products.map(p => p.id) } } });
+        const invAll = await this.prisma.inventory.findMany({
+          // El catálogo público no debe sumar existencias de sucursales inactivas.
+          where: { productId: { in: products.map(p => p.id) }, branch: { isActive: true } },
+        });
         inventoriesByProduct = invAll.reduce((acc, i) => {
           (acc[i.productId] ||= []).push({ quantity: i.quantity, reserved: i.reserved });
           return acc;
@@ -236,12 +266,14 @@ export class ProductsService {
         },
       },
     });
-    if (!p || !p.isActive) return null;
+    if (!p || !p.isActive || !p.category?.isActive) return null;
     
-    let whereInv: any = { productId: p.id };
+    let whereInv: any = { productId: p.id, branch: { isActive: true } };
     if (branch) {
       const b = await this.prisma.branch.findUnique({ where: { slug: branch } });
-      if (b) whereInv.branchId = b.id;
+      // Una sucursal inexistente o inactiva no debe devolver inventario
+      // agregado de todas las sucursales en el endpoint público.
+      whereInv = { productId: p.id, branchId: b?.isActive ? b.id : -1 };
     }
     
     const inv = await this.prisma.inventory.findMany({ where: whereInv });
@@ -269,7 +301,7 @@ export class ProductsService {
     return mapProduct(p, available);
   }
 
-  async updateById(id: number, data: { sku?: string; name?: string; description?: string; basePrice?: number; comboQuantity?: number; comboPrice?: number; unitsPerTray?: number; categorySlug?: string; origin?: string; isNew?: boolean; isActive?: boolean; isAvailable?: boolean; tracksExpiration?: boolean; expirationAlertDays?: number; stockUnitLabel?: string; presentations?: ProductPresentationInputDto[]; imageUrl?: string }) {
+  async updateById(id: number, data: { sku?: string; name?: string; slug?: string; description?: string; basePrice?: number; comboQuantity?: number; comboPrice?: number; unitsPerTray?: number; categorySlug?: string; origin?: string; isNew?: boolean; isActive?: boolean; isAvailable?: boolean; tracksExpiration?: boolean; expirationAlertDays?: number[]; stockUnitLabel?: string; presentations?: ProductPresentationInputDto[]; imageUrl?: string }) {
     const prod = await this.prisma.product.findUnique({ where: { id } });
     if (!prod) throw new NotFoundException('Producto no encontrado');
     
@@ -279,10 +311,10 @@ export class ProductsService {
       if (existingSku) throw new BadRequestException('SKU ya existe');
     }
     
-    // Auto-regenerate slug if name changes
+    // Use the supplied slug when present; otherwise regenerate it when the name changes.
     let newSlug: string | undefined;
-    if (data.name && data.name !== prod.name) {
-      let base = generateSlug(data.name);
+    if (data.slug || (data.name && data.name !== prod.name)) {
+      let base = generateSlug(data.slug || data.name || prod.slug);
       if (!base) base = prod.slug;
       newSlug = base;
       let suffix = 1;
@@ -294,6 +326,7 @@ export class ProductsService {
     let categoryId = prod.categoryId;
     if (data.categorySlug) {
       const category = await this.prisma.category.findUnique({ where: { slug: data.categorySlug } });
+      if (category && !category.isActive) throw new BadRequestException('Categoría inactiva');
       if (!category) throw new BadRequestException('Categoría no encontrada');
       categoryId = category.id;
     }
@@ -302,9 +335,7 @@ export class ProductsService {
     const tracksExpiration = nextOrigin === ProductOrigin.COMPRADO
       ? (data.tracksExpiration ?? prod.tracksExpiration)
       : false;
-    const expirationAlertDays = nextOrigin === ProductOrigin.COMPRADO
-      ? Math.max(0, data.expirationAlertDays ?? prod.expirationAlertDays)
-      : 3;
+    const expirationAlertDays = normalizeExpirationAlertDays(data.expirationAlertDays, nextOrigin, prod.expirationAlertDays);
     const presentationData = normalizePresentations(data.presentations);
     
     const updated = await this.prisma.$transaction(async (tx) => {
@@ -390,15 +421,16 @@ export class ProductsService {
     return invAll.reduce((sum, i) => sum + (i.quantity - i.reserved), 0);
   }
 
-  async create(data: { sku: string; name: string; description?: string; basePrice: number; comboQuantity?: number; comboPrice?: number; unitsPerTray?: number; categorySlug: string; origin?: string; isNew?: boolean; isActive?: boolean; isAvailable?: boolean; tracksExpiration?: boolean; expirationAlertDays?: number; stockUnitLabel?: string; presentations?: ProductPresentationInputDto[]; imageUrl?: string }) {
+  async create(data: { sku: string; name: string; slug?: string; description?: string; basePrice: number; comboQuantity?: number; comboPrice?: number; unitsPerTray?: number; categorySlug: string; origin?: string; isNew?: boolean; isActive?: boolean; isAvailable?: boolean; tracksExpiration?: boolean; expirationAlertDays?: number[]; stockUnitLabel?: string; presentations?: ProductPresentationInputDto[]; imageUrl?: string }) {
     const category = await this.prisma.category.findUnique({ where: { slug: data.categorySlug } });
+    if (category && !category.isActive) throw new BadRequestException('Categoría inactiva');
     if (!category) throw new BadRequestException('Categoría no encontrada');
     
     const existingSku = await this.prisma.product.findUnique({ where: { sku: data.sku } });
     if (existingSku) throw new BadRequestException('SKU ya existe');
 
-    // Auto-generate unique slug from name
-    let baseSlug = generateSlug(data.name);
+    // Generate a unique slug from the requested value or the product name.
+    let baseSlug = generateSlug(data.slug || data.name);
     if (!baseSlug) baseSlug = data.sku.toLowerCase().replace(/[^a-z0-9-]/g, '-');
     let slug = baseSlug;
     let suffix = 1;
@@ -408,9 +440,7 @@ export class ProductsService {
 
     const origin = normalizeOrigin(data.origin, ProductOrigin.PRODUCIDO);
     const tracksExpiration = origin === ProductOrigin.COMPRADO && (data.tracksExpiration ?? false);
-    const expirationAlertDays = origin === ProductOrigin.COMPRADO
-      ? Math.max(0, data.expirationAlertDays ?? 3)
-      : 3;
+    const expirationAlertDays = normalizeExpirationAlertDays(data.expirationAlertDays, origin);
     const presentationData = normalizePresentations(
       data.presentations ?? (data.comboQuantity && data.comboPrice !== undefined
         ? [{ name: `Combo de ${data.comboQuantity}`, unitsInStock: data.comboQuantity, price: data.comboPrice, isDefault: true }]
@@ -475,7 +505,7 @@ export class ProductsService {
     return result;
   }
 
-  async update(slug: string, data: { sku?: string; name?: string; description?: string; basePrice?: number; comboQuantity?: number; comboPrice?: number; unitsPerTray?: number; categorySlug?: string; origin?: string; isNew?: boolean; isActive?: boolean; isAvailable?: boolean; tracksExpiration?: boolean; expirationAlertDays?: number; stockUnitLabel?: string; presentations?: ProductPresentationInputDto[] }) {
+  async update(slug: string, data: { sku?: string; name?: string; slug?: string; description?: string; basePrice?: number; comboQuantity?: number; comboPrice?: number; unitsPerTray?: number; categorySlug?: string; origin?: string; isNew?: boolean; isActive?: boolean; isAvailable?: boolean; tracksExpiration?: boolean; expirationAlertDays?: number[]; stockUnitLabel?: string; presentations?: ProductPresentationInputDto[] }) {
     const prod = await this.prisma.product.findUnique({ where: { slug } });
     if (!prod) throw new NotFoundException('Producto no encontrado');
     if (data.presentations !== undefined || data.stockUnitLabel !== undefined) {
@@ -485,10 +515,10 @@ export class ProductsService {
       const existingSku = await this.prisma.product.findUnique({ where: { sku: data.sku } });
       if (existingSku) throw new BadRequestException('SKU ya existe');
     }
-    // Auto-regenerate slug if name changes
+    // Use a supplied slug, or regenerate it when the name changes.
     let newSlug: string | undefined;
-    if (data.name && data.name !== prod.name) {
-      let base = generateSlug(data.name);
+    if (data.slug || (data.name && data.name !== prod.name)) {
+      let base = generateSlug(data.slug || data.name || prod.slug);
       if (!base) base = prod.slug;
       newSlug = base;
       let suffix = 1;
@@ -499,6 +529,7 @@ export class ProductsService {
     let categoryId = prod.categoryId;
     if (data.categorySlug) {
       const category = await this.prisma.category.findUnique({ where: { slug: data.categorySlug } });
+      if (category && !category.isActive) throw new BadRequestException('Categoría inactiva');
       if (!category) throw new BadRequestException('Categoría no encontrada');
       categoryId = category.id;
     }
@@ -506,9 +537,7 @@ export class ProductsService {
     const tracksExpiration = nextOrigin === ProductOrigin.COMPRADO
       ? (data.tracksExpiration ?? prod.tracksExpiration)
       : false;
-    const expirationAlertDays = nextOrigin === ProductOrigin.COMPRADO
-      ? Math.max(0, data.expirationAlertDays ?? prod.expirationAlertDays)
-      : 3;
+    const expirationAlertDays = normalizeExpirationAlertDays(data.expirationAlertDays, nextOrigin, prod.expirationAlertDays);
     const updated = await this.prisma.product.update({ where: { id: prod.id }, data: { sku: data.sku, name: data.name, slug: newSlug, description: data.description, basePrice: data.basePrice, comboQuantity: data.comboQuantity, comboPrice: data.comboPrice, unitsPerTray: nextOrigin === ProductOrigin.COMPRADO ? null : data.unitsPerTray, categoryId, origin: nextOrigin, tracksExpiration, expirationAlertDays, isNew: data.isNew, isActive: data.isActive, isAvailable: data.isAvailable } });
     return updated;
   }
@@ -534,23 +563,32 @@ export class ProductsService {
     return { deleted: true, slug };
   }
 
-  async putUpdate(slug: string, data: { name: string; description?: string; basePrice: number; comboQuantity?: number; comboPrice?: number; unitsPerTray?: number; categorySlug: string; origin?: string; isNew?: boolean; tracksExpiration?: boolean; expirationAlertDays?: number; stockUnitLabel?: string; presentations?: ProductPresentationInputDto[] }) {
+  async putUpdate(slug: string, data: { name: string; slug?: string; description?: string; basePrice: number; comboQuantity?: number; comboPrice?: number; unitsPerTray?: number; categorySlug: string; origin?: string; isNew?: boolean; tracksExpiration?: boolean; expirationAlertDays?: number[]; stockUnitLabel?: string; presentations?: ProductPresentationInputDto[] }) {
     const prod = await this.prisma.product.findUnique({ where: { slug } });
     if (!prod) throw new NotFoundException('Producto no encontrado');
     if (data.presentations !== undefined || data.stockUnitLabel !== undefined) {
       return this.updateById(prod.id, data);
     }
     const category = await this.prisma.category.findUnique({ where: { slug: data.categorySlug } });
+    if (category && !category.isActive) throw new BadRequestException('Categoría inactiva');
     if (!category) throw new BadRequestException('Categoría no encontrada');
     const nextOrigin = normalizeOrigin(data.origin, prod.origin);
     const tracksExpiration = nextOrigin === ProductOrigin.COMPRADO
       ? (data.tracksExpiration ?? prod.tracksExpiration)
       : false;
-    const expirationAlertDays = nextOrigin === ProductOrigin.COMPRADO
-      ? Math.max(0, data.expirationAlertDays ?? prod.expirationAlertDays)
-      : 3;
+    const expirationAlertDays = normalizeExpirationAlertDays(data.expirationAlertDays, nextOrigin, prod.expirationAlertDays);
+    let newSlug: string | undefined;
+    if (data.slug) {
+      const base = generateSlug(data.slug) || prod.slug;
+      newSlug = base;
+      let suffix = 1;
+      while (await this.prisma.product.findFirst({ where: { slug: newSlug, NOT: { id: prod.id } } })) {
+        newSlug = `${base}-${suffix++}`;
+      }
+    }
     const updated = await this.prisma.product.update({ where: { id: prod.id }, data: {
       name: data.name,
+      slug: newSlug,
       description: data.description,
       basePrice: data.basePrice,
       comboQuantity: data.comboQuantity,
@@ -571,6 +609,7 @@ export class ProductsService {
       where: {
         isActive: true,
         isAvailable: true,
+        category: { isActive: true },
         OR: [
           { isNew: true },
           { comboQuantity: { not: null } },
@@ -594,11 +633,19 @@ export class ProductsService {
     // Cargar inventarios agregados
     let inventoriesByProduct: Record<number, { quantity: number; reserved: number }[]> = {};
     if (products.length) {
-      let invWhere: any = { productId: { in: products.map(p => p.id) } };
+      let invWhere: any = {
+        productId: { in: products.map(p => p.id) },
+        branch: { isActive: true },
+      };
       
       if (branch) {
         const b = await this.prisma.branch.findUnique({ where: { slug: branch } });
-        if (b) invWhere.branchId = b.id;
+        // Evita filtrar silenciosamente a todas las sucursales cuando el
+        // catálogo recibe una sucursal inválida o inactiva.
+        invWhere = {
+          productId: { in: products.map(p => p.id) },
+          branchId: b?.isActive ? b.id : -1,
+        };
       }
       
       const invAll = await this.prisma.inventory.findMany({ 
@@ -619,6 +666,7 @@ export class ProductsService {
 
   async findByCategory(categorySlug: string, query: { page?: number; pageSize?: number; sort?: string }) {
     const category = await this.prisma.category.findUnique({ where: { slug: categorySlug } });
+    if (category && !category.isActive) throw new NotFoundException('Categoría no encontrada');
     if (!category) throw new NotFoundException(`Categoría "${categorySlug}" no encontrada`);
 
     const where: any = { 
@@ -665,7 +713,7 @@ export class ProductsService {
     let inventoriesByProduct: Record<number, { quantity: number; reserved: number }[]> = {};
     if (products.length) {
       const invAll = await this.prisma.inventory.findMany({ 
-        where: { productId: { in: products.map(p => p.id) } } 
+        where: { productId: { in: products.map(p => p.id) }, branch: { isActive: true } }
       });
       inventoriesByProduct = invAll.reduce((acc, i) => {
         (acc[i.productId] ||= []).push({ quantity: i.quantity, reserved: i.reserved });

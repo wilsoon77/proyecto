@@ -1,10 +1,12 @@
 # Sistema de Gestion para Panaderia - Proyecto de Graduacion
 
+> **Nota de vigencia (agosto de 2026):** este documento conserva la planificación inicial. El alcance aprobado actualmente es catálogo, carrito y retiro en sucursal; inventario, materias primas, recetas, producción, cierres diarios, dos alertas y consultas operativas por Telegram. POS, pagos en tienda, delivery, direcciones de facturación, recomendaciones y analítica predictiva no forman parte del producto vigente. La fuente de verdad es `requerimientos.md`, `api/prisma/schema.prisma`, `api/ANALISIS_ENDPOINTS.md` y Swagger.
+
 ## RESUMEN EJECUTIVO
 
 **Nombre del Proyecto:** Panaderia Svetlana Smart System  
 **Tipo:** Aplicacion Web Adaptable (PWA)  
-**Objetivo:** Sistema integral de gestion para panaderias con automatizacion inteligente  
+**Objetivo:** Sistema operativo enfocado en inventario, producción y cierre diario para una panadería de dos sucursales
 
 ---
 
@@ -20,17 +22,16 @@
    - Inventario de productos terminados por sucursal
    - Insumos y materia prima con conversion de unidades de compra a unidades base
    - Control transaccional de produccion diaria (recetas por amasijo y latas)
-   - Dashboard operativo multi-sucursal
+   - Panel Operación multi-sucursal con KPIs simples y gráfica compacta
 
 3. **Sistema de Clientes**
    - Registro, inicio de sesion y perfiles de cliente
    - Historial de reservas de pedidos
-   - Direcciones de facturacion y contacto
+   - Retiro en la sucursal seleccionada; no direcciones de delivery
 
-4. **IA y Automatizacion**
-   - Prediccion de demanda de productos terminados para sugerencia de produccion diaria
-   - Recomendaciones personalizadas de productos en la tienda en linea
-   - Chatbot inteligente de atencion al cliente para FAQs y asistencia
+4. **Alertas y consultas operativas**
+   - Alertas de materia prima baja y caducidad próxima para productos comprados
+   - Asistente privado de Telegram para consultar inventario, materias primas, producción y cierres del día
 
 ---
 
@@ -61,31 +62,26 @@
   - No se utiliza base de datos complementaria (sin MongoDB) ni capa de cache externa (sin Redis) para mantener la infraestructura simple y sostenible.
 
 ### ALMACENAMIENTO DE ARCHIVOS
-- **Almacenamiento en la Nube (Cloudinary)**
+- **Almacenamiento en la Nube (Appwrite)**
   - Imagenes de productos e insumos
   - Optimizacion automatica de imagenes
 
 ---
 
 ## SISTEMA DE NOTIFICACIONES
-- **Email Service:**
-  - Resend o similar para confirmacion de reservas y alertas administrativas.
-- **Push Notifications:**
-  - Web Push API nativa del navegador para dispositivos moviles y de escritorio (gracias al manifiesto PWA), evitando dependencias externas complejas.
-- **SMS / Twilio:**
-  - No se implementa canal de SMS por costos y simplificacion de flujo.
+- Se conservan únicamente `inventory.raw_material_low` y `inventory.expiration_warning`.
+- Las alertas se muestran en la aplicación mediante Web Push cuando el usuario está suscrito.
+- Los usuarios `MANAGER` y `ADMIN` pueden recibir alertas de ambas sucursales.
+- Telegram funciona como canal privado de consulta, no como canal de escritura.
 
 ---
 
-## INTELIGENCIA ARTIFICIAL
+## ASISTENTE DE TELEGRAM
 
-### Analisis y Prediccion
-1. **Prediccion de Demanda:**
-   - Time Series Forecasting para sugerencia automatica de produccion basada en ventas historicas.
-2. **Sistema de Recomendaciones:**
-   - Algoritmo colaborativo y basado en contenido para secciones de "Te puede gustar" en la tienda web.
-3. **Chatbot Inteligente:**
-   - Integracion con API de OpenAI o similar para resolver dudas frecuentes sobre sucursales, horarios, productos y pedidos.
+- El asistente privado usa lenguaje natural para consultar inventario de producto terminado, materias primas, producción y cierres del día.
+- Las consultas se limitan a las sucursales autorizadas del usuario.
+- Es un canal de solo lectura: no registra compras, producción, cierres ni cambios de inventario.
+- La analítica predictiva, las recomendaciones comerciales y el chatbot público no forman parte del alcance vigente.
 
 ---
 
@@ -115,7 +111,7 @@ La ejecucion se divide en 8 Sprints de 2 semanas cada uno:
 
 * **Sprint 2 (Julio - Semanas 3 y 4): Modulo de Catalogo y Productos**
   - CRUD de productos y categorias en panel administrativo.
-  - Integracion con Cloudinary para subida de imagenes.
+  - Integracion con Appwrite para subida de imagenes.
   - Frontend: Landing page y catalogo responsive publico.
 
 * **Sprint 3 (Agosto - Semanas 1 y 2): Inventario y Materia Prima**
@@ -132,13 +128,14 @@ La ejecucion se divide en 8 Sprints de 2 semanas cada uno:
   - Integracion de checkout con seleccion de sucursal y fecha/hora de recogida.
   - Notificaciones por email y push para confirmacion de pedidos.
 
-* **Sprint 6 (Septiembre - Semanas 3 y 4): Modulo Administrativo y Dashboard**
+* **Sprint 6 (Septiembre - Semanas 3 y 4): Modulo Administrativo y Operación**
   - Panel Kanban para la gestion y entrega de reservas en tienda.
-  - KPIs operativos y graficos estadisticos del dashboard multi-sucursal.
+  - KPIs operativos simples y gráfica compacta del panel Operación multi-sucursal.
   - Historico de auditoria y logs del sistema.
 
-* **Sprint 7 (Octubre - Semanas 1 y 2): Integracion de IA y PWA**
-  - Implementacion de algoritmos de sugerencia de produccion y recomendacion en la tienda.
+* **Sprint 7 (Octubre - Semanas 1 y 2): Integracion de Telegram y alertas**
+  - Implementación del asistente privado de Telegram en modo solo lectura.
+  - Configuración de alertas de materia prima baja y recordatorios múltiples de caducidad.
   - Configuracion de Service Workers, manifiesto de app web y cache local para soporte PWA.
   - Pruebas unitarias y de integracion.
 
@@ -153,7 +150,7 @@ La ejecucion se divide en 8 Sprints de 2 semanas cada uno:
 - Vercel (Hosting Web): Plan Gratuito
 - Supabase (PostgreSQL): Plan Gratuito (Free Tier)
 - Render/Railway (API): Plan Gratuito / Bajo Costo (~$5-7/mes)
-- Cloudinary (Almacenamiento de Imagenes): Plan Gratuito
+- Appwrite (Almacenamiento de Imagenes): Plan Gratuito
 - Resend (Emailing): Plan Gratuito
 - Dominio: ~$10-15/ano
 **Costo total desarrollo: ~$10-25**

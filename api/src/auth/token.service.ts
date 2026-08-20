@@ -3,7 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service.js';
 import bcryptjs from 'bcryptjs';
 const bcrypt = bcryptjs.default || bcryptjs;
-import { randomBytes } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
 
 /**
  * TokenService — Gestión de JWT access tokens y refresh tokens.
@@ -30,18 +30,14 @@ export class TokenService {
     return this.jwt.sign({ sub: userId, role }, { expiresIn: '15m' });
   }
 
-  /**
-   * Crea un refresh token hasheado y lo persiste en la base de datos.
-   * Formato del token: "{userId}.{random}" para que el lookup sea O(user's devices).
-   */
+  /** Crea un refresh token opaco y guarda solo su SHA-256 indexable. */
   async createRefreshToken(
     userId: string,
     metadata?: { userAgent?: string; ip?: string },
     expirationDays: number = 7,
   ): Promise<string> {
-    const random = randomBytes(32).toString('hex');
-    const token = `${userId}.${random}`;
-    const hashedToken = await bcrypt.hash(random, 10);
+    const token = randomBytes(48).toString('base64url');
+    const hashedToken = this.hashToken(token);
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + expirationDays);
 
@@ -63,6 +59,21 @@ export class TokenService {
    * Retorna null si no es válido.
    */
   async validateRefreshToken(refreshToken: string): Promise<any | null> {
+    if (!refreshToken || refreshToken.length > 512) return null;
+
+    const indexedToken = await this.prisma.refreshToken.findUnique({
+      where: { hashedToken: this.hashToken(refreshToken) },
+      include: { user: true },
+    });
+    if (indexedToken && !indexedToken.revokedAt && indexedToken.expiresAt > new Date()) {
+      return indexedToken;
+    }
+
+    // Transitional compatibility for sessions created before the SHA-256 migration.
+    return this.validateLegacyRefreshToken(refreshToken);
+  }
+
+  private async validateLegacyRefreshToken(refreshToken: string): Promise<any | null> {
     const dotIndex = refreshToken.indexOf('.');
     if (dotIndex === -1) return null;
 
@@ -97,8 +108,18 @@ export class TokenService {
    * Revoca un refresh token específico buscando por su valor.
    */
   async revokeByValue(userId: string, refreshToken: string): Promise<void> {
+    const indexedToken = await this.prisma.refreshToken.findUnique({
+      where: { hashedToken: this.hashToken(refreshToken) },
+    });
+    if (indexedToken?.userId === userId && !indexedToken.revokedAt) {
+      await this.revokeToken(indexedToken.id);
+      return;
+    }
+
+    // Transitional compatibility for sessions created before the SHA-256 migration.
     const dotIndex = refreshToken.indexOf('.');
-    const tokenRandom = dotIndex !== -1 ? refreshToken.substring(dotIndex + 1) : refreshToken;
+    if (dotIndex === -1) return;
+    const tokenRandom = refreshToken.substring(dotIndex + 1);
 
     const tokens = await this.prisma.refreshToken.findMany({
       where: { userId, revokedAt: null },
@@ -121,5 +142,9 @@ export class TokenService {
       where: { userId, revokedAt: null },
       data: { revokedAt: new Date() },
     });
+  }
+
+  private hashToken(token: string): string {
+    return createHash('sha256').update(token, 'utf8').digest('hex');
   }
 }

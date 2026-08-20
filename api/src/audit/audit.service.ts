@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 export interface CreateAuditLogData {
@@ -61,7 +62,7 @@ export class AuditService {
           entity: data.entity,
           entityId: data.entityId,
           entityName: data.entityName,
-          details: data.details ? JSON.stringify(data.details) : null,
+          details: data.details ? (data.details as Prisma.InputJsonValue) : undefined,
           ipAddress: data.ipAddress,
           userAgent: data.userAgent,
         },
@@ -142,7 +143,7 @@ export class AuditService {
     return {
       data: data.map((log) => ({
         ...log,
-        details: log.details ? JSON.parse(log.details) : null,
+        details: log.details ?? null,
       })),
       meta: {
         total,
@@ -264,7 +265,7 @@ export class AuditService {
     if (!log) throw new NotFoundException('Registro de auditoría no encontrado');
     return {
       ...log,
-      details: log.details ? JSON.parse(log.details) : null,
+      details: log.details ?? null,
     };
   }
 }

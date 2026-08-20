@@ -19,6 +19,7 @@ Thumbs.db
 .codex/
 graphify-out/
 AGENTS.md
+scratch/
 
 # Nested git (avoid accidental submodule linkage)
 api/.git/
@@ -31,6 +32,7 @@ api/coverage/
 api/openapi.json
 api/jest-cache/
 api/jest-temp/
+api/test-*.txt
 
 # Prisma
 api/prisma/*.db

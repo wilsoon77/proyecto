@@ -17,6 +17,7 @@ export default function AdminProductosPage() {
   const router = useRouter()
   const { user: currentUser } = useAuth()
   const { showToast } = useToast()
+  const canManageCatalog = currentUser?.role === 'ADMIN'
   const [products, setProducts] = useState<ApiProduct[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
@@ -55,7 +56,7 @@ export default function AdminProductosPage() {
         params.search = search
       }
       
-      const response = await productsService.list(params)
+      const response = await productsService.listAdmin(params)
       setProducts(response.data || [])
       setTotalPages(response.meta?.pageCount || 1)
       setCurrentPage(response.meta?.page || 1)
@@ -140,12 +141,14 @@ export default function AdminProductosPage() {
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Productos</h1>
           <p className="text-muted-foreground mt-1">Gestiona el catálogo de productos</p>
         </div>
-        <Link href="/admin/productos/nuevo">
-          <Button className="bg-primary hover:bg-primary/90 w-full sm:w-auto">
-            <Plus className="h-4 w-4 mr-2" />
-            Nuevo Producto
-          </Button>
-        </Link>
+        {canManageCatalog && (
+          <Link href="/admin/productos/nuevo">
+            <Button className="bg-primary hover:bg-primary/90 w-full sm:w-auto">
+              <Plus className="h-4 w-4 mr-2" />
+              Nuevo Producto
+            </Button>
+          </Link>
+        )}
       </div>
 
       {/* Search and Filters */}
@@ -236,7 +239,7 @@ export default function AdminProductosPage() {
                 ? "No hay productos ocultos" 
                 : "No hay productos"}
             </p>
-            {!searchQuery && statusFilter === 'all' && (
+            {!searchQuery && statusFilter === 'all' && canManageCatalog && (
               <Link href="/admin/productos/nuevo">
                 <Button className="mt-4 bg-primary hover:bg-primary/90">
                   <Plus className="h-4 w-4 mr-2" />
@@ -283,31 +286,33 @@ export default function AdminProductosPage() {
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Link href={`/admin/productos/${product.id}/editar`}>
-                        <Button variant="ghost" size="icon" className="h-9 w-9" title="Editar">
-                          <Edit className="h-4 w-4" />
+                    {canManageCatalog && (
+                      <div className="flex items-center gap-1">
+                        <Link href={`/admin/productos/${product.id}/editar`}>
+                          <Button variant="ghost" size="icon" className="h-9 w-9" title="Editar">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className={`h-9 w-9 ${product.isActive ? 'text-muted-foreground hover:text-foreground' : 'text-primary hover:text-primary hover:bg-accent'}`}
+                          onClick={() => handleToggleActive(product)}
+                          title={product.isActive ? 'Ocultar producto' : 'Mostrar producto'}
+                        >
+                          {product.isActive ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </Button>
-                      </Link>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={`h-9 w-9 ${product.isActive ? 'text-muted-foreground hover:text-foreground' : 'text-primary hover:text-primary hover:bg-accent'}`}
-                        onClick={() => handleToggleActive(product)}
-                        title={product.isActive ? 'Ocultar producto' : 'Mostrar producto'}
-                      >
-                        {product.isActive ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        className="h-9 w-9 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={() => openDeleteModal(product)}
-                        title="Eliminar"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => openDeleteModal(product)}
+                          title="Eliminar"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -382,31 +387,33 @@ export default function AdminProductosPage() {
                         )}
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center justify-end gap-2">
-                          <Link href={`/admin/productos/${product.id}/editar`}>
-                            <Button variant="ghost" size="sm" title="Editar producto">
-                              <Edit className="h-4 w-4" />
+                        {canManageCatalog && (
+                          <div className="flex items-center justify-end gap-2">
+                            <Link href={`/admin/productos/${product.id}/editar`}>
+                              <Button variant="ghost" size="sm" title="Editar producto">
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </Link>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className={product.isActive ? 'text-muted-foreground hover:text-foreground' : 'text-primary hover:text-primary'}
+                              onClick={() => handleToggleActive(product)}
+                              title={product.isActive ? 'Ocultar producto' : 'Mostrar producto'}
+                            >
+                              {product.isActive ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                             </Button>
-                          </Link>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className={product.isActive ? 'text-muted-foreground hover:text-foreground' : 'text-primary hover:text-primary'}
-                            onClick={() => handleToggleActive(product)}
-                            title={product.isActive ? 'Ocultar producto' : 'Mostrar producto'}
-                          >
-                            {product.isActive ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={() => openDeleteModal(product)}
-                            title="Eliminar producto"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => openDeleteModal(product)}
+                              title="Eliminar producto"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))}

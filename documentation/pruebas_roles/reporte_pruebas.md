@@ -1,12 +1,13 @@
 # Reporte Integral de Pruebas de Roles y Módulos del Sistema (QA)
 
+> **Nota de vigencia (agosto de 2026):** este reporte conserva evidencias de una ejecución anterior. El panel antes llamado Dashboard ahora se denomina **Operación** y muestra solo KPIs operativos simples, una gráfica compacta y las dos alertas vigentes. No se debe interpretar este archivo como evidencia de un POS, pagos en tienda o analítica predictiva.
+
 Este reporte ampliado consolida las pruebas de integración **interactivas de extremo a extremo (E2E)** ejecutadas contra la aplicación desplegada en producción en [https://proyecto-wilsoon77.vercel.app](https://proyecto-wilsoon77.vercel.app).
 
 El objetivo fue simular las acciones críticas de cada rol de forma real para verificar el flujo de datos entre los distintos módulos:
 1.  **Panadero (BAKER):** Registro de producción diaria de un amasijo (producción de horneado) y su impacto en inventario.
-2.  **Cajero (CASHIER):** Venta en el Punto de Venta (POS) con selección de productos y procesamiento del cobro.
-3.  **Gerente (MANAGER):** Verificación de actualización en inventario físico y bitácora de movimientos.
-4.  **Administrador (ADMIN):** Auditoría general del sistema (gráficos, historial de auditoría, sucursales y usuarios).
+2.  **Gerente (MANAGER):** Gestión de pedidos para retiro, inventario físico, movimientos y cierre diario.
+3.  **Administrador (ADMIN):** Auditoría general del sistema (panel Operación, historial de auditoría, sucursales y usuarios).
 
 Las pruebas se automatizaron utilizando **Playwright (Chromium Headless)**, creando contextos aislados para evitar la persistencia de cookies y emular de manera limpia las acciones de cada rol.
 
@@ -31,21 +32,15 @@ El panadero tiene acceso a la gestión de producción. Registramos un amasijo de
 
 ---
 
-## 2. Módulo de Punto de Venta (POS) - Rol: CAJERO (CASHIER)
+## 2. Pedidos para retiro y cierre diario - Rol: GERENTE (MANAGER)
 
-El cajero opera exclusivamente el terminal de ventas. Realizamos una transacción para simular el consumo de un producto y la actualización del stock.
+El gerente supervisa los pedidos reservados para retiro y realiza el cierre físico de cada sucursal. No existe un POS ni un flujo de cobro dentro del sistema.
 
 ### **Flujo de Acciones Ejecutado:**
-1.  **Login exitoso** e ingreso al POS en la ruta `/admin/pos`.
-2.  **Carga de Sucursal:** Se asocia automáticamente a su sucursal asignada (en este caso, *Sucursal Central*).
-3.  **Agregar al Carrito:** Selección de un producto con stock disponible (por ejemplo, *Pan Francés*).
-4.  **Cobro:** Clic en **"Cobrar"** utilizando el método de pago por defecto (Efectivo - Pago Exacto).
-5.  **Cierre:** La API procesa la transacción, emite el recibo/confirmación en pantalla y limpia automáticamente el carrito de compras.
-
-### **Evidencias:**
-*   [Punto de Venta POS Inicial](file:///c:/Users/wilso/Documents/FrameworksrProjects/React/proyecto-panaderia/documentation/pruebas_roles/capturas/cashier_8_pos_pantalla.png): Catálogo de productos completo con stock disponible e indicadores de combos.
-*   [Carrito con Items](file:///c:/Users/wilso/Documents/FrameworksrProjects/React/proyecto-panaderia/documentation/pruebas_roles/capturas/cashier_9_pos_carrito_con_item.png): Detalle lateral derecho del pedido actual y cálculo del total a pagar en tiempo real.
-*   [Ticket de Venta Completada](file:///c:/Users/wilso/Documents/FrameworksrProjects/React/proyecto-panaderia/documentation/pruebas_roles/capturas/cashier_10_pos_venta_completada.png): Limpieza del carrito y toast de *"Venta registrada con éxito"*.
+1.  **Login exitoso** e ingreso al Panel de Trabajo.
+2.  **Pedidos para retiro:** Consulta de pedidos, confirmación y registro de la recogida en sucursal.
+3.  **Cierre diario:** Revisión del conteo físico, registro del cierre y conciliación de inventario.
+4.  **Alcance multi-sucursal:** El gerente puede seleccionar cualquiera de las dos sucursales.
 
 ---
 
@@ -79,22 +74,21 @@ El administrador tiene un panel global. Inspeccionamos la seguridad del sistema 
 
 ### **Flujo de Acciones Ejecutado:**
 1.  **Login exitoso** e ingreso a `/admin`.
-2.  **Dashboard General:** Auditoría visual de gráficos de ventas, órdenes del día e ítems con stock crítico.
+2.  **Panel Operación:** Auditoría visual de KPIs operativos, actividad del día, inventario crítico y alertas vigentes.
 3.  **Cuentas de Usuarios:** Inspección en `/admin/usuarios` para el control de roles y estados (`isActive`).
 4.  **Sucursales:** Navegación a `/admin/sucursales` para control logístico.
 5.  **Bitácora de Auditoría:** Navegación a `/admin/historial` para comprobar que cada login exitoso y cambio en configuración de la base de datos se registre con su respectiva IP y timestamp por seguridad.
 
 ### **Evidencias:**
-*   [Estadísticas del Dashboard](file:///c:/Users/wilso/Documents/FrameworksrProjects/React/proyecto-panaderia/documentation/pruebas_roles/capturas/admin_8_dashboard_general.png): Tarjetas informativas de ingresos totales, tickets promedio y gráficos temporales de ventas.
-*   [Control de Usuarios](file:///c:/Users/wilso/Documents/FrameworksrProjects/React/proyecto-panaderia/documentation/pruebas_roles/capturas/admin_9_usuarios_completo.png): Lista detallada con filtros de rol (`CUSTOMER`, `BAKER`, `CASHIER`, `ADMIN`).
+*   [Panel Operación (captura histórica)](file:///c:/Users/wilso/Documents/FrameworksrProjects/React/proyecto-panaderia/documentation/pruebas_roles/capturas/admin_8_dashboard_general.png): La captura pertenece a la versión anterior; la vista vigente resalta indicadores operativos y una gráfica compacta, sin KPIs de ingresos/tickets ni predicción.
+*   [Control de Usuarios](file:///c:/Users/wilso/Documents/FrameworksrProjects/React/proyecto-panaderia/documentation/pruebas_roles/capturas/admin_9_usuarios_completo.png): Lista detallada con filtros de rol (`CUSTOMER`, `BAKER`, `MANAGER`, `ADMIN`).
 *   [Gestión de Sucursales](file:///c:/Users/wilso/Documents/FrameworksrProjects/React/proyecto-panaderia/documentation/pruebas_roles/capturas/admin_10_sucursales_completo.png).
 *   [Bitácora de Auditoría de Seguridad](file:///c:/Users/wilso/Documents/FrameworksrProjects/React/proyecto-panaderia/documentation/pruebas_roles/capturas/admin_11_historial_auditoria.png): Registro inmutable de eventos del sistema.
-*   [Punto de Venta del Admin](file:///c:/Users/wilso/Documents/FrameworksrProjects/React/proyecto-panaderia/documentation/pruebas_roles/capturas/admin_12_pos_as_admin.png): Verificación de que el Admin también tiene acceso al POS si requiere operar caja.
 
 ---
 
 ## 5. Hallazgos y Conclusiones del QA
 
-1.  **Lógica Transaccional Robusta:** El registro de producción del Panadero consumió automáticamente las materias primas necesarias definidas en la receta (harina, levadura, etc.) de manera atómica, y el POS del Cajero rebajó correctamente el stock físico final del branch, validando la lógica ACID en la base de datos de producción.
-2.  **Integridad de Permisos:** Todos los intentos de forzar URLs de un módulo a otro por roles no autorizados continuaron siendo interceptados de manera limpia, redirigiendo al dashboard básico del usuario sin romper el flujo de la aplicación.
-3.  **Alineación UX:** La interfaz del Punto de Venta (POS) y del Panel de Producción son sumamente dinámicas, responsivas y amigables al tacto, ideales para ser ejecutadas en tablets o terminales táctiles dentro de la panadería.
+1.  **Lógica Transaccional Robusta:** El registro de producción del Panadero consumió automáticamente las materias primas necesarias definidas en la receta (harina, levadura, etc.) de manera atómica, y el cierre del Gerente concilió el stock físico final de la sucursal.
+2.  **Integridad de Permisos:** Todos los intentos de forzar URLs de un módulo a otro por roles no autorizados continuaron siendo interceptados de manera limpia, redirigiendo al panel Operación del usuario sin romper el flujo de la aplicación.
+3.  **Alineación UX:** Las interfaces de pedidos, cierre diario, inventario y producción son dinámicas, responsivas y enfocadas en la operación real de la panadería.

@@ -1,5 +1,7 @@
 # CASOS DE USO - Panaderia Svetlana Smart System
 
+> **Documento inicial/histórico:** conserva casos de POS, delivery y predicción que fueron descartados. Para el alcance vigente consultar `api/ANALISIS_ENDPOINTS.md` y `requerimientos.md`.
+
 ## INDICE DE CASOS DE USO
 
 ### MODULO CLIENTES (CU-C)
@@ -267,7 +269,7 @@ PASO 2: Informacion de Sucursal y Recogida
 10. Usuario hace clic en "Continuar"
 
 PASO 3: Metodo de Pago y Confirmacion
-11. Sistema muestra el metodo de pago unico: "Pago contra entrega al recoger en tienda" (Efectivo/Tarjeta en caja) o "Transferencia bancaria previa"
+11. Sistema muestra el metodo de pago unico: "Pago en efectivo al recoger en tienda". No existe cobro en línea ni pago dentro de un POS.
 12. Usuario ingresa codigo de descuento (opcional)
 13. Sistema calcula total final
 14. Usuario hace clic en "Confirmar Reserva"
@@ -450,7 +452,7 @@ FA3: Stock Negativo
 Administrador o personal operativo visualiza, filtra y actualiza el estado de las reservas de pedidos hechas por los clientes.
 
 ### Actores
-- Principal: Administrador, Manager o Cajero
+- Principal: Administrador o Manager
 
 ### Precondiciones
 - Usuario con permisos adecuados

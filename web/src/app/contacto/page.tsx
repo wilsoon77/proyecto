@@ -106,7 +106,7 @@ export default function ContactoPage() {
               </details>
               <details className="rounded-lg border border-gray-100 p-3 bg-gray-50/50">
                 <summary className="cursor-pointer font-medium text-sm text-gray-900">¿Cuál es el pedido mínimo?</summary>
-                <p className="mt-2 text-xs text-gray-600">El pedido mínimo es de Q15. Puedes pagar en efectivo o tarjeta de crédito/débito al recoger.</p>
+                <p className="mt-2 text-xs text-gray-600">El pedido mínimo es de Q15. El pago se realiza en efectivo al recoger.</p>
               </details>
             </div>
           </div>

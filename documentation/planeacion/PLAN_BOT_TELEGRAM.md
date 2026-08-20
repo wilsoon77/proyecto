@@ -1,6 +1,8 @@
 # Plan: Asistente privado de Telegram para los dueños de la panadería
 
-> **Objetivo:** permitir que las cuentas autorizadas de la panadería consulten el estado del negocio desde Telegram usando lenguaje natural y reciban en Telegram las mismas alertas relevantes que hoy se entregan mediante notificaciones push.
+> **Estado de alcance:** El asistente de Telegram está implementado como canal privado de consulta operativa para usuarios autorizados. Solo consulta inventario de producto terminado, materias primas, producción y cierres del día; no consulta ventas ni pedidos y no ejecuta cambios.
+
+> **Objetivo:** permitir que las cuentas autorizadas consulten inventario, materias primas, producción y cierres de ambas sucursales desde Telegram usando lenguaje natural. Las únicas alertas automáticas del sistema siguen siendo materia prima baja y caducidad próxima.
 
 > **Estado:** arquitectura implementada en el backend y frontend. Quedan como pasos operativos aplicar la migración, configurar secretos y registrar el webhook.
 
@@ -14,7 +16,7 @@
 - Los dueños podrán consultar información de **las dos sucursales**. El alcance se resolverá en el backend y no podrá ser alterado por el modelo ni por el texto del usuario.
 - Las preguntas se harán en lenguaje natural. Se usará *tool calling* para convertirlas en consultas controladas sobre servicios de lectura del backend.
 - La versión inicial será de **solo lectura**. Registrar compras, producción, ventas o cierres desde Telegram queda fuera de v1.
-- Las alertas seguirán llegando a la aplicación mediante Web Push y, cuando exista un vínculo activo, también a Telegram.
+- Las alertas de materia prima baja y caducidad próxima seguirán llegando a la aplicación mediante Web Push y, cuando exista un vínculo activo, también a Telegram.
 
 ## FASE 0 — Contrarrevisión del proyecto (completada)
 
@@ -27,11 +29,11 @@ La revisión se realizó con Graphify y con los archivos fuente actuales. El gra
 | Roles | `UserRole` contiene `ADMIN` y `MANAGER`, pero no `OWNER`. | No crear un rol nuevo. La elegibilidad será `ADMIN/MANAGER` más una capacidad explícita. |
 | Alcance | `BranchScopeService` considera a `MANAGER` un rol limitado a sucursal y a `ADMIN` global. | No reutilizar el alcance de `MANAGER` sin más. El asistente tendrá un permiso explícito `ALL_BRANCHES` para las cuentas dueñas. |
 | Push | `NotificationsModule` es global y `NotificationsService` ya persiste `Notification`, administra `PushSubscription` y envía Web Push. | Extender este servicio con el canal Telegram; no crear un segundo sistema de notificaciones. |
-| Disparadores | Ya existen alertas para órdenes, producción, pérdidas y stock bajo de producto terminado/materia prima. | Telegram debe conectarse a los mismos eventos, evitando duplicar reglas de negocio. |
+| Disparadores | Solo se conservan `inventory.raw_material_low` e `inventory.expiration_warning`. | Telegram reutiliza esas dos reglas, evitando alertas de órdenes, producción o ventas fuera del alcance. |
 | Anti-spam | No existe una deduplicación robusta para stock bajo. | Añadir estado de alerta reutilizable antes de activar alertas repetitivas por Telegram. |
 | Scope de alertas | `sendToRoles` actualmente no filtra por sucursal. | Corregir la selección de destinatarios para que una alerta de una sucursal no se mezcle con otra. |
-| Servicios reutilizables | Existen `DashboardService`, `RawMaterialsService`, `InventoryService`, `OrdersService`, `ProductionService` y `DailyCloseService`. | Crear una fachada de lectura para el asistente y reutilizar estos servicios o sus consultas de dominio. |
-| Consultas | El dashboard actual está orientado a la pantalla de hoy y devuelve un payload amplio; inventario y cierre necesitan respuestas más pequeñas y fechas explícitas. | No exponer directamente esos payloads al LLM; agregar métodos de consulta resumida y con zona horaria de negocio. |
+| Servicios reutilizables | Existen lecturas de `RawMaterialsService`, `InventoryService`, `ProductionService` y `DailyCloseService`. | La fachada del asistente solo expone esas cuatro áreas, con consultas resumidas y controladas. |
+| Consultas | El panel Operación está orientado al día actual y devuelve un payload amplio; inventario y cierre necesitan respuestas más pequeñas y fechas explícitas. | No exponer directamente esos payloads al LLM; agregar métodos de consulta resumida y con zona horaria de negocio. |
 | Cierre de día | `DailyCloseService` registra unidades, merma y sobrantes, pero no conserva un precio histórico por unidad. | No prometer al bot un monto monetario histórico de cierre hasta modelarlo correctamente. |
 | Seguridad | No hay guard JWT global; los controladores protegen rutas explícitamente y la configuración no valida todas las variables al arranque. | Proteger cada endpoint nuevo de forma explícita y validar la configuración de Telegram/IA al habilitar el módulo. |
 
@@ -183,12 +185,8 @@ api/src/assistant/
   assistant.service.ts             # orquestación del modelo y tools
   assistant-policy.service.ts      # rol, capacidad, sucursales y contexto
   assistant-read.service.ts        # fachada de lecturas resumidas
-  tools/
-    sales.tools.ts
-    inventory.tools.ts
-    orders.tools.ts
-    production.tools.ts
-    daily-close.tools.ts
+  # Las tools permitidas se definen en assistant.service.ts y leen mediante
+  # assistant-read.service.ts; no existe un módulo separado de ventas/POS.
 ```
 
 ### 2.3 Seguridad del webhook y comandos
@@ -240,10 +238,9 @@ Sí se recomienda *tool calling*: separa la interpretación del lenguaje natural
 
 | Tool | Fuente o adaptación | Preguntas que cubre |
 |---|---|---|
-| `salesSummary` | Nueva lectura resumida sobre órdenes/dashboard, con fecha de negocio y sucursal. | “¿Cómo van las ventas hoy?”, “¿cuánto se vendió ayer?” |
 | `lowRawMaterials` | `RawMaterialsService`, respetando `RawMaterial.minStock` por material. | “¿Qué materia prima está baja?”, “¿qué debo comprar?” |
+| `rawMaterialInventory` | Lectura controlada de existencias de insumos por nombre y sucursal. | “¿Cuánta harina hay?” |
 | `productInventory` | `InventoryService` más resolución segura por nombre/slug. | “¿Cuánto pan queda?”, “¿qué stock hay de tortas?” |
-| `pendingOrders` | `OrdersService`, con límite y campos mínimos. | “¿Hay pedidos pendientes?” |
 | `productionSummary` | `ProductionService`, con fecha y sucursales explícitas. | “¿Qué se produjo hoy?” |
 | `dailyCloseSummary` | `DailyCloseService`, solo unidades, merma y sobrantes disponibles. | “¿Cómo cerró el día?”, “¿hubo merma?” |
 
@@ -258,7 +255,6 @@ Reglas para todas las tools:
 
 Adaptaciones necesarias antes de implementar las tools:
 
-- **Ventas:** el dashboard actual está centrado en el día actual y usa un payload amplio; crear una consulta de resumen por fecha/sucursal y definir claramente qué estados de orden cuentan como venta.
 - **Materia prima:** mantener el umbral por material y unificar la comparación del umbral para que alerta y consulta no discrepen.
 - **Inventario:** agregar resolución controlada por nombre, además del slug, sin permitir filtros libres que se concatenen a consultas.
 - **Producción:** acordar si la fecha representa `createdAt` o una fecha operativa; usar la misma semántica en app y bot.
@@ -326,17 +322,16 @@ El canal Telegram debe ser un adaptador pequeño: si el usuario no tiene víncul
 
 ### 4.2 Eventos y destinatarios
 
-Conservar los eventos actuales y conectar el canal Telegram sin duplicar sus reglas:
+Conectar el canal Telegram únicamente a las dos reglas operativas vigentes:
 
-- `order.new_pending`, `order.cancelled`, `order.status_changed`;
-- `inventory.low_stock`, `inventory.raw_material_low`, `inventory.loss_detected`;
-- `production.assigned`;
-- `daily_close.completed`, nuevo evento después de confirmar un cierre;
-- `telegram.linked`, confirmación de un nuevo vínculo.
+- `inventory.raw_material_low`;
+- `inventory.expiration_warning`.
+
+La vinculación, producción, cierres, pedidos y ventas no crean notificaciones automáticas adicionales en Telegram.
 
 Para los eventos asociados a una sucursal, el destinatario se resolverá con la sucursal del evento y la política `ALL_BRANCHES` del dueño. El método actual `sendToRoles` debe revisarse para no enviar indiscriminadamente alertas branch-specific a usuarios que no correspondan.
 
-La configuración de notificaciones debe incluir las claves nuevas necesarias, especialmente la confirmación `telegram.linked` y el cierre de día. No asumir que una configuración inexistente habilita automáticamente el envío.
+La configuración de notificaciones se limita a esas dos claves. No asumir que una configuración inexistente habilita automáticamente el envío.
 
 ### 4.3 Anti-spam y resolución de alertas
 
@@ -345,7 +340,7 @@ El estado debe representar una alerta vigente por recurso, no crear una fila dis
 ```prisma
 enum AlertType {
   RAW_MATERIAL_LOW
-  PRODUCT_LOW
+  PRODUCT_EXPIRY
 }
 
 model AlertState {
@@ -370,7 +365,7 @@ Reglas:
 - No repetir el mismo evento mientras siga bajo, salvo un resumen periódico explícito.
 - Resolver y rearmar cuando el recurso vuelva al umbral normal después de una compra o ajuste válido.
 - Usar una sola semántica de comparación para consulta y alerta; documentar si el umbral normal es `>=` o `>`.
-- Cubrir tanto materia prima como producto terminado, porque ambos ya generan alertas en el sistema.
+- En caducidad, usar una clave por lote y recordatorio (`lot:<id>:warning:<daysBefore>`), de modo que 30 y 15 días se notifiquen una sola vez cada uno. Resolver todas las etapas cuando el lote se consume o vence.
 
 ## FASE 5 — Orden de implementación
 
@@ -379,9 +374,9 @@ Reglas:
 | 1 | Política `AssistantAccess`, alcance `ALL_BRANCHES`, variables y migración Prisma con RLS. | Fase 0 |
 | 2 | `TelegramLink`, token de deep link, webhook seguro, comandos y endpoints de estado/desvinculación. | 1 |
 | 3 | Botón “Abrir asistente en Telegram” y estados de vínculo en la aplicación. | 2 |
-| 4 | Módulo `assistant`, contexto de seguridad y dos tools iniciales: ventas y materia prima baja. | 2 |
-| 5 | Tools de inventario, órdenes, producción y cierre; pruebas de fechas y agregación de las dos sucursales. | 4 |
-| 6 | Canal Telegram dentro de `NotificationsService`, eventos de vínculo/cierre y deduplicación de alertas. | 2 y revisión de eventos actuales |
+| 4 | Módulo `assistant`, contexto de seguridad y tools de inventario/materia prima. | 2 |
+| 5 | Tools de producción y cierre; pruebas de fechas y agregación de las dos sucursales. | 4 |
+| 6 | Canal Telegram dentro de `NotificationsService`, solo para las dos alertas operativas y su deduplicación. | 2 |
 | 7 | Pruebas de seguridad, límites, observabilidad, webhook público y despliegue. | 3, 5 y 6 |
 
 ## Criterios de aceptación
@@ -390,7 +385,7 @@ Reglas:
 - El enlace profundo expira, es de un solo uso y no almacena el token en claro.
 - Un chat no vinculado, un grupo, un usuario inactivo o un usuario sin `ADMIN/MANAGER` no recibe datos.
 - Un `MANAGER` dueño autorizado puede consultar las dos sucursales; una pregunta no puede ampliar el alcance.
-- Las respuestas de ventas, inventario, producción y cierre muestran totales y desglose por sucursal cuando aplica.
+- Las respuestas de inventario, materias primas, producción y cierre muestran datos y desglose por sucursal cuando aplica.
 - El LLM no tiene acceso a Prisma, SQL ni credenciales; las tools son allowlisted, validadas y de solo lectura.
 - Una solicitud de escritura se rechaza y se redirige a la aplicación.
 - Un webhook con secret incorrecto, `update_id` repetido o rate limit excedido no procesa una consulta.

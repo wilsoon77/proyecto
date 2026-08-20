@@ -56,13 +56,16 @@ Backend operativo para una panadería de dos sucursales: catálogo, pedidos para
 - `POST /auth/deactivate` — Desactivar cuenta
 
 ### Products
-- `GET /products` — Listado con filtros, búsqueda, paginación
+- `GET /products` — Listado público; solo productos activos de categorías activas
+- `GET /products/admin` — Consulta administrativa de activos/ocultos (ADMIN/MANAGER)
 - `GET /products/:slug` — Detalle por slug
 - `GET /products/featured` — Productos destacados
 - `POST /products` — Crear (ADMIN)
 - `PATCH /products/:slug` — Actualizar (ADMIN), incluyendo visibilidad en e-commerce
 - `PUT /products/:slug` — Reemplazar (ADMIN)
 - `DELETE /products/:slug` — Eliminar (ADMIN)
+
+`isActive=false` oculta el producto del e-commerce, pero no afecta su inventario ni su inclusión en el cierre diario. La disponibilidad temporal de venta se controla separadamente con `isAvailable`.
 
 ### Presentaciones comerciales
 
@@ -106,6 +109,8 @@ La configuración funcional completa está en [`documentation/PRESENTACIONES_PRO
 - `GET /orders/my-orders` — Pedidos del cliente autenticado
 - `GET /orders/:id` — Detalle
 
+El pedido se recoge en sucursal y el pago se maneja únicamente como `EFECTIVO` al momento del retiro. La API no procesa pagos en línea ni pagos en tienda mediante POS.
+
 ### Inventory & Stock
 - `GET /inventory` — Inventario con filtros por sucursal
 - `GET /inventory/low-stock` — Productos con stock bajo
@@ -127,6 +132,7 @@ La configuración funcional completa está en [`documentation/PRESENTACIONES_PRO
 - `GET /notifications/config` — Configuraciones de materia prima baja y caducidad próxima
 - `POST /notifications/test` — Prueba de una de esas dos alertas (ADMIN)
 - `POST /telegram/link-session` — Vincular el asistente de Telegram
+- Telegram solo consulta inventario de producto terminado, materias primas, producción y cierres del día; no consulta ventas/pedidos ni ejecuta cambios.
 - `GET /stock-movements/activity` — Actividad resumida para el panel Operación
 
 ### Health & Metrics
@@ -170,11 +176,13 @@ La lista completa y los esquemas de request/response se generan desde los contro
 - **CORS** — Orígenes configurables via `CORS_ORIGINS`
 - **Rate Limiting** — 100 req/min global (ThrottlerModule)
 - **JWT** — Access tokens (15min) + Refresh tokens (7 días) con rotación
-- **bcrypt** — Hash de contraseñas
+- **Supabase Auth** — Fuente única de credenciales cuando está configurado; el hash local solo se usa en instalaciones independientes
 - **hCaptcha** — Protección de registro/login
-- **whitelist** — Elimina campos no declarados en los DTOs (`forbidNonWhitelisted=false`)
+- **ValidationPipe** — Whitelist estricta con `forbidNonWhitelisted=true`
 - **Swagger deshabilitado en producción**
+- **Refresh tokens** — Valores opacos, hash SHA-256 indexado y rotación; los formatos legacy se aceptan solo durante la transición
 - **Audit Log** — Registro de acciones con IP y User-Agent
+- **Retención** — Purga diaria configurable de intentos de login, sesiones expiradas, notificaciones, updates de Telegram y auditoría antigua
 
 ## Scalar Cloud (OpenAPI automático)
 
@@ -187,7 +195,6 @@ Se usa GitHub Actions para validar y publicar `openapi.json` en Scalar. Ver `.gi
 | `ADMIN` | Acceso total al sistema |
 | `MANAGER` | Dueños/familia — ambas sucursales, inventario, producción, transferencias y pedidos |
 | `BAKER` | Panadero — producción y materia prima |
-| `CASHIER` | Cajero — pedidos para retiro, conteo y cierre de su sucursal |
 | `CUSTOMER` | Cliente — catálogo, pedidos, perfil |
 
 ---

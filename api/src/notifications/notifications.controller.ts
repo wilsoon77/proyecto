@@ -160,18 +160,14 @@ export class NotificationsController {
   async sendTestNotification(@Req() req: any, @Body() testDto: TestNotificationDto) {
     const key = testDto.key;
     const placeholders: Record<string, any> = {
-      orderNumber: 'TEST-9999',
-      status: 'CONFIRMED',
       productName: 'Pan de Banano',
+      expiresAt: '2026-09-01',
+      daysBefore: 30,
       materialName: 'Harina de Trigo',
       current: 8,
       unit: 'LB',
       branchName: 'Sucursal Central',
       quantity: 5,
-      type: 'MERMA',
-      recipeName: 'Baguette Tradicional',
-      count: 3,
-      ip: '192.168.1.1',
       userId: req.user.userId, // Dirigido a sí mismo
     };
 

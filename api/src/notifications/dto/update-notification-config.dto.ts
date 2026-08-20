@@ -17,7 +17,7 @@ export class UpdateNotificationConfigDto {
   @IsString()
   message?: string;
 
-  @ApiProperty({ example: ['CASHIER', 'MANAGER'], required: false })
+  @ApiProperty({ example: ['MANAGER'], required: false })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })

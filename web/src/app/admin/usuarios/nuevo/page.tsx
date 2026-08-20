@@ -75,7 +75,7 @@ export default function NuevoUsuarioPage() {
       setError("Las contraseñas no coinciden")
       return
     }
-    if (['MANAGER', 'BAKER', 'CASHIER'].includes(role) && !branchId) {
+    if (['MANAGER', 'BAKER'].includes(role) && !branchId) {
       setError("Debe seleccionar una sucursal para el empleado")
       return
     }
@@ -90,7 +90,7 @@ export default function NuevoUsuarioPage() {
         phone: phone.trim() || undefined,
         password,
         role,
-        branchId: ['MANAGER', 'BAKER', 'CASHIER'].includes(role) ? branchId : undefined,
+        branchId: ['MANAGER', 'BAKER'].includes(role) ? branchId : undefined,
       })
 
       showToast(`Usuario "${firstName} ${lastName}" creado correctamente`, "success")
@@ -202,7 +202,7 @@ export default function NuevoUsuarioPage() {
               value={role}
               onChange={(e) => {
                 setRole(e.target.value as UserRole)
-                if (!['MANAGER', 'BAKER', 'CASHIER'].includes(e.target.value)) {
+                if (!['MANAGER', 'BAKER'].includes(e.target.value)) {
                   setBranchId(undefined)
                 }
               }}
@@ -211,20 +211,18 @@ export default function NuevoUsuarioPage() {
               <option value="CUSTOMER">Cliente</option>
               <option value="MANAGER">Gerente</option>
               <option value="BAKER">Panadero</option>
-              <option value="CASHIER">Cajero</option>
               <option value="ADMIN">Administrador</option>
             </select>
             <p className="text-xs text-muted-foreground mt-1">
               {role === 'CUSTOMER' && 'Puede ver productos y realizar pedidos'}
               {role === 'MANAGER' && 'Acceso total a operaciones de su sucursal'}
               {role === 'BAKER' && 'Solo ve producción y materia prima'}
-              {role === 'CASHIER' && 'Solo ve el Punto de Venta'}
               {role === 'ADMIN' && 'Acceso completo al sistema'}
             </p>
           </div>
 
           {/* Branch (solo para roles operativos) */}
-          {['MANAGER', 'BAKER', 'CASHIER'].includes(role) && (
+          {['MANAGER', 'BAKER'].includes(role) && (
             <div>
               <label htmlFor="branch" className="block text-sm font-medium text-foreground mb-2">
                 <Building2 className="inline-block h-4 w-4 mr-1" />

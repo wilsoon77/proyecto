@@ -1,5 +1,7 @@
 # Analítica predictiva de demanda basada en historial
 
+> **OBSOLETO:** Este módulo fue retirado del alcance operativo en agosto de 2026. Se conserva únicamente como referencia histórica; no forma parte de la aplicación actual ni de la base de datos. El panel Operación conserva solo indicadores operativos simples y una gráfica compacta.
+
 ## 1. Propósito
 
 El sistema incorpora un módulo de analítica para estimar la demanda futura de cada producto por sucursal y convertir esa estimación en una recomendación de producción.
@@ -402,4 +404,3 @@ Las pruebas unitarias cubren:
 - Servicios existentes de inventario, producción, pedidos y autenticación.
 
 La validación funcional final debe realizarse con datos reales o representativos de la panadería, especialmente ventas de lunes a sábado, cierres diarios, inventario reservado y recetas activas.
-

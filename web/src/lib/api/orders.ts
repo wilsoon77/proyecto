@@ -33,7 +33,7 @@ export const ordersService = {
   },
 
   /**
-   * Listar órdenes (ADMIN/EMPLOYEE)
+   * Listar órdenes para retiro (ADMIN/MANAGER)
    */
   async list(filters: OrderFilters = {}): Promise<PaginatedResponse<ApiOrder>> {
     const query = buildQueryString(filters)
@@ -68,7 +68,7 @@ export const ordersService = {
   },
 
   /**
-   * Confirmar orden (pago recibido)
+   * Confirmar pedido para preparación; el pago se realiza en efectivo al recoger.
    */
   async confirm(id: number): Promise<ApiOrder> {
     return api.post<ApiOrder>(`/orders/${id}/confirm`)
@@ -80,7 +80,7 @@ export const ordersService = {
   },
 
   /**
-   * Cambiar estado de orden (ADMIN/EMPLOYEE)
+   * Cambiar estado de orden (ADMIN/MANAGER)
    */
   async updateStatus(id: number, status: OrderStatus): Promise<ApiOrder> {
     return api.patch<ApiOrder>(`/orders/${id}/status`, { status })

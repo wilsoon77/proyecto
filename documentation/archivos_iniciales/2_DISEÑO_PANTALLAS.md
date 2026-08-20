@@ -1,5 +1,7 @@
 # DISEÑO DE PANTALLAS - Panaderia Svetlana Smart System
 
+> **Documento inicial/histórico:** la pantalla actual se denomina **Operación**. POS, delivery, analítica predictiva y dashboards extensos no forman parte del alcance vigente.
+
 ## SISTEMA DE DISEÑO
 
 ### Paleta de Colores
@@ -273,9 +275,9 @@ Caption: 0.75rem (12px) - Regular
 │  Hora de Recogida:             │  Impuestos:    │
 │  [ Seleccionar Hora (⏰) ]    │  $1.50         │
 │                                │  ────────────  │
-│  Método de Pago en Tienda:     │  Total:        │
-│  ( ) Pago al recoger (Caja)    │  $29.00        │
-│  ( ) Transferencia bancaria    │                │
+│  Pago al retirar: EFECTIVO     │  Total:        │
+│  (sin cobro dentro del sistema)│  $29.00        │
+│                                │                │
 │                                │  [Confirmar]   │
 │  Notas Especiales:             │                │
 │  [________________________]    │                │
@@ -380,7 +382,7 @@ Caption: 0.75rem (12px) - Regular
 
 ```
 ┌─────────────────────────────────────────────────┐
-│  Panaderia Svetlana Admin | Cajero Centro | Salir│
+│  Panaderia Svetlana Admin | Encargado Centro | Salir│
 └─────────────────────────────────────────────────┘
 
 ┌────────────┬────────────────────────────────────┐

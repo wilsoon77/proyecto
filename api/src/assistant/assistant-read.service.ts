@@ -3,13 +3,6 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { AssistantContext } from './assistant-policy.service.js';
 import { addDays, businessDateStartUtc, todayBusinessDate } from '../common/time/business-date.js';
 
-const FULFILLMENT_STATUSES = [
-  'CONFIRMED',
-  'PREPARING',
-  'READY',
-  'PICKED_UP',
-] as const;
-
 type BranchArgs = { branch?: string };
 
 function normalize(value: string): string {
@@ -63,46 +56,6 @@ export class AssistantReadService {
 
   private branchName(context: AssistantContext, branchId: number): string {
     return context.branches.find((branch) => branch.id === branchId)?.name || `Sucursal ${branchId}`;
-  }
-
-  async salesSummary(context: AssistantContext, args: { date?: string; branch?: string }) {
-    const date = parseDate(args.date);
-    const { start, end } = dateRange(date);
-    const branchIds = this.resolveBranches(context, args);
-    const where = {
-      branchId: { in: branchIds },
-      createdAt: { gte: start, lt: end },
-      status: { in: [...FULFILLMENT_STATUSES] },
-    };
-
-    const [aggregate, orders] = await Promise.all([
-      this.prisma.order.aggregate({ where, _sum: { total: true }, _count: { _all: true } }),
-      this.prisma.order.findMany({
-        where,
-        select: { branchId: true, total: true },
-      }),
-    ]);
-
-    const byBranch = new Map<number, { totalSales: number; orderCount: number }>();
-    for (const order of orders) {
-      if (!order.branchId) continue;
-      const current = byBranch.get(order.branchId) || { totalSales: 0, orderCount: 0 };
-      current.totalSales += decimal(order.total);
-      current.orderCount += 1;
-      byBranch.set(order.branchId, current);
-    }
-
-    return {
-      date,
-      timezone: context.timezone,
-      totalSales: decimal(aggregate._sum.total),
-      orderCount: aggregate._count._all,
-      branches: branchIds.map((branchId) => ({
-        branchId,
-        branchName: this.branchName(context, branchId),
-        ...(byBranch.get(branchId) || { totalSales: 0, orderCount: 0 }),
-      })),
-    };
   }
 
   async lowRawMaterials(context: AssistantContext, args: BranchArgs) {
@@ -185,34 +138,6 @@ export class AssistantReadService {
         reserved: row.reserved,
         available: row.quantity - row.reserved,
         updatedAt: row.updatedAt,
-      })),
-    };
-  }
-
-  async pendingOrders(context: AssistantContext, args: BranchArgs) {
-    const branchIds = this.resolveBranches(context, args);
-    const orders = await this.prisma.order.findMany({
-      where: { branchId: { in: branchIds }, status: 'PENDING' },
-      select: {
-        orderNumber: true,
-        total: true,
-        createdAt: true,
-        branch: { select: { id: true, name: true } },
-        items: { select: { productName: true, quantity: true }, take: 20 },
-      },
-      orderBy: { createdAt: 'asc' },
-      take: 30,
-    });
-
-    return {
-      count: orders.length,
-      orders: orders.map((order) => ({
-        orderNumber: order.orderNumber,
-        branchId: order.branch?.id ?? null,
-        branchName: order.branch?.name ?? 'Sin sucursal',
-        total: decimal(order.total),
-        createdAt: order.createdAt,
-        items: order.items,
       })),
     };
   }

@@ -7,7 +7,7 @@ export interface BranchActor {
 }
 
 const GLOBAL_SCOPE_ROLES = new Set(['ADMIN', 'MANAGER']);
-const BRANCH_SCOPED_ROLES = new Set(['BAKER', 'CASHIER']);
+const BRANCH_SCOPED_ROLES = new Set(['BAKER']);
 
 /**
  * Resuelve el alcance operativo de una petición autenticada.

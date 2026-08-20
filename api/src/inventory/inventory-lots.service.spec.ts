@@ -30,7 +30,7 @@ describe('InventoryLotsService', () => {
 
   it('no solicita caducidad para un producto producido', async () => {
     const tx = createTransactionMock();
-    tx.product.findUnique.mockResolvedValue({ origin: ProductOrigin.PRODUCIDO, tracksExpiration: true, expirationAlertDays: 3 });
+    tx.product.findUnique.mockResolvedValue({ origin: ProductOrigin.PRODUCIDO, tracksExpiration: true, expirationAlertDays: [3] });
 
     await service.createInboundLot(tx, {
       productId: 1,
@@ -50,7 +50,7 @@ describe('InventoryLotsService', () => {
 
   it('ignora fechas de caducidad para productos producidos aunque el movimiento sea una compra', async () => {
     const tx = createTransactionMock();
-    tx.product.findUnique.mockResolvedValue({ origin: ProductOrigin.PRODUCIDO, tracksExpiration: true, expirationAlertDays: 3 });
+    tx.product.findUnique.mockResolvedValue({ origin: ProductOrigin.PRODUCIDO, tracksExpiration: true, expirationAlertDays: [3] });
 
     await service.createInboundLot(tx, {
       productId: 1,
@@ -67,7 +67,7 @@ describe('InventoryLotsService', () => {
 
   it('exige caducidad únicamente para compras de productos configurados', async () => {
     const tx = createTransactionMock();
-    tx.product.findUnique.mockResolvedValue({ origin: ProductOrigin.COMPRADO, tracksExpiration: true, expirationAlertDays: 3 });
+    tx.product.findUnique.mockResolvedValue({ origin: ProductOrigin.COMPRADO, tracksExpiration: true, expirationAlertDays: [3] });
 
     await expect(service.createInboundLot(tx, {
       productId: 1,
@@ -79,7 +79,7 @@ describe('InventoryLotsService', () => {
 
   it('calcula la fecha de alerta a partir de la caducidad de una compra', async () => {
     const tx = createTransactionMock();
-    tx.product.findUnique.mockResolvedValue({ origin: ProductOrigin.COMPRADO, tracksExpiration: true, expirationAlertDays: 5 });
+    tx.product.findUnique.mockResolvedValue({ origin: ProductOrigin.COMPRADO, tracksExpiration: true, expirationAlertDays: [5] });
 
     await service.createInboundLot(tx, {
       productId: 1,
@@ -93,6 +93,26 @@ describe('InventoryLotsService', () => {
       data: expect.objectContaining({
         expiresAt: new Date('2026-08-20T00:00:00.000Z'),
         alertAt: new Date('2026-08-15T00:00:00.000Z'),
+      }),
+    });
+  });
+
+  it('conserva como alertAt la primera fecha cuando hay varios recordatorios', async () => {
+    const tx = createTransactionMock();
+    tx.product.findUnique.mockResolvedValue({ origin: ProductOrigin.COMPRADO, tracksExpiration: true, expirationAlertDays: [30, 15, 3] });
+
+    await service.createInboundLot(tx, {
+      productId: 1,
+      branchId: 2,
+      quantity: 12,
+      sourceType: InventoryLotSource.COMPRA,
+      expiresAt: '2026-09-01',
+    });
+
+    expect(tx.inventoryLot.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        expiresAt: new Date('2026-09-01T00:00:00.000Z'),
+        alertAt: new Date('2026-08-02T00:00:00.000Z'),
       }),
     });
   });

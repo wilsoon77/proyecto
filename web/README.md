@@ -1,6 +1,6 @@
 # Panadería Svetlana — Frontend Web
 
-Frontend del sistema ERP/POS para panaderías, construido con Next.js 16 (App Router) y React 19.
+Frontend del sistema operativo de una panadería de dos sucursales, construido con Next.js 16 (App Router) y React 19. Incluye catálogo, carrito, retiro en sucursal, inventario, producción, cierre diario y alertas operativas; no incluye POS, pagos en tienda ni delivery.
 
 ## Stack
 - **Next.js 16** — App Router, Server/Client Components
@@ -10,7 +10,7 @@ Frontend del sistema ERP/POS para panaderías, construido con Next.js 16 (App Ro
 - **shadcn/ui + Radix UI** — Componentes accesibles
 - **Sentry** — Monitoreo de errores
 - **hCaptcha** — Protección de formularios
-- **Recharts** — Gráficos para dashboard admin
+- **Recharts** — Gráfica compacta para el panel Operación
 - **Sonner** — Notificaciones toast
 - **Lucide React** — Iconografía
 
@@ -34,7 +34,7 @@ NEXT_PUBLIC_API_URL=http://localhost:4000
 
 El catálogo permite seleccionar presentaciones como `Tira completa` y `Media tira`. El carrito y checkout envían la presentación seleccionada; el precio mostrado corresponde a esa presentación y no al precio base por pieza.
 
-El flujo administrativo de conteo de inventario y cierre diario permite capturar presentaciones y piezas sueltas. Consulta [`documentation/PRESENTACIONES_PRODUCTO.md`](../documentation/PRESENTACIONES_PRODUCTO.md) para las reglas funcionales.
+El flujo administrativo de conteo de inventario y cierre diario permite capturar presentaciones y piezas sueltas. Consulta [`documentation/planeacion/PRESENTACIONES_PRODUCTO.md`](../documentation/planeacion/PRESENTACIONES_PRODUCTO.md) para las reglas funcionales.
 
 ## Estructura del proyecto
 
@@ -50,19 +50,18 @@ web/src/
 │   ├── reset-password/          # Restablecer contraseña
 │   ├── productos/               # Catálogo de productos
 │   ├── carrito/                 # Carrito de compras
-│   ├── checkout/                # Proceso de pago
+│   ├── checkout/                # Reserva para retirar en sucursal
 │   ├── pedidos/                 # Historial de pedidos
 │   ├── perfil/                  # Perfil del usuario
 │   ├── sucursales/              # Mapa de sucursales
 │   ├── contacto/                # Página de contacto
 │   ├── sobre-nosotros/          # Acerca de
-│   ├── promociones/             # Promociones
 │   ├── cookies/                 # Política de cookies
 │   ├── privacidad/              # Política de privacidad
 │   ├── terminos/                # Términos y condiciones
 │   ├── auth/                    # Rutas de callback de auth
 │   └── admin/                   # Panel administrativo
-│       ├── page.tsx             # Dashboard principal
+│       ├── page.tsx             # Panel Operación principal
 │       ├── layout.tsx           # Layout con sidebar admin
 │       ├── productos/           # CRUD de productos
 │       ├── categorias/          # Gestión de categorías
@@ -111,7 +110,6 @@ web/src/
 │   │   ├── categories.ts        # Servicio de categorías
 │   │   ├── branches.ts          # Servicio de sucursales
 │   │   ├── orders.ts            # Servicio de pedidos
-│   │   ├── addresses.ts         # Servicio de direcciones
 │   │   ├── users.ts             # Servicio de usuarios
 │   │   ├── inventory.ts         # Servicio de inventario
 │   │   ├── admin.service.ts     # Servicios admin (productos)
@@ -120,9 +118,8 @@ web/src/
 │   │   ├── transformers.ts      # Transformadores API → Frontend
 │   │   ├── types.ts             # Tipos de respuesta API
 │   │   └── index.ts             # Barrel export
-│   ├── constants.ts             # Constantes (moneda GTQ, rutas, envío)
+│   ├── constants.ts             # Constantes (moneda GTQ, rutas y pedidos)
 │   ├── utils.ts                 # Utilidades (formatPrice, formatDate)
-│   ├── mock.ts                  # Datos mock para desarrollo
 │   ├── audit-helpers.ts         # Helpers de auditoría
 │   ├── device-fingerprint.ts    # Fingerprint de dispositivos
 │   └── supabase/                # Cliente Supabase
@@ -148,9 +145,8 @@ web/src/
 |-----|--------|
 | `CUSTOMER` | Catálogo, carrito, checkout, pedidos, perfil |
 | `ADMIN` | Todo + Panel admin completo |
-| `MANAGER` | Panel admin (sin configuración avanzada) |
+| `MANAGER` | Panel admin: pedidos, inventario, producción, transferencias y cierre diario de ambas sucursales |
 | `BAKER` | Módulo de producción |
-| `CASHIER` | POS (punto de venta) |
 
 ---
 Última actualización: Agosto 2026

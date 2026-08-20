@@ -22,7 +22,6 @@ enum UserRole {
   ADMIN
   MANAGER
   BAKER
-  CASHIER
 }
 
 enum AssistantScope {
@@ -36,6 +35,10 @@ enum OrderStatus {
   READY
   CANCELLED
   PICKED_UP
+}
+
+enum PaymentMethod {
+  EFECTIVO
 }
 
 // Origen del producto: producido internamente o comprado (abarrotes/reventa)
@@ -93,13 +96,15 @@ enum InventoryLotSource {
 model User {
   id                 String              @id @default(cuid())
   email              String              @unique
-  passwordHash       String
+  // OAuth users do not have a local password. Password login rejects null explicitly.
+  passwordHash       String?
   firstName          String
   lastName           String
   phone              String?             @db.VarChar(32)
   role               UserRole            @default(CUSTOMER)
   isActive           Boolean             @default(true)
-  // Sucursal asignada (MANAGER, BAKER, CASHIER)
+  // Sucursal asignada (MANAGER, BAKER). MANAGER conserva una sucursal
+  // predeterminada, pero su alcance operativo es global.
   branch             Branch?             @relation(fields: [branchId], references: [id])
   branchId           Int?
   createdAt          DateTime            @default(now())
@@ -122,7 +127,7 @@ model RefreshToken {
   id          String    @id @default(cuid())
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId      String
-  hashedToken String // Token hasheado con bcrypt
+  hashedToken String @unique // SHA-256 del token opaco; fallback legacy en el servicio
   expiresAt   DateTime
   revokedAt   DateTime?
   userAgent   String?   @db.VarChar(500)
@@ -170,6 +175,7 @@ model Category {
   name        String    @unique
   slug        String    @unique
   description String?
+  isActive    Boolean   @default(true)
   products    Product[]
 }
 
@@ -181,14 +187,18 @@ model Product {
   description         String?
   // ── Precios ──
   basePrice           Decimal          @db.Decimal(10, 2) // Precio unitario (ej: Q0.50)
-  comboQuantity       Int? // Cantidad del combo (ej: 3 para "3x1.25")
-  comboPrice          Decimal?         @db.Decimal(10, 2) // Precio del combo (ej: Q1.25)
+  // @deprecated Prefer ProductPresentation for every quantity-based sale.
+  comboQuantity       Int? // Compatibilidad con catálogo legado (ej: 3 para "3x1.25")
+  // @deprecated Prefer ProductPresentation.price for new configurations.
+  comboPrice          Decimal?         @db.Decimal(10, 2) // Compatibilidad con catálogo legado
   stockUnitLabel      String           @default("unidades") // Nombre de la unidad física base (piezas, unidades, etc.)
   // ── Producción ──
   origin              ProductOrigin    @default(PRODUCIDO)
   unitsPerTray        Int? // Unidades por lata (ej: 36). Solo para PRODUCIDO.
   tracksExpiration    Boolean          @default(false) // Activa control de caducidad por lote
-  expirationAlertDays Int              @default(3) // Días antes de caducar para alertar
+  // Días de anticipación para cada aviso de caducidad; solo se usa en COMPRADO.
+  // Se ordena y normaliza en el servicio (ej. [30, 15, 3]).
+  expirationAlertDays Int[]            @default([3])
   // ── Estado ──
   isNew               Boolean          @default(false)
   isActive            Boolean          @default(true)
@@ -208,9 +218,9 @@ model Product {
   updatedAt           DateTime         @updatedAt
 
   // supabase-postgres-best-practices: indexes para queries frecuentes
-  @@index([categoryId]) // Filtro por categoría (catálogo, POS)
+  @@index([categoryId]) // Filtro por categoría (catálogo y operación)
   @@index([origin]) // Filtro PRODUCIDO vs COMPRADO
-  @@index([isActive, isAvailable]) // Productos activos y disponibles (POS)
+  @@index([isActive, isAvailable]) // Productos visibles y disponibles
 }
 
 // Presentación comercial/operativa de un producto.
@@ -241,10 +251,12 @@ model ProductPresentation {
 
 model ProductImage {
   id        Int     @id @default(autoincrement())
-  product   Product @relation(fields: [productId], references: [id])
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId Int
   url       String
   position  Int     @default(0)
+
+  @@unique([productId, position])
 }
 
 // ─────────────────────────────────────────────
@@ -303,6 +315,7 @@ model Recipe {
   productionLogs ProductionLog[]
 
   @@index([productId])
+  @@unique([productId, name])
 }
 
 // Ingrediente de una receta (cantidad por amasijo, en unidad base)
@@ -389,7 +402,7 @@ model InventoryLot {
 
   @@index([productId, branchId])
   @@index([branchId, expiresAt])
-  @@index([availableQuantity])
+  @@index([productId, branchId, availableQuantity, expiresAt])
   @@index([sourceMovementId])
 }
 
@@ -452,6 +465,7 @@ model Branch {
   phone                  String?
   latitude               Float?
   longitude              Float?
+  isActive               Boolean                @default(true)
   createdAt              DateTime               @default(now())
   // Relaciones
   inventories            Inventory[]
@@ -516,9 +530,12 @@ model Order {
   subtotal      Decimal     @db.Decimal(10, 2)
   discount      Decimal     @default(0) @db.Decimal(10, 2)
   total         Decimal     @db.Decimal(10, 2)
-  paymentMethod String?
+  // Se registra como efectivo por defecto; el cobro ocurre al retirar.
+  paymentMethod PaymentMethod? @default(EFECTIVO)
   branch        Branch?     @relation(fields: [branchId], references: [id])
   branchId      Int?
+  // Deadline for a PENDING pickup reservation.
+  expiresAt     DateTime?
   customerNotes String?     @db.Text
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
@@ -527,6 +544,7 @@ model Order {
   // supabase-postgres-best-practices: indexes para queries frecuentes
   @@index([userId]) // Historial de pedidos del usuario
   @@index([status]) // Filtro por estado operativo
+  @@index([status, expiresAt])
   @@index([branchId]) // Pedidos por sucursal
   @@index([createdAt]) // Ordenamiento cronológico
 }
@@ -538,8 +556,13 @@ model OrderItem {
   product     Product @relation(fields: [productId], references: [id])
   productId   Int
   productName String
+  // Quantity requested by the customer (commercial units/presentations).
   quantity    Int
+  // Physical units reserved/consumed from Inventory.
+  stockQuantity Int
   unitPrice   Decimal @db.Decimal(10, 2)
+  // Authoritative line amount, including legacy combo pricing.
+  lineTotal   Decimal @db.Decimal(10, 2)
   presentationId       Int?
   presentation         ProductPresentation? @relation(fields: [presentationId], references: [id], onDelete: SetNull)
   presentationName     String?
@@ -565,7 +588,7 @@ model AuditLog {
   entity     String // Product, Order, User, Category, Branch, Inventory, etc.
   entityId   String? // ID del registro afectado
   entityName String? // Nombre descriptivo (ej: "Pan Francés", "Pedido #123")
-  details    String?  @db.Text // JSON con detalles adicionales
+  details    Json?    // Detalle estructurado, no JSON serializado dentro de TEXT
   ipAddress  String?  @db.VarChar(45)
   userAgent  String?  @db.VarChar(500)
   createdAt  DateTime @default(now())
@@ -599,13 +622,13 @@ model SystemConfig {
 model NotificationConfig {
   id          Int      @id @default(autoincrement())
   key         String   @unique // 'inventory.raw_material_low', 'inventory.expiration_warning'
-  name        String // "Cambio de estado de orden"
+  name        String // Nombre de una alerta operativa
   description String?
-  category    String // 'ORDERS', 'INVENTORY', 'PRODUCTION', 'SYSTEM'
+  category    String // Actualmente solo 'INVENTORY'
   isEnabled   Boolean  @default(true)
-  title       String // Título con placeholders: "Tu pedido cambió"
-  message     String // Mensaje con placeholders: "#{orderNumber} → {status}"
-  targetRoles Json // ["CUSTOMER"] — array de roles destino
+  title       String // Título con placeholders de inventario
+  message     String // Mensaje con placeholders de inventario
+  targetRoles Json // ["ADMIN", "MANAGER"] — array de roles destino
   channels    Json? // ["IN_APP", "PUSH", "TELEGRAM"] — canales de despacho habilitados
   thresholds  Json? // { "threshold": 50, "unit": "LB" }
   soundType   String   @default("suave") // 'suave', 'alerta', 'importante'
@@ -624,8 +647,8 @@ model Notification {
   type      String // Clave del NotificationConfig
   title     String
   message   String
-  url       String? // Ruta de redirección: '/admin/ordenes/123'
-  icon      String? // Nombre icono Lucide: 'ShoppingCart', 'AlertTriangle'
+  url       String? // Ruta de redirección operativa: inventario o caducidades
+  icon      String? // Nombre de icono Lucide para la alerta
   isRead    Boolean   @default(false)
   readAt    DateTime?
   metadata  Json?
@@ -702,7 +725,6 @@ model TelegramLinkAttempt {
 
 enum AlertType {
   RAW_MATERIAL_LOW
-  PRODUCT_LOW
   PRODUCT_EXPIRY
 }
 

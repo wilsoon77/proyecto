@@ -21,7 +21,7 @@ export class ProductsController {
   ) {}
 
   @Get()
-  @ApiOperation({ summary: 'Listar productos', description: 'Por defecto devuelve únicamente productos visibles en el e-commerce. Admite filtros de estado para la consulta administrativa del catálogo.' })
+  @ApiOperation({ summary: 'Listar productos públicos', description: 'Devuelve únicamente productos visibles en el e-commerce y pertenecientes a categorías activas.' })
   @ApiResponse({
     status: 200,
     description: 'Listado paginado de productos',
@@ -47,9 +47,59 @@ export class ProductsController {
   @ApiQuery({ name: 'branch', required: false })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'pageSize', required: false })
-  @ApiQuery({ name: 'all', required: false, type: Boolean, description: 'Incluye productos activos e inactivos (consulta administrativa)' })
-  @ApiQuery({ name: 'status', required: false, enum: ['active', 'inactive', 'all'], description: 'Filtra la visibilidad del producto en el e-commerce' })
   findAll(
+    @Req() req: any,
+    @Res({ passthrough: true }) res: Response,
+    @Query('search') search?: string,
+    @Query('category') category?: string,
+    @Query('min') min?: string,
+    @Query('max') max?: string,
+    @Query('sort') sort?: string,
+    @Query('branch') branch?: string,
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
+  ) {
+    const result = this.productsService.findAll({
+      search,
+      category,
+      min: min ? Number(min) : undefined,
+      max: max ? Number(max) : undefined,
+      sort,
+      branch,
+      page: page ? Number(page) : undefined,
+      pageSize: pageSize ? Number(pageSize) : undefined,
+    });
+    // Set headers when promise resolves
+    return Promise.resolve(result).then((r: any) => {
+      setPaginationHeaders({
+        res,
+        baseUrl: req.originalUrl?.split('?')[0] || req.url,
+        query: req.query || {},
+        total: r.meta.total,
+        page: r.meta.page,
+        pageSize: r.meta.pageSize,
+      });
+      return r;
+    });
+  }
+
+  @Get('admin')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'MANAGER')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Listar catálogo administrativo', description: 'Consulta productos visibles y ocultos para gestionar el catálogo. Requiere ADMIN o MANAGER; las mutaciones siguen protegidas por los permisos de administración.' })
+  @ApiQuery({ name: 'search', required: false })
+  @ApiQuery({ name: 'category', required: false })
+  @ApiQuery({ name: 'min', required: false })
+  @ApiQuery({ name: 'max', required: false })
+  @ApiQuery({ name: 'sort', required: false, description: 'precio-asc|precio-desc|nuevo' })
+  @ApiQuery({ name: 'branch', required: false })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'pageSize', required: false })
+  @ApiQuery({ name: 'all', required: false, type: Boolean, description: 'Incluye productos activos e inactivos' })
+  @ApiQuery({ name: 'status', required: false, enum: ['active', 'inactive', 'all'] })
+  @ApiResponse({ status: 200, description: 'Listado administrativo paginado', schema: { type: 'object', properties: { data: { type: 'array', items: { $ref: getSchemaPath(ProductDto) } }, meta: { $ref: getSchemaPath(PaginatedMetaDto) as any } } } })
+  findAllAdmin(
     @Req() req: any,
     @Res({ passthrough: true }) res: Response,
     @Query('search') search?: string,
@@ -74,8 +124,7 @@ export class ProductsController {
       pageSize: pageSize ? Number(pageSize) : undefined,
       all: all === 'true',
       status,
-    });
-    // Set headers when promise resolves
+    }, 'admin');
     return Promise.resolve(result).then((r: any) => {
       setPaginationHeaders({
         res,

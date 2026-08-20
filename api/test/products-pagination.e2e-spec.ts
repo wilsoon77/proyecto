@@ -26,7 +26,7 @@ const mockService: Partial<ProductsService> = {
         comboPrice: 1.25,
         unitsPerTray: 36,
         tracksExpiration: false,
-        expirationAlertDays: 3,
+        expirationAlertDays: [3],
         available: 24,
         images: [],
       },

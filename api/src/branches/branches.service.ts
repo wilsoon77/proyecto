@@ -8,6 +8,7 @@ export class BranchesService {
 
   async findAll() {
     const branches = await this.prisma.branch.findMany({
+      where: { isActive: true },
       include: {
         _count: {
           select: { inventories: true },
@@ -23,7 +24,7 @@ export class BranchesService {
     }));
   }
 
-  async findOne(id: number) {
+  async findOne(id: number, visibility: 'public' | 'admin' = 'public') {
     const branch = await this.prisma.branch.findUnique({
       where: { id },
       include: {
@@ -33,7 +34,7 @@ export class BranchesService {
       },
     });
 
-    if (!branch) {
+    if (!branch || (visibility === 'public' && !branch.isActive)) {
       throw new NotFoundException(`Sucursal con ID ${id} no encontrada`);
     }
 
@@ -60,8 +61,8 @@ export class BranchesService {
   }
 
   async update(id: number, updateBranchDto: UpdateBranchDto) {
-    // Verificar que la sucursal existe
-    await this.findOne(id);
+    // Verificar que la sucursal existe sin ocultar sucursales inactivas al administrador
+    await this.findOne(id, 'admin');
 
     // Si se está actualizando el slug, verificar que no exista otro con ese slug
     if (updateBranchDto.slug) {
@@ -83,9 +84,18 @@ export class BranchesService {
     });
   }
 
+  async deactivate(id: number) {
+    await this.findOne(id, 'admin');
+    const branch = await this.prisma.branch.update({
+      where: { id },
+      data: { isActive: false },
+    });
+    return { deleted: true, deactivated: true, id: branch.id, isActive: branch.isActive };
+  }
+
   async remove(id: number) {
     // Verificar que la sucursal existe
-    const branch = await this.findOne(id);
+    const branch = await this.findOne(id, 'admin');
 
     // Verificar todas las relaciones que bloquean la eliminación
     const [inventoryCount, orderCount, employeeCount, movFromCount, movToCount] = await Promise.all([
@@ -109,10 +119,6 @@ export class BranchesService {
       );
     }
 
-    await this.prisma.branch.delete({
-      where: { id },
-    });
-
-    return { deleted: true, id };
+    return this.deactivate(id);
   }
 }

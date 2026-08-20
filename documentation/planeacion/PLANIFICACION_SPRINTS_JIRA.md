@@ -1,5 +1,7 @@
 # Planificacion de Sprints — Panaderia Svetlana Smart System
 
+> **Nota de alcance vigente (agosto de 2026):** este archivo conserva el plan inicial para trazabilidad. La implementación actual es un sistema operativo para catálogo/carrito/retiro, inventario, materias primas, recetas, producción, cierres diarios y dos alertas. POS, delivery, analítica predictiva y KPIs excesivos están retirados; consultar `api/ANALISIS_ENDPOINTS.md` y Swagger para el estado real.
+
 > **Proyecto de Graduacion**
 > **Metodologia:** Scrum Hibrido — 8 Sprints de 2 semanas
 > **Periodo de Ejecucion:** Julio 2026 — Octubre 2026
@@ -57,10 +59,9 @@ Aunque la planificacion en Jira se estructura como si el proyecto iniciara desde
 | EP-04 | Inventario y Materia Prima | Stock por sucursal, movimientos, insumos, conversion de unidades |
 | EP-05 | Produccion Diaria | Recetas, amasijos, latas, produccion transaccional |
 | EP-06 | Reservas y Checkout | Carrito, flujo de reserva, seleccion de sucursal, notificaciones |
-| EP-07 | Administracion y Dashboard | Panel admin, KPIs, gestion de pedidos, auditoria |
-| EP-08 | Punto de Venta (POS) | Venta presencial, descuento de inventario inmediato |
-| EP-09 | Inteligencia Artificial | Prediccion de demanda, recomendaciones, chatbot |
-| EP-10 | PWA y Experiencia Movil | Service Workers, manifiesto, cache offline, instalabilidad |
+| EP-07 | Administracion y Operación | Panel operativo, KPIs simples, gráfica operativa, pedidos y auditoria |
+| EP-09 | Asistente y Operaciones | Asistente de Telegram, Cierre de día, Control de caducidad |
+| EP-10 | PWA y Experiencia Movil | Manifiesto, notificaciones push, instalabilidad |
 | EP-11 | Testing y Calidad | Pruebas unitarias, e2e, auditoria de seguridad |
 | EP-12 | Deployment y Entrega Final | Despliegue produccion, documentacion, presentacion |
 
@@ -407,7 +408,7 @@ Aunque la planificacion en Jira se estructura como si el proyecto iniciara desde
 | 5.2.2 | Paso 1: Revision de carrito con resumen de productos y precios | Frontend | S |
 | 5.2.3 | Paso 2: Seleccion de sucursal de recogida (consumir API branches) | Frontend | M |
 | 5.2.4 | Paso 3: Seleccion de fecha y hora de recogida (dentro de horario operativo) | Frontend | M |
-| 5.2.5 | Paso 4: Metodo de pago (pago en caja o transferencia previa) y notas opcionales | Frontend | S |
+| 5.2.5 | Paso 4: Confirmar que el pago será en efectivo al recoger y capturar notas opcionales | Frontend | S |
 | 5.2.6 | Paso 5: Confirmacion final y envio de reserva al backend | Frontend | M |
 | 5.2.7 | Pantalla de confirmacion con numero de orden, detalle y sucursal | Frontend | M |
 
@@ -455,24 +456,23 @@ Aunque la planificacion en Jira se estructura como si el proyecto iniciara desde
 
 ---
 
-## Sprint 6: Panel Administrativo y Dashboard
+## Sprint 6: Panel Administrativo y Operación
 
 **Fechas:** Septiembre 2026 — Semanas 3 y 4
-**Objetivo del Sprint:** Dashboard operativo con KPIs, gestion de reservas con flujo de estados, auditoria, gestion de usuarios.
+**Objetivo del Sprint:** Panel Operación con KPIs operativos simples y una gráfica de actividad, gestión de pedidos para retiro, auditoría y usuarios.
 
 ---
 
-### STORY 6.1 — Dashboard Operativo Multi-Sucursal
+### STORY 6.1 — Operación Multi-Sucursal
 **Epic:** EP-07 | **Estimacion:** XL (8 pts)
 
 | # | Subtarea | Responsable | Est. |
 |---|----------|-------------|------|
-| 6.1.1 | Implementar endpoint `GET /dashboard/stats` con KPIs: ventas del dia, pedidos, mermas, stock critico | Backend | L |
-| 6.1.2 | Implementar filtros del dashboard por sucursal y rango de fechas | Backend | M |
-| 6.1.3 | Crear pagina de Dashboard admin (`/admin`) con tarjetas de KPIs | Frontend | M |
-| 6.1.4 | Implementar graficos: ventas semanales, top productos, estados de pedidos | Frontend | L |
-| 6.1.5 | Implementar selector de sucursal para filtrar dashboard | Frontend | S |
-| 6.1.6 | Implementar indicadores de alerta: stock bajo, reservas pendientes del dia | Frontend | M |
+| 6.1.1 | Consumir actividad operativa de inventario y cierres para el panel | Backend | L |
+| 6.1.2 | Implementar selector de sucursal respetando el alcance de MANAGER global | Fullstack | M |
+| 6.1.3 | Crear pagina Operación admin (`/admin`) con saludo, hora y KPIs simples | Frontend | M |
+| 6.1.4 | Mostrar una gráfica compacta de actividad/producción/cierre | Frontend | M |
+| 6.1.5 | Resaltar alertas de materia prima baja y caducidad próxima | Frontend | S |
 
 ---
 
@@ -482,7 +482,7 @@ Aunque la planificacion en Jira se estructura como si el proyecto iniciara desde
 | # | Subtarea | Responsable | Est. |
 |---|----------|-------------|------|
 | 6.2.1 | Implementar endpoint `PATCH /orders/:id/status` con transiciones validas | Backend | M |
-| 6.2.2 | Validar flujo de estados: PENDING->CONFIRMED->PREPARING->READY->DELIVERED y cancelacion | Backend | M |
+| 6.2.2 | Validar flujo de estados: PENDING->CONFIRMED->PREPARING->READY->PICKED_UP y cancelacion | Backend | M |
 | 6.2.3 | Crear pagina admin de ordenes (`/admin/ordenes`) con vista tipo Kanban por estados | Frontend | L |
 | 6.2.4 | Implementar acciones: cambiar estado, agregar notas internas, cancelar con razon | Frontend | M |
 | 6.2.5 | Mostrar timeline de estados en el detalle de cada reserva | Frontend | S |
@@ -528,80 +528,64 @@ Aunque la planificacion en Jira se estructura como si el proyecto iniciara desde
 
 ---
 
-## Sprint 7: IA, POS y PWA
+## Sprint 7: Asistente Telegram y PWA
 
 **Fechas:** Octubre 2026 — Semanas 1 y 2
-**Objetivo del Sprint:** Integrar modulos de IA (prediccion, recomendaciones, chatbot), punto de venta presencial y capacidades PWA.
+**Objetivo del Sprint:** Integrar asistente de Telegram para dueños, cierre diario, control de caducidad y capacidades PWA.
 
 ---
 
-### STORY 7.1 — Prediccion de Demanda (IA)
+### STORY 7.1 — Cierre de Día (Ventas por diferencia)
 **Epic:** EP-09 | **Estimacion:** XL (8 pts)
 
 | # | Subtarea | Responsable | Est. |
 |---|----------|-------------|------|
-| 7.1.1 | Diseñar modelo de datos para almacenar predicciones de demanda | Backend | S |
-| 7.1.2 | Implementar servicio de recopilacion de datos historicos de ventas (90 dias) | Backend | M |
-| 7.1.3 | Implementar algoritmo de prediccion de series temporales (promedio movil ponderado + estacionalidad semanal) | Backend | L |
-| 7.1.4 | Implementar Cron Job nocturno para ejecucion automatica de prediccion | Backend | M |
-| 7.1.5 | Implementar endpoint `GET /predictions` para consultar sugerencias de produccion | Backend | S |
-| 7.1.6 | Crear seccion en Dashboard: graficos de prediccion y tabla de produccion recomendada | Frontend | L |
+| 7.1.1 | Crear modelo DailyClose y DailyCloseItem en Prisma | Backend | S |
+| 7.1.2 | Implementar DailyCloseService con transaccion para calcular venta residual | Backend | L |
+| 7.1.3 | Implementar endpoints CRUD y preview prellenado con inventario actual | Backend | M |
+| 7.1.4 | Actualizar frontend con formulario de cierre diario por sucursal | Frontend | M |
+| 7.1.5 | Mostrar resumen de ventas, merma y sobrantes en frontend | Frontend | S |
+| 7.1.6 | Ajustar flujo de produccion para reportar producción retroactiva | Fullstack | M |
 
 ---
 
-### STORY 7.2 — Recomendaciones Personalizadas (IA)
+### STORY 7.2 — Control de Caducidad de Productos
 **Epic:** EP-09 | **Estimacion:** L (5 pts)
 
 | # | Subtarea | Responsable | Est. |
 |---|----------|-------------|------|
-| 7.2.1 | Implementar servicio de recomendaciones basado en historial de compras y categorias preferidas | Backend | L |
-| 7.2.2 | Implementar fallback para clientes nuevos/anonimos (productos populares) | Backend | S |
-| 7.2.3 | Implementar endpoint `GET /recommendations` con cache temporal | Backend | M |
-| 7.2.4 | Crear seccion "Recomendado para ti" en la tienda web (catalogo y landing) | Frontend | M |
+| 7.2.1 | Extender Prisma con InventoryLot y configuracion de expiracion en Product | Backend | S |
+| 7.2.2 | Implementar consumo FEFO (First-Expired-First-Out) en retiros y movimientos de venta | Backend | L |
+| 7.2.3 | Implementar Cron Job diario para varios recordatorios por lote comprado (`30, 15, 3`, si están configurados) | Backend | M |
+| 7.2.4 | Actualizar panel admin para crear lotes al registrar compra de producto | Frontend | M |
 
 ---
 
-### STORY 7.3 — Chatbot de Atencion al Cliente (IA)
+### STORY 7.3 — Asistente Privado en Telegram (Dueños)
 **Epic:** EP-09 | **Estimacion:** L (5 pts)
 
 | # | Subtarea | Responsable | Est. |
 |---|----------|-------------|------|
-| 7.3.1 | Integrar API de OpenAI o similar en NestJS | Backend | M |
-| 7.3.2 | Crear contexto del chatbot con informacion del negocio (sucursales, horarios, productos, FAQs) | Backend | M |
-| 7.3.3 | Implementar endpoint de chat con historial de conversacion por sesion | Backend | M |
-| 7.3.4 | Crear widget de chatbot flotante en el frontend con interfaz de mensajes | Frontend | L |
+| 7.3.1 | Implementar autenticacion y link de sesion (TelegramLink, AssistantAccess) | Backend | M |
+| 7.3.2 | Integrar Telegram webhook con validacion de token y chat privado | Backend | M |
+| 7.3.3 | Implementar tool calling de inventario, materias primas, producción y cierre con IA | Backend | M |
+| 7.3.4 | Enviar por Telegram únicamente las alertas de materia prima baja y caducidad próxima | Fullstack | L |
 
 ---
 
-### STORY 7.4 — Punto de Venta Presencial (POS)
-**Epic:** EP-08 | **Estimacion:** XL (8 pts)
+### STORY 7.4 — Configuracion PWA
+**Epic:** EP-10 | **Estimacion:** M (3 pts)
 
 | # | Subtarea | Responsable | Est. |
 |---|----------|-------------|------|
-| 7.4.1 | Implementar endpoint POS: crear orden tipo venta directa con estado DELIVERED inmediato | Backend | M |
-| 7.4.2 | Implementar descuento de inventario fisico inmediato en transaccion | Backend | M |
-| 7.4.3 | Implementar logica de combos de precio en el calculo del POS | Backend | M |
-| 7.4.4 | Crear pagina POS (`/admin/pos`) con interfaz rapida de seleccion de productos | Frontend | L |
-| 7.4.5 | Implementar busqueda rapida y seleccion de cantidades en POS | Frontend | M |
-| 7.4.6 | Implementar resumen de venta con total y boton de confirmar | Frontend | M |
-| 7.4.7 | Restringir acceso POS a roles CASHIER y MANAGER | Backend | XS |
+| 7.4.1 | Crear y configurar `manifest.json` con nombre, iconos, colores del tema | Frontend | S |
+| 7.4.2 | Implementar banner de instalacion "Agregar a pantalla de inicio" | Frontend | S |
+| 7.4.3 | Configurar Web Push API para notificaciones push en navegador | Frontend | M |
+| 7.4.4 | Validar instalabilidad en Android (Chrome) y desktop | Frontend | S |
 
 ---
 
-### STORY 7.5 — Configuracion PWA
-**Epic:** EP-10 | **Estimacion:** L (5 pts)
-
-| # | Subtarea | Responsable | Est. |
-|---|----------|-------------|------|
-| 7.5.1 | Crear y configurar `manifest.json` con nombre, iconos, colores del tema | Frontend | S |
-| 7.5.2 | Implementar Service Worker para cache de assets estaticos y paginas clave | Frontend | L |
-| 7.5.3 | Implementar banner de instalacion "Agregar a pantalla de inicio" | Frontend | S |
-| 7.5.4 | Configurar Web Push API para notificaciones push en navegador | Frontend | M |
-| 7.5.5 | Validar instalabilidad en Android (Chrome) y desktop | Frontend | S |
-
----
-
-**Total Sprint 7:** ~31 puntos | 5 Stories | 26 Subtareas
+**Total Sprint 7:** ~21 puntos | 4 Stories | 18 Subtareas
 
 ---
 
@@ -622,7 +606,7 @@ Aunque la planificacion en Jira se estructura como si el proyecto iniciara desde
 | 8.1.3 | Completar unit tests de InventoryService y StockMovementsService | Backend | M |
 | 8.1.4 | Completar unit tests de RawMaterialsService y RecipesService | Backend | M |
 | 8.1.5 | Revisar y ampliar cobertura de tests existentes de ProductionService | Backend | S |
-| 8.1.6 | Escribir tests de integracion para flujos criticos: reserva completa, produccion, POS | Backend | L |
+| 8.1.6 | Escribir tests de integracion para flujos criticos: reserva completa y produccion | Backend | L |
 
 ---
 
@@ -701,10 +685,10 @@ Aunque la planificacion en Jira se estructura como si el proyecto iniciara desde
 | 3 | Ago S1-S2 | Inventario, Materia Prima, Sucursales | 5 | 20 | ~23 |
 | 4 | Ago S3-S4 | Produccion transaccional, Recetas | 4 | 21 | ~23 |
 | 5 | Sep S1-S2 | Reservas, Checkout, Notificaciones | 5 | 24 | ~27 |
-| 6 | Sep S3-S4 | Dashboard, Admin, Auditoria, Usuarios | 5 | 22 | ~26 |
-| 7 | Oct S1-S2 | IA, POS, PWA | 5 | 26 | ~31 |
+| 6 | Sep S3-S4 | Operación, Admin, Auditoria, Usuarios | 5 | 22 | ~26 |
+| 7 | Oct S1-S2 | Asistente Telegram, Cierre, PWA | 4 | 18 | ~21 |
 | 8 | Oct S3-S4 | Testing, Deploy, Documentacion | 6 | 24 | ~31 |
-| **TOTAL** | | | **42** | **188** | **~212** |
+| **TOTAL** | | | **41** | **180** | **~202** |
 
 ---
 
@@ -721,14 +705,13 @@ Aunque la planificacion en Jira se estructura como si el proyecto iniciara desde
 | RF07: Tienda en linea y catalogo | Sprint 2 |
 | RF08: Reserva de pedidos en linea | Sprint 5 |
 | RF09: Gestion operativa de pedidos | Sprint 6 |
-| RF10: Punto de venta (POS) | Sprint 7 |
 | RF11: Inventario por sucursal | Sprint 3 |
 | RF12: Movimientos de inventario | Sprint 3 |
 | RF13: Gestion de materia prima | Sprint 3 |
 | RF14: Compras con conversion | Sprint 3 |
 | RF15: Recetas por amasijo | Sprint 4 |
 | RF16: Produccion transaccional | Sprint 4 |
-| RF17: Dashboard multi-sucursal | Sprint 6 |
+| RF17: Operación multi-sucursal | Sprint 6 |
 | RF18: Auditoria | Sprint 6 |
 | RF19: Perfil y direcciones | Sprint 6 |
 
@@ -741,8 +724,8 @@ Aunque la planificacion en Jira se estructura como si el proyecto iniciara desde
 3. **Sprints:** Crear 8 sprints con las fechas indicadas
 4. **Stories:** Cada "STORY X.Y" se crea como Issue tipo Story bajo su Epic correspondiente
 5. **Subtareas:** Cada fila de subtarea se crea como Subtask dentro de su Story
-6. **Labels sugeridos:** `backend`, `frontend`, `fullstack`, `devops`, `testing`, `ia`
-7. **Componentes sugeridos:** `API (NestJS)`, `Web (Next.js)`, `Base de Datos`, `Infraestructura`, `IA`
+6. **Labels sugeridos:** `backend`, `frontend`, `fullstack`, `devops`, `testing`
+7. **Componentes sugeridos:** `API (NestJS)`, `Web (Next.js)`, `Base de Datos`, `Infraestructura`
 8. **Definition of Done por Story:**
    - Codigo implementado y compilando sin errores
    - Endpoint documentado en Swagger (si aplica)

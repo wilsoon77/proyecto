@@ -169,7 +169,7 @@ export class NotificationsService {
    */
   async getUnreadCount(userId: string): Promise<number> {
     return this.prisma.notification.count({
-      where: { userId, isRead: false },
+      where: { userId, isRead: false, type: { in: [...OPERATIONAL_NOTIFICATION_CONFIG_KEYS] } },
     });
   }
 
@@ -444,9 +444,9 @@ export class NotificationsService {
   }
 
   /**
-   * Sends an expiration alert once per lot and stage (warning/expired).
-   * The lot id is part of resourceKey, so a second lot of the same product
-   * remains independently traceable.
+   * Sends an expiration alert once per lot and reminder stage.
+   * The lot id and days-before value are part of resourceKey, so each
+   * configured reminder is delivered once and remains independently traceable.
    */
   async sendExpirationIfNeeded(options: {
     branchId: number;
@@ -496,12 +496,12 @@ export class NotificationsService {
     return true;
   }
 
-  async resolveExpirationAlert(branchId: number, resourceKey: string): Promise<void> {
+  async resolveExpirationAlertsForLot(branchId: number, lotId: number): Promise<void> {
     await this.prisma.alertState.updateMany({
       where: {
         branchId,
         alertType: AlertType.PRODUCT_EXPIRY,
-        resourceKey,
+        resourceKey: { startsWith: `lot:${lotId}:` },
         active: true,
       },
       data: { active: false, resolvedAt: new Date() },
@@ -527,10 +527,7 @@ export class NotificationsService {
    * Helper para obtener el icono por defecto de una clave/categoría
    */
   private getDefaultIcon(configKey: string): string {
-    if (configKey.startsWith('order.')) return 'ShoppingCart';
     if (configKey.startsWith('inventory.')) return 'AlertTriangle';
-    if (configKey.startsWith('production.')) return 'Flame';
-    if (configKey.startsWith('system.')) return 'Shield';
     return 'Bell';
   }
 }

@@ -4,7 +4,7 @@ import type { ApiProduct, ApiProductPresentation } from "./types"
 export interface CreateProductData {
   sku?: string
   name: string
-  slug: string
+  slug?: string
   description?: string
   basePrice: number
   comboQuantity?: number
@@ -15,7 +15,7 @@ export interface CreateProductData {
   isActive?: boolean
   origin?: 'PRODUCIDO' | 'COMPRADO'
   tracksExpiration?: boolean
-  expirationAlertDays?: number
+  expirationAlertDays?: number[]
   stockUnitLabel?: string
   presentations?: Array<Partial<ApiProductPresentation> & { name: string; unitsInStock: number }>
   imageUrl?: string
@@ -36,7 +36,7 @@ export interface UpdateProductData {
   isAvailable?: boolean
   origin?: 'PRODUCIDO' | 'COMPRADO'
   tracksExpiration?: boolean
-  expirationAlertDays?: number
+  expirationAlertDays?: number[]
   stockUnitLabel?: string
   presentations?: Array<Partial<ApiProductPresentation> & { name: string; unitsInStock: number }>
   imageUrl?: string
@@ -55,7 +55,7 @@ export interface ProductDetailResponse {
   categoryId: number
   origin: string
   tracksExpiration: boolean
-  expirationAlertDays: number
+  expirationAlertDays: number[]
   isNew: boolean
   isActive: boolean
   isAvailable: boolean

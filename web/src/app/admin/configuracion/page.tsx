@@ -39,7 +39,7 @@ import type { NotificationConfig } from "@/lib/api/types"
 
 const PLACEHOLDERS_HELP: Record<string, string[]> = {
   'inventory.raw_material_low': ['{materialName}', '{current}', '{unit}', '{branchName}'],
-  'inventory.expiration_warning': ['{productName}', '{quantity}', '{expiresAt}', '{branchName}'],
+  'inventory.expiration_warning': ['{productName}', '{quantity}', '{expiresAt}', '{daysBefore}', '{branchName}'],
 }
 
 interface Branch {
@@ -779,7 +779,7 @@ export default function ConfiguracionPage() {
                                   <div>
                                     <label className="block text-xs font-semibold text-foreground mb-1.5">Roles que Reciben Notificación</label>
                                     <div className="flex flex-wrap gap-2">
-                                      {['ADMIN', 'MANAGER', 'BAKER', 'CASHIER', 'CUSTOMER'].map((role) => {
+                                      {['ADMIN', 'MANAGER', 'BAKER', 'CUSTOMER'].map((role) => {
                                         const isChecked = configForm.targetRoles?.includes(role)
                                         return (
                                           <button

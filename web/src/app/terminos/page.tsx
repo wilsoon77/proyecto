@@ -16,7 +16,7 @@ export default function TerminosPage() {
         </ul>
 
         <h2>Pagos</h2>
-        <p>El pago se realiza al momento de recoger el pedido en sucursal. Aceptamos efectivo y tarjeta.</p>
+        <p>El pago se realiza en efectivo al momento de recoger el pedido en la sucursal seleccionada.</p>
 
         <h2>Retiro de pedidos</h2>
         <p>Todos los pedidos se recogen en la sucursal seleccionada. El pedido mínimo es de Q15.</p>

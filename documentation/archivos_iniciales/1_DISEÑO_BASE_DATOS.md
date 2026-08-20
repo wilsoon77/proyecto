@@ -1,6 +1,6 @@
 # DISEÑO DE BASE DE DATOS - Panaderia Svetlana Smart System
 
-> **ACTUALIZACIÓN IMPORTANTE:** El diseño de la base de datos está implementado mediante Prisma ORM sobre PostgreSQL en Supabase. Toda la lógica operativa (amasijos, combos de precios, conversión de unidades de insumos y multi-sucursal) se encuentra reflejada en el código del esquema físico de Prisma en `api/prisma/schema.prisma`. Este documento representa la documentación técnica oficial de la estructura de tablas y relaciones implementadas.
+> **ACTUALIZACIÓN IMPORTANTE:** El diseño de la base de datos está implementado mediante Prisma ORM sobre PostgreSQL en Supabase. Este archivo es un diseño inicial; la fuente oficial vigente de tablas y relaciones es `api/prisma/schema.prisma`. El alcance actual es pickup-only, sin POS ni delivery, con pago únicamente `EFECTIVO` y recordatorios múltiples de caducidad solo para productos `COMPRADO`. Las tablas/campos de direcciones de cliente, envío y pagos alternativos que aparecen más abajo son históricos y no deben crearse; no reflejan el esquema Prisma vigente.
 
 ---
 
@@ -9,7 +9,7 @@
 1. **Estandarización de Unidades de Medida:** Toda materia prima se registra en la tabla `RawMaterial` en unidades base normalizadas (LB, ML, UNIT). La conversión automática se realiza al registrar compras a proveedores en unidades comerciales (quintales, galones, cartones), garantizando un inventario de insumos consistente por sucursal (`RawMaterialInventory`).
 2. **Producción Atómica (Ciclo Amasijo-Lata):** La panadería produce por amasijo y se cuenta en latas. Al registrar un ProductionLog (horneado de receta), el sistema ejecuta una transacción que descuenta de forma automática los ingredientes (`RecipeIngredient`) del inventario de insumos y suma el producto terminado (`Inventory`) multiplicando las latas por la equivalencia de unidades por lata del producto.
 3. **Esquema de Precios y Combos:** Soporte directo en la tabla de productos para precios individuales y combos específicos (ej: 3 panes por Q1.25) mediante los campos `basePrice`, `comboQuantity` y `comboPrice`.
-4. **Seguridad y Control de Acceso:** Asociación física de usuarios operativos (`User` con rol `MANAGER`, `BAKER` o `CASHIER`) a una sucursal específica (`Branch`), manteniendo roles claros y auditoría completa (`AuditLog`).
+4. **Seguridad y Control de Acceso:** Asociación física de usuarios operativos (`User` con rol `MANAGER` o `BAKER`) a una sucursal predeterminada (`Branch`), manteniendo roles claros y auditoría completa (`AuditLog`).
 5. **Reservas para Recoger en Tienda:** Estructura de pedidos simplificada para gestionar la reserva física de stock en la sucursal seleccionada, sin soporte de delivery (campo de costo de envío predeterminado a 0).
 
 ---
@@ -48,7 +48,7 @@ CREATE TABLE users (
     first_name VARCHAR(191) NOT NULL,
     last_name VARCHAR(191) NOT NULL,
     phone VARCHAR(32),
-    role VARCHAR(50) DEFAULT 'CUSTOMER', -- 'CUSTOMER', 'ADMIN', 'MANAGER', 'BAKER', 'CASHIER'
+    role VARCHAR(50) DEFAULT 'CUSTOMER', -- 'CUSTOMER', 'ADMIN', 'MANAGER', 'BAKER'
     is_active BOOLEAN DEFAULT TRUE,
     branch_id INTEGER, -- Asignado si es personal operativo
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

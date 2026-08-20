@@ -39,9 +39,9 @@ export class DailyCloseController {
   ) {}
 
   @Get('preview')
-  @Roles('ADMIN', 'MANAGER', 'CASHIER')
-  @ApiOperation({ summary: 'Vista previa del cierre diario', description: 'Captura el inventario de producto terminado que se conciliará. ADMIN y MANAGER pueden elegir cualquiera de las dos sucursales; CASHIER usa su sucursal asignada.' })
-  @ApiQuery({ name: 'branchId', required: false, description: 'ID de sucursal; opcional para ADMIN/MANAGER y restringido a la sucursal asignada para CASHIER' })
+  @Roles('ADMIN', 'MANAGER')
+  @ApiOperation({ summary: 'Vista previa del cierre diario', description: 'Captura el inventario de producto terminado que se conciliará. ADMIN y MANAGER pueden elegir cualquiera de las dos sucursales.' })
+  @ApiQuery({ name: 'branchId', required: false, description: 'ID de sucursal; opcional para ADMIN/MANAGER' })
   @ApiQuery({ name: 'closeDate', required: false, description: 'YYYY-MM-DD; por defecto la fecha operativa actual' })
   @ApiResponse({ status: 200, description: 'Inventario capturado para el cierre' })
   async preview(
@@ -54,7 +54,7 @@ export class DailyCloseController {
   }
 
   @Post()
-  @Roles('ADMIN', 'MANAGER', 'CASHIER')
+  @Roles('ADMIN', 'MANAGER')
   @ApiOperation({
     summary: 'Registrar cierre diario',
     description: 'Registra el conteo y la merma de producto terminado, concilia el inventario y cierra la fecha operativa. Después del cierre se bloquean nuevos registros de PRODUCCION para esa fecha; compras, mermas, pérdidas y ajustes de inventario siguen disponibles para corregir movimientos reales.',

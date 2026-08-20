@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { ReserveOrderDto } from './dto.js';
-import { OrderStatus, Prisma, StockMovementType } from '@prisma/client';
+import { OrderStatus, PaymentMethod, Prisma, StockMovementType } from '@prisma/client';
 import { LoggerService } from '../common/logger/logger.service.js';
 import { SystemConfigService } from '../system-config/system-config.service.js';
 import { InventoryLotsService } from '../inventory/inventory-lots.service.js';
@@ -9,6 +9,14 @@ import { assertOrderTransition, FULFILLMENT_STATUSES } from './order-state.js';
 
 function formatOrderNumber(id: number) {
   return 'ORD-' + id.toString().padStart(6, '0');
+}
+
+function roundMoney(value: number) {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+function physicalQuantity(item: { stockQuantity?: number | null; quantity: number }) {
+  return item.stockQuantity ?? item.quantity;
 }
 
 /** Normalize Prisma Decimal fields to numbers for JSON serialization. */
@@ -22,6 +30,7 @@ function normalizeOrder(order: any) {
     items: order.items?.map((item: any) => ({
       ...item,
       unitPrice: item.unitPrice !== undefined ? Number(item.unitPrice) : item.unitPrice,
+      lineTotal: item.lineTotal !== undefined ? Number(item.lineTotal) : item.lineTotal,
     })),
   };
 }
@@ -51,7 +60,7 @@ export class OrdersService {
     }
 
     const branch = await this.prisma.branch.findUnique({ where: { slug: dto.branchSlug } });
-    if (!branch) throw new NotFoundException('Sucursal no encontrada');
+    if (!branch || !branch.isActive) throw new NotFoundException('Sucursal no encontrada');
     if (!dto.items?.length) throw new BadRequestException('Sin items');
 
     const quantitiesByPresentation = new Map<string, { productSlug: string; presentationId?: number; quantity: number }>();
@@ -80,6 +89,8 @@ export class OrdersService {
       presentation?: (typeof products)[number]['presentations'][number];
       stockQuantity: number;
       unitPrice: number;
+      lineTotal: number;
+      discount: number;
     }> = [];
     for (const item of items) {
       const product = productMap.get(item.productSlug);
@@ -103,8 +114,27 @@ export class OrdersService {
       const unitPrice = presentation?.price !== null && presentation?.price !== undefined
         ? Number(presentation.price)
         : Number(product.basePrice);
-      preparedItems.push({ productSlug: item.productSlug, quantity: item.quantity, product, presentation, stockQuantity, unitPrice });
+      const baseTotal = roundMoney(Number(product.basePrice) * item.quantity);
+      let lineTotal = roundMoney(unitPrice * item.quantity);
+      if (!presentation && product.comboQuantity && product.comboPrice !== null && product.comboPrice !== undefined) {
+        const comboQuantity = product.comboQuantity;
+        const comboCount = Math.floor(item.quantity / comboQuantity);
+        const remainder = item.quantity % comboQuantity;
+        lineTotal = roundMoney(comboCount * Number(product.comboPrice) + remainder * Number(product.basePrice));
+      }
+      preparedItems.push({
+        productSlug: item.productSlug,
+        quantity: item.quantity,
+        product,
+        presentation,
+        stockQuantity,
+        unitPrice,
+        lineTotal,
+        discount: roundMoney(Math.max(0, baseTotal - lineTotal)),
+      });
     }
+
+    const expiresAt = new Date(Date.now() + this.getReservationExpiryHours() * 60 * 60 * 1000);
 
     const order = await this.withSerializableRetry(() => this.prisma.$transaction(async (tx) => {
       for (const item of preparedItems) {
@@ -126,7 +156,10 @@ export class OrdersService {
           subtotal: 0,
           discount: 0,
           total: 0,
-          paymentMethod: dto.paymentMethod,
+          // El pago se cobra al retirar y el único método vigente es efectivo.
+          // Se asigna en servidor aunque el catálogo no muestre un selector de pago.
+          paymentMethod: dto.paymentMethod ?? PaymentMethod.EFECTIVO,
+          expiresAt,
           customerNotes: dto.customerNotes,
           status: 'PENDING',
           userId,
@@ -135,20 +168,28 @@ export class OrdersService {
       });
 
       let subtotal = 0;
+      let total = 0;
+      let discount = 0;
       for (const item of preparedItems) {
         const product = item.product;
         await tx.inventory.update({
           where: { productId_branchId: { productId: product.id, branchId: branch.id } },
           data: { reserved: { increment: item.stockQuantity } },
         });
-        subtotal += item.unitPrice * item.quantity;
+        // `subtotal` is before commercial presentation discounts; `total` is
+        // the amount the customer actually pays.
+        subtotal += item.lineTotal + item.discount;
+        total += item.lineTotal;
+        discount += item.discount;
         await tx.orderItem.create({
           data: {
             orderId: created.id,
             productId: product.id,
             productName: product.name,
-            quantity: item.stockQuantity,
+            quantity: item.quantity,
+            stockQuantity: item.stockQuantity,
             unitPrice: item.unitPrice,
+            lineTotal: item.lineTotal,
             presentationId: item.presentation?.id,
             presentationName: item.presentation?.name,
             presentationQuantity: item.presentation ? item.quantity : undefined,
@@ -157,16 +198,21 @@ export class OrdersService {
         });
       }
 
-      if (subtotal < minAmount) {
+      if (total < minAmount) {
         throw new BadRequestException(
-          'El monto del pedido (Q' + subtotal.toFixed(2) +
+          'El monto del pedido (Q' + total.toFixed(2) +
           ') es menor al pedido mínimo requerido (Q' + minAmount.toFixed(2) + ').',
         );
       }
 
       return tx.order.update({
         where: { id: created.id },
-        data: { orderNumber: formatOrderNumber(created.id), subtotal, total: subtotal },
+        data: {
+          orderNumber: formatOrderNumber(created.id),
+          subtotal: roundMoney(subtotal),
+          discount: roundMoney(discount),
+          total: roundMoney(total),
+        },
       });
     }, {
       isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
@@ -192,12 +238,13 @@ export class OrdersService {
         const inventory = await tx.inventory.findUnique({
           where: { productId_branchId: { productId: item.productId, branchId: current.branchId } },
         });
-        if (!inventory || inventory.reserved < item.quantity) {
+        const reservedQuantity = physicalQuantity(item);
+        if (!inventory || inventory.reserved < reservedQuantity) {
           throw new BadRequestException('La reserva de inventario no coincide con la orden');
         }
         await tx.inventory.update({
           where: { id: inventory.id },
-          data: { reserved: { decrement: item.quantity } },
+          data: { reserved: { decrement: reservedQuantity } },
         });
       }
 
@@ -238,23 +285,24 @@ export class OrdersService {
         const inventory = await tx.inventory.findUnique({
           where: { productId_branchId: { productId: item.productId, branchId: current.branchId } },
         });
-        if (!inventory || inventory.reserved < item.quantity) {
+        const reservedQuantity = physicalQuantity(item);
+        if (!inventory || inventory.reserved < reservedQuantity) {
           throw new BadRequestException('La reserva de inventario no coincide con la orden');
         }
-        if (inventory.quantity < item.quantity) {
+        if (inventory.quantity < reservedQuantity) {
           throw new BadRequestException('Stock físico insuficiente');
         }
 
         const sellableLots = await this.inventoryLotsService.getSellableQuantity(tx, item.productId, current.branchId);
-        if (sellableLots !== null && sellableLots < item.quantity) {
+        if (sellableLots !== null && sellableLots < reservedQuantity) {
           throw new BadRequestException('La reserva contiene unidades vencidas o sin lote vigente');
         }
 
         await tx.inventory.update({
           where: { id: inventory.id },
           data: {
-            reserved: { decrement: item.quantity },
-            quantity: { decrement: item.quantity },
+            reserved: { decrement: reservedQuantity },
+            quantity: { decrement: reservedQuantity },
           },
         });
         const movement = await tx.stockMovement.create({
@@ -262,14 +310,14 @@ export class OrdersService {
             productId: item.productId,
             fromBranchId: current.branchId,
             type: StockMovementType.VENTA,
-            quantity: item.quantity,
+            quantity: reservedQuantity,
             userId,
           },
         });
         await this.inventoryLotsService.consumeLots(tx, {
           productId: item.productId,
           branchId: current.branchId,
-          quantity: item.quantity,
+          quantity: reservedQuantity,
           stockMovementId: movement.id,
         });
       }
@@ -283,6 +331,11 @@ export class OrdersService {
 
     this.logger.auditOrderPickup(orderId, userId);
     return normalizeOrder(order);
+  }
+
+  private getReservationExpiryHours() {
+    const configured = Number(process.env.ORDER_RESERVATION_EXPIRY_HOURS);
+    return Number.isFinite(configured) && configured > 0 ? configured : 2;
   }
 
   async list(filters: { branchSlug?: string; status?: string; page?: number; pageSize?: number }) {

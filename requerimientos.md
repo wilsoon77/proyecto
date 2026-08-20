@@ -1,5 +1,7 @@
 ## 4.3 Levantamiento y Consolidacion de Requerimientos
 
+> **Alcance vigente (agosto de 2026):** sistema operativo para catálogo, carrito y retiro en sucursal; inventario de producto terminado y materia prima; recetas, producción y cierre diario. No incluye POS, pagos en tienda, delivery, analítica predictiva ni un dashboard extenso. El único método de pago es `EFECTIVO` al retirar el pedido. La caducidad solo aplica a productos `COMPRADO` y permite varios recordatorios por lote.
+
 En esta version se presentan unicamente los requerimientos consolidados vigentes del sistema, bajo formato estricto de ficha por requerimiento.
 
 ### 4.3.1 Requerimientos Funcionales Consolidados
@@ -19,7 +21,7 @@ En esta version se presentan unicamente los requerimientos consolidados vigentes
 | :- | :- |
 |**Nombre del requerimiento**|Gestion de usuarios y roles|
 |**Caracteristicas**|Permite administrar usuarios, roles y asignacion de sucursal para roles operativos.|
-|**Descripcion**|<p>- El sistema permite crear, listar, editar, desactivar y reactivar usuarios.</p><p>- El sistema gestiona roles ADMIN, MANAGER, BAKER, CASHIER y CUSTOMER.</p><p>- Los roles operativos deben estar asociados a una sucursal.</p>|
+|**Descripcion**|<p>- El sistema permite crear, listar, editar, desactivar y reactivar usuarios.</p><p>- El sistema gestiona roles ADMIN, MANAGER, BAKER y CUSTOMER.</p><p>- Los roles operativos MANAGER y BAKER deben estar asociados a una sucursal predeterminada; MANAGER conserva alcance sobre ambas sucursales.</p>|
 |**Restricciones**|Solo ADMIN puede gestionar usuarios y roles.|
 |**Criterio de aceptacion**|ADMIN crea y edita un usuario operativo con sucursal asignada y el usuario queda habilitado para su modulo correspondiente.|
 |**Tipo**|(x) Funcional    ( ) No Funcional|
@@ -30,7 +32,7 @@ En esta version se presentan unicamente los requerimientos consolidados vigentes
 | :- | :- |
 |**Nombre del requerimiento**|Gestion de sucursales|
 |**Caracteristicas**|Permite administrar sucursales del negocio para operacion multi-sucursal.|
-|**Descripcion**|<p>- El sistema permite crear, listar, editar y eliminar sucursales.</p><p>- Cada sucursal mantiene su propio inventario y operacion asociada.</p><p>- Las sucursales se utilizan en pedidos, POS e inventario.</p>|
+|**Descripcion**|<p>- El sistema permite crear, listar, editar y eliminar sucursales.</p><p>- Cada sucursal mantiene su propio inventario y operacion asociada.</p><p>- Las sucursales se utilizan en pedidos para retiro, inventario, producción, transferencias y cierres.</p>|
 |**Restricciones**|Solo ADMIN puede crear, editar o eliminar sucursales.|
 |**Criterio de aceptacion**|Una sucursal creada aparece en listados operativos y puede ser usada en pedidos, inventario y panel administrativo.|
 |**Tipo**|(x) Funcional    ( ) No Funcional|
@@ -40,8 +42,8 @@ En esta version se presentan unicamente los requerimientos consolidados vigentes
 |**No. de requerimiento**|RF04|
 | :- | :- |
 |**Nombre del requerimiento**|Gestion de productos|
-|**Caracteristicas**|Permite administrar catalogo de productos con SKU, precios, disponibilidad y reglas de combo.|
-|**Descripcion**|<p>- El sistema permite CRUD de productos.</p><p>- Cada producto define SKU, precio base, estado activo/disponible y origen.</p><p>- El sistema soporta precio por combo y unidades por lata para productos producidos.</p>|
+|**Caracteristicas**|Permite administrar catalogo de productos con SKU, precios, visibilidad y reglas de operación.|
+|**Descripcion**|<p>- El sistema permite CRUD de productos.</p><p>- Cada producto define SKU, precio base, estado de visibilidad (`isActive`), disponibilidad de pedido (`isAvailable`) y origen.</p><p>- El sistema soporta presentaciones comerciales y unidades por lata para productos producidos.</p><p>- Los productos `COMPRADO` pueden activar caducidad y uno o varios días de recordatorio.</p>|
 |**Restricciones**|Requiere categoria existente y SKU unico por producto.|
 |**Criterio de aceptacion**|Al crear o editar un producto, este se refleja correctamente en el catalogo y en los modulos administrativos.|
 |**Tipo**|(x) Funcional    ( ) No Funcional|
@@ -73,8 +75,8 @@ En esta version se presentan unicamente los requerimientos consolidados vigentes
 |**No. de requerimiento**|RF07|
 | :- | :- |
 |**Nombre del requerimiento**|Tienda en linea y catalogo publico|
-|**Caracteristicas**|Modulo publico web para explorar productos, ver detalle y preparar compra.|
-|**Descripcion**|<p>- El sistema publica catalogo de productos activos y disponibles.</p><p>- El cliente puede buscar, filtrar y ver detalle de productos.</p><p>- El cliente puede agregar productos al carrito para continuar al checkout.</p>|
+|**Caracteristicas**|Modulo publico web para explorar productos, ver detalle y preparar un pedido para retiro.|
+|**Descripcion**|<p>- El sistema publica únicamente productos activos y categorías activas.</p><p>- El cliente puede buscar, filtrar y ver detalle de productos.</p><p>- El cliente puede agregar productos disponibles al carrito para continuar al checkout.</p><p>- `isActive` controla si aparece en el e-commerce; ocultarlo no lo elimina del inventario ni del cierre diario.</p>|
 |**Restricciones**|Depende de que productos, categorias e imagenes esten cargados y activos.|
 |**Criterio de aceptacion**|Un cliente puede navegar catalogo, aplicar filtros y armar carrito desde navegador web en desktop y movil.|
 |**Tipo**|(x) Funcional    ( ) No Funcional|
@@ -85,8 +87,8 @@ En esta version se presentan unicamente los requerimientos consolidados vigentes
 | :- | :- |
 |**Nombre del requerimiento**|Reserva de pedidos en linea|
 |**Caracteristicas**|Permite crear pedidos en estado pendiente con reserva de stock por sucursal.|
-|**Descripcion**|<p>- El cliente confirma pedido desde checkout y se crea orden pendiente.</p><p>- El sistema reserva inventario para evitar sobreventa.</p><p>- El cliente puede consultar sus pedidos y detalle.</p>|
-|**Restricciones**|Requiere usuario autenticado, sucursal seleccionada y stock disponible.|
+|**Descripcion**|<p>- El cliente confirma pedido desde checkout y se crea orden pendiente.</p><p>- El sistema reserva inventario para evitar sobreventa.</p><p>- Una reserva pendiente no confirmada expira automáticamente a las 2 horas y se cancela liberando la reserva.</p><p>- El cliente puede consultar sus pedidos y detalle.</p>|
+|**Restricciones**|Requiere usuario autenticado, sucursal seleccionada, stock disponible y pago únicamente en efectivo al retirar.|
 |**Criterio de aceptacion**|Al reservar pedido, la orden se guarda con numero de orden y el stock reservado se refleja en inventario.|
 |**Tipo**|(x) Funcional    ( ) No Funcional|
 |**Prioridad**|(x) Alto    ( ) Medio    ( ) Bajo|
@@ -95,8 +97,8 @@ En esta version se presentan unicamente los requerimientos consolidados vigentes
 |**No. de requerimiento**|RF09|
 | :- | :- |
 |**Nombre del requerimiento**|Gestion operativa de pedidos|
-|**Caracteristicas**|Permite confirmar, cancelar, entregar y actualizar estado de pedidos desde panel administrativo.|
-|**Descripcion**|<p>- El sistema permite cambio de estado segun flujo operativo.</p><p>- El sistema permite cancelacion con liberacion de reserva.</p><p>- El sistema permite entrega de pedido con descuento de inventario fisico.</p>|
+|**Caracteristicas**|Permite preparar, cancelar, entregar y actualizar estado de pedidos para retiro desde panel administrativo.|
+|**Descripcion**|<p>- El sistema permite cambio de estado segun flujo operativo.</p><p>- El sistema permite cancelacion con liberacion de reserva.</p><p>- El sistema permite marcar el pedido como recogido y descontar inventario fisico.</p><p>- El pago se registra conceptualmente como efectivo al momento del retiro; no existe cobro dentro de un POS.</p>|
 |**Restricciones**|Las acciones dependen del rol y del estado actual del pedido.|
 |**Criterio de aceptacion**|Un pedido cambia de estado correctamente y el inventario se ajusta conforme a confirmacion/cancelacion/entrega.|
 |**Tipo**|(x) Funcional    ( ) No Funcional|
@@ -105,11 +107,11 @@ En esta version se presentan unicamente los requerimientos consolidados vigentes
 
 |**No. de requerimiento**|RF10|
 | :- | :- |
-|**Nombre del requerimiento**|Punto de venta presencial (POS)|
-|**Caracteristicas**|Permite registrar ventas directas en mostrador por sucursal.|
-|**Descripcion**|<p>- El sistema permite seleccionar productos y cantidades en interfaz POS.</p><p>- El sistema aplica logica de combos de precio en la venta.</p><p>- El sistema crea orden entregada y descuenta inventario fisico inmediatamente.</p>|
-|**Restricciones**|Solo roles operativos autorizados pueden registrar ventas POS.|
-|**Criterio de aceptacion**|Una venta POS genera orden, movimiento de inventario tipo VENTA y actualiza el stock en la sucursal correspondiente.|
+|**Nombre del requerimiento**|Cierre diario de producto terminado|
+|**Caracteristicas**|Permite conciliar el conteo físico de productos terminados al final de la jornada.|
+|**Descripcion**|<p>- El responsable registra unidades contadas y merma por producto y sucursal.</p><p>- El sistema calcula la venta no registrada por diferencia y ajusta el inventario.</p><p>- Los sobrantes se registran como ajuste positivo.</p><p>- Los productos que no se publican en el e-commerce también se incluyen en el cierre.</p>|
+|**Restricciones**|Solo ADMIN y MANAGER pueden ejecutar el cierre; una sucursal no puede cerrarse dos veces para la misma fecha.|
+|**Criterio de aceptacion**|El cierre deja el inventario igual al conteo físico, conserva el detalle auditable y bloquea nueva producción para la fecha cerrada.|
 |**Tipo**|(x) Funcional    ( ) No Funcional|
 |**Prioridad**|(x) Alto    ( ) Medio    ( ) Bajo|
 |**Sugerido por:**|( ) Beneficiario    (x) Usuario    ( ) Desarrollador|
@@ -182,11 +184,11 @@ En esta version se presentan unicamente los requerimientos consolidados vigentes
 
 |**No. de requerimiento**|RF17|
 | :- | :- |
-|**Nombre del requerimiento**|Dashboard operativo multi-sucursal|
-|**Caracteristicas**|Muestra indicadores operativos de ventas, pedidos, mermas, stock y comportamiento por sucursal.|
-|**Descripcion**|<p>- El dashboard muestra KPIs del dia y del periodo reciente.</p><p>- El dashboard muestra estados de pedidos, top productos y tendencias semanales.</p><p>- El dashboard permite filtro por sucursal.</p>|
-|**Restricciones**|La calidad del dashboard depende de la calidad de registro en pedidos, ventas, inventario y produccion.|
-|**Criterio de aceptacion**|El panel muestra estadisticas consistentes con los datos operativos del sistema para la sucursal seleccionada o vista global.|
+|**Nombre del requerimiento**|Panel Operación multi-sucursal|
+|**Caracteristicas**|Muestra un resumen sencillo de la operación diaria y sus alertas principales.|
+|**Descripcion**|<p>- El panel muestra saludo contextual, hora, KPIs operativos simples y una gráfica compacta.</p><p>- El panel resume inventario, producción, cierres, pedidos para retiro y alertas activas.</p><p>- ADMIN y MANAGER pueden consultar la vista global; MANAGER puede ver ambas sucursales.</p><p>- No se calculan pronósticos ni analíticas predictivas.</p>|
+|**Restricciones**|La vista debe mantenerse enfocada en la operación y no sustituye el detalle de cada módulo.|
+|**Criterio de aceptacion**|El panel presenta información consistente con los módulos operativos, con una lectura rápida y sin métricas no solicitadas.|
 |**Tipo**|(x) Funcional    ( ) No Funcional|
 |**Prioridad**|(x) Alto    ( ) Medio    ( ) Bajo|
 |**Sugerido por:**|(x) Beneficiario    ( ) Usuario    ( ) Desarrollador|
@@ -204,22 +206,32 @@ En esta version se presentan unicamente los requerimientos consolidados vigentes
 
 |**No. de requerimiento**|RF19|
 | :- | :- |
-|**Nombre del requerimiento**|Perfil y direcciones de cliente|
-|**Caracteristicas**|Permite mantener datos de perfil y direcciones para el proceso de pedido.|
-|**Descripcion**|<p>- El usuario puede consultar y actualizar su perfil basico.</p><p>- El usuario puede crear, editar y eliminar direcciones.</p><p>- Las direcciones pueden usarse para contexto de pedidos.</p>|
-|**Restricciones**|Requiere autenticacion del usuario para gestionar su informacion personal.|
-|**Criterio de aceptacion**|Un cliente autenticado puede actualizar su perfil y gestionar direcciones, visualizando los cambios de forma inmediata.|
+|**Nombre del requerimiento**|Automatización de alertas operativas|
+|**Caracteristicas**|El sistema genera las dos alertas automáticas esenciales para la operación, visibles según el rol y la sucursal.|
+|**Descripcion**|<p>- El sistema alerta cuando una materia prima llega o cae por debajo de su mínimo.</p><p>- El sistema alerta cuando un lote comprado entra en cada período de caducidad configurado.</p><p>- Un producto comprado puede tener varios recordatorios, por ejemplo 30, 15 y 3 días antes.</p><p>- Los lotes vencidos no se borran ni generan una alerta nueva; permanecen disponibles para registrar una merma.</p><p>- MANAGER y ADMIN reciben la información de ambas sucursales.</p>|
+|**Restricciones**|Requiere autenticacion del usuario con rol para recibir las alertas operativas.|
+|**Criterio de aceptacion**|Cuando una materia prima cruza su mínimo o un lote comprado cruza uno de sus recordatorios, la alerta aparece una sola vez por condición y puede enviarse a los dueños por los canales configurados.|
 |**Tipo**|(x) Funcional    ( ) No Funcional|
-|**Prioridad**|( ) Alto    (x) Medio    ( ) Bajo|
+|**Prioridad**|(x) Alto    ( ) Medio    ( ) Bajo|
 |**Sugerido por:**|( ) Beneficiario    (x) Usuario    ( ) Desarrollador|
 
+|**No. de requerimiento**|RF20|
+| :- | :- |
+|**Nombre del requerimiento**|Asistente con IA|
+|**Caracteristicas**|El sistema contará con un asistente impulsado por IA para responder consultas operativas a traves de lenguaje natural por Telegram.|
+|**Descripcion**|<p>- El usuario autorizado podrá consultar inventario de producto terminado.</p><p>- Podrá consultar materias primas y sus existencias.</p><p>- Podrá consultar producción registrada.</p><p>- Podrá consultar cierres del día.</p><p>- El asistente será de solo lectura: no registra cambios y no consulta ventas ni pedidos como módulos independientes.</p>|
+|**Restricciones**|Requiere autenticacion del usuario con rol para acceder al asistente operativo.|
+|**Criterio de aceptacion**|Que un usuario ADMIN/MANAGER autorizado pregunte por cualquiera de las cuatro áreas permitidas y reciba una respuesta coherente con los datos del sistema y limitada a sus sucursales autorizadas.|
+|**Tipo**|(x) Funcional    ( ) No Funcional|
+|**Prioridad**|(x) Alto    ( ) Medio    ( ) Bajo|
+|**Sugerido por:**|( ) Beneficiario    ( ) Usuario    (x) Desarrollador|
 ### 4.3.2 Requerimientos No Funcionales Consolidados
 
 |**No. de requerimiento**|RNF01|
 | :- | :- |
 |**Nombre del requerimiento**|Usabilidad operativa|
 |**Caracteristicas**|La interfaz debe ser clara para personal operativo con bajo nivel tecnico.|
-|**Descripcion**|<p>- Las tareas frecuentes (venta, pedido, inventario, produccion) deben ser directas y comprensibles.</p><p>- Los textos y acciones deben ser consistentes en toda la aplicacion.</p><p>- Debe minimizarse la cantidad de pasos para tareas diarias.</p>|
+|**Descripcion**|<p>- Las tareas frecuentes (pedido para retiro, inventario, producción y cierre) deben ser directas y comprensibles.</p><p>- Los textos y acciones deben ser consistentes en toda la aplicacion.</p><p>- Debe minimizarse la cantidad de pasos para tareas diarias.</p>|
 |**Restricciones**|Se debe priorizar claridad funcional sobre complejidad visual.|
 |**Criterio de aceptacion**|Usuarios operativos completan tareas principales sin apoyo tecnico continuo tras una induccion corta.|
 |**Tipo**|( ) Funcional    (x) No Funcional|
@@ -274,7 +286,7 @@ En esta version se presentan unicamente los requerimientos consolidados vigentes
 | :- | :- |
 |**Nombre del requerimiento**|Rendimiento operativo|
 |**Caracteristicas**|El sistema debe responder en tiempos adecuados para operacion diaria.|
-|**Descripcion**|<p>- Los listados deben usar paginacion para evitar sobrecarga.</p><p>- Las consultas frecuentes deben apoyarse en indices adecuados.</p><p>- Los flujos de venta y pedido no deben generar espera excesiva en uso normal.</p>|
+|**Descripcion**|<p>- Los listados deben usar paginacion para evitar sobrecarga.</p><p>- Las consultas frecuentes deben apoyarse en indices adecuados.</p><p>- Los flujos de pedido, inventario y producción no deben generar espera excesiva en uso normal.</p>|
 |**Restricciones**|El rendimiento final depende tambien de red, infraestructura y volumen de datos.|
 |**Criterio de aceptacion**|En operacion normal, consultas y operaciones principales se ejecutan con fluidez sin bloquear el trabajo del usuario.|
 |**Tipo**|( ) Funcional    (x) No Funcional|

@@ -1,5 +1,7 @@
 # Guia Rapida de Pruebas - API Panaderia Svetlana
 
+> **Alcance vigente (agosto de 2026):** prueba catálogo público, carrito y retiro en sucursal, inventario, materias primas, recetas, producción, cierre diario y las dos alertas operativas. No hay POS, pagos en tienda, direcciones de delivery ni dashboard predictivo. `PaymentMethod` solo acepta `EFECTIVO` y la caducidad con varios recordatorios aplica únicamente a productos `COMPRADO`.
+
 ## Preparacion Inicial
 
 ### 1. Asegúrate que el servidor esté corriendo
@@ -126,19 +128,17 @@ Content-Type: application/json
 {
   "sku": "CONCHA-001",
   "name": "Concha de Vainilla",
-  "slug": "concha-vainilla",
   "description": "Pan dulce tradicional",
-  "price": 15.00,
-  "discountPct": 10,
+  "basePrice": 15.00,
   "isNew": true,
-  "categoryId": 1,
+  "categorySlug": "pan-dulce",
   "origin": "PRODUCIDO"
 }
 ```
 
 ---
 
-### PASO 3: Inventario (ADMIN/EMPLOYEE)
+### PASO 3: Inventario (ADMIN/MANAGER)
 
 #### Agregar Stock Inicial
 ```http
@@ -179,20 +179,6 @@ GET http://localhost:4000/products?search=concha&page=1
 GET http://localhost:4000/categories/pan-dulce/products?page=1
 ```
 
-#### Crear Dirección
-```http
-POST http://localhost:4000/addresses
-Authorization: Bearer {clienteToken}
-Content-Type: application/json
-
-{
-  "street": "Calle 5 #123",
-  "city": "Caracas",
-  "state": "Distrito Capital",
-  "zone": "Centro"
-}
-```
-
 #### Hacer Pedido
 ```http
 POST http://localhost:4000/orders/reserve
@@ -222,7 +208,7 @@ Authorization: Bearer {clienteToken}
 
 ### PASO 5: Gestión de Pedidos (ADMIN)
 
-#### Confirmar Pedido (pago recibido)
+#### Confirmar Pedido (para preparación)
 ```http
 POST http://localhost:4000/orders/{orderId}/confirm
 Authorization: Bearer {adminToken}
@@ -239,13 +225,12 @@ Authorization: Bearer {adminToken}
 ## Endpoints Importantes por Rol
 
 ### PÚBLICO (sin autenticación)
-- `GET /products` - Listar productos con filtros
+- `GET /products` - Listar únicamente productos y categorías activas
 - `GET /products/featured` - Productos destacados
 - `GET /products/:slug` - Detalle de producto
 - `GET /categories` - Listar categorías
 - `GET /categories/:slug/products` - Productos por categoría
 - `GET /branches` - Listar sucursales
-- `GET /inventory` - Ver disponibilidad
 - `GET /health` - Health check
 
 ### CLIENTE (autenticado)
@@ -254,27 +239,29 @@ Todo lo público más:
 - `POST /auth/login` - Login
 - `GET /auth/me` - Mi perfil
 - `PATCH /auth/me` - Actualizar perfil
-- `GET /addresses` - Mis direcciones
-- `POST /addresses` - Crear dirección
 - `POST /orders/reserve` - Hacer pedido
 - `GET /orders/my-orders` - Mis pedidos
 - `GET /orders/:id` - Ver mi pedido (solo si es suyo)
 - `POST /orders/:id/cancel` - Cancelar mi pedido
 
-### ADMIN/EMPLOYEE
-Todo lo anterior más:
+### ADMIN
+- Todo lo anterior más la administración de productos, categorías, sucursales, usuarios, configuración y métricas.
 - `POST /products` - Crear producto
 - `PATCH /products/:slug` - Actualizar producto
 - `DELETE /products/:slug` - Eliminar producto
 - `POST /categories` - Crear categoría
 - `POST /branches` - Crear sucursal
+
+### ADMIN / MANAGER
 - `POST /stock-movements` - Crear movimiento
 - `GET /stock-movements` - Ver movimientos
 - `GET /orders` - Ver TODAS las órdenes
-- `POST /orders/:id/confirm` - Confirmar pago
+- `POST /orders/:id/confirm` - Confirmar pedido para preparación
 - `POST /orders/:id/pickup` - Entregar pedido
-- `GET /users` - Gestión de usuarios (solo ADMIN)
-- `GET /metrics` - Métricas del sistema (solo ADMIN)
+
+### BAKER
+- `GET /production` - Consultar producción de su sucursal
+- `POST /production` - Registrar producción de su sucursal
 
 ---
 
@@ -298,14 +285,14 @@ Todo lo anterior más:
    - Incluye datos de categoría
 
 4. **POST /orders/:id/confirm**
-   - Confirmación de pago
+   - Confirmación del pedido para preparación
    - Transición PENDING → CONFIRMED
-   - Puede ser usado por webhook de pago
+   - Se usa para iniciar la preparación; el pago se cobra en efectivo al retirar
 
 ### Mejoras de Seguridad
 
 - Validación de propiedad en `GET /orders/:id`
-- Guards ADMIN/EMPLOYEE en stock-movements
+- Guards ADMIN/MANAGER en stock-movements; BAKER queda limitado a producción y su sucursal asignada
 - Filtro automático por userId en my-orders
 - Bcryptjs para hash de contraseñas
 
@@ -357,38 +344,32 @@ Todo lo anterior más:
    → Guarda accessToken
    ```
 
-3. **Cliente crea dirección**
-   ```
-   POST /addresses
-   Authorization: Bearer {token}
-   ```
-
-4. **Cliente ve productos**
+3. **Cliente ve productos**
    ```
    GET /products/featured
    GET /categories/pan-dulce/products
    ```
 
-5. **Cliente reserva pedido**
+4. **Cliente reserva pedido**
    ```
    POST /orders/reserve
    → Bloquea inventario (reserved++)
    &rarr; Retorna orderId
    ```
 
-6. **Cliente ve su pedido**
+5. **Cliente ve su pedido**
    ```
    GET /orders/my-orders
    GET /orders/{orderId}
    ```
 
-7. **ADMIN confirma pago**
+6. **ADMIN/MANAGER confirma el pedido**
    ```
    POST /orders/{orderId}/confirm
    → PENDING → CONFIRMED
    ```
 
-8. **ADMIN entrega pedido**
+7. **ADMIN/MANAGER registra el retiro**
    ```
    POST /orders/{orderId}/pickup
    → Descuenta inventario (quantity--)
@@ -454,11 +435,11 @@ CANCELLED (en cualquier momento antes de PICKED_UP)
 
 ## Próximos Pasos Recomendados
 
-### Para la fase inicial del desarrollo:
-1. Implementado: Todos los endpoints críticos
-2. Pendiente: Dashboard de estadísticas (`GET /dashboard/stats`)
-3. Pendiente: Upload de imágenes de productos
-4. Pendiente: Recuperación de contraseña
+### Para probar el estado actual:
+1. Aplicar las migraciones Prisma y ejecutar el seed en una base local o de pruebas.
+2. Verificar en Swagger la visibilidad pública de productos y `GET /products/admin` con un usuario autorizado.
+3. Probar compras de productos `COMPRADO` con recordatorios, producción de `PRODUCIDO`, cierre diario y las dos alertas.
+4. Configurar Telegram solo si se desea validar sus consultas de lectura.
 
 ### Para Producción:
 1. Deshabilitar Swagger (`SWAGGER_ENABLED=false`)
@@ -473,22 +454,12 @@ CANCELLED (en cualquier momento antes de PICKED_UP)
 
 ## Resumen
 
-**Backend al 95% completo**
-- 47 endpoints funcionales
-- Seguridad implementada
-- Validaciones completas
-- Documentación Swagger
-- Logging de auditoría
-- Tests automatizados (10/13)
-
-**Listo para integrar con Frontend**
-
 El backend está preparado para soportar:
 - Sistema de autenticación completo
 - Catálogo de productos con filtros avanzados
 - Carrito de compras (vía reserva de órdenes)
 - Gestión de inventario multi-sucursal
-- Panel de administración
-- Dashboard de métricas
+- Panel Operación
+- Producción, cierres y alertas operativas
 
-**Siguiente paso:** Comenzar desarrollo del frontend con estos endpoints como base.
+**Siguiente paso:** aplicar migraciones en el entorno de prueba y validar el flujo con datos representativos de las dos sucursales.

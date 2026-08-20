@@ -27,7 +27,7 @@ self.addEventListener('push', function (event) {
       body: data.message || 'Nueva notificación de Panadería Svetlana',
       icon: '/images/icons/notification-icon-192.png',
       badge: '/images/icons/notification-badge-72.png',
-      data: { url: data.url || '/admin/dashboard' },
+      data: { url: data.url || '/admin' },
       vibrate: [100, 50, 100],
       tag: data.type || 'default',
       renotify: true,
@@ -53,7 +53,7 @@ self.addEventListener('notificationclick', function (event) {
     return;
   }
 
-  const urlToOpen = new URL(event.notification.data?.url || '/admin/dashboard', self.location.origin).href;
+  const urlToOpen = new URL(event.notification.data?.url || '/admin', self.location.origin).href;
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (clientList) {

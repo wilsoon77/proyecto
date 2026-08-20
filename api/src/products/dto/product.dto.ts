@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsBoolean, IsEnum, IsInt, IsNumber, IsOptional, IsString, Max, Min, MinLength, ValidateNested } from 'class-validator';
+import { ArrayMinSize, IsArray, IsBoolean, IsEnum, IsInt, IsNumber, IsOptional, IsString, Max, Min, MinLength, ValidateNested } from 'class-validator';
 import { ProductOrigin } from '@prisma/client';
 import { Type } from 'class-transformer';
 import { ProductPresentationInputDto } from './presentation.dto.js';
@@ -63,7 +63,7 @@ export class ProductDto {
   @ApiProperty({ example: 1.25, nullable: true, description: 'Precio del combo' }) comboPrice?: number;
   @ApiProperty({ example: 36, nullable: true, description: 'Unidades por lata (solo PRODUCIDO)' }) unitsPerTray?: number;
   @ApiProperty({ example: false, description: 'Control de caducidad por lote; solo aplica a productos de origen COMPRADO' }) tracksExpiration?: boolean;
-  @ApiProperty({ example: 3, description: 'Días antes de caducar para generar la alerta; solo aplica a productos COMPRADO' }) expirationAlertDays?: number;
+  @ApiProperty({ example: [30, 15, 3], type: [Number], description: 'Días de anticipación para generar avisos; solo aplica a productos COMPRADO' }) expirationAlertDays?: number[];
   @ApiProperty({ example: true, description: 'Muestra el producto en el e-commerce' }) isActive?: boolean;
   @ApiProperty({ example: true, description: 'Disponible para venta' }) isAvailable?: boolean;
   @ApiProperty({ example: 24 }) available?: number;
@@ -80,6 +80,9 @@ export class CreateProductDto {
 
   @ApiProperty({ example: 'Concha' })
   @IsString() @MinLength(2) name!: string;
+
+  @ApiPropertyOptional({ example: 'concha', description: 'Slug para la URL; si se omite se genera desde el nombre' })
+  @IsOptional() @IsString() @MinLength(1) slug?: string;
 
   @ApiProperty({ example: 'Pan dulce tradicional', required: false })
   @IsOptional() @IsString() description?: string;
@@ -114,8 +117,8 @@ export class CreateProductDto {
   @ApiProperty({ example: false, required: false, description: 'Activa el control de caducidad por lote; solo aplica a productos de origen COMPRADO' })
   @IsOptional() @IsBoolean() tracksExpiration?: boolean;
 
-  @ApiProperty({ example: 3, required: false, minimum: 0, description: 'Días antes de caducar para alertar; solo aplica a productos COMPRADO' })
-  @IsOptional() @IsInt() @Min(0) expirationAlertDays?: number;
+  @ApiProperty({ example: [30, 15, 3], type: [Number], required: false, description: 'Días de anticipación para cada aviso (ej. 30, 15, 3); solo aplica a productos COMPRADO' })
+  @IsOptional() @IsArray() @ArrayMinSize(1) @IsInt({ each: true }) @Min(0, { each: true }) @Max(3650, { each: true }) expirationAlertDays?: number[];
 
   @ApiProperty({ example: 'https://example.com/image.jpg', required: false, description: 'URL de la imagen del producto' })
   @IsOptional() @IsString() imageUrl?: string;
@@ -131,6 +134,9 @@ export class UpdateProductDto {
 
   @ApiProperty({ example: 'Concha vainilla', required: false })
   @IsOptional() @IsString() name?: string;
+
+  @ApiPropertyOptional({ example: 'concha-vainilla', description: 'Slug para la URL; si se omite se conserva o se regenera cuando cambia el nombre' })
+  @IsOptional() @IsString() @MinLength(1) slug?: string;
 
   @ApiProperty({ example: 'Pan dulce con vainilla', required: false })
   @IsOptional() @IsString() description?: string;
@@ -165,8 +171,8 @@ export class UpdateProductDto {
   @ApiProperty({ example: false, required: false, description: 'Activa el control de caducidad por lote; solo aplica a productos de origen COMPRADO' })
   @IsOptional() @IsBoolean() tracksExpiration?: boolean;
 
-  @ApiProperty({ example: 3, required: false, minimum: 0, description: 'Días antes de caducar para alertar; solo aplica a productos COMPRADO' })
-  @IsOptional() @IsInt() @Min(0) expirationAlertDays?: number;
+  @ApiProperty({ example: [30, 15, 3], type: [Number], required: false, description: 'Días de anticipación para cada aviso; solo aplica a productos COMPRADO' })
+  @IsOptional() @IsArray() @ArrayMinSize(1) @IsInt({ each: true }) @Min(0, { each: true }) @Max(3650, { each: true }) expirationAlertDays?: number[];
 
   @ApiProperty({ example: 'https://example.com/image.jpg', required: false, description: 'URL de la imagen del producto' })
   @IsOptional() @IsString() imageUrl?: string;
@@ -179,6 +185,8 @@ export class UpdateProductDto {
 export class PutProductDto {
   @ApiProperty({ example: 'Concha', description: 'Nombre completo' })
   @IsString() @MinLength(2) name!: string;
+  @ApiPropertyOptional({ example: 'concha', description: 'Slug para la URL; si se omite se conserva' })
+  @IsOptional() @IsString() @MinLength(1) slug?: string;
   @ApiProperty({ example: 'Pan dulce tradicional', required: false })
   @IsOptional() @IsString() description?: string;
   @ApiProperty({ example: 0.50, description: 'Precio unitario base' })
@@ -206,6 +214,6 @@ export class PutProductDto {
   @ApiProperty({ example: false, required: false, description: 'Activa el control de caducidad por lote; solo aplica a productos de origen COMPRADO' })
   @IsOptional() @IsBoolean() tracksExpiration?: boolean;
 
-  @ApiProperty({ example: 3, required: false, minimum: 0, description: 'Días antes de caducar para alertar; solo aplica a productos COMPRADO' })
-  @IsOptional() @IsInt() @Min(0) expirationAlertDays?: number;
+  @ApiProperty({ example: [30, 15, 3], type: [Number], required: false, description: 'Días de anticipación para cada aviso; solo aplica a productos COMPRADO' })
+  @IsOptional() @IsArray() @ArrayMinSize(1) @IsInt({ each: true }) @Min(0, { each: true }) @Max(3650, { each: true }) expirationAlertDays?: number[];
 }

@@ -53,6 +53,11 @@ export class CreateBranchDto {
   @IsNumber()
   @IsOptional()
   longitude?: number;
+
+  @ApiProperty({ description: 'Indica si la sucursal puede operar y mostrarse públicamente', required: false, default: true })
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
 }
 
 export class UpdateBranchDto extends PartialType(CreateBranchDto) {}
@@ -78,6 +83,9 @@ export class BranchDto {
 
   @ApiProperty({ description: 'Longitud', required: false })
   longitude?: number;
+
+  @ApiProperty({ description: 'Estado activo de la sucursal' })
+  isActive!: boolean;
 
   @ApiProperty({ description: 'Fecha de creación' })
   createdAt!: Date;

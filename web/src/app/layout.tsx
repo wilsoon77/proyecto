@@ -50,11 +50,13 @@ export const metadata: Metadata = {
     siteName: "Panadería Svetlana",
     title: "Panadería Svetlana | Pan fresco en Guatemala",
     description: "Pan fresco, pasteles y productos artesanales en Guatemala.",
+    images: [{ url: "/images/Panaderia_Svetlana_logo.jpeg", alt: "Panadería Svetlana" }],
   },
   twitter: {
     card: "summary",
     title: "Panadería Svetlana | Pan fresco en Guatemala",
     description: "Pan fresco, pasteles y productos artesanales en Guatemala.",
+    images: ["/images/Panaderia_Svetlana_logo.jpeg"],
   },
   robots: {
     index: true,

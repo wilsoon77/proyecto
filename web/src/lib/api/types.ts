@@ -16,7 +16,7 @@ export interface ApiUser {
   firstName: string
   lastName: string
   phone?: string
-  role: 'CUSTOMER' | 'ADMIN' | 'MANAGER' | 'BAKER' | 'CASHIER'
+  role: 'CUSTOMER' | 'ADMIN' | 'MANAGER' | 'BAKER'
   isActive: boolean
   branchId?: number | null
   branch?: { id: number; name: string; slug: string } | null
@@ -90,7 +90,7 @@ export interface ApiProduct {
   comboPrice?: number
   unitsPerTray?: number
   tracksExpiration: boolean
-  expirationAlertDays: number
+  expirationAlertDays: number[]
   images: ApiProductImage[]
   available?: number // Stock disponible (si se incluye branch)
   createdAt: string
@@ -119,7 +119,7 @@ export interface CreateProductDto {
   origin?: 'PRODUCIDO' | 'COMPRADO'
   isActive?: boolean
   tracksExpiration?: boolean
-  expirationAlertDays?: number
+  expirationAlertDays?: number[]
   stockUnitLabel?: string
   presentations?: ApiProductPresentationInput[]
 }
@@ -137,7 +137,7 @@ export interface UpdateProductDto {
   isActive?: boolean
   isAvailable?: boolean
   tracksExpiration?: boolean
-  expirationAlertDays?: number
+  expirationAlertDays?: number[]
   stockUnitLabel?: string
   presentations?: ApiProductPresentationInput[]
 }
@@ -148,6 +148,7 @@ export interface ApiCategory {
   name: string
   slug: string
   description?: string
+  isActive?: boolean
   productCount?: number
 }
 
@@ -166,10 +167,10 @@ export interface ApiBranch {
   phone?: string
   latitude?: number
   longitude?: number
+  isActive?: boolean
   createdAt: string
 }
 
-// ==================== DIRECCIONES ====================
 // ==================== ÓRDENES ====================
 export type OrderStatus = 
   | 'PENDING'
@@ -186,9 +187,10 @@ export interface ApiOrder {
   subtotal: number
   discount: number
   total: number
-  paymentMethod?: string
+  paymentMethod?: 'EFECTIVO'
   customerNotes?: string
   branch?: ApiBranch
+  expiresAt?: string | null
   items: ApiOrderItem[]
   createdAt: string
   updatedAt: string
@@ -199,7 +201,9 @@ export interface ApiOrderItem {
   productId: number
   productName: string
   quantity: number
+  stockQuantity?: number
   unitPrice: number
+  lineTotal?: number
   presentationId?: number | null
   presentationName?: string | null
   presentationQuantity?: number | null
@@ -208,7 +212,7 @@ export interface ApiOrderItem {
 
 export interface ReserveOrderDto {
   branchSlug: string
-  paymentMethod?: string
+  paymentMethod?: 'EFECTIVO'
   customerNotes?: string
   items: { productSlug: string; quantity: number; presentationId?: number }[]
 }

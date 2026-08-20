@@ -1,5 +1,7 @@
 # Guia Rapida de Pruebas de Seguridad
 
+> **Nota de ejecución:** los resultados documentados aquí son históricos. Las pruebas e2e requieren una base PostgreSQL/Supabase de pruebas accesible y con las migraciones actuales aplicadas; las pruebas unitarias de dominio pueden ejecutarse sin conexión a Supabase. El método de pago vigente es `EFECTIVO` y el alcance operativo no incluye POS.
+
 ## Inicio Rapido
 
 ### 1. Ejecutar Tests Automatizados (Recomendado)
@@ -55,7 +57,7 @@ Estas funcionalidades fueron probadas y están funcionando:
   - [x] Refresh: 20 req/min
 - [x] **Refresh Tokens**
   - [x] Generación segura (crypto.randomBytes)
-  - [x] Almacenamiento hasheado (bcrypt)
+  - [x] Almacenamiento mediante SHA-256 del token opaco (con compatibilidad legacy)
   - [x] Rotación automática
   - [x] Expiración 7 días
 - [x] **Access Tokens**

@@ -1,6 +1,10 @@
 import { AssistantService } from './assistant.service.js';
+import { GeminiProvider } from './providers/gemini.provider.js';
+import { GroqProvider } from './providers/groq.provider.js';
+import { MistralProvider } from './providers/mistral.provider.js';
+import { NvidiaProvider } from './providers/nvidia.provider.js';
 
-describe('AssistantService Groq tool calling', () => {
+describe('AssistantService Multi-Provider & Tool Calling', () => {
   const context = {
     userId: 'owner-1',
     role: 'MANAGER' as const,
@@ -13,42 +17,62 @@ describe('AssistantService Groq tool calling', () => {
     timezone: 'America/Guatemala',
   };
 
-  const configValues: Record<string, string> = {
-    GROQ_API_KEY: 'groq-test-key',
-    ASSISTANT_MODEL: 'openai/gpt-oss-120b',
-    ASSISTANT_MAX_STEPS: '4',
-    ASSISTANT_TIMEOUT_MS: '30000',
-  };
-
-  const config = {
-    get: jest.fn((key: string) => configValues[key]),
-  };
-  const policy = {
-    resolveContext: jest.fn().mockResolvedValue(context),
-  };
-  const reads = {
-    salesSummary: jest.fn().mockResolvedValue({
-      date: '2026-07-24',
-      totalSales: 1250,
-      orderCount: 14,
-      branches: [
-        { branchId: 1, branchName: 'Centro', totalSales: 700, orderCount: 8 },
-        { branchId: 2, branchName: 'Norte', totalSales: 550, orderCount: 6 },
-      ],
-    }),
-  };
-
+  let configValues: Record<string, string>;
+  let config: { get: jest.Mock };
+  let policy: { resolveContext: jest.Mock };
+  let reads: { productInventory: jest.Mock };
+  let geminiProvider: GeminiProvider;
+  let groqProvider: GroqProvider;
+  let mistralProvider: MistralProvider;
+  let nvidiaProvider: NvidiaProvider;
   let service: AssistantService;
   let fetchMock: jest.Mock;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new AssistantService(config as never, policy as never, reads as never);
+    configValues = {
+      GEMINI_API_KEY: 'gemini-test-key',
+      GEMINI_MODEL: 'gemini-2.5-flash',
+      GROQ_API_KEY: 'groq-test-key',
+      GROQ_MODEL: 'llama-3.3-70b-versatile',
+      ASSISTANT_PROVIDER: 'auto',
+      ASSISTANT_MAX_STEPS: '4',
+      ASSISTANT_TIMEOUT_MS: '30000',
+    };
+
+    config = {
+      get: jest.fn((key: string) => configValues[key]),
+    };
+    policy = {
+      resolveContext: jest.fn().mockResolvedValue(context),
+    };
+    reads = {
+      productInventory: jest.fn().mockResolvedValue({
+        query: 'pan francés',
+        items: [{ branchId: 1, branchName: 'Centro', productName: 'Pan francés', quantity: 24, reserved: 0, available: 24 }],
+      }),
+    };
+
+    geminiProvider = new GeminiProvider(config as never);
+    groqProvider = new GroqProvider(config as never);
+    mistralProvider = new MistralProvider(config as never);
+    nvidiaProvider = new NvidiaProvider(config as never);
+
+    service = new AssistantService(
+      config as never,
+      policy as never,
+      reads as never,
+      geminiProvider,
+      groqProvider,
+      mistralProvider,
+      nvidiaProvider,
+    );
+
     fetchMock = jest.fn();
     globalThis.fetch = fetchMock as typeof fetch;
   });
 
-  it('ejecuta la tool local y entrega su resultado a Groq antes de responder', async () => {
+  it('ejecuta tool calling exitosamente usando Google Gemini (proveedor prioritario)', async () => {
     fetchMock
       .mockResolvedValueOnce(new Response(JSON.stringify({
         choices: [{
@@ -56,30 +80,83 @@ describe('AssistantService Groq tool calling', () => {
             role: 'assistant',
             content: null,
             tool_calls: [{
-              id: 'call-sales',
+              id: 'call-inventory',
               type: 'function',
-              function: { name: 'salesSummary', arguments: '{}' },
+              function: { name: 'productInventory', arguments: '{"productQuery":"pan francés"}' },
             }],
           },
         }],
       }), { status: 200, headers: { 'content-type': 'application/json' } }))
       .mockResolvedValueOnce(new Response(JSON.stringify({
-        choices: [{ message: { role: 'assistant', content: 'Hoy se vendieron Q1,250 en 14 pedidos.' } }],
+        choices: [{ message: { role: 'assistant', content: 'Hay 24 unidades de pan francés en Centro.' } }],
       }), { status: 200, headers: { 'content-type': 'application/json' } }));
 
-    await expect(service.answer('owner-1', '¿Cómo van las ventas hoy?'))
-      .resolves.toBe('Hoy se vendieron Q1,250 en 14 pedidos.');
+    const answer = await service.answer('owner-1', '¿Cuánto inventario hay de pan francés?');
+    expect(answer).toBe('Hay 24 unidades de pan francés en Centro.');
 
     expect(policy.resolveContext).toHaveBeenCalledWith('owner-1');
-    expect(reads.salesSummary).toHaveBeenCalledWith(context, {});
+    expect(reads.productInventory).toHaveBeenCalledWith(context, { productQuery: 'pan francés' });
     expect(fetchMock).toHaveBeenCalledTimes(2);
 
-    const secondRequest = fetchMock.mock.calls[1][1] as RequestInit;
-    const secondBody = JSON.parse(String(secondRequest.body));
-    expect(secondBody.messages.at(-1)).toEqual(expect.objectContaining({
-      role: 'tool',
-      tool_call_id: 'call-sales',
-      name: 'salesSummary',
+    // Verifica que se llamó al endpoint de Gemini
+    expect(fetchMock.mock.calls[0][0]).toBe('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions');
+  });
+
+  it('conmuta automáticamente a Groq si Gemini falla (fallback automático)', async () => {
+    // 1. Primer llamada a Gemini falla con 429 Too Many Requests
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ error: { message: 'Quota exceeded' } }), {
+      status: 429,
+      headers: { 'content-type': 'application/json' },
     }));
+
+    // 2. Fallback a Groq: Groq responde con tool_call
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({
+      choices: [{
+        message: {
+          role: 'assistant',
+          content: null,
+          tool_calls: [{
+            id: 'call-inventory-groq',
+            type: 'function',
+            function: { name: 'productInventory', arguments: '{"productQuery":"pan francés"}' },
+          }],
+        },
+      }],
+    }), { status: 200, headers: { 'content-type': 'application/json' } }));
+
+    // 3. Siguiente paso: Gemini vuelve a fallar o Groq continúa
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ error: { message: 'Quota exceeded' } }), {
+      status: 429,
+      headers: { 'content-type': 'application/json' },
+    }));
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({
+      choices: [{ message: { role: 'assistant', content: 'Hay 24 panes en Centro (vía Groq).' } }],
+    }), { status: 200, headers: { 'content-type': 'application/json' } }));
+
+    const answer = await service.answer('owner-1', '¿Cuánto pan hay?');
+    expect(answer).toBe('Hay 24 panes en Centro (vía Groq).');
+  });
+
+  it('usa proveedor explícito cuando se define ASSISTANT_PROVIDER=groq', async () => {
+    configValues.ASSISTANT_PROVIDER = 'groq';
+
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({
+      choices: [{ message: { role: 'assistant', content: 'Respuesta directa de Groq.' } }],
+    }), { status: 200, headers: { 'content-type': 'application/json' } }));
+
+    const answer = await service.answer('owner-1', 'Hola');
+    expect(answer).toBe('Respuesta directa de Groq.');
+    expect(fetchMock.mock.calls[0][0]).toBe('https://api.groq.com/openai/v1/chat/completions');
+  });
+
+  it('lanza ServiceUnavailableException si no hay ningún proveedor configurado', async () => {
+    delete process.env.GEMINI_API_KEY;
+    delete process.env.GROQ_API_KEY;
+    delete process.env.MISTRAL_API_KEY;
+    delete process.env.NVIDIA_API_KEY;
+    configValues = {};
+
+    await expect(service.answer('owner-1', 'Hola'))
+      .rejects.toThrow('No hay ningún proveedor de IA configurado');
   });
 });

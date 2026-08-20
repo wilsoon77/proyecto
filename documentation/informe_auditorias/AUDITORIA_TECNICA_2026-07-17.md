@@ -162,7 +162,7 @@ También se identificaron riesgos altos en el almacenamiento de tokens, anti-bot
 
 **Evidencia:** los usuarios operativos sí tienen `branchId`, pero los controladores aceptan cualquier sucursal recibida. El propio dashboard reconoce el TODO en [`api/src/dashboard/dashboard.controller.ts`](../api/src/dashboard/dashboard.controller.ts#L69-L73). Producción usa `dto.branchId` antes que la sucursal del usuario ([`production.service.ts`](../api/src/production/production.service.ts#L57-L58)); inventario, pedidos y movimientos tampoco comparan la sucursal solicitada con la del actor.
 
-**Impacto:** un `MANAGER`, `BAKER` o `CASHIER` de una sucursal puede consultar, producir, vender, ajustar o cancelar operaciones en otra, según la ruta.
+**Impacto:** un `MANAGER` o `BAKER` de una sucursal puede consultar, producir, ajustar o cancelar operaciones en otra, según la ruta.
 
 **Acción propuesta:** centralizar la regla en un `BranchScopeGuard`/servicio: `ADMIN` puede cruzar sucursales; los demás roles se limitan a su `branchId` persistido. Derivar la sucursal server-side, ignorar o validar parámetros de cliente, y probar cada endpoint con actor de sucursal A contra datos de B.
 
@@ -226,7 +226,7 @@ También se identificaron riesgos altos en el almacenamiento de tokens, anti-bot
 
 ### UX-01 — permisos visibles de interfaz y permisos reales no coinciden
 
-**Evidencia:** el menú permite Dashboard a `BAKER` y `CASHIER`, pero la API de dashboard solo permite `ADMIN`/`MANAGER`. También expone Productos a `MANAGER`, mientras los mutadores de producto en API son solo `ADMIN` ([`web/src/app/admin/layout.tsx`](../web/src/app/admin/layout.tsx#L55-L78), [`api/src/dashboard/dashboard.controller.ts`](../api/src/dashboard/dashboard.controller.ts), [`api/src/products/products.controller.ts`](../api/src/products/products.controller.ts)).
+**Evidencia:** el menú permite Dashboard a `BAKER`, pero la API de dashboard solo permite `ADMIN`/`MANAGER`. También expone Productos a `MANAGER`, mientras los mutadores de producto en API son solo `ADMIN` ([`web/src/app/admin/layout.tsx`](../web/src/app/admin/layout.tsx#L55-L78), [`api/src/dashboard/dashboard.controller.ts`](../api/src/dashboard/dashboard.controller.ts), [`api/src/products/products.controller.ts`](../api/src/products/products.controller.ts)).
 
 **Impacto:** pantallas visibles terminan en 403, aumentan soporte y generan incertidumbre de roles.
 
@@ -310,7 +310,7 @@ Esta sección sustituye el estado de los hallazgos marcados originalmente como p
 |---|---|---|
 | SEC-02 — sesión web | ✅ Implementado | El navegador ya no guarda tokens de aplicación en `localStorage`. Las rutas `/api/auth/*` y `/api/bff/*` de Next.js mantienen access/refresh tokens únicamente en cookies `HttpOnly`, `Secure` en producción y `SameSite=Lax`. Los POST/PATCH/PUT/DELETE exigen token CSRF doble-submit y rechazan orígenes cross-site. |
 | BFF y OAuth | ✅ Implementado | Login, registro, logout, sesión, refresh transparente y callback OAuth pasan por el BFF. El callback deja los tokens propios exclusivamente en cookies HttpOnly; la recuperación de contraseña también sincroniza con la API mediante BFF, sin exponer el bearer a la API desde el navegador. |
-| AUTH-01 — sucursales | ✅ Implementado | `BranchScopeService` fuerza la sucursal asignada para `MANAGER`, `BAKER` y `CASHIER` en inventario, dashboard, producción, materias primas, movimientos y pedidos. `ADMIN` conserva alcance global; rutas de catálogo y clientes no se mezclan con el alcance operativo. |
+| AUTH-01 — sucursales | ✅ Implementado | `BranchScopeService` fuerza la sucursal asignada para `BAKER` en producción, materias primas y operaciones de sucursal; `MANAGER` conserva alcance global en ambas sucursales. `ADMIN` también conserva alcance global; rutas de catálogo y clientes no se mezclan con el alcance operativo. |
 | DATA-01 — pedidos | ✅ Implementado | Se agregó una máquina de estados explícita: `PENDING → CONFIRMED → PREPARING → READY → PICKED_UP` o `READY → IN_DELIVERY → DELIVERED`, con cancelación sólo desde estados no terminales. Cancelación y cumplimiento liberan/descuentan inventario en transacciones serializables con retry. |
 | Inventario reservado | ✅ Implementado | Reservas y POS agrupan líneas repetidas, verifican disponibilidad real (`quantity - reserved`) y evitan ventas/ajustes/reconciliaciones que dejen inventario por debajo de reservas activas. El cron de expiración vuelve a leer la orden dentro de la transacción antes de cancelarla. |
 | SEO SSR/ISR | ✅ Implementado | `/productos` renderiza el catálogo desde servidor con filtros SSR y fetch revalidado cada 60 s. `/productos/[slug]` genera metadata, JSON-LD `Product`, parámetros estáticos y revalidación de 60 s; incluye `loading` y `error` states. La interacción de carrito permanece en componentes cliente. |

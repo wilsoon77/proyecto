@@ -16,7 +16,7 @@ interface OrderDetail {
   subtotal: number
   discount: number
   total: number
-  paymentMethod?: string
+  paymentMethod?: 'EFECTIVO'
   customerNotes?: string
   branch?: { id: number; name: string; slug: string; address: string; phone?: string }
   items: Array<{
@@ -25,6 +25,7 @@ interface OrderDetail {
     productName: string
     quantity: number
     unitPrice: number
+    lineTotal?: number
     presentationName?: string | null
     presentationQuantity?: number | null
   }>
@@ -192,7 +193,7 @@ export default function DetalleOrdenPage() {
                         {formatCurrency(item.unitPrice)}
                       </td>
                       <td className="px-6 py-4 text-right font-medium text-foreground">
-                        {formatCurrency(item.unitPrice * (item.presentationQuantity ?? item.quantity))}
+                        {formatCurrency(item.lineTotal ?? item.unitPrice * (item.presentationQuantity ?? item.quantity))}
                       </td>
                     </tr>
                   ))}
@@ -211,7 +212,7 @@ export default function DetalleOrdenPage() {
                     </p>
                   </div>
                   <p className="text-sm font-semibold text-foreground whitespace-nowrap">
-                    {formatCurrency(item.unitPrice * (item.presentationQuantity ?? item.quantity))}
+                    {formatCurrency(item.lineTotal ?? item.unitPrice * (item.presentationQuantity ?? item.quantity))}
                   </p>
                 </div>
               ))}

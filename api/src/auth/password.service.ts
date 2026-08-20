@@ -33,34 +33,40 @@ export class PasswordService {
   /**
    * Compara una contraseña en texto plano con un hash.
    */
-  async compare(password: string, hash: string): Promise<boolean> {
+  async compare(password: string, hash: string | null | undefined): Promise<boolean> {
+    if (!hash) return false;
     return bcrypt.compare(password, hash);
   }
 
   /**
-   * Actualiza la contraseña de un usuario en la BD local.
-   * Si Supabase Auth está configurado, sincroniza allí también.
+   * Supabase Auth is the source of truth when configured. The local hash is
+   * only used by standalone deployments without Supabase Auth.
    */
   async updatePassword(userId: string | undefined, newPassword: string) {
     if (!userId) throw new UnauthorizedException();
 
-    const passwordHash = await this.hash(newPassword);
-
-    const user = await this.prisma.user.update({
-      where: { id: userId },
-      data: { passwordHash },
-    });
-
-    // Sincronizar con Supabase Auth si está configurado
     if (this.supabase.isConfigured()) {
       const { error } = await this.supabase.admin.updateUserById(userId, {
         password: newPassword,
       });
 
       if (error) {
-        this.logger.warn(`Error actualizando password en Supabase Auth: ${error.message}`, { userId });
+        throw new BadRequestException(`No se pudo actualizar la contraseña en Supabase Auth: ${error.message}`);
       }
+
+      const user = await this.prisma.user.update({
+        where: { id: userId },
+        data: { passwordHash: null },
+      });
+      this.logger.info('Contraseña actualizada', { userId, email: user.email, action: 'PASSWORD_CHANGE', provider: 'supabase' });
+      return { success: true };
     }
+
+    const passwordHash = await this.hash(newPassword);
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash },
+    });
 
     this.logger.info('Contraseña actualizada', { userId, email: user.email, action: 'PASSWORD_CHANGE' });
 
@@ -96,9 +102,8 @@ export class PasswordService {
       throw new UnauthorizedException('Usuario desactivado');
     }
 
-    const passwordHash = await this.hash(newPassword);
-
-    await this.prisma.user.update({ where: { id: user.id }, data: { passwordHash } });
+    // Supabase already changed the credential; keep no second local secret.
+    await this.prisma.user.update({ where: { id: user.id }, data: { passwordHash: null } });
 
     this.logger.info('Contraseña reseteada via token de recuperación', {
       userId: user.id,

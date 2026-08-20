@@ -1,6 +1,6 @@
 import 'server-only'
 
-import type { ApiCategory, ApiProduct, PaginatedResponse, ProductFilters } from '@/lib/api/types'
+import type { ApiBranch, ApiCategory, ApiProduct, PaginatedResponse, ProductFilters } from '@/lib/api/types'
 
 const REVALIDATE_SECONDS = 60
 
@@ -50,6 +50,10 @@ export async function getPublicCatalog(filters: ProductFilters): Promise<Paginat
 
 export async function getPublicCategories(): Promise<ApiCategory[]> {
   return (await publicFetch<ApiCategory[]>('/categories', ['catalog-categories'])) ?? []
+}
+
+export async function getPublicBranches(): Promise<ApiBranch[]> {
+  return (await publicFetch<ApiBranch[]>('/branches', ['public-branches'])) ?? []
 }
 
 export async function getPublicProduct(slug: string, branch?: string): Promise<ApiProduct | null> {

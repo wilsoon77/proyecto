@@ -5,6 +5,8 @@ import { getPublicCatalog, getPublicProduct, getRelatedPublicProducts } from '@/
 import { apiProductToProduct } from '@/lib/api/transformers'
 import { defaultSalePresentation, presentationUnitPrice } from '@/lib/presentation-quantities'
 
+const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '')
+
 export const revalidate = 60
 export const dynamicParams = true
 
@@ -33,6 +35,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description: product.description || `Compra ${product.name} en Panadería Svetlana.`,
       images: image ? [{ url: image, alt: product.name }] : undefined,
     },
+    twitter: {
+      card: 'summary_large_image',
+      title: product.name,
+      description: product.description || `Compra ${product.name} en Panadería Svetlana.`,
+      images: image ? [image] : ['/images/Panaderia_Svetlana_logo.jpeg'],
+    },
   }
 }
 
@@ -54,15 +62,25 @@ export default async function ProductDetailPage({ params }: PageProps) {
     sku: apiProduct.sku,
     offers: {
       '@type': 'Offer',
-    price: presentationUnitPrice(product, defaultSalePresentation(product)).toFixed(2),
+      price: presentationUnitPrice(product, defaultSalePresentation(product)).toFixed(2),
       priceCurrency: 'GTQ',
       availability: product.stock > 0 && product.isAvailable ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
     },
+  }
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Inicio', item: siteUrl },
+      { '@type': 'ListItem', position: 2, name: 'Productos', item: `${siteUrl}/productos` },
+      { '@type': 'ListItem', position: 3, name: product.name, item: `${siteUrl}/productos/${product.slug}` },
+    ],
   }
 
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd).replace(/</g, '\\u003c') }} />
       <ProductDetailClient product={product} relatedProducts={related.map(apiProductToProduct)} />
     </>
   )

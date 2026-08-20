@@ -11,7 +11,6 @@ if (!fs.existsSync(outputDir)) {
 
 const ROLES = {
   baker: { email: 'panadero@panaderia.com', pass: 'panadero123', label: 'BAKER' },
-  cashier: { email: 'cajero@panaderia.com', pass: 'cajero123', label: 'CASHIER' },
   manager: { email: 'gerente@panaderia.com', pass: 'manager123', label: 'MANAGER' },
   admin: { email: 'admin@panaderia.com', pass: 'admin123', label: 'ADMIN' }
 };
@@ -78,51 +77,8 @@ async function run() {
   }
 
   // =========================================================================
-  // 2. PROBAR CAJERO (CASHIER) - REGISTRAR VENTA EN PUNTO DE VENTA (POS)
   // =========================================================================
-  {
-    const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
-    const page = await context.newPage();
-    try {
-      await loginUser(page, ROLES.cashier);
-      
-      console.log('[CASHIER] Navegando al POS...');
-      await page.goto(`${url}/admin/pos`, { waitUntil: 'networkidle' });
-      await page.waitForTimeout(4000);
-      await page.screenshot({ path: path.join(outputDir, 'cashier_8_pos_pantalla.png') });
-      
-      // Agregar un producto disponible al carrito
-      console.log('[CASHIER] Agregando producto al carrito...');
-      const productCard = page.locator('div.group:has-text("+ Agregar")').first();
-      if (await productCard.count() > 0) {
-        await productCard.click();
-        await page.waitForTimeout(1000);
-        await page.screenshot({ path: path.join(outputDir, 'cashier_9_pos_carrito_con_item.png') });
-        
-        // Realizar cobro
-        console.log('[CASHIER] Procesando cobro (Pago Exacto)...');
-        const checkoutBtn = page.locator('button:has-text("Cobrar")');
-        if (await checkoutBtn.count() > 0) {
-          await checkoutBtn.click();
-          await page.waitForTimeout(4000); // Esperar procesamiento de venta
-          await page.screenshot({ path: path.join(outputDir, 'cashier_10_pos_venta_completada.png') });
-          console.log('✔ [CASHIER] Venta en POS procesada con éxito');
-        } else {
-          console.log('⚠ [CASHIER] Botón "Cobrar" no disponible.');
-        }
-      } else {
-        console.log('⚠ [CASHIER] No se encontraron productos disponibles para agregar en el POS.');
-      }
-    } catch (err) {
-      console.error('❌ Error en el flujo del CASHIER:', err);
-      await page.screenshot({ path: path.join(outputDir, 'cashier_error_integracion.png') });
-    } finally {
-      await context.close();
-    }
-  }
-
-  // =========================================================================
-  // 3. PROBAR ENCARGADO (MANAGER) - VER PRODUCTOS E INVENTARIO
+  // 2. PROBAR ENCARGADO (MANAGER) - VER PRODUCTOS E INVENTARIO
   // =========================================================================
   {
     const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
@@ -246,10 +202,10 @@ async function run() {
     try {
       await loginUser(page, ROLES.admin);
       
-      console.log('[ADMIN] Revisando Dashboard General...');
+      console.log('[ADMIN] Revisando panel Operación...');
       await page.goto(`${url}/admin`, { waitUntil: 'networkidle' });
       await page.waitForTimeout(4000);
-      await page.screenshot({ path: path.join(outputDir, 'admin_8_dashboard_general.png') });
+      await page.screenshot({ path: path.join(outputDir, 'admin_8_operacion_general.png') });
       
       console.log('[ADMIN] Navegando a Usuarios...');
       await page.goto(`${url}/admin/usuarios`, { waitUntil: 'networkidle' });
@@ -266,10 +222,10 @@ async function run() {
       await page.waitForTimeout(3000);
       await page.screenshot({ path: path.join(outputDir, 'admin_11_historial_auditoria.png') });
       
-      console.log('[ADMIN] Probando el POS como Admin...');
-      await page.goto(`${url}/admin/pos`, { waitUntil: 'networkidle' });
+      console.log('[ADMIN] Revisando caducidades desde Inventario...');
+      await page.goto(`${url}/admin/inventario/caducidades`, { waitUntil: 'networkidle' });
       await page.waitForTimeout(3000);
-      await page.screenshot({ path: path.join(outputDir, 'admin_12_pos_as_admin.png') });
+      await page.screenshot({ path: path.join(outputDir, 'admin_12_caducidades.png') });
       
       console.log('✔ [ADMIN] Paneles revisados con éxito.');
     } catch (err) {

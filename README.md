@@ -1,6 +1,6 @@
 # Proyecto Panadería Svetlana (Monorepo)
 
-Sistema ERP/POS para gestión integral de panaderías multi-sucursal. Control de producción por amasijos, inventario automatizado mediante recetas, punto de venta con combos de precios, y catálogo e-commerce.
+Sistema operativo para una panadería de dos sucursales: producción por amasijos, inventario automatizado mediante recetas, alertas de materia prima/caducidad y catálogo e-commerce con retiro en sucursal.
 
 ## Estructura
 - `api/`: Backend — NestJS + Prisma + Swagger (19 módulos, 44+ endpoints)
@@ -66,6 +66,13 @@ NODE_ENV=development
 SUPABASE_URL=https://tu-proyecto.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=tu_service_role_key
 
+# Retención (días; opcional, usa valores seguros por defecto)
+RETENTION_LOGIN_ATTEMPTS_DAYS=90
+RETENTION_NOTIFICATIONS_DAYS=90
+RETENTION_REFRESH_TOKENS_DAYS=30
+RETENTION_TELEGRAM_UPDATES_DAYS=30
+RETENTION_AUDIT_LOGS_DAYS=365
+
 # Appwrite (Almacenamiento de imágenes)
 APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1
 APPWRITE_PROJECT_ID=tu_project_id
@@ -94,15 +101,22 @@ npm run test             # Ejecutar tests
 ```
 
 ## Módulos del Backend
-Auth, Products, Categories, Branches, Users, Addresses, Orders, Inventory, StockMovements, Dashboard, Health, Metrics, Storage (Appwrite), Supabase, Audit, Recipes, Production, RawMaterials.
+Auth, Products, Categories, Branches, Users, Orders, Inventory, StockMovements, Operation, Health, Metrics, Storage (Appwrite), Supabase, Audit, Recipes, Production, RawMaterials, Telegram.
+
+## Proveedores de infraestructura
+
+- **Supabase Auth:** registro, login con contraseña y OAuth cuando `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` están configurados. La API emite sus propios access/refresh tokens para proteger sus endpoints.
+- **PostgreSQL de Supabase:** datos operativos, inventario, lotes, recetas, cierres, pedidos, notificaciones y auditoría; Prisma administra el esquema y las migraciones.
+- **Appwrite Storage:** imágenes del catálogo. No almacena credenciales ni inventario.
+
+El catálogo puede seguir funcionando sin Appwrite usando las URLs existentes, pero las cargas nuevas requieren sus variables configuradas.
 
 ## Roles del sistema
 | Rol | Acceso |
 |-----|--------|
 | `ADMIN` | Acceso total al sistema |
-| `MANAGER` | Ventas, inventario, producción, ajustes |
+| `MANAGER` | Pedidos para retiro, inventario, producción, ajustes, transferencias y cierre diario |
 | `BAKER` | Producción y stock de materia prima |
-| `CASHIER` | Punto de venta (POS) |
 | `CUSTOMER` | Catálogo, carrito, pedidos, perfil |
 
 ## Paginación y cabeceras
@@ -122,7 +136,7 @@ Para detalles completos, ver `GUIA_DESPLIEGUE.md`.
 
 Los productos pueden venderse en presentaciones como combos, medias tiras o tiras completas sin duplicar productos. El inventario se conserva en la unidad física base y cada presentación tiene su propio precio y equivalencia.
 
-Consulta la guía funcional en [`documentation/PRESENTACIONES_PRODUCTO.md`](documentation/PRESENTACIONES_PRODUCTO.md).
+Consulta la guía funcional en [`documentation/PRESENTACIONES_PRODUCTO.md`](documentation/planeacion/PRESENTACIONES_PRODUCTO.md).
 
 ## Notas
 - Este monorepo permite trabajar de forma independiente en `api/` y `web/` sin interferencias.

@@ -161,7 +161,7 @@ export default function PedidosPage() {
                         {' × '}{item.presentationQuantity ?? item.quantity}
                       </span>
                       <span className="font-medium">
-                        {formatPrice(Number(item.unitPrice) * (item.presentationQuantity ?? item.quantity))}
+                        {formatPrice(Number(item.lineTotal ?? Number(item.unitPrice) * (item.presentationQuantity ?? item.quantity)))}
                       </span>
                     </div>
                   ))}

@@ -1,6 +1,6 @@
 import { api } from "./client"
 
-export type UserRole = 'CUSTOMER' | 'ADMIN' | 'MANAGER' | 'BAKER' | 'CASHIER'
+export type UserRole = 'CUSTOMER' | 'ADMIN' | 'MANAGER' | 'BAKER'
 
 export interface UserBranch {
   id: number

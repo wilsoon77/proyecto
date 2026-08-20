@@ -134,7 +134,7 @@ export class TelegramService implements OnModuleInit {
       }
 
       if (command === '/ayuda') {
-        await this.delivery.sendToChat(chatId, 'Puedes preguntarme, por ejemplo:\n• ¿Cómo van las ventas hoy?\n• ¿Qué materia prima está baja?\n• ¿Cuánto inventario hay de pan francés?\n• ¿Hay pedidos pendientes?\n• ¿Qué se produjo hoy?\n• ¿Cómo cerró el día?');
+        await this.delivery.sendToChat(chatId, 'Puedes preguntarme, por ejemplo:\n• ¿Qué materia prima está baja?\n• ¿Cuánta harina hay en cada sucursal?\n• ¿Cuánto inventario hay de pan francés?\n• ¿Qué se produjo hoy?\n• ¿Cómo cerró el día?');
         return;
       }
 
@@ -149,7 +149,7 @@ export class TelegramService implements OnModuleInit {
         await this.delivery.sendToChat(chatId, answer);
         this.logger.log(`assistant_request chat=${chatId} user=${link.userId} durationMs=${Date.now() - startedAt} success=true`);
       } catch (error) {
-        this.logger.error(`Error Groq/asistente user=${link.userId} durationMs=${Date.now() - startedAt} success=false: ${error instanceof Error ? error.message : 'error'}`);
+        this.logger.error(`Error asistente/IA user=${link.userId} durationMs=${Date.now() - startedAt} success=false: ${error instanceof Error ? error.message : 'error'}`);
         await this.delivery.sendToChat(chatId, 'No pude consultar esa información ahora. Intenta de nuevo más tarde.');
       }
     } finally {

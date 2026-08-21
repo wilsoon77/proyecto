@@ -4,6 +4,8 @@ import { TelegramLinkService } from './telegram-link.service.js';
 describe('TelegramLinkService security limits', () => {
   const config = {
     get: jest.fn((key: string) => ({
+      TELEGRAM_BOT_USERNAME: 'panaderia_bot',
+      TELEGRAM_BOT_TOKEN: 'bot-token',
       TELEGRAM_LINK_MAX_FAILED_ATTEMPTS: key === 'TELEGRAM_LINK_MAX_FAILED_ATTEMPTS' ? '5' : undefined,
       TELEGRAM_LINK_BLOCK_MINUTES: key === 'TELEGRAM_LINK_BLOCK_MINUTES' ? '15' : undefined,
     }[key])),
@@ -17,6 +19,10 @@ describe('TelegramLinkService security limits', () => {
     telegramLinkToken: { findFirst: jest.fn() },
   };
   const prisma = {
+    telegramLinkToken: {
+      updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+      create: jest.fn().mockResolvedValue({}),
+    },
     telegramLinkAttempt: {
       count: jest.fn(),
       create: jest.fn().mockResolvedValue({}),
@@ -34,6 +40,25 @@ describe('TelegramLinkService security limits', () => {
       audit as never,
       policy as never,
     );
+  });
+
+  it('genera un enlace para la app y otro para navegador con el mismo token', async () => {
+    const session = await service.createLinkSession('user-1');
+
+    expect(session.webDeepLink).toBe(session.deepLink);
+    expect(session.deepLink).toMatch(/^https:\/\/t\.me\/panaderia_bot\?start=[A-Za-z0-9_-]+$/);
+    expect(session.appDeepLink).toMatch(/^tg:\/\/resolve\?domain=panaderia_bot&start=[A-Za-z0-9_-]+$/);
+    expect(prisma.telegramLinkToken.updateMany).toHaveBeenCalledWith({
+      where: { userId: 'user-1', usedAt: null, revokedAt: null },
+      data: { revokedAt: expect.any(Date) },
+    });
+    expect(prisma.telegramLinkToken.create).toHaveBeenCalledWith({
+      data: {
+        userId: 'user-1',
+        tokenHash: expect.stringMatching(/^[a-f0-9]{64}$/),
+        expiresAt: expect.any(Date),
+      },
+    });
   });
 
   it('audita un token inválido sin almacenar el token en claro', async () => {

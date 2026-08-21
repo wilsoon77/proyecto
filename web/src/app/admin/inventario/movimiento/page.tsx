@@ -744,7 +744,7 @@ function MovimientoForm() {
                         {/* Proyección en vivo si hay cantidad asignada */}
                         {isSelected && (
                           <div className="mt-2.5 pt-2 border-t border-amber-200/60 flex items-center justify-between text-xs text-amber-900 font-medium">
-                            <span>🚀 Se moverán <strong>{selectedQty} unidades</strong></span>
+                            <span>Se moverán <strong>{selectedQty} unidades</strong></span>
                             <span className="text-stone-500 text-[11px]">
                               Nuevo stock: {fromBranchName} ({maxAvailable - selectedQty}) ➔ {toBranchName} ({currentTargetStock + selectedQty})
                             </span>
@@ -1034,7 +1034,7 @@ function MovimientoForm() {
         )}
       </div>
 
-      {/* 📱 BARRA FLOTANTE STICKY PARA MÓVIL (Transferencia Masiva) */}
+      {/* BARRA FLOTANTE STICKY PARA MÓVIL (Transferencia Masiva) */}
       {mainMode === "TRANSFER_BULK" && selectedTransferList.length > 0 && (
         <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-stone-200 p-3 sm:hidden shadow-xl">
           <div className="flex items-center justify-between gap-3">

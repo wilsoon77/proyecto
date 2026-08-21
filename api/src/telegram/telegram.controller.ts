@@ -10,7 +10,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/roles.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
@@ -29,7 +29,23 @@ export class TelegramController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN', 'MANAGER')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Generar enlace seguro para abrir el asistente en Telegram' })
+  @ApiOperation({
+    summary: 'Generar enlace seguro para abrir el asistente en Telegram',
+    description: 'Devuelve un enlace para la aplicación móvil (tg://) y otro compatible con navegador (https://t.me). El usuario debe pulsar Iniciar en el bot para completar el vínculo.',
+  })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Sesión de vinculación creada; el token expira en 10 minutos.',
+    schema: {
+      example: {
+        deepLink: 'https://t.me/panaderia_bot?start=token-de-un-solo-uso',
+        webDeepLink: 'https://t.me/panaderia_bot?start=token-de-un-solo-uso',
+        appDeepLink: 'tg://resolve?domain=panaderia_bot&start=token-de-un-solo-uso',
+        expiresAt: '2026-08-21T18:00:00.000Z',
+        botUsername: 'panaderia_bot',
+      },
+    },
+  })
   createLinkSession(@Req() req: any) {
     return this.links.createLinkSession(req.user.userId);
   }

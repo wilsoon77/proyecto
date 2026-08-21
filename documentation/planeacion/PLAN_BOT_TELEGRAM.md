@@ -151,19 +151,23 @@ Reglas:
 
 1. La aplicación muestra **“Abrir asistente en Telegram”** a usuarios elegibles. Esto es solo una mejora de UX; el backend sigue siendo la autoridad.
 2. El botón llama a un endpoint autenticado, por ejemplo `POST /telegram/link-session`.
-3. El backend valida `ADMIN/MANAGER`, usuario activo y `AssistantAccess`, crea un `TelegramLinkToken` y devuelve un enlace como:
+3. El backend valida `ADMIN/MANAGER`, usuario activo y `AssistantAccess`, crea un `TelegramLinkToken` y devuelve dos enlaces:
 
    ```text
+   # Aplicación móvil
+   tg://resolve?domain=<TELEGRAM_BOT_USERNAME>&start=<token-de-un-solo-uso>
+
+   # Navegador/Telegram Web como fallback
    https://t.me/<TELEGRAM_BOT_USERNAME>?start=<token-de-un-solo-uso>
    ```
 
-4. El frontend abre ese enlace en una nueva pestaña o en la aplicación de Telegram.
-5. Telegram envía `/start <token>` al webhook. El backend valida el token dentro de una transacción, crea el vínculo y confirma la conexión.
+4. En móvil, el frontend intenta primero `tg://` para abrir la aplicación y usa `https://t.me` como fallback si no está instalada o el navegador lo bloquea. En escritorio abre únicamente la URL final, sin crear una pestaña `about:blank`.
+5. Telegram muestra el chat del bot y el usuario debe pulsar **Iniciar**. Telegram envía `/start <token>` al webhook; el backend valida el token dentro de una transacción, crea el vínculo y confirma la conexión.
 
 Endpoints mínimos:
 
 ```text
-POST   /telegram/link-session   # JWT + rol/capacidad; genera deep link
+POST   /telegram/link-session   # JWT + rol/capacidad; genera deep links móvil/web
 GET    /telegram/link-status    # JWT; informa si existe vínculo activo
 DELETE /telegram/link            # JWT; desactiva el vínculo
 POST   /telegram/webhook         # público para Telegram; protegido por secret token

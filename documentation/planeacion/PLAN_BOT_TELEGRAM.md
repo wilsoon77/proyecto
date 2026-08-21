@@ -1,20 +1,20 @@
 # Plan: Asistente privado de Telegram para los dueños de la panadería
 
-> **Estado de alcance:** El asistente de Telegram está implementado como canal privado de consulta operativa para usuarios autorizados. Solo consulta inventario de producto terminado, materias primas, producción y cierres del día; no consulta ventas ni pedidos y no ejecuta cambios.
+> **Estado de alcance:** El asistente de Telegram está implementado como canal privado de consulta operativa para usuarios autorizados. Consulta inventario de producto terminado, materias primas, productos próximos a vencer, producción y cierres por día o rango; no consulta ventas ni pedidos y no ejecuta cambios.
 
-> **Objetivo:** permitir que las cuentas autorizadas consulten inventario, materias primas, producción y cierres de ambas sucursales desde Telegram usando lenguaje natural. Las únicas alertas automáticas del sistema siguen siendo materia prima baja y caducidad próxima.
+> **Objetivo:** permitir que las cuentas autorizadas consulten inventario, materias primas, caducidades, producción y cierres de ambas sucursales desde Telegram usando lenguaje natural. Las únicas alertas automáticas del sistema siguen siendo materia prima baja y caducidad próxima.
 
-> **Estado:** arquitectura implementada en el backend y frontend. Quedan como pasos operativos aplicar la migración, configurar secretos y registrar el webhook.
+> **Estado:** arquitectura y primera versión funcional implementadas. La interacción operativa ahora usa una ruta determinista para consultas frecuentes y deja el LLM como respaldo; quedan como pasos operativos aplicar la migración, configurar secretos, registrar el webhook y probar preguntas reales con datos de cada sucursal.
 
 > **Principio central:** el modelo de IA nunca tendrá acceso directo a Prisma, SQL ni a las credenciales de la base de datos. El modelo únicamente podrá solicitar *tools* de lectura, y cada *tool* será validada y ejecutada por el backend con el usuario y las sucursales autorizadas.
 
 ## Decisiones confirmadas
 
-- Habrá **un solo bot privado**, enfocado en los dueños. No habrá menús, comandos ni bots separados por rol.
+- Habrá **un solo bot privado**, enfocado en los dueños. No habrá menús ni bots separados por rol; solo se conservan `/start`, `/ayuda` y `/desvincular` como comandos mínimos de operación.
 - Podrán vincularse usuarios con rol `ADMIN` o `MANAGER`, siempre que estén activos y tengan habilitado el acceso al asistente.
 - La aplicación tendrá un botón **“Abrir asistente en Telegram”** que iniciará el vínculo mediante un enlace profundo de Telegram.
 - Los dueños podrán consultar información de **las dos sucursales**. El alcance se resolverá en el backend y no podrá ser alterado por el modelo ni por el texto del usuario.
-- Las preguntas se harán en lenguaje natural. Se usará *tool calling* para convertirlas en consultas controladas sobre servicios de lectura del backend.
+- Las preguntas se harán en lenguaje natural. Las consultas operativas frecuentes se enrutan primero de forma determinista para evitar respuestas ambiguas; el *tool calling* queda como respaldo para preguntas abiertas.
 - La versión inicial será de **solo lectura**. Registrar compras, producción, ventas o cierres desde Telegram queda fuera de v1.
 - Las alertas de materia prima baja y caducidad próxima seguirán llegando a la aplicación mediante Web Push y, cuando exista un vínculo activo, también a Telegram.
 
@@ -27,13 +27,13 @@ La revisión se realizó con Graphify y con los archivos fuente actuales. El gra
 | Área | Estado actual | Consecuencia para el asistente |
 |---|---|---|
 | Roles | `UserRole` contiene `ADMIN` y `MANAGER`, pero no `OWNER`. | No crear un rol nuevo. La elegibilidad será `ADMIN/MANAGER` más una capacidad explícita. |
-| Alcance | `BranchScopeService` considera a `MANAGER` un rol limitado a sucursal y a `ADMIN` global. | No reutilizar el alcance de `MANAGER` sin más. El asistente tendrá un permiso explícito `ALL_BRANCHES` para las cuentas dueñas. |
+| Alcance | `BranchScopeService` permite a `ADMIN` y `MANAGER` consultar ambas sucursales; `BAKER` queda asignado a una. | El asistente revalida `ADMIN/MANAGER` y `AssistantAccess.scope = ALL_BRANCHES` en cada mensaje. |
 | Push | `NotificationsModule` es global y `NotificationsService` ya persiste `Notification`, administra `PushSubscription` y envía Web Push. | Extender este servicio con el canal Telegram; no crear un segundo sistema de notificaciones. |
 | Disparadores | Solo se conservan `inventory.raw_material_low` e `inventory.expiration_warning`. | Telegram reutiliza esas dos reglas, evitando alertas de órdenes, producción o ventas fuera del alcance. |
 | Anti-spam | No existe una deduplicación robusta para stock bajo. | Añadir estado de alerta reutilizable antes de activar alertas repetitivas por Telegram. |
 | Scope de alertas | `sendToRoles` actualmente no filtra por sucursal. | Corregir la selección de destinatarios para que una alerta de una sucursal no se mezcle con otra. |
 | Servicios reutilizables | Existen lecturas de `RawMaterialsService`, `InventoryService`, `ProductionService` y `DailyCloseService`. | La fachada del asistente solo expone esas cuatro áreas, con consultas resumidas y controladas. |
-| Consultas | El panel Operación está orientado al día actual y devuelve un payload amplio; inventario y cierre necesitan respuestas más pequeñas y fechas explícitas. | No exponer directamente esos payloads al LLM; agregar métodos de consulta resumida y con zona horaria de negocio. |
+| Consultas | El panel Operación está orientado al día actual y devuelve un payload amplio; inventario y cierre necesitan respuestas pequeñas, búsqueda tolerante y fechas explícitas. | `AssistantReadService` expone consultas resumidas, rangos de fechas, caducidades y respuestas sin campos sensibles. |
 | Cierre de día | `DailyCloseService` registra unidades, merma y sobrantes, pero no conserva un precio histórico por unidad. | No prometer al bot un monto monetario histórico de cierre hasta modelarlo correctamente. |
 | Seguridad | No hay guard JWT global; los controladores protegen rutas explícitamente y la configuración no valida todas las variables al arranque. | Proteger cada endpoint nuevo de forma explícita y validar la configuración de Telegram/IA al habilitar el módulo. |
 
@@ -142,7 +142,7 @@ Reglas:
 - El token del deep link será aleatorio, de un solo uso, con TTL de 10 minutos y almacenado únicamente como hash.
 - `userId` y `chatId` serán únicos para evitar vínculos ambiguos.
 - Un vínculo desactivado se conserva para auditoría y puede reactivarse mediante un nuevo flujo autorizado.
-- Si se intenta vincular otro chat a un usuario que ya tiene uno activo, se requerirá una acción explícita de revinculación; no se moverá silenciosamente el vínculo.
+- `userId` y `chatId` solo pueden tener un vínculo activo. Si el mismo usuario vincula otro chat, el vínculo anterior se desactiva; si el chat pertenece a otra cuenta, primero debe desvincularse.
 - Las tablas nuevas deberán incluir RLS en la migración y políticas coherentes con el patrón de seguridad de las tablas existentes.
 
 ## FASE 2 — Botón de la aplicación y módulo Telegram
@@ -185,6 +185,8 @@ api/src/assistant/
   assistant.service.ts             # orquestación del modelo y tools
   assistant-policy.service.ts      # rol, capacidad, sucursales y contexto
   assistant-read.service.ts        # fachada de lecturas resumidas
+  assistant-query.ts               # normalización y enrutamiento determinista
+  assistant-response.ts            # presentación consistente para Telegram
   # Las tools permitidas se definen en assistant.service.ts y leen mediante
   # assistant-read.service.ts; no existe un módulo separado de ventas/POS.
 ```
@@ -239,15 +241,16 @@ Sí se recomienda *tool calling*: separa la interpretación del lenguaje natural
 | Tool | Fuente o adaptación | Preguntas que cubre |
 |---|---|---|
 | `lowRawMaterials` | `RawMaterialsService`, respetando `RawMaterial.minStock` por material. | “¿Qué materia prima está baja?”, “¿qué debo comprar?” |
-| `rawMaterialInventory` | Lectura controlada de existencias de insumos por nombre y sucursal. | “¿Cuánta harina hay?” |
-| `productInventory` | `InventoryService` más resolución segura por nombre/slug. | “¿Cuánto pan queda?”, “¿qué stock hay de tortas?” |
-| `productionSummary` | `ProductionService`, con fecha y sucursales explícitas. | “¿Qué se produjo hoy?” |
-| `dailyCloseSummary` | `DailyCloseService`, solo unidades, merma y sobrantes disponibles. | “¿Cómo cerró el día?”, “¿hubo merma?” |
+| `rawMaterialInventory` | Lectura controlada de existencias de insumos por nombre tolerante a acentos y sucursal. | “¿Cuánta azúcar queda en la sucursal Norte?” |
+| `productInventory` | Inventario físico y disponible, con resolución segura por nombre/slug y exclusión de lotes vencidos del disponible. | “¿Cuánto pan queda?”, “¿qué stock hay de tortas?” |
+| `expirationSummary` | Lotes `COMPRADO` con existencia, próximos a vencer o vencidos cuando se solicite. | “¿Qué productos vencen en los próximos 15 días?” |
+| `productionSummary` | Resumen agregado por día, sucursal y producto para una fecha o rango. | “¿Qué se produjo del 10 al 12 de agosto?” |
+| `dailyCloseSummary` | Resumen agregado de cierres por fecha o rango, con vendidos, merma y sobrantes. | “¿Cómo cerró la sucursal Central esta semana?” |
 
 Reglas para todas las tools:
 
 - Usar schemas estrictos, preferiblemente Zod, para fechas, filtros y límites.
-- La fecha relativa (“hoy”, “ayer”, “este lunes”) debe convertirse usando `America/Guatemala` y validarse antes de consultar.
+- La fecha relativa (“hoy”, “ayer”, “esta semana”, “últimos 3 días”) y formatos `YYYY-MM-DD`, `DD/MM/YYYY` o fechas escritas en español deben convertirse usando `America/Guatemala` y validarse antes de consultar.
 - Por defecto se agregan las dos sucursales y se devuelve un desglose por sucursal. Un filtro de sucursal solo puede elegir una de las sucursales ya autorizadas.
 - No aceptar IDs de usuario ni de sucursal provenientes directamente del modelo.
 - Limitar rangos, número de resultados y tamaño del resultado entregado al contexto del modelo.
@@ -256,14 +259,16 @@ Reglas para todas las tools:
 Adaptaciones necesarias antes de implementar las tools:
 
 - **Materia prima:** mantener el umbral por material y unificar la comparación del umbral para que alerta y consulta no discrepen.
-- **Inventario:** agregar resolución controlada por nombre, además del slug, sin permitir filtros libres que se concatenen a consultas.
-- **Producción:** acordar si la fecha representa `createdAt` o una fecha operativa; usar la misma semántica en app y bot.
-- **Cierre:** no reportar dinero histórico como si existiera; el modelo actual permite reportar unidades, merma y sobrantes, salvo que se agregue un precio histórico al dominio.
+- **Inventario:** la resolución controla nombre, slug, acentos, sucursal y productos ocultos del e-commerce sin permitir filtros libres que se concatenen a consultas.
+- **Producción:** se usa la fecha de negocio derivada de `createdAt`, con reportes agregados por día, sucursal y producto.
+- **Caducidad:** solo se consultan lotes de productos `COMPRADO`; el disponible excluye vencidos, pero la existencia física vencida se muestra como tal.
+- **Cierre:** no se reporta dinero histórico como si existiera; se muestran unidades vendidas, merma, sobrantes y cierres registrados.
 
 ### 3.3 Comportamiento del modelo
 
 - Responder en español, de forma breve y orientada a decisiones.
 - Mostrar unidades y separar totales de cada sucursal cuando corresponda.
+- Presentar encabezado, periodo, totales y desglose; indicar expresamente cuando no hay resultados.
 - Usar únicamente datos devueltos por tools; no inventar cifras.
 - Indicar honestamente cuando una pregunta está fuera del catálogo.
 - Rechazar acciones de escritura en v1 y dirigir al usuario a la aplicación.

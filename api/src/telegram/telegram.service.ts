@@ -134,7 +134,7 @@ export class TelegramService implements OnModuleInit {
       }
 
       if (command === '/ayuda') {
-        await this.delivery.sendToChat(chatId, 'Puedes preguntarme, por ejemplo:\n• ¿Qué materia prima está baja?\n• ¿Cuánta harina hay en cada sucursal?\n• ¿Cuánto inventario hay de pan francés?\n• ¿Qué se produjo hoy?\n• ¿Cómo cerró el día?');
+        await this.delivery.sendToChat(chatId, 'Puedes preguntarme, por ejemplo:\n• ¿Cuánta azúcar queda?\n• ¿Qué materia prima está baja en la sucursal Norte?\n• ¿Qué productos vencen en los próximos 15 días?\n• ¿Qué se produjo del 10/08/2026 al 12/08/2026?\n• ¿Cómo cerró la sucursal Central ayer?\n\nTambién puedes usar “hoy”, “ayer”, “esta semana” o indicar una sucursal.');
         return;
       }
 

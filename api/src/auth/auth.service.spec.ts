@@ -17,15 +17,15 @@ describe('AuthService OAuth callback', () => {
       create: jest.fn(),
     },
   };
-  const logger = { info: jest.fn(), warn: jest.fn() };
-  const supabase = { getUser: jest.fn() };
+  const logger: Record<string, any> = { info: jest.fn(), warn: jest.fn(), auditLogin: jest.fn() };
+  const supabase: Record<string, any> = { getUser: jest.fn(), signInWithPassword: jest.fn(), isConfigured: jest.fn() };
   const tokenService = {
     signAccessToken: jest.fn().mockReturnValue('app-access-token'),
     createRefreshToken: jest.fn().mockResolvedValue('app-refresh-token'),
   };
-  const passwordService = {};
-  const sessionService = {};
-  const captcha = { isConfigured: jest.fn().mockReturnValue(false) };
+  const passwordService: Record<string, any> = { compare: jest.fn(), hash: jest.fn() };
+  const sessionService: Record<string, any> = { requiresCaptcha: jest.fn(), recordLoginAttempt: jest.fn(), upsertTrustedDevice: jest.fn() };
+  const captcha = { isConfigured: jest.fn().mockReturnValue(false), verify: jest.fn() };
 
   const service = new AuthService(
     prisma as never,
@@ -73,14 +73,38 @@ describe('AuthService OAuth callback', () => {
     });
   });
 
-  it('rejects an OAuth identity without an email before querying the local user table', async () => {
-    supabase.getUser.mockResolvedValue({
-      id: 'supabase-user-without-email',
-      user_metadata: {},
-      app_metadata: {},
+  it('allows login with local passwordHash when user is not found in Supabase Auth (seeded users)', async () => {
+    const adminUser = {
+      id: 'admin-local-id',
+      email: 'admin@panaderia.com',
+      passwordHash: '$2a$10$hashedAdminPassword',
+      firstName: 'Admin',
+      lastName: 'Sistema',
+      role: 'ADMIN',
+      isActive: true,
+    };
+
+    prisma.user.findUnique.mockResolvedValue(adminUser);
+    supabase.isConfigured = jest.fn().mockReturnValue(true);
+    supabase.signInWithPassword = jest.fn().mockResolvedValue({
+      data: { user: null },
+      error: { message: 'Invalid login credentials' },
+    });
+    passwordService.compare = jest.fn().mockResolvedValue(true);
+    sessionService.requiresCaptcha = jest.fn().mockResolvedValue(false);
+    sessionService.recordLoginAttempt = jest.fn().mockResolvedValue(undefined);
+    sessionService.upsertTrustedDevice = jest.fn().mockResolvedValue(undefined);
+    logger.auditLogin = jest.fn();
+
+    const result = await service.login({
+      email: 'admin@panaderia.com',
+      password: 'admin123',
     });
 
-    await expect(service.handleOAuthCallback('verified-supabase-access-token')).rejects.toBeInstanceOf(BadRequestException);
-    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { email: 'admin@panaderia.com' } });
+    expect(supabase.signInWithPassword).toHaveBeenCalledWith('admin@panaderia.com', 'admin123');
+    expect(passwordService.compare).toHaveBeenCalledWith('admin123', adminUser.passwordHash);
+    expect(tokenService.signAccessToken).toHaveBeenCalledWith(adminUser.id, adminUser.role);
+    expect(result.user.email).toBe('admin@panaderia.com');
   });
 });

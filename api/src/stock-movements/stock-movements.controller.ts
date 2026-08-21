@@ -1,6 +1,6 @@
 import { Controller, Post, Body, UseGuards, Get, Query, Req, Res, ForbiddenException } from '@nestjs/common';
 import { StockMovementsService } from './stock-movements.service.js';
-import { CreateStockMovementDto, ReconcileInventoryDto } from './dto.js';
+import { CreateStockMovementDto, ReconcileInventoryDto, CreateBulkTransferDto } from './dto.js';
 import { ApiTags, ApiBody, ApiBearerAuth, ApiQuery, ApiOperation, ApiResponse, ApiBadRequestResponse } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/roles.guard.js';
@@ -56,6 +56,50 @@ export class StockMovementsController {
     });
     
     return movement;
+  }
+
+  @Post('transfer-bulk')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'MANAGER')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Transferencia masiva de productos entre sucursales',
+    description: 'Mueve múltiples productos con sus respectivas cantidades desde una sucursal de origen a una de destino en una sola transacción atómica.',
+  })
+  @ApiBody({ type: CreateBulkTransferDto })
+  @ApiResponse({ status: 201, description: 'Transferencia masiva ejecutada con éxito' })
+  async transferBulk(@Req() req: any, @Body() dto: CreateBulkTransferDto) {
+    if (req.user?.role !== 'ADMIN' && req.user?.role !== 'MANAGER') {
+      throw new ForbiddenException('Solo ADMIN o MANAGER pueden transferir inventario entre sucursales');
+    }
+    const fromBranchSlug = await this.branchScope.resolveWriteBranchSlug(req.user, dto.fromBranchSlug);
+    const toBranchSlug = await this.branchScope.resolveWriteBranchSlug(req.user, dto.toBranchSlug);
+    
+    const result = await this.service.transferBulk({
+      ...dto,
+      fromBranchSlug: fromBranchSlug ?? dto.fromBranchSlug,
+      toBranchSlug: toBranchSlug ?? dto.toBranchSlug,
+    }, req.user?.userId);
+
+    const userName = await this.auditService.getUserName(req.user?.userId);
+    await this.auditService.log({
+      userId: req.user?.userId,
+      userName,
+      action: 'CREATE',
+      entity: 'StockMovement',
+      entityName: `Transferencia Masiva ${result.fromBranch} -> ${result.toBranch}`,
+      details: {
+        action: 'TRANSFER_BULK',
+        fromBranch: result.fromBranch,
+        toBranch: result.toBranch,
+        totalItems: result.transferredCount,
+        items: result.items,
+      },
+      ipAddress: getClientIp(req),
+      userAgent: req.headers?.['user-agent'],
+    });
+
+    return result;
   }
 
   @Get()

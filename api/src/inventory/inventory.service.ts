@@ -2,6 +2,12 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { addDays, dateKeyToUtcDate, todayBusinessDate } from '../common/time/business-date.js';
 
+type LotAvailability = {
+  sellable: number;
+  expired: number;
+  hasHistory: boolean;
+};
+
 function mapInventoryProduct(product: any, available = 0) {
   const mapped = {
     id: product.id,
@@ -46,6 +52,57 @@ export class InventoryService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
+   * Inventory.quantity is the physical aggregate and intentionally keeps
+   * expired units until an explicit MERMA. The sellable view must instead use
+   * current lots for products bought with expiration tracking.
+   */
+  private async getLotAvailability(inventories: Array<{ productId: number; branchId: number }>) {
+    const productIds = [...new Set(inventories.map((inventory) => inventory.productId))];
+    const branchIds = [...new Set(inventories.map((inventory) => inventory.branchId))];
+    const availability = new Map<string, LotAvailability>();
+
+    if (productIds.length === 0 || branchIds.length === 0) return availability;
+
+    const today = dateKeyToUtcDate(todayBusinessDate());
+    const lots = await this.prisma.inventoryLot.findMany({
+      where: {
+        productId: { in: productIds },
+        branchId: { in: branchIds },
+      },
+      select: { productId: true, branchId: true, availableQuantity: true, expiresAt: true },
+    });
+
+    for (const lot of lots) {
+      const key = `${lot.productId}:${lot.branchId}`;
+      const current = availability.get(key) ?? { sellable: 0, expired: 0, hasHistory: false };
+      current.hasHistory = true;
+      if (lot.availableQuantity > 0) {
+        if (lot.expiresAt && lot.expiresAt < today) current.expired += lot.availableQuantity;
+        else current.sellable += lot.availableQuantity;
+      }
+      availability.set(key, current);
+    }
+
+    return availability;
+  }
+
+  private mapAvailability(
+    inventory: { productId: number; branchId: number; quantity: number; reserved: number; product: any },
+    lotAvailability: Map<string, LotAvailability>,
+  ) {
+    const tracksExpiration = inventory.product.origin === 'COMPRADO' && inventory.product.tracksExpiration;
+    const lots = lotAvailability.get(`${inventory.productId}:${inventory.branchId}`);
+    const sellableBeforeReservations = tracksExpiration
+      ? (lots?.hasHistory ? lots.sellable : 0)
+      : inventory.quantity;
+
+    return {
+      available: Math.max(0, sellableBeforeReservations - inventory.reserved),
+      expiredQuantity: tracksExpiration && lots?.hasHistory ? lots.expired : 0,
+    };
+  }
+
+  /**
    * Listar inventario de producto terminado, opcionalmente filtrado por producto y/o sucursal.
    */
   async list(productSlug?: string, branchSlug?: string) {
@@ -70,14 +127,20 @@ export class InventoryService {
       },
     });
 
-    return inventories.map(i => ({
-      product: mapInventoryProduct(i.product, i.quantity - i.reserved),
-      branch: { id: i.branch.id, name: i.branch.name, slug: i.branch.slug },
-      quantity: i.quantity,
-      reserved: i.reserved,
-      available: i.quantity - i.reserved,
-      updatedAt: i.updatedAt,
-    }));
+    const lotAvailability = await this.getLotAvailability(inventories);
+
+    return inventories.map(i => {
+      const stock = this.mapAvailability(i, lotAvailability);
+      return {
+        product: mapInventoryProduct(i.product, stock.available),
+        branch: { id: i.branch.id, name: i.branch.name, slug: i.branch.slug },
+        quantity: i.quantity,
+        reserved: i.reserved,
+        available: stock.available,
+        expiredQuantity: stock.expiredQuantity,
+        updatedAt: i.updatedAt,
+      };
+    });
   }
 
   /**
@@ -98,12 +161,16 @@ export class InventoryService {
       );
     }
 
+    const lotAvailability = await this.getLotAvailability([inventory]);
+    const stock = this.mapAvailability(inventory, lotAvailability);
+
     return {
-      product: mapInventoryProduct(inventory.product, inventory.quantity - inventory.reserved),
+      product: mapInventoryProduct(inventory.product, stock.available),
       branch: { id: inventory.branch.id, name: inventory.branch.name, slug: inventory.branch.slug },
       quantity: inventory.quantity,
       reserved: inventory.reserved,
-      available: inventory.quantity - inventory.reserved,
+      available: stock.available,
+      expiredQuantity: stock.expiredQuantity,
       updatedAt: inventory.updatedAt,
     };
   }
@@ -124,14 +191,18 @@ export class InventoryService {
       },
     });
 
+    const lotAvailability = await this.getLotAvailability(inventories);
+
     return inventories
-      .filter(i => (i.quantity - i.reserved) <= threshold)
-      .map(i => ({
-        product: mapInventoryProduct(i.product, i.quantity - i.reserved),
+      .map((inventory) => ({ inventory, stock: this.mapAvailability(inventory, lotAvailability) }))
+      .filter(({ stock }) => stock.available <= threshold)
+      .map(({ inventory: i, stock }) => ({
+        product: mapInventoryProduct(i.product, stock.available),
         branch: { id: i.branch.id, name: i.branch.name, slug: i.branch.slug },
         quantity: i.quantity,
         reserved: i.reserved,
-        available: i.quantity - i.reserved,
+        available: stock.available,
+        expiredQuantity: stock.expiredQuantity,
         updatedAt: i.updatedAt,
       }));
   }

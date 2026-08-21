@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react"
 import Link from "next/link"
-import { Package, RefreshCw, Plus, Search, TriangleAlert as AlertTriangle, Building2, ChevronLeft, ChevronRight, Warehouse } from "lucide-react"
+import { Package, RefreshCw, Plus, Search, TriangleAlert as AlertTriangle, ChevronLeft, ChevronRight, Warehouse } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { 
   inventoryService, 
@@ -56,6 +56,8 @@ export default function ProductosInventarioPage() {
   }, [showToast])
 
   useEffect(() => {
+    // This effect starts the asynchronous inventory load on mount.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadData()
   }, [loadData])
 
@@ -77,6 +79,8 @@ export default function ProductosInventarioPage() {
 
   // Resetear página al cambiar filtros
   useEffect(() => {
+    // Reset pagination after a filter change.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentPage(1)
   }, [selectedBranch, searchQuery, showLowStock])
 
@@ -234,13 +238,23 @@ export default function ProductosInventarioPage() {
                           <span>Cant: <strong className="text-foreground">{item.quantity}</strong></span>
                           <span>Res: <strong className="text-foreground">{item.reserved}</strong></span>
                         </div>
-                        <Link
-                          href={`/admin/inventario/movimiento?producto=${item.product.slug}&sucursal=${item.branch.slug}`}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-accent text-primary rounded-lg hover:bg-primary/10 transition-colors font-medium text-xs"
-                        >
-                          <Plus className="h-3.5 w-3.5" />
-                          Movimiento
-                        </Link>
+                        <div className="flex flex-col items-end gap-1">
+                          {item.expiredQuantity ? (
+                            <Link
+                              href={`/admin/inventario/movimiento?producto=${item.product.slug}&sucursal=${item.branch.slug}&tipo=MERMA`}
+                              className="text-[11px] font-semibold text-destructive hover:underline"
+                            >
+                              {item.expiredQuantity} vencidas · Registrar merma
+                            </Link>
+                          ) : null}
+                          <Link
+                            href={`/admin/inventario/movimiento?producto=${item.product.slug}&sucursal=${item.branch.slug}`}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-accent text-primary rounded-lg hover:bg-primary/10 transition-colors font-medium text-xs"
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                            Movimiento
+                          </Link>
+                        </div>
                       </div>
                     </div>
                   )
@@ -312,6 +326,14 @@ export default function ProductosInventarioPage() {
                             }`}>
                               {item.available}
                             </span>
+                            {item.expiredQuantity ? (
+                              <Link
+                                href={`/admin/inventario/movimiento?producto=${item.product.slug}&sucursal=${item.branch.slug}&tipo=MERMA`}
+                                className="mt-1 block text-[11px] font-semibold text-destructive hover:underline"
+                              >
+                                {item.expiredQuantity} vencidas · merma
+                              </Link>
+                            ) : null}
                           </td>
                           <td className="py-4 px-6 text-sm text-muted-foreground hidden xl:table-cell">
                             {formatDate(item.updatedAt)}

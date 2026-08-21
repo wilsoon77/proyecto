@@ -5,6 +5,9 @@ export interface DailyClosePreviewItem {
   productId: number
   productName: string
   sku: string
+  origin?: 'PRODUCIDO' | 'COMPRADO'
+  categoryId?: number | null
+  categoryName?: string | null
   isActive: boolean
   systemQty: number
   reservedQty: number

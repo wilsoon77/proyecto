@@ -25,12 +25,13 @@ Para cada lote se calculan los recordatorios automáticamente: `fecha de caducid
 - Producción de pan: se utiliza el flujo existente de producción; no aparece ningún campo de caducidad.
 - Compra de producto comprado con control activo: desde el alta del producto se puede continuar directamente a `Inventario > Registrar movimiento > Compra`; la fecha del primer lote queda precargada y se muestra la fecha de alerta calculada.
 - Retiro de pedidos y movimientos `VENTA`: consumen lotes vigentes en orden FEFO (primero el que caduca antes).
-- Merma: también puede retirar lotes vencidos para que el inventario no quede bloqueado.
+- Venta, reserva y transferencia: nunca utilizan lotes vencidos. El catálogo y el campo `available` excluyen esas unidades aunque el total físico todavía las conserve.
+- Merma: también puede retirar lotes vencidos para que el inventario no quede bloqueado; el sistema consume primero esos lotes vencidos.
 - Transferencias: conservan la fecha de caducidad del lote entre sucursales.
 
 ## Alertas y consulta
 
-La tarea diaria revisa los lotes con existencia a las 07:00 usando `STORE_TIMEZONE` y genera una alerta por cada recordatorio configurado cuando llega su fecha. Los lotes vencidos no generan una alerta nueva ni se eliminan: permanecen visibles para registrar una `MERMA`. También se puede ejecutar `Revisar alertas` desde `Inventario > Caducidades`.
+La tarea diaria revisa los lotes con existencia a las 07:00 usando `STORE_TIMEZONE` y genera una alerta por cada recordatorio configurado cuando llega su fecha. Los lotes vencidos no generan una alerta nueva ni se eliminan automáticamente: permanecen visibles para registrar una `MERMA`, que es la operación que descuenta su cantidad física. Mientras no se registre esa merma, `Inventory.quantity` conserva el total físico, pero el catálogo, las reservas, las ventas y las transferencias lo tratan como no vendible. También se puede ejecutar `Revisar alertas` desde `Inventario > Caducidades`.
 
 La pantalla permite filtrar por sucursal, vencidos, próximos a vencer y lotes sin fecha. Los productos producidos no se muestran porque no requieren caducidad.
 

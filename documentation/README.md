@@ -31,3 +31,7 @@ Almacena los reportes de auditorías técnicas, revisiones de seguridad y evalua
 * [AUDITORIA_TECNICA_2026-07-17.md](./informe_auditorias/AUDITORIA_TECNICA_2026-07-17.md) - Auditoría técnica del estado del proyecto.
 * [AUDITORIA_TECNICA_2026-08-11.md](./informe_auditorias/AUDITORIA_TECNICA_2026-08-11.md) - Auditoría técnica reciente.
 * [3_PRUEBAS_SEGURIDAD.md](./informe_auditorias/3_PRUEBAS_SEGURIDAD.md) - Casos de prueba y validaciones de seguridad.
+
+## 📂 Guías Operativas y Despliegue
+* [GUIA_CONFIGURACION_DOMINIOS.md](./GUIA_CONFIGURACION_DOMINIOS.md) - Guía completa para configuración de subdominios y dominios personalizados en Render, Vercel, Supabase, Google Cloud y hCaptcha.
+

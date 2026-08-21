@@ -144,6 +144,23 @@ describe('InventoryLotsService', () => {
     });
   });
 
+  it('rechaza vender unidades cuando solo existen lotes vencidos', async () => {
+    const tx = createTransactionMock();
+    tx.product.findUnique.mockResolvedValue({ origin: ProductOrigin.COMPRADO, tracksExpiration: true });
+    tx.inventoryLot.findMany
+      .mockResolvedValueOnce([]) // lotes vigentes
+      .mockResolvedValueOnce([]); // lotes sin fecha
+
+    await expect(service.consumeLots(tx, {
+      productId: 1,
+      branchId: 2,
+      quantity: 1,
+      stockMovementId: 100,
+    })).rejects.toThrow('No hay suficientes unidades vigentes');
+    expect(tx.inventoryLot.update).not.toHaveBeenCalled();
+    expect(tx.inventoryLotConsumption.create).not.toHaveBeenCalled();
+  });
+
   it('calcula el stock vendible ignorando lotes vencidos', async () => {
     const tx = createTransactionMock();
     tx.product.findUnique.mockResolvedValue({ origin: ProductOrigin.COMPRADO, tracksExpiration: true });

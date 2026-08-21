@@ -20,7 +20,7 @@ describe('AssistantService Multi-Provider & Tool Calling', () => {
   let configValues: Record<string, string>;
   let config: { get: jest.Mock };
   let policy: { resolveContext: jest.Mock };
-  let reads: { productInventory: jest.Mock };
+  let reads: { productInventory: jest.Mock; inventoryLookup: jest.Mock };
   let geminiProvider: GeminiProvider;
   let groqProvider: GroqProvider;
   let mistralProvider: MistralProvider;
@@ -51,6 +51,20 @@ describe('AssistantService Multi-Provider & Tool Calling', () => {
         query: 'pan francés',
         items: [{ branchId: 1, branchName: 'Centro', productName: 'Pan francés', quantity: 24, reserved: 0, available: 24 }],
       }),
+      inventoryLookup: jest.fn().mockResolvedValue({
+        resourceType: 'product',
+        query: 'pan francés',
+        items: [{
+          branchId: 1,
+          branchName: 'Centro',
+          productName: 'Pan francés',
+          quantity: 24,
+          reserved: 0,
+          available: 24,
+          expiredQuantity: 0,
+          stockUnitLabel: 'unidades',
+        }],
+      }),
     };
 
     geminiProvider = new GeminiProvider(config as never);
@@ -72,37 +86,17 @@ describe('AssistantService Multi-Provider & Tool Calling', () => {
     globalThis.fetch = fetchMock as typeof fetch;
   });
 
-  it('ejecuta tool calling exitosamente usando Google Gemini (proveedor prioritario)', async () => {
-    fetchMock
-      .mockResolvedValueOnce(new Response(JSON.stringify({
-        choices: [{
-          message: {
-            role: 'assistant',
-            content: null,
-            tool_calls: [{
-              id: 'call-inventory',
-              type: 'function',
-              function: { name: 'productInventory', arguments: '{"productQuery":"pan francés"}' },
-            }],
-          },
-        }],
-      }), { status: 200, headers: { 'content-type': 'application/json' } }))
-      .mockResolvedValueOnce(new Response(JSON.stringify({
-        choices: [{ message: { role: 'assistant', content: 'Hay 24 unidades de pan francés en Centro.' } }],
-      }), { status: 200, headers: { 'content-type': 'application/json' } }));
-
+  it('resuelve directamente una consulta de inventario con nombre de producto', async () => {
     const answer = await service.answer('owner-1', '¿Cuánto inventario hay de pan francés?');
-    expect(answer).toBe('Hay 24 unidades de pan francés en Centro.');
+    expect(answer).toContain('Pan francés');
+    expect(answer).toContain('24 unidades disponibles');
 
     expect(policy.resolveContext).toHaveBeenCalledWith('owner-1');
-    expect(reads.productInventory).toHaveBeenCalledWith(context, { productQuery: 'pan francés' });
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-
-    // Verifica que se llamó al endpoint de Gemini
-    expect(fetchMock.mock.calls[0][0]).toBe('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions');
+    expect(reads.inventoryLookup).toHaveBeenCalledWith(context, { query: 'pan francés', branch: undefined, prefer: 'product' });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('conmuta automáticamente a Groq si Gemini falla (fallback automático)', async () => {
+  it('conmuta automáticamente a Groq si Gemini falla en una pregunta abierta', async () => {
     // 1. Primer llamada a Gemini falla con 429 Too Many Requests
     fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ error: { message: 'Quota exceeded' } }), {
       status: 429,
@@ -133,7 +127,7 @@ describe('AssistantService Multi-Provider & Tool Calling', () => {
       choices: [{ message: { role: 'assistant', content: 'Hay 24 panes en Centro (vía Groq).' } }],
     }), { status: 200, headers: { 'content-type': 'application/json' } }));
 
-    const answer = await service.answer('owner-1', '¿Cuánto pan hay?');
+    const answer = await service.answer('owner-1', '¿Puedes explicar qué datos operativos maneja el sistema?');
     expect(answer).toBe('Hay 24 panes en Centro (vía Groq).');
   });
 

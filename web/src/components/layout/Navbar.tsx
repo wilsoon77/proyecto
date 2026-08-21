@@ -24,7 +24,7 @@ let branchesCache: ApiBranch[] | null = null
 
 export function Navbar() {
   const { itemCount } = useCart()
-  const { user, isLoggedIn, logout, isLoading } = useAuth()
+  const { user, isLoggedIn, logout } = useAuth()
   const [branches, setBranches] = useState<ApiBranch[]>(branchesCache || [])
   const [selectedBranch, setSelectedBranch] = useState<ApiBranch | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -54,11 +54,9 @@ export function Navbar() {
     if (typeof window !== 'undefined') {
       const currentBranch = localStorage.getItem('selectedBranch')
       if (currentBranch !== branch.slug) {
-        // Al cambiar de sucursal, es una buena práctica vaciar el carrito 
-        // para evitar comprar productos que no existen en la nueva sucursal.
         localStorage.removeItem('cart')
         localStorage.setItem('selectedBranch', branch.slug)
-        window.location.reload() // Recargar para actualizar el catálogo
+        window.location.reload()
       }
     }
   }
@@ -109,9 +107,9 @@ export function Navbar() {
             ) : (
               <span className="hidden sm:inline">{selectedBranch?.name || 'Cargando...'}</span>
             )}
-            <Link href="/sucursales" className="text-primary hover:underline">Ver sucursales</Link>
+            <Link href="/sucursales" className="text-primary hover:underline text-xs sm:text-sm">Ver sucursales</Link>
           </div>
-          <div className="flex items-center gap-4 text-gray-600">
+          <div className="flex items-center gap-4 text-gray-600 text-xs sm:text-sm">
             <span className="hidden md:inline">📞 {selectedBranch?.phone || '+502 0000-0000'}</span>
             <span className="hidden lg:inline">Reserva y recoge en sucursal</span>
           </div>
@@ -133,23 +131,37 @@ export function Navbar() {
             />
           </Link>
 
-          {/* Navigation Links - Desktop */}
-          <nav className="hidden items-center gap-6 lg:flex">
+          {/* Navigation Links - Desktop (4 Enlaces Principales) */}
+          <nav className="hidden items-center gap-7 lg:flex">
+            <Link
+              href={ROUTES.home}
+              className={`text-sm font-medium transition-colors hover:text-primary ${
+                pathname === ROUTES.home ? "text-primary font-semibold" : "text-gray-700"
+              }`}
+            >
+              Inicio
+            </Link>
             <Link
               href={ROUTES.products}
-              className="text-sm font-medium text-gray-700 transition-colors hover:text-primary"
+              className={`text-sm font-medium transition-colors hover:text-primary ${
+                pathname.startsWith(ROUTES.products) ? "text-primary font-semibold" : "text-gray-700"
+              }`}
             >
               Productos
             </Link>
             <Link
               href="/sobre-nosotros"
-              className="text-sm font-medium text-gray-700 transition-colors hover:text-primary"
+              className={`text-sm font-medium transition-colors hover:text-primary ${
+                pathname === "/sobre-nosotros" ? "text-primary font-semibold" : "text-gray-700"
+              }`}
             >
               Nosotros
             </Link>
             <Link
               href={ROUTES.contact}
-              className="text-sm font-medium text-gray-700 transition-colors hover:text-primary"
+              className={`text-sm font-medium transition-colors hover:text-primary ${
+                pathname === ROUTES.contact ? "text-primary font-semibold" : "text-gray-700"
+              }`}
             >
               Contacto
             </Link>
@@ -286,13 +298,30 @@ export function Navbar() {
             </div>
           )}
 
-          {/* Navigation Links */}
+          {/* Navigation Links (4 Enlaces Principales en Móvil) */}
           <nav className="flex-1 px-2 py-3">
             <ul className="space-y-1">
               <li>
                 <Link
+                  href={ROUTES.home}
+                  className={`flex items-center justify-between rounded-lg px-4 py-3 text-base font-medium transition-colors ${
+                    pathname === ROUTES.home
+                      ? "bg-amber-50 text-primary font-semibold"
+                      : "text-gray-700 hover:bg-gray-100 hover:text-primary"
+                  }`}
+                >
+                  Inicio
+                  <ChevronRight className="h-4 w-4 text-gray-400" />
+                </Link>
+              </li>
+              <li>
+                <Link
                   href={ROUTES.products}
-                  className="flex items-center justify-between rounded-lg px-4 py-3 text-base font-medium text-gray-700 hover:bg-gray-100 hover:text-primary transition-colors"
+                  className={`flex items-center justify-between rounded-lg px-4 py-3 text-base font-medium transition-colors ${
+                    pathname.startsWith(ROUTES.products)
+                      ? "bg-amber-50 text-primary font-semibold"
+                      : "text-gray-700 hover:bg-gray-100 hover:text-primary"
+                  }`}
                 >
                   Productos
                   <ChevronRight className="h-4 w-4 text-gray-400" />
@@ -301,7 +330,11 @@ export function Navbar() {
               <li>
                 <Link
                   href="/sobre-nosotros"
-                  className="flex items-center justify-between rounded-lg px-4 py-3 text-base font-medium text-gray-700 hover:bg-gray-100 hover:text-primary transition-colors"
+                  className={`flex items-center justify-between rounded-lg px-4 py-3 text-base font-medium transition-colors ${
+                    pathname === "/sobre-nosotros"
+                      ? "bg-amber-50 text-primary font-semibold"
+                      : "text-gray-700 hover:bg-gray-100 hover:text-primary"
+                  }`}
                 >
                   Nosotros
                   <ChevronRight className="h-4 w-4 text-gray-400" />
@@ -310,18 +343,13 @@ export function Navbar() {
               <li>
                 <Link
                   href={ROUTES.contact}
-                  className="flex items-center justify-between rounded-lg px-4 py-3 text-base font-medium text-gray-700 hover:bg-gray-100 hover:text-primary transition-colors"
+                  className={`flex items-center justify-between rounded-lg px-4 py-3 text-base font-medium transition-colors ${
+                    pathname === ROUTES.contact
+                      ? "bg-amber-50 text-primary font-semibold"
+                      : "text-gray-700 hover:bg-gray-100 hover:text-primary"
+                  }`}
                 >
                   Contacto
-                  <ChevronRight className="h-4 w-4 text-gray-400" />
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/sucursales"
-                  className="flex items-center justify-between rounded-lg px-4 py-3 text-base font-medium text-gray-700 hover:bg-gray-100 hover:text-primary transition-colors"
-                >
-                  Sucursales
                   <ChevronRight className="h-4 w-4 text-gray-400" />
                 </Link>
               </li>
@@ -384,7 +412,7 @@ export function Navbar() {
                   logout()
                   setMobileMenuOpen(false)
                 }}
-                className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-100 transition-colors"
+                className="flex w-4 items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-100 transition-colors w-full"
               >
                 <LogOut className="h-4 w-4" />
                 Cerrar sesión

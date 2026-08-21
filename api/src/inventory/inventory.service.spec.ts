@@ -1,4 +1,5 @@
 import { NotFoundException } from '@nestjs/common';
+import { ProductOrigin } from '@prisma/client';
 import { InventoryService } from './inventory.service.js';
 
 /**
@@ -19,6 +20,9 @@ function createMockPrisma() {
     inventory: {
       findMany: jest.fn(),
       findUnique: jest.fn(),
+    },
+    inventoryLot: {
+      findMany: jest.fn().mockResolvedValue([]),
     },
   } as any;
 }
@@ -121,6 +125,38 @@ describe('InventoryService', () => {
 
       expect(result[0].available).toBe(95);  // 100 - 5
       expect(result[1].available).toBe(6);   // 8 - 2
+    });
+
+    it('expone como disponible solo el lote vigente y conserva el vencido para merma', async () => {
+      mockPrisma.inventory.findMany.mockResolvedValue([{
+        productId: 1,
+        branchId: 2,
+        quantity: 10,
+        reserved: 1,
+        updatedAt: new Date(),
+        product: {
+          id: 1,
+          name: 'Jugo',
+          slug: 'jugo',
+          origin: ProductOrigin.COMPRADO,
+          tracksExpiration: true,
+          presentations: [],
+        },
+        branch: { id: 2, name: 'Centro', slug: 'centro' },
+      }]);
+      mockPrisma.inventoryLot.findMany.mockResolvedValue([
+        { productId: 1, branchId: 2, availableQuantity: 6, expiresAt: new Date('2020-01-01T00:00:00.000Z') },
+        { productId: 1, branchId: 2, availableQuantity: 4, expiresAt: new Date('2099-01-01T00:00:00.000Z') },
+      ]);
+
+      const [result] = await service.list();
+
+      expect(result).toMatchObject({
+        quantity: 10,
+        reserved: 1,
+        available: 3,
+        expiredQuantity: 6,
+      });
     });
   });
 

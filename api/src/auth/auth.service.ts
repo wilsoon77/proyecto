@@ -152,7 +152,7 @@ export class AuthService {
       attemptData.ipAddress,
       input.deviceId,
     );
-    if (captchaRequired) {
+    if (captchaRequired && this.captcha.isConfigured()) {
       await this.captcha.verify(input.captchaToken, metadata?.ip);
     }
 
@@ -164,23 +164,31 @@ export class AuthService {
     if (this.supabase.isConfigured()) {
       const { data: authData, error: authError } = await this.supabase.signInWithPassword(input.email, input.password);
       if (authError || !authData.user) {
-        await this.sessionService.recordLoginAttempt(attemptData);
-        throw new UnauthorizedException('Credenciales inválidas');
-      }
+        // Si no está en Supabase Auth o falla, verificar si es un usuario local/seed con passwordHash
+        let localValid = false;
+        if (user && user.passwordHash) {
+          localValid = await this.passwordService.compare(input.password, user.passwordHash);
+        }
 
-      if (!user) {
-        const metadata = authData.user.user_metadata ?? {};
-        user = await this.syncRegisteredUser(authData.user.id, {
-          email: authData.user.email ?? input.email,
-          firstName: String(metadata.first_name ?? metadata.full_name ?? ''),
-          lastName: String(metadata.last_name ?? ''),
-          phone: metadata.phone ? String(metadata.phone) : undefined,
-        });
-      }
+        if (!localValid) {
+          await this.sessionService.recordLoginAttempt(attemptData);
+          throw new UnauthorizedException('Credenciales inválidas');
+        }
+      } else {
+        if (!user) {
+          const metadata = authData.user.user_metadata ?? {};
+          user = await this.syncRegisteredUser(authData.user.id, {
+            email: authData.user.email ?? input.email,
+            firstName: String(metadata.first_name ?? metadata.full_name ?? ''),
+            lastName: String(metadata.last_name ?? ''),
+            phone: metadata.phone ? String(metadata.phone) : undefined,
+          });
+        }
 
-      if (!user || user.id !== authData.user.id || !user.isActive) {
-        await this.sessionService.recordLoginAttempt(attemptData);
-        throw new UnauthorizedException('Credenciales inválidas');
+        if (!user || user.id !== authData.user.id || !user.isActive) {
+          await this.sessionService.recordLoginAttempt(attemptData);
+          throw new UnauthorizedException('Credenciales inválidas');
+        }
       }
     } else {
       if (!user || !user.passwordHash) {
@@ -193,6 +201,11 @@ export class AuthService {
         await this.sessionService.recordLoginAttempt(attemptData);
         throw new UnauthorizedException('Credenciales inválidas');
       }
+    }
+
+    if (!user) {
+      await this.sessionService.recordLoginAttempt(attemptData);
+      throw new UnauthorizedException('Credenciales inválidas');
     }
 
     // Login exitoso

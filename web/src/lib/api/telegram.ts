@@ -2,6 +2,10 @@ import api from './client'
 
 export interface TelegramLinkSession {
   deepLink: string
+  /** Enlace compatible con navegador; deepLink se conserva como alias. */
+  webDeepLink?: string
+  /** Enlace que intenta abrir directamente la aplicación de Telegram. */
+  appDeepLink?: string
   expiresAt: string
   botUsername: string
 }

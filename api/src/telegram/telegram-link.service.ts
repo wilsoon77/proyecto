@@ -52,8 +52,15 @@ export class TelegramLinkService {
       details: { expiresAt: expiresAt.toISOString() },
     });
 
+    const startParam = encodeURIComponent(rawToken);
+    const webDeepLink = `https://t.me/${username}?start=${startParam}`;
+    const appDeepLink = `tg://resolve?domain=${encodeURIComponent(username)}&start=${startParam}`;
+
     return {
-      deepLink: `https://t.me/${username}?start=${encodeURIComponent(rawToken)}`,
+      // Keep deepLink as the web-compatible field for existing clients.
+      deepLink: webDeepLink,
+      webDeepLink,
+      appDeepLink,
       expiresAt,
       botUsername: username,
     };

@@ -133,7 +133,8 @@ En productos `COMPRADO` con caducidad, `available` representa únicamente unidad
 - `GET /notifications` — Historial de las dos alertas operativas
 - `GET /notifications/config` — Configuraciones de materia prima baja y caducidad próxima
 - `POST /notifications/test` — Prueba de una de esas dos alertas (ADMIN)
-- `POST /telegram/link-session` — Vincular el asistente de Telegram
+- `POST /telegram/link-session` — Generar enlaces seguros para vincular el asistente de Telegram desde móvil o navegador
+- El botón móvil intenta abrir la aplicación con `tg://resolve`; si no está disponible, usa `https://t.me`. En ambos casos el usuario debe pulsar **Iniciar** en el bot para que Telegram envíe el `/start` de vinculación.
 - Telegram solo consulta inventario de producto terminado, materias primas, productos próximos a vencer, producción y cierres; producción y cierres admiten un día o rango de fechas, y no consulta ventas/pedidos ni ejecuta cambios.
 - Las consultas frecuentes se enrutan de forma determinista para resolver nombres como “azúcar” y frases como “sucursal Norte”; el LLM queda como respaldo para preguntas abiertas.
 - `GET /stock-movements/activity` — Actividad resumida para el panel Operación

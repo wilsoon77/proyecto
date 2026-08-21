@@ -488,7 +488,7 @@ export default function DailyClosePage() {
           </label>
 
           <div className="flex items-center text-xs text-amber-800 bg-amber-50/80 rounded-xl p-3 border border-amber-200/80">
-            <span>💡 <strong>Tip:</strong> Puedes contar por bandejas/tiras completas o unidades sueltas. El sistema recalcula la venta en tiempo real.</span>
+            <span><strong>Tip:</strong> Puedes contar por bandejas/tiras completas o unidades sueltas. El sistema recalcula la venta en tiempo real.</span>
           </div>
         </div>
 
@@ -662,7 +662,7 @@ export default function DailyClosePage() {
               </div>
             ) : (
               <>
-                {/* 📱 VISTA MÓVIL: Tarjetas Táctiles e Intuitivas */}
+                {/* VISTA MÓVIL: Tarjetas Táctiles e Intuitivas */}
                 <div className="block lg:hidden space-y-3.5">
                   {filteredEntries.map((entry) => {
                     const projection = projectionMap.get(entry.productId)!
@@ -829,7 +829,7 @@ export default function DailyClosePage() {
                   })}
                 </div>
 
-                {/* 💻 VISTA ESCRITORIO: Tabla Completa */}
+                {/* VISTA ESCRITORIO: Tabla Completa */}
                 <div className="hidden lg:block overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
@@ -959,7 +959,7 @@ export default function DailyClosePage() {
         )}
       </div>
 
-      {/* 📱 BARRA INFERIOR STICKY (Resumen Rápido en Móvil) */}
+      {/* BARRA INFERIOR STICKY (Resumen Rápido en Móvil) */}
       {entries.length > 0 && !result && (
         <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-stone-200 p-3 sm:hidden shadow-lg">
           <div className="flex items-center justify-between gap-3">

@@ -101,26 +101,48 @@ export class TelegramService implements OnModuleInit {
       const command = text.split(/\s+/)[0]?.toLowerCase();
 
       if (command === '/start') {
-        const token = text.split(/\s+/)[1];
+        const token = text.replace(/^\/start[=\s]*/i, '').trim();
         if (token) {
           try {
             const link = await this.links.consumeToken(token, chatId, username);
-            await this.delivery.sendToChat(chatId, `Cuenta vinculada correctamente, ${link.firstName}. Ya puedes preguntarme por la operación de la panadería.`);
+            await this.delivery.sendToChat(
+              chatId,
+              `¡Cuenta vinculada exitosamente, ${link.firstName}! Ya puedes consultarme sobre inventarios, ventas, producción o cierres de la panadería.\n\nEscribe /ayuda para ver ejemplos de preguntas.`,
+            );
           } catch (error) {
-            const message = error instanceof HttpException && error.getStatus() === HttpStatus.TOO_MANY_REQUESTS
-              ? 'Demasiados intentos de vinculación. Intenta de nuevo más tarde.'
-              : 'El enlace de vinculación no es válido o ya expiró. Genera uno nuevo desde la aplicación.';
+            let message = 'El enlace de vinculación no es válido o ya expiró. Genera uno nuevo desde la aplicación.';
+            if (error instanceof HttpException) {
+              if (error.getStatus() === HttpStatus.TOO_MANY_REQUESTS) {
+                message = 'Demasiados intentos de vinculación. Intenta de nuevo más tarde.';
+              } else if (error.getStatus() === HttpStatus.CONFLICT || error.getStatus() === HttpStatus.BAD_REQUEST) {
+                message = error.message;
+              }
+            }
             await this.delivery.sendToChat(chatId, message);
           }
         } else {
-          await this.delivery.sendToChat(chatId, 'Hola. Para usar el asistente, abre Telegram desde el botón de la aplicación y completa la vinculación.');
+          const existing = await this.links.getActiveByChat(chatId);
+          if (existing) {
+            await this.delivery.sendToChat(
+              chatId,
+              '¡Hola de nuevo! Tu cuenta ya está vinculada y activa con el asistente de la panadería. Puedes hacerme cualquier consulta operativa o escribir /ayuda para ver ejemplos.',
+            );
+          } else {
+            await this.delivery.sendToChat(
+              chatId,
+              '¡Hola! Para vincular tu cuenta con el asistente:\n\n1. Ve al panel de administración de la panadería.\n2. Haz clic en «Asistente Telegram».\n3. Abre el enlace o copia y envía el comando /start con tu código.',
+            );
+          }
         }
         return;
       }
 
       const link = await this.links.getActiveByChat(chatId);
       if (!link) {
-        await this.delivery.sendToChat(chatId, 'Este chat no está vinculado. Abre Telegram desde el botón de la aplicación para vincularlo de forma segura.');
+        await this.delivery.sendToChat(
+          chatId,
+          'Este chat no está vinculado actualmente. Abre el panel administrativo de la panadería y pulsa en «Asistente Telegram» para vincularlo.',
+        );
         return;
       }
 
@@ -129,7 +151,10 @@ export class TelegramService implements OnModuleInit {
 
       if (command === '/desvincular') {
         await this.links.deactivateByChat(chatId);
-        await this.delivery.sendToChat(chatId, 'Tu cuenta fue desvinculada. Ya no enviaré información a este chat.');
+        await this.delivery.sendToChat(
+          chatId,
+          'Tu cuenta fue desvinculada exitosamente. Ya no enviaré información a este chat. Para volver a conectarte, genera un nuevo enlace desde el panel.',
+        );
         return;
       }
 

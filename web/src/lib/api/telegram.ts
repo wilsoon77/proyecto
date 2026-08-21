@@ -1,6 +1,8 @@
 import api from './client'
 
 export interface TelegramLinkSession {
+  token?: string
+  startCommand?: string
   deepLink: string
   /** Enlace compatible con navegador; deepLink se conserva como alias. */
   webDeepLink?: string
@@ -14,6 +16,7 @@ export interface TelegramLinkStatus {
   configured: boolean
   linked: boolean
   username: string | null
+  chatId: string | null
   linkedAt: string | null
   lastSeenAt: string | null
 }

@@ -33,13 +33,20 @@ export class TelegramLinkService {
       .replace(/["']/g, '');
     if (!username) throw new ServiceUnavailableException('Telegram no está configurado');
 
-    const rawToken = randomBytes(32).toString('base64url');
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    const rawToken = randomBytes(16).toString('hex');
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
 
-    await this.prisma.telegramLinkToken.updateMany({
-      where: { userId, usedAt: null, revokedAt: null },
-      data: { revokedAt: new Date() },
-    });
+    // Clean up expired or already used tokens older than 1 hour, leaving recent valid tokens intact
+    await this.prisma.telegramLinkToken.deleteMany({
+      where: {
+        userId,
+        OR: [
+          { usedAt: { not: null } },
+          { expiresAt: { lt: new Date() } },
+        ],
+      },
+    }).catch(() => {});
+
     await this.prisma.telegramLinkToken.create({
       data: { userId, tokenHash: hashToken(rawToken), expiresAt },
     });
@@ -52,12 +59,13 @@ export class TelegramLinkService {
       details: { expiresAt: expiresAt.toISOString() },
     });
 
-    const startParam = encodeURIComponent(rawToken);
-    const webDeepLink = `https://t.me/${username}?start=${startParam}`;
-    const appDeepLink = `tg://resolve?domain=${encodeURIComponent(username)}&start=${startParam}`;
+    const startCommand = `/start ${rawToken}`;
+    const webDeepLink = `https://t.me/${username}?start=${rawToken}`;
+    const appDeepLink = `tg://resolve?domain=${encodeURIComponent(username)}&start=${rawToken}`;
 
     return {
-      // Keep deepLink as the web-compatible field for existing clients.
+      token: rawToken,
+      startCommand,
       deepLink: webDeepLink,
       webDeepLink,
       appDeepLink,
@@ -69,12 +77,13 @@ export class TelegramLinkService {
   async getStatus(userId: string) {
     const link = await this.prisma.telegramLink.findUnique({
       where: { userId },
-      select: { active: true, username: true, linkedAt: true, lastSeenAt: true },
+      select: { active: true, username: true, linkedAt: true, lastSeenAt: true, chatId: true },
     });
     return {
       configured: Boolean(this.config.get<string>('TELEGRAM_BOT_TOKEN') || process.env.TELEGRAM_BOT_TOKEN),
       linked: Boolean(link?.active),
       username: link?.active ? link.username : null,
+      chatId: link?.active ? link.chatId : null,
       linkedAt: link?.active ? link.linkedAt : null,
       lastSeenAt: link?.active ? link.lastSeenAt : null,
     };
@@ -82,12 +91,13 @@ export class TelegramLinkService {
 
   async consumeToken(rawToken: string, chatId: string, username?: string) {
     await this.assertLinkAllowed(chatId);
-    if (!rawToken || rawToken.length > 200) {
+    const cleanToken = (rawToken || '').trim();
+    if (!cleanToken || cleanToken.length > 200) {
       await this.recordFailedLinkAttempt(chatId, 'invalid_token_format');
       throw new BadRequestException('Token de vinculación inválido');
     }
     const now = new Date();
-    const tokenHash = hashToken(rawToken);
+    const tokenHash = hashToken(cleanToken);
 
     let linked: { userId: string; firstName: string; username: string | null };
     try {
@@ -111,15 +121,21 @@ export class TelegramLinkService {
       if (
         !user ||
         !user.isActive ||
-        (user.role !== 'ADMIN' && user.role !== 'MANAGER') ||
-        !user.assistantAccess?.enabled ||
-        user.assistantAccess.scope !== 'ALL_BRANCHES'
+        (user.role !== 'ADMIN' && user.role !== 'MANAGER')
       ) {
         throw new BadRequestException('La cuenta ya no puede vincularse al asistente');
       }
 
-      // Claim the one-time token with a conditional update. The predicate
-      // makes concurrent /start requests mutually exclusive at the database.
+      // Auto-provision assistantAccess if not present
+      if (!user.assistantAccess?.enabled) {
+        await tx.assistantAccess.upsert({
+          where: { userId: user.id },
+          update: { enabled: true, scope: 'ALL_BRANCHES' },
+          create: { userId: user.id, enabled: true, scope: 'ALL_BRANCHES' },
+        });
+      }
+
+      // Claim the one-time token with a conditional update
       const claimed = await tx.telegramLinkToken.updateMany({
         where: { id: token.id, usedAt: null, revokedAt: null },
         data: { usedAt: now },
@@ -128,29 +144,38 @@ export class TelegramLinkService {
         throw new BadRequestException('El enlace de vinculación expiró o ya fue utilizado');
       }
 
+      // If this Telegram chatId is already actively linked to another account, reject with clear message
       const existingChat = await tx.telegramLink.findUnique({ where: { chatId } });
+      if (existingChat && existingChat.active && existingChat.userId !== user.id) {
+        throw new ConflictException('Este chat de Telegram ya está vinculado a otra cuenta. Si deseas cambiar de cuenta, escribe /desvincular primero en este chat.');
+      }
+
+      // If this chatId was previously linked to another user and is inactive, delete that stale record to avoid unique key conflict on chatId
       if (existingChat && existingChat.userId !== user.id) {
-        throw new ConflictException('Este chat ya está vinculado a otra cuenta');
+        await tx.telegramLink.delete({ where: { id: existingChat.id } });
       }
 
-      const existingUserLink = await tx.telegramLink.findUnique({ where: { userId: user.id } });
-      if (existingUserLink && existingUserLink.chatId !== chatId) {
-        await tx.telegramLink.update({
-          where: { id: existingUserLink.id },
-          data: { active: false, unlinkedAt: now },
-        });
-      }
-
-      const link = existingChat
-        ? await tx.telegramLink.update({
-            where: { id: existingChat.id },
-            data: { active: true, username: username || null, linkedAt: now, unlinkedAt: null, lastSeenAt: now },
-          })
-        : await tx.telegramLink.upsert({
-            where: { userId: user.id },
-            update: { chatId, active: true, username: username || null, linkedAt: now, unlinkedAt: null, lastSeenAt: now },
-            create: { userId: user.id, chatId, username: username || null, active: true, linkedAt: now, lastSeenAt: now },
+      // Upsert the link for the user
+      const link = await tx.telegramLink.upsert({
+        where: { userId: user.id },
+        update: {
+          chatId,
+          active: true,
+          username: username || null,
+          linkedAt: now,
+          unlinkedAt: null,
+          lastSeenAt: now,
+        },
+        create: {
+          userId: user.id,
+          chatId,
+          username: username || null,
+          active: true,
+          linkedAt: now,
+          lastSeenAt: now,
+        },
       });
+
       return { userId: user.id, firstName: user.firstName, username: link.username };
       });
     } catch (error) {

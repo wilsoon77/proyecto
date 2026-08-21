@@ -42,11 +42,20 @@ export class AssistantPolicyService {
       throw new ForbiddenException('El usuario no tiene acceso al asistente');
     }
 
-    if (!user.assistantAccess?.enabled) {
+    let assistantAccess = user.assistantAccess;
+    if (!assistantAccess && (user.role === 'ADMIN' || user.role === 'MANAGER')) {
+      assistantAccess = await this.prisma.assistantAccess.upsert({
+        where: { userId: user.id },
+        update: { enabled: true, scope: 'ALL_BRANCHES' },
+        create: { userId: user.id, enabled: true, scope: 'ALL_BRANCHES' },
+      });
+    }
+
+    if (!assistantAccess?.enabled) {
       throw new ForbiddenException('El asistente está deshabilitado para este usuario');
     }
 
-    if (user.assistantAccess.scope !== 'ALL_BRANCHES') {
+    if (assistantAccess.scope !== 'ALL_BRANCHES') {
       throw new ForbiddenException('El alcance del asistente no está configurado');
     }
 

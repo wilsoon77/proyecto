@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { CreateStockMovementDto, ReconcileInventoryDto } from './dto.js';
+import { CreateStockMovementDto, ReconcileInventoryDto, CreateBulkTransferDto } from './dto.js';
 import { InventoryLotSource, Prisma, StockMovementType } from '@prisma/client';
 import { LoggerService } from '../common/logger/logger.service.js';
 import { InventoryLotsService } from '../inventory/inventory-lots.service.js';
@@ -14,6 +14,25 @@ export class StockMovementsService {
     private readonly logger: LoggerService,
     private readonly inventoryLotsService: InventoryLotsService,
   ) {}
+
+  private async assertSellableOutbound(
+    tx: Prisma.TransactionClient,
+    productId: number,
+    branchId: number,
+    quantity: number,
+    productName: string,
+  ) {
+    const inventory = await tx.inventory.findUnique({
+      where: { productId_branchId: { productId, branchId } },
+    });
+    const sellableLots = await this.inventoryLotsService.getSellableQuantity(tx, productId, branchId);
+    const available = (sellableLots ?? inventory?.quantity ?? 0) - (inventory?.reserved ?? 0);
+    if (available < quantity) {
+      throw new BadRequestException(
+        `No hay suficientes unidades vigentes de ${productName}. Disponible: ${Math.max(0, available)}, solicitado: ${quantity}. Registra como MERMA las unidades vencidas.`,
+      );
+    }
+  }
 
   async create(dto: CreateStockMovementDto, userId?: string) {
     const product = await this.prisma.product.findUnique({ where: { slug: dto.productSlug } });
@@ -69,11 +88,15 @@ export class StockMovementsService {
           await adjust(toBranch!.id, dto.quantity);
           break;
         case StockMovementType.VENTA:
+          await this.assertSellableOutbound(tx, product.id, fromBranch!.id, dto.quantity, product.name);
+          await adjust(fromBranch!.id, -dto.quantity);
+          break;
         case StockMovementType.MERMA:
         case StockMovementType.PERDIDA_ROBO:
           await adjust(fromBranch!.id, -dto.quantity);
           break;
         case StockMovementType.TRANSFERENCIA:
+          await this.assertSellableOutbound(tx, product.id, fromBranch!.id, dto.quantity, product.name);
           await adjust(fromBranch!.id, -dto.quantity);
           await adjust(toBranch!.id, dto.quantity);
           break;
@@ -156,20 +179,125 @@ export class StockMovementsService {
     return movement;
   }
 
+  async transferBulk(dto: CreateBulkTransferDto, userId?: string) {
+    if (!dto.items || dto.items.length === 0) {
+      throw new BadRequestException('Debe incluir al menos un producto a transferir');
+    }
+    const fromBranch = await this.prisma.branch.findUnique({ where: { slug: dto.fromBranchSlug } });
+    if (!fromBranch) throw new BadRequestException('Sucursal de origen no encontrada');
+    const toBranch = await this.prisma.branch.findUnique({ where: { slug: dto.toBranchSlug } });
+    if (!toBranch) throw new BadRequestException('Sucursal de destino no encontrada');
 
+    if (fromBranch.id === toBranch.id) {
+      throw new BadRequestException('Las sucursales de origen y destino deben ser distintas');
+    }
+
+    const slugs = dto.items.map((i) => i.productSlug);
+    const products = await this.prisma.product.findMany({
+      where: { slug: { in: slugs } },
+    });
+    const productMap = new Map(products.map((p) => [p.slug, p]));
+    const missing = slugs.find((s) => !productMap.has(s));
+    if (missing) {
+      throw new BadRequestException(`Producto no encontrado: ${missing}`);
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const results: Array<{ productId: number; productName: string; quantity: number; movementId: number }> = [];
+
+      for (const item of dto.items) {
+        const product = productMap.get(item.productSlug)!;
+        const sourceInventory = await tx.inventory.findUnique({
+          where: { productId_branchId: { productId: product.id, branchId: fromBranch.id } },
+        });
+
+        await this.assertSellableOutbound(tx, product.id, fromBranch.id, item.quantity, `${product.name} en ${fromBranch.name}`);
+
+        // Descontar origen
+        await tx.inventory.update({
+          where: { id: sourceInventory!.id },
+          data: { quantity: { decrement: item.quantity } },
+        });
+
+        // Aumentar o crear destino
+        const targetInventory = await tx.inventory.findUnique({
+          where: { productId_branchId: { productId: product.id, branchId: toBranch.id } },
+        });
+        if (!targetInventory) {
+          await tx.inventory.create({
+            data: { productId: product.id, branchId: toBranch.id, quantity: item.quantity },
+          });
+        } else {
+          await tx.inventory.update({
+            where: { id: targetInventory.id },
+            data: { quantity: { increment: item.quantity } },
+          });
+        }
+
+        // Crear registro de movimiento
+        const movement = await tx.stockMovement.create({
+          data: {
+            productId: product.id,
+            fromBranchId: fromBranch.id,
+            toBranchId: toBranch.id,
+            type: StockMovementType.TRANSFERENCIA,
+            quantity: item.quantity,
+            userId,
+            referenceId: dto.referenceId,
+            note: dto.note,
+          },
+        });
+
+        // Transferir lotes FIFO
+        await this.inventoryLotsService.transferLots(tx, {
+          productId: product.id,
+          fromBranchId: fromBranch.id,
+          toBranchId: toBranch.id,
+          quantity: item.quantity,
+          stockMovementId: movement.id,
+        });
+
+        this.logger.auditStockMovement(
+          product.id,
+          StockMovementType.TRANSFERENCIA,
+          item.quantity,
+          fromBranch.id,
+          toBranch.id,
+          userId,
+        );
+
+        results.push({
+          productId: product.id,
+          productName: product.name,
+          quantity: item.quantity,
+          movementId: movement.id,
+        });
+      }
+
+      return {
+        fromBranch: fromBranch.name,
+        toBranch: toBranch.name,
+        transferredCount: results.length,
+        items: results,
+      };
+    }, {
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+      maxWait: 5000,
+      timeout: 15000,
+    });
+  }
 
   async list(filters: { productSlug?: string; branchSlug?: string; type?: string; from?: string; to?: string; page?: number; pageSize?: number }) {
     const where: any = {};
     if (filters.type) where.type = filters.type as StockMovementType;
     if (filters.productSlug) {
       const product = await this.prisma.product.findUnique({ where: { slug: filters.productSlug } });
-      if (!product) return [];
+      if (!product) return { data: [], meta: { total: 0, pageCount: 0, page: 1, pageSize: 10 } };
       where.productId = product.id;
     }
     if (filters.branchSlug) {
       const branch = await this.prisma.branch.findUnique({ where: { slug: filters.branchSlug } });
-      if (!branch) return [];
-      // movement can be from or to this branch
+      if (!branch) return { data: [], meta: { total: 0, pageCount: 0, page: 1, pageSize: 10 } };
       where.OR = [{ fromBranchId: branch.id }, { toBranchId: branch.id }];
     }
     if (filters.from || filters.to) {

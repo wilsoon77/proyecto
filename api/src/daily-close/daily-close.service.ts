@@ -116,8 +116,12 @@ export class DailyCloseService {
         id: true,
         sku: true,
         name: true,
+        origin: true,
         isActive: true,
         stockUnitLabel: true,
+        category: {
+          select: { id: true, name: true },
+        },
         presentations: {
           where: { isActive: true },
           orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
@@ -141,6 +145,9 @@ export class DailyCloseService {
           productId: product.id,
           productName: product.name,
           sku: product.sku,
+          origin: product.origin,
+          categoryId: product.category?.id ?? null,
+          categoryName: product.category?.name ?? null,
           isActive: product.isActive,
           systemQty: inventory?.quantity ?? 0,
           reservedQty: inventory?.reserved ?? 0,

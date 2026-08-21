@@ -122,13 +122,27 @@ export class InventoryLotsService {
       branchId: options.branchId,
       availableQuantity: { gt: 0 },
     };
+    const today = dateKeyToUtcDate(todayBusinessDate());
 
     const lots = tracksExpiration
       ? options.allowExpired
-        ? await tx.inventoryLot.findMany({
-            where,
-            orderBy: [{ expiresAt: 'asc' }, { createdAt: 'asc' }],
-          })
+        ? [
+            // A MERMA/PERDIDA should clear expired stock first; otherwise a
+            // database null-ordering could consume a current lot while the
+            // expired lot remains visible and apparently untouched.
+            ...(await tx.inventoryLot.findMany({
+              where: { ...where, expiresAt: { lt: today } },
+              orderBy: [{ expiresAt: 'asc' }, { createdAt: 'asc' }],
+            })),
+            ...(await tx.inventoryLot.findMany({
+              where: { ...where, expiresAt: { gte: today } },
+              orderBy: [{ expiresAt: 'asc' }, { createdAt: 'asc' }],
+            })),
+            ...(await tx.inventoryLot.findMany({
+              where: { ...where, expiresAt: null },
+              orderBy: { createdAt: 'asc' },
+            })),
+          ]
         : [
             ...(await tx.inventoryLot.findMany({
               where: { ...where, expiresAt: { gte: dateKeyToUtcDate(todayBusinessDate()) } },

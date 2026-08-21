@@ -76,26 +76,19 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withSentryConfig(nextConfig, {
-  // Configuración de organización y proyecto
-  org: process.env.SENTRY_ORG || "wilson-exe",
-  project: process.env.SENTRY_PROJECT || "javascript-nextjs",
-  
-  // Solo subir source maps en CI
-  silent: !process.env.CI,
-  
-  // Source maps - eliminar después de subir
-  sourcemaps: {
-    deleteSourcemapsAfterUpload: true,
-  },
-  
-  // Tunneling para evitar bloqueadores de anuncios
-  tunnelRoute: "/monitoring",
-  
-  // Optimizaciones de bundle
-  bundleSizeOptimizations: {
-    excludeDebugStatements: true,
-    excludeReplayIframe: true,
-    excludeReplayShadowDom: true,
-  },
-});
+export default process.env.NODE_ENV === 'production'
+  ? withSentryConfig(nextConfig, {
+      org: process.env.SENTRY_ORG || "wilson-exe",
+      project: process.env.SENTRY_PROJECT || "javascript-nextjs",
+      silent: !process.env.CI,
+      sourcemaps: {
+        deleteSourcemapsAfterUpload: true,
+      },
+      tunnelRoute: "/monitoring",
+      bundleSizeOptimizations: {
+        excludeDebugStatements: true,
+        excludeReplayIframe: true,
+        excludeReplayShadowDom: true,
+      },
+    })
+  : nextConfig;

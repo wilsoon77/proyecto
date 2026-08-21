@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { generateSlug } from '../common/utils/slug.util.js';
 import { ProductOrigin } from '@prisma/client';
 import { ProductPresentationInputDto } from './dto/presentation.dto.js';
+import { dateKeyToUtcDate, todayBusinessDate } from '../common/time/business-date.js';
 
 function normalizeOrigin(value: string | undefined, fallback: ProductOrigin): ProductOrigin {
   if (value === undefined) return fallback;
@@ -118,6 +119,78 @@ function mapProduct(product: any, available: number) {
   };
 }
 
+type ProductInventoryRow = {
+  productId: number;
+  branchId: number;
+  quantity: number;
+  reserved: number;
+};
+
+/**
+ * Computes catalog availability from current lots when expiration tracking is
+ * enabled. The aggregate Inventory row still represents physical stock, but
+ * expired units must never be advertised as available for sale.
+ */
+async function mapSellableAvailability(
+  prisma: PrismaService,
+  products: any[],
+  branch?: string,
+): Promise<Map<number, number>> {
+  const result = new Map<number, number>(products.map((product) => [product.id, 0]));
+  if (products.length === 0) return result;
+
+  let branchId: number | undefined;
+  if (branch) {
+    const branchRecord = await prisma.branch.findUnique({ where: { slug: branch }, select: { id: true, isActive: true } });
+    branchId = branchRecord?.isActive ? branchRecord.id : -1;
+  }
+
+  const productIds = products.map((product) => product.id);
+  const inventories = await prisma.inventory.findMany({
+    where: {
+      productId: { in: productIds },
+      ...(branch ? { branchId } : { branch: { isActive: true } }),
+    },
+    select: { productId: true, branchId: true, quantity: true, reserved: true },
+  });
+  if (inventories.length === 0) return result;
+
+  const productById = new Map(products.map((product) => [product.id, product]));
+  const branchIds = [...new Set(inventories.map((inventory) => inventory.branchId))];
+  const today = dateKeyToUtcDate(todayBusinessDate());
+  const lots = await prisma.inventoryLot.findMany({
+    where: {
+      productId: { in: productIds },
+      branchId: { in: branchIds },
+    },
+    select: { productId: true, branchId: true, availableQuantity: true, expiresAt: true },
+  });
+
+  const lotsByKey = new Map<string, { sellable: number; hasHistory: boolean }>();
+  for (const lot of lots) {
+    const key = `${lot.productId}:${lot.branchId}`;
+    const current = lotsByKey.get(key) ?? { sellable: 0, hasHistory: false };
+    current.hasHistory = true;
+    if (lot.availableQuantity > 0 && (!lot.expiresAt || lot.expiresAt >= today)) {
+      current.sellable += lot.availableQuantity;
+    }
+    lotsByKey.set(key, current);
+  }
+
+  for (const inventory of inventories as ProductInventoryRow[]) {
+    const product = productById.get(inventory.productId);
+    const tracksExpiration = product?.origin === ProductOrigin.COMPRADO && product?.tracksExpiration;
+    const lotState = lotsByKey.get(`${inventory.productId}:${inventory.branchId}`);
+    const grossSellable = tracksExpiration
+      ? (lotState?.hasHistory ? lotState.sellable : 0)
+      : inventory.quantity;
+    const available = Math.max(0, grossSellable - inventory.reserved);
+    result.set(inventory.productId, (result.get(inventory.productId) ?? 0) + available);
+  }
+
+  return result;
+}
+
 export interface ProductDTO {
   id: number;
   name: string;
@@ -134,7 +207,7 @@ export interface ProductDTO {
   unitsPerTray?: number;
   tracksExpiration?: boolean;
   expirationAlertDays?: number[];
-  available?: number; // stock disponible (quantity - reserved)
+  available?: number; // stock vendible (excluye lotes vencidos y reservas)
   stockUnitLabel?: string;
   presentations?: ReturnType<typeof mapPresentations>;
 }
@@ -213,35 +286,8 @@ export class ProductsService {
       }),
     ]);
 
-    // Pre-cargar inventarios según branch filtrada o agregados
-    let inventoriesByProduct: Record<number, { quantity: number; reserved: number }[]> = {};
-    if (products.length) {
-      if (query.branch) {
-        const branch = await this.prisma.branch.findUnique({ where: { slug: query.branch } });
-        if (branch?.isActive) {
-          const inv = await this.prisma.inventory.findMany({ where: { branchId: branch.id, productId: { in: products.map(p => p.id) } } });
-          inventoriesByProduct = inv.reduce((acc, i) => {
-            acc[i.productId] = [{ quantity: i.quantity, reserved: i.reserved }];
-            return acc;
-          }, {} as Record<number, { quantity: number; reserved: number }[]>);
-        }
-      } else {
-        const invAll = await this.prisma.inventory.findMany({
-          // El catálogo público no debe sumar existencias de sucursales inactivas.
-          where: { productId: { in: products.map(p => p.id) }, branch: { isActive: true } },
-        });
-        inventoriesByProduct = invAll.reduce((acc, i) => {
-          (acc[i.productId] ||= []).push({ quantity: i.quantity, reserved: i.reserved });
-          return acc;
-        }, {} as Record<number, { quantity: number; reserved: number }[]>);
-      }
-    }
-
-    const mapped = products.map(p => {
-      const list = inventoriesByProduct[p.id] || [];
-      const available = list.reduce((sum, r) => sum + (r.quantity - r.reserved), 0);
-      return mapProduct(p, available);
-    });
+    const availability = await mapSellableAvailability(this.prisma, products, query.branch);
+    const mapped = products.map((product) => mapProduct(product, availability.get(product.id) ?? 0));
 
     return {
       data: mapped,
@@ -268,17 +314,8 @@ export class ProductsService {
     });
     if (!p || !p.isActive || !p.category?.isActive) return null;
     
-    let whereInv: any = { productId: p.id, branch: { isActive: true } };
-    if (branch) {
-      const b = await this.prisma.branch.findUnique({ where: { slug: branch } });
-      // Una sucursal inexistente o inactiva no debe devolver inventario
-      // agregado de todas las sucursales en el endpoint público.
-      whereInv = { productId: p.id, branchId: b?.isActive ? b.id : -1 };
-    }
-    
-    const inv = await this.prisma.inventory.findMany({ where: whereInv });
-    const available = inv.reduce((sum, i) => sum + (i.quantity - i.reserved), 0);
-    return mapProduct(p, available);
+    const availability = await mapSellableAvailability(this.prisma, [p], branch);
+    return mapProduct(p, availability.get(p.id) ?? 0);
   }
 
   // ==================== MÉTODOS POR ID ====================
@@ -290,15 +327,8 @@ export class ProductsService {
     });
     if (!p) return null;
     
-    let whereInv: any = { productId: p.id };
-    if (branch) {
-      const b = await this.prisma.branch.findUnique({ where: { slug: branch } });
-      if (b) whereInv.branchId = b.id;
-    }
-    
-    const inv = await this.prisma.inventory.findMany({ where: whereInv });
-    const available = inv.reduce((sum, i) => sum + (i.quantity - i.reserved), 0);
-    return mapProduct(p, available);
+    const availability = await mapSellableAvailability(this.prisma, [p], branch);
+    return mapProduct(p, availability.get(p.id) ?? 0);
   }
 
   async updateById(id: number, data: { sku?: string; name?: string; slug?: string; description?: string; basePrice?: number; comboQuantity?: number; comboPrice?: number; unitsPerTray?: number; categorySlug?: string; origin?: string; isNew?: boolean; isActive?: boolean; isAvailable?: boolean; tracksExpiration?: boolean; expirationAlertDays?: number[]; stockUnitLabel?: string; presentations?: ProductPresentationInputDto[]; imageUrl?: string }) {
@@ -410,15 +440,10 @@ export class ProductsService {
 
   // Helper reutilizable
   async getAvailableStock(productId: number, branchSlug?: string) {
-    if (branchSlug) {
-      const branch = await this.prisma.branch.findUnique({ where: { slug: branchSlug } });
-      if (!branch) return 0;
-      const inv = await this.prisma.inventory.findUnique({ where: { productId_branchId: { productId, branchId: branch.id } } });
-      if (!inv) return 0;
-      return inv.quantity - inv.reserved;
-    }
-    const invAll = await this.prisma.inventory.findMany({ where: { productId } });
-    return invAll.reduce((sum, i) => sum + (i.quantity - i.reserved), 0);
+    const product = await this.prisma.product.findUnique({ where: { id: productId } });
+    if (!product) return 0;
+    const availability = await mapSellableAvailability(this.prisma, [product], branchSlug);
+    return availability.get(productId) ?? 0;
   }
 
   async create(data: { sku: string; name: string; slug?: string; description?: string; basePrice: number; comboQuantity?: number; comboPrice?: number; unitsPerTray?: number; categorySlug: string; origin?: string; isNew?: boolean; isActive?: boolean; isAvailable?: boolean; tracksExpiration?: boolean; expirationAlertDays?: number[]; stockUnitLabel?: string; presentations?: ProductPresentationInputDto[]; imageUrl?: string }) {
@@ -630,38 +655,8 @@ export class ProductsService {
       take: limit,
     });
 
-    // Cargar inventarios agregados
-    let inventoriesByProduct: Record<number, { quantity: number; reserved: number }[]> = {};
-    if (products.length) {
-      let invWhere: any = {
-        productId: { in: products.map(p => p.id) },
-        branch: { isActive: true },
-      };
-      
-      if (branch) {
-        const b = await this.prisma.branch.findUnique({ where: { slug: branch } });
-        // Evita filtrar silenciosamente a todas las sucursales cuando el
-        // catálogo recibe una sucursal inválida o inactiva.
-        invWhere = {
-          productId: { in: products.map(p => p.id) },
-          branchId: b?.isActive ? b.id : -1,
-        };
-      }
-      
-      const invAll = await this.prisma.inventory.findMany({ 
-        where: invWhere
-      });
-      inventoriesByProduct = invAll.reduce((acc, i) => {
-        (acc[i.productId] ||= []).push({ quantity: i.quantity, reserved: i.reserved });
-        return acc;
-      }, {} as Record<number, { quantity: number; reserved: number }[]>);
-    }
-
-    return products.map(p => {
-      const list = inventoriesByProduct[p.id] || [];
-      const available = list.reduce((sum, r) => sum + (r.quantity - r.reserved), 0);
-      return mapProduct(p, available);
-    });
+    const availability = await mapSellableAvailability(this.prisma, products, branch);
+    return products.map((product) => mapProduct(product, availability.get(product.id) ?? 0));
   }
 
   async findByCategory(categorySlug: string, query: { page?: number; pageSize?: number; sort?: string }) {
@@ -709,23 +704,8 @@ export class ProductsService {
       }),
     ]);
 
-    // Cargar inventarios
-    let inventoriesByProduct: Record<number, { quantity: number; reserved: number }[]> = {};
-    if (products.length) {
-      const invAll = await this.prisma.inventory.findMany({ 
-        where: { productId: { in: products.map(p => p.id) }, branch: { isActive: true } }
-      });
-      inventoriesByProduct = invAll.reduce((acc, i) => {
-        (acc[i.productId] ||= []).push({ quantity: i.quantity, reserved: i.reserved });
-        return acc;
-      }, {} as Record<number, { quantity: number; reserved: number }[]>);
-    }
-
-    const mapped = products.map(p => {
-      const list = inventoriesByProduct[p.id] || [];
-      const available = list.reduce((sum, r) => sum + (r.quantity - r.reserved), 0);
-      return mapProduct(p, available);
-    });
+    const availability = await mapSellableAvailability(this.prisma, products);
+    const mapped = products.map((product) => mapProduct(product, availability.get(product.id) ?? 0));
 
     return {
       category: {

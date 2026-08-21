@@ -83,3 +83,40 @@ export class ReconcileInventoryDto {
   @IsString()
   note?: string;
 }
+
+export class BulkTransferItemDto {
+  @ApiProperty({ example: 'pan-frances' })
+  @IsString()
+  productSlug!: string;
+
+  @ApiProperty({ example: 24, description: 'Cantidad a transferir (positivo)' })
+  @IsInt()
+  @IsPositive()
+  quantity!: number;
+}
+
+export class CreateBulkTransferDto {
+  @ApiProperty({ example: 'central', description: 'Slug de la sucursal de origen' })
+  @IsString()
+  fromBranchSlug!: string;
+
+  @ApiProperty({ example: 'pradera', description: 'Slug de la sucursal de destino' })
+  @IsString()
+  toBranchSlug!: string;
+
+  @ApiProperty({ type: [BulkTransferItemDto], description: 'Lista de productos y cantidades a transferir' })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => BulkTransferItemDto)
+  items!: BulkTransferItemDto[];
+
+  @ApiProperty({ example: 'TRANSF-2026-08-20-001', required: false })
+  @IsOptional()
+  @IsString()
+  referenceId?: string;
+
+  @ApiProperty({ example: 'Envío de pan francés y champurradas para turno de la tarde', required: false })
+  @IsOptional()
+  @IsString()
+  note?: string;
+}

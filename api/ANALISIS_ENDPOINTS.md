@@ -51,7 +51,7 @@ Estados válidos: `PENDING`, `CONFIRMED`, `PREPARING`, `READY`, `PICKED_UP` y `C
 - CRUD de `/recipes`, `/production` y `/raw-materials`
 - `POST /raw-materials/purchase` para compras de materia prima
 
-La caducidad solo aplica a lotes de productos de origen `COMPRADO` con control de caducidad activo. `Product.expirationAlertDays` admite varios días de anticipación; cada lote genera una alerta única por cada día configurado. Los lotes vencidos permanecen visibles para registrar una `MERMA`; no desaparecen por una tarea automática.
+La caducidad solo aplica a lotes de productos de origen `COMPRADO` con control de caducidad activo. `Product.expirationAlertDays` admite varios días de anticipación; cada lote genera una alerta única por cada día configurado. Los lotes vencidos permanecen visibles para registrar una `MERMA`; no desaparecen por una tarea automática. `Inventory.quantity` conserva el total físico hasta esa merma, pero `available`, el catálogo, las reservas, las ventas y las transferencias excluyen los lotes vencidos.
 
 ### Cierre diario
 

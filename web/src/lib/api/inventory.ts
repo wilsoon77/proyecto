@@ -42,6 +42,8 @@ export interface InventoryItem {
   quantity: number
   reserved: number
   available: number
+  /** Physical units in expired lots; kept for explicit MERMA handling. */
+  expiredQuantity?: number
   updatedAt: string
 }
 
@@ -163,6 +165,24 @@ export const inventoryService = {
    */
   async createMovement(data: CreateStockMovementData): Promise<StockMovement> {
     return api.post<StockMovement>('/stock-movements', data)
+  },
+
+  /**
+   * Transferencia masiva de productos entre sucursales
+   */
+  async transferBulk(data: {
+    fromBranchSlug: string
+    toBranchSlug: string
+    items: Array<{ productSlug: string; quantity: number }>
+    referenceId?: string
+    note?: string
+  }): Promise<{
+    fromBranch: string
+    toBranch: string
+    transferredCount: number
+    items: Array<{ productId: number; productName: string; quantity: number; movementId: number }>
+  }> {
+    return api.post('/stock-movements/transfer-bulk', data)
   },
 
   async listExpirations(params?: {

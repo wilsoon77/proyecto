@@ -121,6 +121,8 @@ El pedido se recoge en sucursal y el pago se maneja únicamente como `EFECTIVO` 
 - `POST /stock-movements/reconcile` — Conciliar conteo físico
 - `GET /stock-movements/activity` — Resumen operativo para Operación
 
+En productos `COMPRADO` con caducidad, `available` representa únicamente unidades de lotes vigentes. Las unidades vencidas se conservan en el total físico y en la vista de caducidades hasta registrar una `MERMA`; no pueden reservarse, venderse ni transferirse.
+
 ### Daily close
 - `GET /daily-close/preview` — Vista previa del inventario a cerrar
 - `POST /daily-close` — Registrar el cierre; bloquea nueva producción de la fecha cerrada
@@ -132,7 +134,8 @@ El pedido se recoge en sucursal y el pago se maneja únicamente como `EFECTIVO` 
 - `GET /notifications/config` — Configuraciones de materia prima baja y caducidad próxima
 - `POST /notifications/test` — Prueba de una de esas dos alertas (ADMIN)
 - `POST /telegram/link-session` — Vincular el asistente de Telegram
-- Telegram solo consulta inventario de producto terminado, materias primas, producción y cierres del día; no consulta ventas/pedidos ni ejecuta cambios.
+- Telegram solo consulta inventario de producto terminado, materias primas, productos próximos a vencer, producción y cierres; producción y cierres admiten un día o rango de fechas, y no consulta ventas/pedidos ni ejecuta cambios.
+- Las consultas frecuentes se enrutan de forma determinista para resolver nombres como “azúcar” y frases como “sucursal Norte”; el LLM queda como respaldo para preguntas abiertas.
 - `GET /stock-movements/activity` — Actividad resumida para el panel Operación
 
 ### Health & Metrics

@@ -1,6 +1,6 @@
 self.addEventListener('install', (event) => {
   console.log('[SW] Instalando Service Worker...');
-  self.skipWaiting();
+  event.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener('activate', (event) => {
@@ -21,25 +21,31 @@ self.addEventListener('push', function (event) {
 
   try {
     const data = event.data.json();
+    const origin = self.location.origin;
     
-    // Notification options without emojis
+    // Icono principal y badge con URL absoluta para evitar fallback de Android
+    const iconUrl = data.icon || `${origin}/images/Panaderia_Svetlana_logo.jpeg`;
+    const badgeUrl = `${origin}/images/icons/notification-badge-72.png`;
+
     const options = {
       body: data.message || 'Nueva notificación de Panadería Svetlana',
-      icon: '/images/icons/notification-icon-192.png',
-      badge: '/images/icons/notification-badge-72.png',
+      icon: iconUrl,
+      badge: badgeUrl,
+      image: data.image || undefined,
       data: { url: data.url || '/admin' },
-      vibrate: [100, 50, 100],
-      tag: data.type || 'default',
+      vibrate: [200, 100, 200],
+      tag: data.tag || data.type || 'panaderia-alerta',
       renotify: true,
+      requireInteraction: false,
       actions: [
-        { action: 'open', title: 'Ver detalle' },
-        { action: 'dismiss', title: 'Descartar' }
+        { action: 'open', title: 'Ver' },
+        { action: 'dismiss', title: 'Cerrar' }
       ]
     };
 
     console.log('[SW] Mostrando notificación nativa:', data.title);
     event.waitUntil(
-      self.registration.showNotification(data.title || 'Alerta del Sistema', options)
+      self.registration.showNotification(data.title || 'Panadería Svetlana', options)
     );
   } catch (error) {
     console.error('[SW] ❌ Error procesando evento push:', error);

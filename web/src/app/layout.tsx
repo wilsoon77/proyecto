@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Inter, Playfair_Display } from "next/font/google";
 import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
 import { ToastProvider } from "@/context/ToastContext";
@@ -11,19 +10,6 @@ import { QueryProvider } from "@/components/providers/query-provider";
 import { NotificationProvider } from "@/context/NotificationContext";
 import CookieConsent from "@/components/ui/CookieConsent";
 import { Analytics } from "@vercel/analytics/react";
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-});
-
-const playfair = Playfair_Display({
-  subsets: ["latin"],
-  variable: "--font-display",
-  display: "swap",
-  weight: ["500", "600", "700", "800"],
-});
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "");
 
@@ -85,7 +71,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es-GT" className={`${inter.variable} ${playfair.variable}`} suppressHydrationWarning>
+    <html lang="es-GT" suppressHydrationWarning>
       <head>
         <script
           type="application/ld+json"

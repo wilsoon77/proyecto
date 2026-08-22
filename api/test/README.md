@@ -56,23 +56,23 @@ npm run test:e2e
 ### Ejecutar tests específicos
 ```bash
 # Solo tests de autenticación
-npx jest -c jest.config.cjs --testNamePattern="Autenticación"
+npx jest -c jest-e2e.config.cjs --testNamePattern="Autenticación"
 
 # Solo tests de rate limiting
-npx jest -c jest.config.cjs --testNamePattern="Rate Limiting"
+npx jest -c jest-e2e.config.cjs --testNamePattern="Rate Limiting"
 
 # Solo tests de logout
-npx jest -c jest.config.cjs --testNamePattern="logout"
+npx jest -c jest-e2e.config.cjs --testNamePattern="logout"
 ```
 
 ### Ejecutar con cobertura
 ```bash
-npx jest -c jest.config.cjs --coverage
+npx jest -c jest-e2e.config.cjs --coverage
 ```
 
 ### Modo watch (desarrollo)
 ```bash
-npx jest -c jest.config.cjs --watch
+npx jest -c jest-e2e.config.cjs --watch
 ```
 
 ## Configuración
@@ -82,6 +82,10 @@ Los tests utilizan:
 - **Supertest**: Peticiones HTTP para e2e
 - **@nestjs/testing**: Módulo de testing de NestJS
 - **Base de datos**: Misma configuración que desarrollo (lee .env)
+
+Los tests unitarios viven en `src/**/*.spec.ts` y se ejecutan con `npm test`.
+Los tests e2e viven en `test/**/*.e2e-spec.ts` y se ejecutan con la configuración
+`jest-e2e.config.cjs`; usan la base de datos configurada y pueden crear datos de prueba.
 
 ### Variables de Entorno
 

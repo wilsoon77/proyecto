@@ -78,13 +78,19 @@ export interface CreateStockMovementData {
 
 export interface ExpirationLot {
   id: number
-  product: { id: number; name: string; slug: string; origin: 'PRODUCIDO' | 'COMPRADO' }
+  product: { id: number; name: string; slug: string; origin: 'PRODUCIDO' | 'COMPRADO'; expirationAlertDays?: number[] }
   branch: { id: number; name: string; slug: string }
   sourceType: 'PRODUCCION' | 'COMPRA' | 'TRANSFERENCIA' | 'SOBRANTE' | 'APERTURA'
   initialQuantity: number
   availableQuantity: number
   expiresAt: string | null
   alertAt: string | null
+  reminderDays?: number[]
+  isCustomAlert?: boolean
+  defaultDaysBefore?: number
+  effectiveAlertDate?: string | null
+  daysUntilAlert?: number | null
+  lastNotifiedAt?: string | null
   daysLeft: number | null
   status: 'EXPIRED' | 'EXPIRING_SOON' | 'NO_DATE'
 }
@@ -200,6 +206,13 @@ export const inventoryService = {
 
   async checkExpirations(): Promise<{ scanned: number; warningCount: number; expiredCount: number; checkedAt: string }> {
     return api.post('/inventory/expirations/check')
+  },
+
+  /**
+   * Modificar alerta o fecha de caducidad de un lote
+   */
+  async updateLotAlert(lotId: number, data: { alertAt?: string | null; daysBefore?: number; expiresAt?: string }): Promise<ExpirationLot> {
+    return api.patch<ExpirationLot>(`/inventory/lots/${lotId}/alert`, data)
   },
 
   /**

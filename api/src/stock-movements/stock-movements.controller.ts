@@ -200,7 +200,7 @@ export class StockMovementsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Resumen operativo de movimientos', description: 'Agrupa producción, ventas y mermas de los últimos días para el panel Operación.' })
   @ApiQuery({ name: 'branchSlug', required: false, description: 'Slug de sucursal; MANAGER puede consultar cualquiera de las dos' })
-  @ApiQuery({ name: 'days', required: false, description: 'Cantidad de días a mostrar, entre 1 y 14' })
+  @ApiQuery({ name: 'days', required: false, description: 'Cantidad de días a mostrar, entre 1 y 30' })
   async activity(@Req() req: any, @Query('branchSlug') branchSlug?: string, @Query('days') days?: string) {
     const scopedBranchSlug = await this.branchScope.resolveBranchSlug(req.user, branchSlug);
     return this.service.activity(scopedBranchSlug, days ? Number(days) : 7);

@@ -1,17 +1,25 @@
 {
-  "name": "Panadería Svetlana - Sistema de Gestión",
-  "short_name": "Svetlana",
-  "description": "Sistema de gestión integral para Panadería Svetlana",
+  "id": "/",
+  "name": "Panadería Svetlana",
+  "short_name": "Panadería",
+  "description": "Sistema de gestión integral y operaciones de Panadería Svetlana",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#1a1a2e",
-  "theme_color": "#e2725b",
+  "background_color": "#ffffff",
+  "theme_color": "#d97706",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/images/icon-panaderia.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/images/Panaderia_Svetlana_logo.jpeg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/Panaderia_Svetlana_logo.jpeg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
       "purpose": "any maskable"
     },
     {

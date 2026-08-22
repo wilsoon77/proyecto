@@ -245,7 +245,7 @@ Sí se recomienda *tool calling*: separa la interpretación del lenguaje natural
 | Tool | Fuente o adaptación | Preguntas que cubre |
 |---|---|---|
 | `lowRawMaterials` | `RawMaterialsService`, respetando `RawMaterial.minStock` por material. | “¿Qué materia prima está baja?”, “¿qué debo comprar?” |
-| `rawMaterialInventory` | Lectura controlada de existencias de insumos por nombre tolerante a acentos y sucursal. | “¿Cuánta azúcar queda en la sucursal Norte?” |
+| `rawMaterialInventory` | Lectura controlada de existencias de insumos por nombre tolerante a acentos y sucursal. | “¿Cuánta azúcar queda en la sucursal Central?” |
 | `productInventory` | Inventario físico y disponible, con resolución segura por nombre/slug y exclusión de lotes vencidos del disponible. | “¿Cuánto pan queda?”, “¿qué stock hay de tortas?” |
 | `expirationSummary` | Lotes `COMPRADO` con existencia, próximos a vencer o vencidos cuando se solicite. | “¿Qué productos vencen en los próximos 15 días?” |
 | `productionSummary` | Resumen agregado por día, sucursal y producto para una fecha o rango. | “¿Qué se produjo del 10 al 12 de agosto?” |

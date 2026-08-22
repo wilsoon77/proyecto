@@ -45,13 +45,13 @@ Estados válidos: `PENDING`, `CONFIRMED`, `PREPARING`, `READY`, `PICKED_UP` y `C
 ### Inventario y producción
 
 - `GET /inventory`, `GET /inventory/low-stock`
-- `GET /inventory/expirations`, `POST /inventory/expirations/check`
+- `GET /inventory/expirations`, `PATCH /inventory/lots/:id/alert`, `POST /inventory/expirations/check`
 - `POST /stock-movements`, `GET /stock-movements`
 - `POST /stock-movements/reconcile`, `GET /stock-movements/activity`
 - CRUD de `/recipes`, `/production` y `/raw-materials`
 - `POST /raw-materials/purchase` para compras de materia prima
 
-La caducidad solo aplica a lotes de productos de origen `COMPRADO` con control de caducidad activo. `Product.expirationAlertDays` admite varios días de anticipación; cada lote genera una alerta única por cada día configurado. Los lotes vencidos permanecen visibles para registrar una `MERMA`; no desaparecen por una tarea automática. `Inventory.quantity` conserva el total físico hasta esa merma, pero `available`, el catálogo, las reservas, las ventas y las transferencias excluyen los lotes vencidos.
+La caducidad solo aplica a lotes de productos de origen `COMPRADO` con control de caducidad activo. `Product.expirationAlertDays` admite varios días de anticipación; cada lote genera una alerta única por cada día configurado. `PATCH /inventory/lots/:id/alert` permite ajustar una alerta puntual, corregir la fecha de vencimiento o enviar `alertAt: null` para restaurar los recordatorios del producto; la fecha de alerta nunca puede quedar después del vencimiento. Los lotes vencidos permanecen visibles para registrar una `MERMA`; no desaparecen por una tarea automática. `Inventory.quantity` conserva el total físico hasta esa merma, pero `available`, el catálogo, las reservas, las ventas y las transferencias excluyen los lotes vencidos.
 
 ### Cierre diario
 

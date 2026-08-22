@@ -1,6 +1,7 @@
+import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 import bcryptjs from 'bcryptjs';
-const bcrypt = bcryptjs.default || bcryptjs;
+const bcrypt = (bcryptjs as any).default || bcryptjs;
 
 const prisma = new PrismaClient();
 
@@ -171,32 +172,7 @@ async function main() {
   }
 
   const central = await prisma.branch.findUnique({ where: { slug: 'central' } });
-  const norte = await prisma.branch.findUnique({ where: { slug: 'norte' } });
-  const pastelChocolate = await prisma.product.findUnique({ where: { slug: 'pastel-chocolate' } });
-
-  if (central && panFrances) {
-    await prisma.inventory.upsert({
-      where: { productId_branchId: { productId: panFrances.id, branchId: central.id } },
-      update: {},
-      create: { productId: panFrances.id, branchId: central.id, quantity: 100 },
-    });
-  }
-  if (norte && panFrances) {
-    await prisma.inventory.upsert({
-      where: { productId_branchId: { productId: panFrances.id, branchId: norte.id } },
-      update: {},
-      create: { productId: panFrances.id, branchId: norte.id, quantity: 40 },
-    });
-  }
-  if (central && pastelChocolate) {
-    await prisma.inventory.upsert({
-      where: { productId_branchId: { productId: pastelChocolate.id, branchId: central.id } },
-      update: {},
-      create: { productId: pastelChocolate.id, branchId: central.id, quantity: 10 },
-    });
-  }
-
-  console.log('✅ Seed complete');
+  const secundaria = await prisma.branch.findUnique({ where: { slug: 'secundaria' } });
 
   // ─────────────────────────────────────────────
   // MATERIA PRIMA (Raw Materials)
@@ -217,7 +193,7 @@ async function main() {
     });
   }
 
-  // Pan Dulce (necesario para la segunda receta)
+  // Pan Dulce
   const dulcesCat = await prisma.category.findUnique({ where: { slug: 'dulces' } });
   if (dulcesCat) {
     await prisma.product.upsert({
@@ -240,8 +216,59 @@ async function main() {
     });
   }
 
+  // Sembrar inventario para TODOS los productos en Central y Secundaria
+  const allProducts = await prisma.product.findMany();
+  const activeBranches = [central, secundaria].filter(Boolean) as Array<{ id: number; slug: string; name: string }>;
+
+  for (const prod of allProducts) {
+    for (const br of activeBranches) {
+      const isCentral = br.slug === 'central';
+      const baseQty = prod.slug === 'pan-frances' ? (isCentral ? 180 : 90)
+        : prod.slug === 'pan-dulce' ? (isCentral ? 120 : 60)
+        : prod.slug.includes('pastel') ? (isCentral ? 15 : 8)
+        : isCentral ? 50 : 25;
+
+      await prisma.inventory.upsert({
+        where: { productId_branchId: { productId: prod.id, branchId: br.id } },
+        // El seed debe ser idempotente y no sobrescribir conteos operativos.
+        update: {},
+        create: { productId: prod.id, branchId: br.id, quantity: baseQty, reserved: 0 },
+      });
+
+      // La caducidad solo aplica a productos COMPRADOS con control por lote.
+      // Se busca el lote de prueba antes de crearlo para que el seed sea repetible.
+      if (prod.origin === 'COMPRADO' && prod.tracksExpiration) {
+        const in5Days = new Date();
+        in5Days.setHours(0, 0, 0, 0);
+        in5Days.setDate(in5Days.getDate() + 5);
+        const nextDay = new Date(in5Days);
+        nextDay.setDate(nextDay.getDate() + 1);
+        const existingSeedLot = await prisma.inventoryLot.findFirst({
+          where: {
+            productId: prod.id,
+            branchId: br.id,
+            sourceType: 'COMPRA',
+            expiresAt: { gte: in5Days, lt: nextDay },
+          },
+        });
+        if (!existingSeedLot) {
+          await prisma.inventoryLot.create({
+            data: {
+              productId: prod.id,
+              branchId: br.id,
+              initialQuantity: baseQty,
+              availableQuantity: baseQty,
+              sourceType: 'COMPRA',
+              expiresAt: in5Days,
+            },
+          });
+        }
+      }
+    }
+  }
+
   // ─────────────────────────────────────────────
-  // INVENTARIO DE MATERIA PRIMA (Sucursal Central)
+  // INVENTARIO DE MATERIA PRIMA
   // ─────────────────────────────────────────────
   if (central) {
     const harina = await prisma.rawMaterial.findUnique({ where: { name: 'Harina' } });
@@ -251,11 +278,11 @@ async function main() {
     const azucar = await prisma.rawMaterial.findUnique({ where: { name: 'Azúcar' } });
 
     const rmInventory = [
-      { rawMaterialId: harina!.id, branchId: central.id, quantity: 500 },  // 500 LB
-      { rawMaterialId: levadura!.id, branchId: central.id, quantity: 20 }, // 20 LB
-      { rawMaterialId: sal!.id, branchId: central.id, quantity: 30 },       // 30 LB
-      { rawMaterialId: manteca!.id, branchId: central.id, quantity: 50 },   // 50 LB
-      { rawMaterialId: azucar!.id, branchId: central.id, quantity: 100 },   // 100 LB
+      { rawMaterialId: harina!.id, branchId: central.id, quantity: 450 },  // 450 LB
+      { rawMaterialId: levadura!.id, branchId: central.id, quantity: 3 },  // 3 LB (BAJA para disparar indicador)
+      { rawMaterialId: sal!.id, branchId: central.id, quantity: 25 },      // 25 LB
+      { rawMaterialId: manteca!.id, branchId: central.id, quantity: 40 },  // 40 LB
+      { rawMaterialId: azucar!.id, branchId: central.id, quantity: 80 },   // 80 LB
     ];
 
     for (const inv of rmInventory) {
@@ -266,12 +293,85 @@ async function main() {
       });
     }
 
+    if (secundaria) {
+      const rmInventorySec = [
+        { rawMaterialId: harina!.id, branchId: secundaria.id, quantity: 200 },
+        { rawMaterialId: levadura!.id, branchId: secundaria.id, quantity: 8 },
+        { rawMaterialId: sal!.id, branchId: secundaria.id, quantity: 15 },
+        { rawMaterialId: manteca!.id, branchId: secundaria.id, quantity: 20 },
+        { rawMaterialId: azucar!.id, branchId: secundaria.id, quantity: 40 },
+      ];
+      for (const inv of rmInventorySec) {
+        await prisma.rawMaterialInventory.upsert({
+          where: { rawMaterialId_branchId: { rawMaterialId: inv.rawMaterialId, branchId: inv.branchId } },
+          update: {},
+          create: inv,
+        });
+      }
+    }
+
+    // ─────────────────────────────────────────────
+    // MOVIMIENTOS OPERATIVOS DE LOS ÚLTIMOS 7 DÍAS
+    // ─────────────────────────────────────────────
+    const sampleProduct = panFrances || allProducts[0];
+    const adminUser = await prisma.user.findFirst({ where: { role: 'ADMIN' } });
+    if (sampleProduct) {
+      // Limpiar movimientos de prueba previos
+      await prisma.stockMovement.deleteMany({ where: { referenceId: 'SEED_OPERATIONAL' } });
+
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        d.setHours(10, 0, 0, 0);
+
+        const prodQty = 120 + (i * 15);
+        const soldQty = 95 + (i * 10);
+        const wasteQty = 3 + (i % 3);
+
+        await prisma.stockMovement.create({
+          data: {
+            productId: sampleProduct.id,
+            toBranchId: central.id,
+            type: 'PRODUCCION',
+            quantity: prodQty,
+            referenceId: 'SEED_OPERATIONAL',
+            note: 'Producción matutina',
+            createdAt: d,
+          },
+        });
+
+        await prisma.stockMovement.create({
+          data: {
+            productId: sampleProduct.id,
+            fromBranchId: central.id,
+            type: 'VENTA',
+            quantity: soldQty,
+            referenceId: 'SEED_OPERATIONAL',
+            note: 'Ventas en tienda',
+            createdAt: new Date(d.getTime() + 4 * 3600 * 1000),
+          },
+        });
+
+        await prisma.stockMovement.create({
+          data: {
+            productId: sampleProduct.id,
+            fromBranchId: central.id,
+            type: 'MERMA',
+            quantity: wasteQty,
+            referenceId: 'SEED_OPERATIONAL',
+            note: 'Merma por descarte',
+            createdAt: new Date(d.getTime() + 8 * 3600 * 1000),
+          },
+        });
+      }
+    }
+
     // ─────────────────────────────────────────────
     // RECETAS (Amasijos)
     // ─────────────────────────────────────────────
     if (panFrances && harina && levadura && sal && manteca) {
-      const recetaFrances = await prisma.recipe.upsert({
-        where: { id: 1 }, // Will create if not exists
+      await prisma.recipe.upsert({
+        where: { id: 1 },
         update: {},
         create: {
           name: 'Amasijo Estándar de Francés',
@@ -289,9 +389,42 @@ async function main() {
       });
     }
 
+    // Registro de producción de hoy para el indicador del dashboard.
+    // Se crea después de las recetas y solo una vez por día de seed.
+    if (adminUser && central) {
+      const receta = await prisma.recipe.findFirst({ orderBy: { id: 'asc' } });
+      if (receta) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const existingProduction = await prisma.productionLog.findFirst({
+          where: {
+            recipeId: receta.id,
+            branchId: central.id,
+            note: 'SEED: Producción del día',
+            createdAt: { gte: today, lt: tomorrow },
+          },
+        });
+        if (!existingProduction) {
+          await prisma.productionLog.create({
+            data: {
+              recipeId: receta.id,
+              branchId: central.id,
+              userId: adminUser.id,
+              traysProduced: 12,
+              unitsProduced: 432,
+              note: 'SEED: Producción del día',
+              createdAt: new Date(),
+            },
+          });
+        }
+      }
+    }
+
     const panDulce = await prisma.product.findUnique({ where: { slug: 'pan-dulce' } });
     if (panDulce && harina && levadura && azucar && manteca) {
-      const recetaDulce = await prisma.recipe.upsert({
+      await prisma.recipe.upsert({
         where: { id: 2 },
         update: {},
         create: {
@@ -482,10 +615,6 @@ async function main() {
     'inventory.raw_material_low',
     'inventory.expiration_warning',
   ];
-  await prisma.notificationConfig.deleteMany({
-    where: { key: { notIn: operationalNotificationKeys } },
-  });
-
   for (const config of notificationConfigs.filter((config) => operationalNotificationKeys.includes(config.key))) {
     await prisma.notificationConfig.upsert({
       where: { key: config.key },

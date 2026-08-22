@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ProductOrigin } from '@prisma/client';
 import { InventoryService } from './inventory.service.js';
 
@@ -23,7 +23,14 @@ function createMockPrisma() {
     },
     inventoryLot: {
       findMany: jest.fn().mockResolvedValue([]),
+      findUnique: jest.fn(),
+      update: jest.fn(),
     },
+    alertState: {
+      findMany: jest.fn().mockResolvedValue([]),
+      deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+    },
+    $transaction: jest.fn(async (callback: (tx: any) => Promise<unknown>) => callback(undefined)),
   } as any;
 }
 
@@ -210,6 +217,70 @@ describe('InventoryService', () => {
           where: { branchId: 1 },
         }),
       );
+    });
+  });
+
+  describe('updateLotAlert', () => {
+    const purchasedLot = {
+      id: 20,
+      branchId: 1,
+      sourceType: 'COMPRA',
+      initialQuantity: 20,
+      availableQuantity: 20,
+      expiresAt: new Date('2099-01-10T00:00:00.000Z'),
+      alertAt: new Date('2098-12-11T00:00:00.000Z'),
+      product: {
+        id: 10,
+        name: 'Jugo',
+        slug: 'jugo',
+        origin: ProductOrigin.COMPRADO,
+        tracksExpiration: true,
+        expirationAlertDays: [30, 15, 3],
+      },
+      branch: { id: 1, name: 'Central', slug: 'central' },
+    };
+
+    it('valida que solo se ajusten lotes de productos comprados', async () => {
+      mockPrisma.inventoryLot.findUnique.mockResolvedValue({
+        ...purchasedLot,
+        product: { ...purchasedLot.product, origin: ProductOrigin.PRODUCIDO },
+      });
+
+      await expect(service.updateLotAlert(20, { daysBefore: 15 })).rejects.toThrow(BadRequestException);
+      expect(mockPrisma.inventoryLot.update).not.toHaveBeenCalled();
+    });
+
+    it('rechaza una alerta posterior a la fecha de caducidad', async () => {
+      mockPrisma.inventoryLot.findUnique.mockResolvedValue(purchasedLot);
+
+      await expect(service.updateLotAlert(20, { alertAt: '2099-01-11' })).rejects.toThrow(BadRequestException);
+      expect(mockPrisma.inventoryLot.update).not.toHaveBeenCalled();
+    });
+
+    it('mantiene todos los recordatorios del producto al usar la primera referencia', async () => {
+      mockPrisma.inventoryLot.findUnique.mockResolvedValue(purchasedLot);
+      mockPrisma.$transaction.mockImplementation(async (callback: (tx: any) => Promise<unknown>) => {
+        const updated = {
+          ...purchasedLot,
+          product: purchasedLot.product,
+          branch: purchasedLot.branch,
+          alertAt: new Date('2098-12-11T00:00:00.000Z'),
+        };
+        mockPrisma.inventoryLot.update.mockResolvedValue(updated);
+        return callback(mockPrisma);
+      });
+
+      const result = await service.updateLotAlert(20, { daysBefore: 30 });
+
+      expect(result).toEqual(expect.objectContaining({
+        reminderDays: [30, 15, 3],
+        defaultDaysBefore: 30,
+        isCustomAlert: false,
+        effectiveAlertDate: '2098-12-11',
+      }));
+      expect(mockPrisma.alertState.deleteMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: expect.objectContaining({ resourceKey: { startsWith: 'lot:20:' } }),
+      }));
     });
   });
 });

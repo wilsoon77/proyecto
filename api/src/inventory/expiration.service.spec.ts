@@ -12,6 +12,7 @@ describe('ExpirationService', () => {
           branchId: 2,
           availableQuantity: 20,
           expiresAt: dateKeyToUtcDate(expiryKey),
+          alertAt: dateKeyToUtcDate(addDays(expiryKey, -30)),
           createdAt: new Date(),
           product: {
             id: 4,
@@ -37,5 +38,41 @@ describe('ExpirationService', () => {
     expect(notifications.sendExpirationIfNeeded).toHaveBeenCalledWith(expect.objectContaining({ resourceKey: 'lot:12:warning:30' }));
     expect(notifications.sendExpirationIfNeeded).toHaveBeenCalledWith(expect.objectContaining({ resourceKey: 'lot:12:warning:15' }));
     expect(notifications.sendExpirationIfNeeded).not.toHaveBeenCalledWith(expect.objectContaining({ resourceKey: 'lot:12:warning:3' }));
+  });
+
+  it('usa una única alerta cuando el lote tiene una fecha personalizada', async () => {
+    const expiryKey = addDays(todayBusinessDate(), 10);
+    const customAlertKey = todayBusinessDate();
+    const prisma = {
+      inventoryLot: {
+        findMany: jest.fn().mockResolvedValue([{
+          id: 13,
+          branchId: 2,
+          availableQuantity: 20,
+          expiresAt: dateKeyToUtcDate(expiryKey),
+          alertAt: dateKeyToUtcDate(customAlertKey),
+          createdAt: new Date(),
+          product: {
+            id: 4,
+            name: 'Jugo',
+            slug: 'jugo',
+            origin: ProductOrigin.COMPRADO,
+            expirationAlertDays: [30, 15, 3],
+          },
+          branch: { id: 2, name: 'Central', slug: 'central' },
+        }]),
+      },
+    };
+    const notifications = {
+      sendExpirationIfNeeded: jest.fn().mockResolvedValue(true),
+      resolveExpirationAlertsForLot: jest.fn(),
+    };
+    const service = new ExpirationService(prisma as never, notifications as never);
+
+    const result = await service.scanAndNotify();
+
+    expect(result.warningCount).toBe(1);
+    expect(notifications.sendExpirationIfNeeded).toHaveBeenCalledWith(expect.objectContaining({ resourceKey: 'lot:13:custom' }));
+    expect(notifications.sendExpirationIfNeeded).not.toHaveBeenCalledWith(expect.objectContaining({ resourceKey: 'lot:13:warning:30' }));
   });
 });

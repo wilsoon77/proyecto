@@ -3,22 +3,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { ProductOrigin } from '@prisma/client';
 import { addDays, dateKeyToUtcDate, todayBusinessDate } from '../common/time/business-date.js';
-
-const DEFAULT_EXPIRATION_ALERT_DAYS = [3] as const;
-
-function normalizeExpirationAlertDays(value: unknown): number[] {
-  const values = Array.isArray(value)
-    ? value
-    : value === undefined || value === null
-      ? [...DEFAULT_EXPIRATION_ALERT_DAYS]
-      : [value];
-  const normalized = [...new Set(values
-    .map((item) => Number(item))
-    .filter((item) => Number.isInteger(item) && item >= 0 && item <= 3650))];
-  return normalized.length > 0
-    ? normalized.sort((a, b) => b - a)
-    : [...DEFAULT_EXPIRATION_ALERT_DAYS];
-}
+import { isCustomExpirationAlert, normalizeExpirationAlertDays } from './expiration-alerts.js';
 
 @Injectable()
 export class ExpirationService {
@@ -63,29 +48,60 @@ export class ExpirationService {
       }
 
       const reminderDays = normalizeExpirationAlertDays(lot.product.expirationAlertDays);
-      for (const daysBefore of reminderDays) {
-        const reminderKey = addDays(expiresAtKey, -daysBefore);
-        const reminderAt = dateKeyToUtcDate(reminderKey);
-        if (today.getTime() < reminderAt.getTime()) continue;
+      const hasCustomAlert = isCustomExpirationAlert(lot.expiresAt, lot.alertAt, reminderDays);
 
-        const notified = await this.notifications.sendExpirationIfNeeded({
-          branchId: lot.branchId,
-          resourceKey: `lot:${lot.id}:warning:${daysBefore}`,
-          configKey: 'inventory.expiration_warning',
-          placeholders: {
-            productName: lot.product.name,
-            quantity: lot.availableQuantity,
-            expiresAt: expiresAtKey,
-            daysLeft: Math.max(0, daysLeft),
-            daysBefore,
-            branchName: lot.branch.name,
+      // alertAt puede ser la fecha de referencia calculada al crear el lote.
+      // Solo una fecha distinta a esa referencia reemplaza los recordatorios del producto.
+      if (hasCustomAlert && lot.alertAt) {
+        const customAlertKey = lot.alertAt.toISOString().slice(0, 10);
+        const customAlertAt = dateKeyToUtcDate(customAlertKey);
+        if (today.getTime() >= customAlertAt.getTime()) {
+          const daysBefore = Math.max(0, Math.round((expiresAt.getTime() - customAlertAt.getTime()) / 86_400_000));
+          const notified = await this.notifications.sendExpirationIfNeeded({
             branchId: lot.branchId,
-          },
-          url: `/admin/inventario/caducidades?lote=${lot.id}`,
-        });
+            resourceKey: `lot:${lot.id}:custom`,
+            configKey: 'inventory.expiration_warning',
+            placeholders: {
+              productName: lot.product.name,
+              quantity: lot.availableQuantity,
+              expiresAt: expiresAtKey,
+              daysLeft: Math.max(0, daysLeft),
+              daysBefore,
+              branchName: lot.branch.name,
+              branchId: lot.branchId,
+            },
+            url: `/admin/inventario/caducidades?lote=${lot.id}`,
+          });
 
-        if (notified) {
-          warningCount += 1;
+          if (notified) {
+            warningCount += 1;
+          }
+        }
+      } else {
+        for (const daysBefore of reminderDays) {
+          const reminderKey = addDays(expiresAtKey, -daysBefore);
+          const reminderAt = dateKeyToUtcDate(reminderKey);
+          if (today.getTime() < reminderAt.getTime()) continue;
+
+          const notified = await this.notifications.sendExpirationIfNeeded({
+            branchId: lot.branchId,
+            resourceKey: `lot:${lot.id}:warning:${daysBefore}`,
+            configKey: 'inventory.expiration_warning',
+            placeholders: {
+              productName: lot.product.name,
+              quantity: lot.availableQuantity,
+              expiresAt: expiresAtKey,
+              daysLeft: Math.max(0, daysLeft),
+              daysBefore,
+              branchName: lot.branch.name,
+              branchId: lot.branchId,
+            },
+            url: `/admin/inventario/caducidades?lote=${lot.id}`,
+          });
+
+          if (notified) {
+            warningCount += 1;
+          }
         }
       }
     }

@@ -315,7 +315,7 @@ export class StockMovementsService {
   }
 
   async activity(branchSlug?: string, days = 7) {
-    const normalizedDays = Math.max(1, Math.min(14, Math.floor(days) || 7));
+    const normalizedDays = Math.max(1, Math.min(30, Math.floor(days) || 7));
     const to = todayBusinessDate();
     const from = addDays(to, 1 - normalizedDays);
     const branch = branchSlug

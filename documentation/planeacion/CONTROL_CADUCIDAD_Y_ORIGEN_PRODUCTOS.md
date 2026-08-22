@@ -18,7 +18,7 @@ En `Productos > Nuevo producto` o al editar:
 
 La fecha se guarda en el lote inicial, no en la ficha del producto, porque cada compra posterior puede tener una fecha de vencimiento diferente.
 
-Para cada lote se calculan los recordatorios automáticamente: `fecha de caducidad - cada día configurado`. `InventoryLot.alertAt` conserva la primera fecha que se mostrará como referencia; las demás fechas se evalúan en el escáner diario.
+Para cada lote se calculan los recordatorios automáticamente: `fecha de caducidad - cada día configurado`. `InventoryLot.alertAt` conserva la primera fecha como referencia; las demás fechas se evalúan en el escáner diario. Si se ajusta una fecha distinta para un lote, esa fecha reemplaza los recordatorios del producto para ese lote; al enviar `alertAt: null` se restauran los recordatorios configurados en la ficha del producto.
 
 ## Registro operativo
 

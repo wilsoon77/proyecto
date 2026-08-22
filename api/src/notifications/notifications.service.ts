@@ -257,7 +257,7 @@ export class NotificationsService {
       promises.push(this.sendWebPush(payload, userId));
     }
     if (activeChannels.includes('TELEGRAM')) {
-      promises.push(this.telegram.sendToUser(userId, formattedTitle, formattedMessage));
+      promises.push(this.telegram.sendToUser(userId, formattedTitle, formattedMessage, configKey));
     }
 
     const results = await Promise.allSettled(promises);

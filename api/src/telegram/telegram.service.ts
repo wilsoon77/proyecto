@@ -107,7 +107,7 @@ export class TelegramService implements OnModuleInit {
             const link = await this.links.consumeToken(token, chatId, username);
             await this.delivery.sendToChat(
               chatId,
-              `¡Cuenta vinculada exitosamente, ${link.firstName}! Ya puedes consultarme sobre inventarios, ventas, producción o cierres de la panadería.\n\nEscribe /ayuda para ver ejemplos de preguntas.`,
+              `¡Cuenta vinculada exitosamente, ${link.firstName}! Ya puedes consultarme sobre inventario, materias primas, productos próximos a vencer, producción y cierres del día.\n\nEscribe /ayuda para ver ejemplos de preguntas.`,
             );
           } catch (error) {
             let message = 'El enlace de vinculación no es válido o ya expiró. Genera uno nuevo desde la aplicación.';
@@ -159,7 +159,10 @@ export class TelegramService implements OnModuleInit {
       }
 
       if (command === '/ayuda') {
-        await this.delivery.sendToChat(chatId, 'Puedes preguntarme, por ejemplo:\n• ¿Cuánta azúcar queda?\n• ¿Qué materia prima está baja en la sucursal Norte?\n• ¿Qué productos vencen en los próximos 15 días?\n• ¿Qué se produjo del 10/08/2026 al 12/08/2026?\n• ¿Cómo cerró la sucursal Central ayer?\n\nTambién puedes usar “hoy”, “ayer”, “esta semana” o indicar una sucursal.');
+        await this.delivery.sendToChat(
+          chatId,
+          'Puedes preguntarme, por ejemplo:\n• ¿Cuánta azúcar queda?\n• ¿Qué materia prima está baja en una sucursal específica?\n• ¿Qué productos vencen en los próximos 15 días?\n• ¿Qué se produjo del 10/08/2026 al 12/08/2026?\n• ¿Cómo cerró la sucursal Central ayer?\n\nTambién puedes usar “hoy”, “ayer”, “esta semana” o indicar una sucursal.',
+        );
         return;
       }
 

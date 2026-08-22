@@ -6,26 +6,11 @@ import {
   parseDateOnly,
   todayBusinessDate,
 } from '../common/time/business-date.js';
+import { normalizeExpirationAlertDays } from './expiration-alerts.js';
 
 type Transaction = Prisma.TransactionClient;
 
 type LotDateValue = string | Date | undefined;
-
-const DEFAULT_EXPIRATION_ALERT_DAYS = [3] as const;
-
-function normalizeExpirationAlertDays(value: unknown): number[] {
-  const values = Array.isArray(value)
-    ? value
-    : value === undefined || value === null
-      ? [...DEFAULT_EXPIRATION_ALERT_DAYS]
-      : [value];
-  const normalized = [...new Set(values
-    .map((item) => Number(item))
-    .filter((item) => Number.isInteger(item) && item >= 0 && item <= 3650))];
-  return normalized.length > 0
-    ? normalized.sort((a, b) => b - a)
-    : [...DEFAULT_EXPIRATION_ALERT_DAYS];
-}
 
 type CreateInboundLotOptions = {
   productId: number;

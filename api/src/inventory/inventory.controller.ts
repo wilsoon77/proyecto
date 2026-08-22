@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, NotFoundException, Param, ParseIntPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiQuery, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/roles.guard.js';
@@ -6,6 +6,9 @@ import { Roles } from '../auth/roles.decorator.js';
 import { InventoryService } from './inventory.service.js';
 import { BranchScopeService } from '../branch-scope/branch-scope.service.js';
 import { ExpirationService } from './expiration.service.js';
+import { UpdateLotAlertDto } from './dto/update-lot-alert.dto.js';
+import { AuditService } from '../audit/audit.service.js';
+import { getClientIp } from '../common/utils/audit.util.js';
 
 /**
  * InventoryController — Solo maneja HTTP, delega a InventoryService.
@@ -22,6 +25,7 @@ export class InventoryController {
     private readonly inventoryService: InventoryService,
     private readonly branchScope: BranchScopeService,
     private readonly expirationService: ExpirationService,
+    private readonly auditService: AuditService,
   ) {}
 
   @Get()
@@ -76,12 +80,73 @@ export class InventoryController {
     );
   }
 
+  @Patch('lots/:id/alert')
+  @ApiOperation({ summary: 'Ajustar alerta de caducidad de lote', description: 'Solo aplica a productos COMPRADOS con control por lote. Actualiza la fecha de alerta, los días de anticipación o la fecha de vencimiento; enviar alertAt: null restaura los recordatorios configurados en el producto.' })
+  async updateLotAlert(
+    @Req() req: any,
+    @Param('id', ParseIntPipe) lotId: number,
+    @Body() dto: UpdateLotAlertDto,
+  ) {
+    const lot = await this.inventoryService.getLotById(lotId);
+    if (!lot) throw new NotFoundException('Lote no encontrado');
+    await this.branchScope.assertBranchAccess(req.user, lot.branchId);
+
+    const updated = await this.inventoryService.updateLotAlert(lotId, dto);
+
+    // Registro en auditoría
+    const userId = req.user?.userId || req.user?.id || req.user?.sub;
+    const userName = await this.auditService.getUserName(userId);
+    await this.auditService.log({
+      userId,
+      userName,
+      action: 'UPDATE',
+      entity: 'InventoryLot',
+      entityId: String(lotId),
+      entityName: `${lot.product.name} (Lote #${lotId})`,
+      details: {
+        actionType: 'AJUSTAR_ALERTA_CADUCIDAD',
+        branch: lot.branch.name,
+        previousAlertAt: lot.alertAt,
+        newAlertAt: updated.alertAt,
+        previousExpiresAt: lot.expiresAt,
+        newExpiresAt: updated.expiresAt,
+        daysBefore: dto.daysBefore,
+        effectiveAlertDate: updated.effectiveAlertDate,
+      },
+      ipAddress: getClientIp(req),
+      userAgent: req.headers?.['user-agent'],
+    });
+
+    return updated;
+  }
+
   @Post('expirations/check')
   @ApiOperation({ summary: 'Revisar caducidades ahora', description: 'Ejecuta manualmente la revisión de alertas de caducidad.' })
   async checkExpirations(@Req() req: any) {
     // Un MANAGER solo puede disparar la revisión de su sucursal; ADMIN puede
     // revisar todas, igual que la tarea programada diaria.
     const scopedBranchId = await this.branchScope.resolveBranchId(req.user);
-    return this.expirationService.scanAndNotify(scopedBranchId);
+    const result = await this.expirationService.scanAndNotify(scopedBranchId);
+
+    // Registro en auditoría
+    const userId = req.user?.userId || req.user?.id || req.user?.sub;
+    const userName = await this.auditService.getUserName(userId);
+    await this.auditService.log({
+      userId,
+      userName,
+      action: 'EXECUTE',
+      entity: 'InventoryExpiration',
+      entityName: 'Revisión manual de caducidades',
+      details: {
+        scannedLots: result.scanned,
+        warningCount: result.warningCount,
+        expiredCount: result.expiredCount,
+        branchId: scopedBranchId,
+      },
+      ipAddress: getClientIp(req),
+      userAgent: req.headers?.['user-agent'],
+    });
+
+    return result;
   }
 }

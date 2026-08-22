@@ -1,6 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { ProductOrigin } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { addDays, dateKeyToUtcDate, todayBusinessDate } from '../common/time/business-date.js';
+import {
+  getDefaultExpirationAlertDate,
+  isCustomExpirationAlert,
+  normalizeExpirationAlertDays,
+} from './expiration-alerts.js';
 
 type LotAvailability = {
   sellable: number;
@@ -208,6 +214,144 @@ export class InventoryService {
   }
 
   /**
+   * Obtener lote por ID con relaciones
+   */
+  async getLotById(id: number) {
+    return this.prisma.inventoryLot.findUnique({
+      where: { id },
+      include: {
+        product: { select: { id: true, name: true, slug: true, origin: true, tracksExpiration: true, expirationAlertDays: true } },
+        branch: { select: { id: true, name: true, slug: true } },
+      },
+    });
+  }
+
+  /**
+   * Modificar la alerta o fecha de caducidad de un lote específico
+   */
+  async updateLotAlert(
+    lotId: number,
+    dto: { alertAt?: string | null; daysBefore?: number; expiresAt?: string },
+  ) {
+    const lot = await this.prisma.inventoryLot.findUnique({
+      where: { id: lotId },
+      include: { product: true },
+    });
+    if (!lot) throw new NotFoundException('Lote no encontrado');
+
+    if (lot.product.origin !== ProductOrigin.COMPRADO || !lot.product.tracksExpiration) {
+      throw new BadRequestException('La alerta de caducidad solo aplica a productos COMPRADOS con control por lote');
+    }
+
+    if (dto.alertAt === undefined && dto.daysBefore === undefined && dto.expiresAt === undefined) {
+      throw new BadRequestException('Debes indicar una alerta o una fecha de caducidad para actualizar el lote');
+    }
+
+    const parseDate = (value: string, label: string) => {
+      try {
+        return dateKeyToUtcDate(value);
+      } catch {
+        throw new BadRequestException(`${label} debe usar el formato YYYY-MM-DD y ser una fecha válida`);
+      }
+    };
+
+    const reminderDays = normalizeExpirationAlertDays(lot.product.expirationAlertDays);
+    const currentIsCustomAlert = isCustomExpirationAlert(lot.expiresAt, lot.alertAt, reminderDays);
+    const updateData: { alertAt?: Date | null; expiresAt?: Date } = {};
+
+    if (dto.expiresAt !== undefined) {
+      updateData.expiresAt = parseDate(dto.expiresAt, 'La fecha de caducidad');
+    }
+
+    const effectiveExpiresAt = updateData.expiresAt ?? lot.expiresAt;
+    if (!effectiveExpiresAt) {
+      throw new BadRequestException('El lote necesita una fecha de caducidad antes de configurar la alerta');
+    }
+
+    if (dto.daysBefore !== undefined) {
+      if (!Number.isInteger(dto.daysBefore) || dto.daysBefore < 0 || dto.daysBefore > 90) {
+        throw new BadRequestException('Los días de anticipación deben ser un entero entre 0 y 90');
+      }
+      const expiresKey = effectiveExpiresAt.toISOString().slice(0, 10);
+      updateData.alertAt = dateKeyToUtcDate(addDays(expiresKey, -dto.daysBefore));
+    } else if (dto.alertAt !== undefined) {
+      updateData.alertAt = dto.alertAt === null
+        ? null
+        : parseDate(dto.alertAt, 'La fecha de alerta');
+    } else if (dto.expiresAt !== undefined) {
+      // Al corregir solo el vencimiento, conserva una fecha personalizada;
+      // de lo contrario, recalcula la referencia con la configuración vigente.
+      updateData.alertAt = currentIsCustomAlert && lot.alertAt
+        ? lot.alertAt
+        : dateKeyToUtcDate(getDefaultExpirationAlertDate(effectiveExpiresAt, reminderDays)!);
+    }
+
+    if (updateData.alertAt && updateData.alertAt.getTime() > effectiveExpiresAt.getTime()) {
+      throw new BadRequestException('La fecha de alerta no puede ser posterior a la fecha de caducidad');
+    }
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const updatedLot = await tx.inventoryLot.update({
+        where: { id: lotId },
+        data: updateData,
+        include: {
+          product: { select: { id: true, name: true, slug: true, origin: true, tracksExpiration: true, expirationAlertDays: true } },
+          branch: { select: { id: true, name: true, slug: true } },
+        },
+      });
+
+      // Resetear estados de alertas previos para que la nueva fecha dispare notificación oportunamente.
+      await tx.alertState.deleteMany({
+        where: {
+          branchId: updatedLot.branchId,
+          alertType: 'PRODUCT_EXPIRY',
+          resourceKey: { startsWith: `lot:${lotId}:` },
+        },
+      });
+
+      return updatedLot;
+    });
+
+    const todayKey = todayBusinessDate();
+    const today = dateKeyToUtcDate(todayKey);
+    const expiresAt = updated.expiresAt?.toISOString().slice(0, 10) ?? null;
+    const daysLeft = expiresAt
+      ? Math.round((dateKeyToUtcDate(expiresAt).getTime() - today.getTime()) / 86_400_000)
+      : null;
+    const updatedReminderDays = normalizeExpirationAlertDays(updated.product.expirationAlertDays);
+    const isCustomAlert = isCustomExpirationAlert(updated.expiresAt, updated.alertAt, updatedReminderDays);
+    const defaultDaysBefore = updatedReminderDays[0];
+    const effectiveAlertDate = isCustomAlert && updated.alertAt
+      ? updated.alertAt.toISOString().slice(0, 10)
+      : expiresAt
+        ? getDefaultExpirationAlertDate(expiresAt, updatedReminderDays)
+        : null;
+
+    const daysUntilAlert = effectiveAlertDate
+      ? Math.round((dateKeyToUtcDate(effectiveAlertDate).getTime() - today.getTime()) / 86_400_000)
+      : null;
+
+    return {
+      id: updated.id,
+      product: updated.product,
+      branch: updated.branch,
+      sourceType: updated.sourceType,
+      initialQuantity: updated.initialQuantity,
+      availableQuantity: updated.availableQuantity,
+      expiresAt,
+      alertAt: updated.alertAt?.toISOString().slice(0, 10) ?? null,
+      reminderDays: updatedReminderDays,
+      isCustomAlert,
+      defaultDaysBefore,
+      effectiveAlertDate,
+      daysUntilAlert,
+      lastNotifiedAt: null,
+      daysLeft,
+      status: expiresAt === null ? 'NO_DATE' : daysLeft !== null && daysLeft < 0 ? 'EXPIRED' : 'EXPIRING_SOON',
+    };
+  }
+
+  /**
    * Lists active lots that are expired, close to expiration, or still lack a
    * date. The latter is useful during the migration from aggregate inventory.
    */
@@ -245,17 +389,65 @@ export class InventoryService {
     const lots = await this.prisma.inventoryLot.findMany({
       where: baseWhere,
       include: {
-        product: { select: { id: true, name: true, slug: true, origin: true } },
+        product: { select: { id: true, name: true, slug: true, origin: true, expirationAlertDays: true } },
         branch: { select: { id: true, name: true, slug: true } },
       },
       orderBy: [{ expiresAt: 'asc' }, { createdAt: 'asc' }],
     });
+
+    const lotIds = lots.map((l) => l.id);
+    const alertResourceKeys = lots.flatMap((lot) => {
+      const reminderDays = normalizeExpirationAlertDays(lot.product.expirationAlertDays);
+      const keys = reminderDays.map((daysBefore) => `lot:${lot.id}:warning:${daysBefore}`);
+      if (isCustomExpirationAlert(lot.expiresAt, lot.alertAt, reminderDays)) {
+        keys.push(`lot:${lot.id}:custom`);
+      }
+      return keys;
+    });
+    const alertStates = lotIds.length > 0
+      ? await this.prisma.alertState.findMany({
+          where: {
+            alertType: 'PRODUCT_EXPIRY',
+            resourceKey: { in: alertResourceKeys },
+          },
+          select: { resourceKey: true, lastNotifiedAt: true, active: true },
+        })
+      : [];
+
+    const alertStateMap = new Map<number, string>();
+    for (const state of alertStates) {
+      const match = state.resourceKey.match(/^lot:(\d+):/);
+      if (match && match[1]) {
+        const id = Number(match[1]);
+        if (state.lastNotifiedAt) {
+          const current = alertStateMap.get(id);
+          const candidate = state.lastNotifiedAt.toISOString();
+          if (!current || candidate > current) alertStateMap.set(id, candidate);
+        }
+      }
+    }
 
     const data = lots.map((lot) => {
       const expiresAt = lot.expiresAt?.toISOString().slice(0, 10) ?? null;
       const daysLeft = expiresAt
         ? Math.round((dateKeyToUtcDate(expiresAt).getTime() - today.getTime()) / 86_400_000)
         : null;
+
+      const reminderDays = normalizeExpirationAlertDays(lot.product.expirationAlertDays);
+      const isCustomAlert = isCustomExpirationAlert(lot.expiresAt, lot.alertAt, reminderDays);
+      const defaultDaysBefore = reminderDays[0];
+      const effectiveAlertDate = isCustomAlert && lot.alertAt
+        ? lot.alertAt.toISOString().slice(0, 10)
+        : expiresAt
+          ? getDefaultExpirationAlertDate(expiresAt, reminderDays)
+          : null;
+
+      const daysUntilAlert = effectiveAlertDate
+        ? Math.round((dateKeyToUtcDate(effectiveAlertDate).getTime() - today.getTime()) / 86_400_000)
+        : null;
+
+      const lastNotifiedAt = alertStateMap.get(lot.id) ?? null;
+
       return {
         id: lot.id,
         product: lot.product,
@@ -265,6 +457,12 @@ export class InventoryService {
         availableQuantity: lot.availableQuantity,
         expiresAt,
         alertAt: lot.alertAt?.toISOString().slice(0, 10) ?? null,
+        reminderDays,
+        isCustomAlert,
+        defaultDaysBefore,
+        effectiveAlertDate,
+        daysUntilAlert,
+        lastNotifiedAt,
         daysLeft,
         status: expiresAt === null ? 'NO_DATE' : daysLeft !== null && daysLeft < 0 ? 'EXPIRED' : 'EXPIRING_SOON',
       };

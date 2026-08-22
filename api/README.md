@@ -115,6 +115,7 @@ El pedido se recoge en sucursal y el pago se maneja únicamente como `EFECTIVO` 
 - `GET /inventory` — Inventario con filtros por sucursal
 - `GET /inventory/low-stock` — Productos con stock bajo
 - `GET /inventory/expirations` — Lotes próximos a vencer, vencidos o sin fecha
+- `PATCH /inventory/lots/:id/alert` — Ajustar alerta, fecha de vencimiento o restaurar recordatorios del producto
 - `POST /inventory/expirations/check` — Ejecutar revisión de caducidades
 - `POST /stock-movements` — Registrar movimiento
 - `GET /stock-movements` — Historial de movimientos
@@ -136,7 +137,7 @@ En productos `COMPRADO` con caducidad, `available` representa únicamente unidad
 - `POST /telegram/link-session` — Generar enlaces seguros para vincular el asistente de Telegram desde móvil o navegador
 - El botón móvil intenta abrir la aplicación con `tg://resolve`; si no está disponible, usa `https://t.me`. En ambos casos el usuario debe pulsar **Iniciar** en el bot para que Telegram envíe el `/start` de vinculación.
 - Telegram solo consulta inventario de producto terminado, materias primas, productos próximos a vencer, producción y cierres; producción y cierres admiten un día o rango de fechas, y no consulta ventas/pedidos ni ejecuta cambios.
-- Las consultas frecuentes se enrutan de forma determinista para resolver nombres como “azúcar” y frases como “sucursal Norte”; el LLM queda como respaldo para preguntas abiertas.
+- Las consultas frecuentes se enrutan de forma determinista para resolver nombres como “azúcar” y filtros por cualquiera de las dos sucursales; el LLM queda como respaldo para preguntas abiertas.
 - `GET /stock-movements/activity` — Actividad resumida para el panel Operación
 
 ### Health & Metrics

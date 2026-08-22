@@ -27,8 +27,23 @@ describe('Health and Metrics (e2e)', () => {
     expect(res.body).toHaveProperty('uptime');
   });
 
+  it('/health/live (GET) should respond with ok for api liveness', async () => {
+    const res = await request(app.getHttpServer()).get('/health/live');
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('status', 'ok');
+    expect(res.body).toHaveProperty('service', 'api');
+    expect(res.body).toHaveProperty('uptime');
+  });
+
+  it('/health/db (GET) should respond with ok for database health', async () => {
+    const res = await request(app.getHttpServer()).get('/health/db');
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('status', 'ok');
+    expect(res.body).toHaveProperty('database');
+  });
+
   it('/metrics (GET) should require authentication', async () => {
     const res = await request(app.getHttpServer()).get('/metrics');
     expect(res.status).toBe(401);
   });
-});
+});

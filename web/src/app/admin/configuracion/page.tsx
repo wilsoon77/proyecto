@@ -67,13 +67,14 @@ interface AppSettings {
   lowStockThreshold: number
   // Operación
   acceptOrders: boolean
+  catalogOnly: boolean
   maintenanceMode: boolean
   operatingHours: string
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
   storeName: "Panadería Artesanal",
-  storeDescription: "Los mejores panes y pasteles de la ciudad",
+  storeDescription: "El mejor pan fresco y tradicional de la ciudad",
   currency: "GTQ",
   timezone: "America/Guatemala",
   minOrderAmount: 15,
@@ -83,6 +84,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   lowStockAlerts: true,
   lowStockThreshold: 10,
   acceptOrders: true,
+  catalogOnly: false,
   maintenanceMode: false,
   operatingHours: "Lunes a Sábado: 7:00 AM - 8:00 PM",
 }
@@ -209,6 +211,9 @@ export default function ConfiguracionPage() {
           case 'orders.accept_orders':
             newSettings.acceptOrders = cfg.value === true || cfg.value === 'true'
             break
+          case 'orders.catalog_only':
+            newSettings.catalogOnly = cfg.value === true || cfg.value === 'true'
+            break
           case 'operations.maintenance_mode':
             newSettings.maintenanceMode = cfg.value === true || cfg.value === 'true'
             break
@@ -247,6 +252,7 @@ export default function ConfiguracionPage() {
         systemConfigService.update('orders.min_amount', settings.minOrderAmount),
         systemConfigService.update('orders.max_items', settings.maxOrderItems),
         systemConfigService.update('orders.accept_orders', settings.acceptOrders),
+        systemConfigService.update('orders.catalog_only', settings.catalogOnly),
         systemConfigService.update('operations.maintenance_mode', settings.maintenanceMode),
       ]
       
@@ -369,10 +375,10 @@ export default function ConfiguracionPage() {
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Pedidos</span>
                 <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full ${
-                  settings.acceptOrders ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
+                  settings.acceptOrders && !settings.catalogOnly ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
                 }`}>
-                  {settings.acceptOrders ? <Check className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
-                  {settings.acceptOrders ? 'Activo' : 'Pausado'}
+                  {settings.acceptOrders && !settings.catalogOnly ? <Check className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
+                  {settings.catalogOnly ? 'Solo catálogo' : settings.acceptOrders ? 'Activo' : 'Pausado'}
                 </span>
               </div>
               <div className="flex items-center justify-between">
@@ -488,6 +494,22 @@ export default function ConfiguracionPage() {
                         type="checkbox"
                         checked={settings.acceptOrders}
                         onChange={(e) => updateSetting("acceptOrders", e.target.checked)}
+                        className="w-5 h-5 text-primary rounded focus:ring-primary"
+                      />
+                    </label>
+
+                    <label className="flex items-center justify-between p-4 bg-cream rounded-lg cursor-pointer hover:bg-muted">
+                      <div className="flex items-center gap-3">
+                        <ShoppingCart className="h-5 w-5 text-primary" />
+                        <div>
+                          <p className="font-medium text-foreground">Catálogo solo informativo</p>
+                          <p className="text-sm text-muted-foreground">Muestra productos y precios, pero oculta la compra y bloquea nuevas reservas</p>
+                        </div>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={settings.catalogOnly}
+                        onChange={(e) => updateSetting("catalogOnly", e.target.checked)}
                         className="w-5 h-5 text-primary rounded focus:ring-primary"
                       />
                     </label>

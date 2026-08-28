@@ -1,8 +1,8 @@
-"use client"
+﻿"use client"
 
 import { useState } from "react"
 import Image from "next/image"
-import { ImageOff } from "lucide-react"
+import { Wheat, Cake, Cookie, Coffee, Sparkles } from "lucide-react"
 
 interface ProductImageProps {
   src?: string | null
@@ -16,29 +16,19 @@ interface ProductImageProps {
   priority?: boolean
 }
 
-// Emoji fallback basado en categoría
-function getCategoryEmoji(category?: string): string {
-  if (!category) return '🥐'
-  const categoryMap: Record<string, string> = {
-    pan: '🥖',
-    panes: '🥖',
-    pasteles: '🎂',
-    pastel: '🎂',
-    galletas: '🍪',
-    galleta: '🍪',
-    dulces: '🍬',
-    dulce: '🍬',
-    bebidas: '☕',
-    bebida: '☕',
-    postres: '🍰',
-    postre: '🍰',
-  }
-  return categoryMap[category.toLowerCase()] || '🥐'
+function getCategoryIcon(category?: string) {
+  if (!category) return Wheat
+  const cat = category.toLowerCase()
+  if (cat.includes('pan')) return Wheat
+  if (cat.includes('pastel') || cat.includes('postre')) return Cake
+  if (cat.includes('galleta') || cat.includes('dulce')) return Cookie
+  if (cat.includes('bebida') || cat.includes('caf')) return Coffee
+  return Sparkles
 }
 
 /**
  * Componente de imagen para productos con manejo automático de errores
- * y fallback visual cuando la imagen no está disponible.
+ * y fallback visual usando iconos SVG limpios.
  */
 export function ProductImage({ 
   src, 
@@ -53,15 +43,15 @@ export function ProductImage({
 }: ProductImageProps) {
   const [hasError, setHasError] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const CategoryIcon = getCategoryIcon(category)
 
-  // Si no hay src o hubo error, mostrar fallback
   if (!src || hasError) {
     return (
       <div 
-        className={`flex items-center justify-center bg-muted ${className}`}
+        className={`flex items-center justify-center bg-muted/40 text-primary ${className}`}
         style={!fill ? { width, height } : undefined}
       >
-        <span className="text-4xl">{getCategoryEmoji(category)}</span>
+        <CategoryIcon className="h-8 w-8 stroke-[1.7]" />
       </div>
     )
   }
@@ -106,20 +96,21 @@ export function ProductThumbnail({
   size?: number
 }) {
   const [hasError, setHasError] = useState(false)
+  const CategoryIcon = getCategoryIcon(category)
 
   if (!src || hasError) {
     return (
       <div 
-        className="flex items-center justify-center bg-muted rounded-lg"
+        className="flex items-center justify-center bg-muted/40 text-primary rounded-xl"
         style={{ width: size, height: size }}
       >
-        <span className="text-2xl">{getCategoryEmoji(category)}</span>
+        <CategoryIcon className="h-5 w-5 stroke-[1.7]" />
       </div>
     )
   }
 
   return (
-    <div className="relative rounded-lg overflow-hidden" style={{ width: size, height: size }}>
+    <div className="relative rounded-xl overflow-hidden" style={{ width: size, height: size }}>
       <Image
         src={src}
         alt={alt}

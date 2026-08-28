@@ -24,7 +24,7 @@ self.addEventListener('push', function (event) {
     const origin = self.location.origin;
     
     // Icono principal y badge con URL absoluta para evitar fallback de Android
-    const iconUrl = data.icon || `${origin}/images/Panaderia_Svetlana_logo.jpeg`;
+    const iconUrl = data.icon || `${origin}/images/icon-panaderia.svg`;
     const badgeUrl = `${origin}/images/icons/notification-badge-72.png`;
 
     const options = {

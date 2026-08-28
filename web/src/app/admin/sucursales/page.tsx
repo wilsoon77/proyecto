@@ -77,22 +77,25 @@ export default function SucursalesPage() {
 
   if (isLoading) {
     return (
-      <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-[50vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex items-center justify-center py-16">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-[#D97706] mx-auto" />
+          <p className="mt-3 text-xs font-semibold text-[#8C522B]">Cargando sucursales...</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-foreground">Sucursales</h1>
-          <p className="text-muted-foreground">{branches.length} sucursales registradas</p>
+          <h1 className="text-2xl lg:text-3xl font-bold text-[#2B170F] font-display">Sucursales</h1>
+          <p className="text-xs sm:text-sm text-[#6E5545] mt-1">{branches.length} sucursales activas en el sistema</p>
         </div>
         <Link href="/admin/sucursales/nuevo">
-          <Button className="bg-primary hover:bg-primary/90">
+          <Button className="bg-[#D97706] hover:bg-[#B45309] text-white font-bold rounded-xl shadow-xs text-xs w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             Nueva Sucursal
           </Button>
@@ -100,34 +103,36 @@ export default function SucursalesPage() {
       </div>
 
       {/* Search */}
-      <div className="bg-card rounded-xl shadow-sm border border-border p-4 mb-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground/60" />
+      <div className="bg-white rounded-2xl shadow-xs border border-[#E8DCCB] p-4">
+        <div className="relative max-w-md">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8C522B]" />
           <input
             type="text"
-            placeholder="Buscar sucursales..."
+            placeholder="Buscar sucursales por nombre o dirección..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] placeholder:text-[#8C522B]/60 focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
           />
         </div>
       </div>
 
       {/* Branches Grid */}
       {filteredBranches.length === 0 ? (
-        <div className="bg-card rounded-xl shadow-sm border border-border p-12 text-center">
-          <MapPin className="h-12 w-12 text-muted-foreground/40 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-foreground mb-2">
-            {searchTerm ? "Sin resultados" : "No hay sucursales"}
+        <div className="bg-white rounded-2xl shadow-xs border border-[#E8DCCB] p-12 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FAF0E6] text-[#D97706] mx-auto mb-4">
+            <MapPin className="h-7 w-7" />
+          </div>
+          <h3 className="text-sm font-bold text-[#2B170F] mb-1">
+            {searchTerm ? "Sin resultados" : "No hay sucursales registradas"}
           </h3>
-          <p className="text-muted-foreground mb-4">
+          <p className="text-xs text-[#6E5545] mb-4 max-w-md mx-auto">
             {searchTerm
-              ? "No se encontraron sucursales con ese término"
-              : "Crea tu primera sucursal para comenzar"}
+              ? "No se encontraron sucursales que coincidan con la búsqueda."
+              : "Crea tu primera sucursal para comenzar la operación."}
           </p>
           {!searchTerm && (
             <Link href="/admin/sucursales/nuevo">
-              <Button className="bg-primary hover:bg-primary/90">
+              <Button className="bg-[#D97706] hover:bg-[#B45309] text-white font-bold rounded-xl shadow-xs text-xs">
                 <Plus className="h-4 w-4 mr-2" />
                 Nueva Sucursal
               </Button>
@@ -139,37 +144,37 @@ export default function SucursalesPage() {
           {filteredBranches.map((branch) => (
             <div
               key={branch.id}
-              className="bg-card rounded-xl shadow-sm border border-border p-6 hover:shadow-md transition-shadow"
+              className="bg-white rounded-2xl shadow-xs border border-[#E8DCCB] p-5 sm:p-6 hover:border-[#D97706] hover:shadow-md transition-all duration-200"
             >
-              <div className="flex items-start justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-start gap-4">
-                  <div className="h-12 w-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <MapPin className="h-6 w-6 text-primary" />
+                  <div className="h-11 w-11 bg-[#FAF0E6] text-[#D97706] rounded-xl flex items-center justify-center flex-shrink-0">
+                    <MapPin className="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground">{branch.name}</h3>
-                    <p className="text-muted-foreground text-sm mt-1">{branch.address}</p>
+                    <h3 className="font-bold text-sm sm:text-base text-[#2B170F]">{branch.name}</h3>
+                    <p className="text-xs text-[#6E5545] mt-0.5">{branch.address}</p>
                     {branch.phone && (
-                      <div className="flex items-center gap-1 text-muted-foreground text-sm mt-2">
-                        <Phone className="h-4 w-4" />
+                      <div className="flex items-center gap-1.5 text-xs text-[#8C522B] mt-2 font-medium">
+                        <Phone className="h-3.5 w-3.5" />
                         {branch.phone}
                       </div>
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 self-end sm:self-center">
                   <Link href={`/admin/sucursales/${branch.id}`}>
-                    <Button variant="outline" size="sm">
-                      <Pencil className="h-4 w-4" />
+                    <Button variant="outline" size="sm" className="border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] rounded-xl h-9 px-3 text-xs font-bold shadow-xs">
+                      <Pencil className="h-3.5 w-3.5 mr-1" /> Editar
                     </Button>
                   </Link>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setDeleteId(branch.id)}
-                    className="text-destructive hover:text-destructive hover:border-destructive/30"
+                    className="border-red-200 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl h-9 px-3 text-xs font-bold"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-3.5 w-3.5 mr-1" /> Eliminar
                   </Button>
                 </div>
               </div>

@@ -113,43 +113,41 @@ export default function InventarioResumenPage() {
 
   if (isLoading && rawInventory.length === 0 && expiringLots.length === 0) {
     return (
-      <div className="p-4 sm:p-6 lg:p-8">
-        <div className="animate-pulse space-y-5">
-          <div className="h-8 w-64 rounded bg-border" />
-          <div className="grid gap-5 lg:grid-cols-2">
-            <div className="h-64 rounded-xl bg-border" />
-            <div className="h-64 rounded-xl bg-border" />
-          </div>
+      <div className="space-y-5 animate-pulse">
+        <div className="h-8 w-64 rounded-xl bg-[#FAF5EE] border border-[#E8DCCB]" />
+        <div className="grid gap-5 lg:grid-cols-2">
+          <div className="h-64 rounded-2xl bg-white border border-[#E8DCCB]" />
+          <div className="h-64 rounded-2xl bg-white border border-[#E8DCCB]" />
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-cream p-4 sm:p-6 lg:p-8">
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="flex items-center gap-3 text-2xl font-bold text-foreground sm:text-3xl">
-            <Warehouse className="h-7 w-7 text-primary sm:h-8 sm:w-8" />
-            Inventario operativo
+          <h1 className="flex items-center gap-3 font-display text-2xl font-bold text-[#2B170F] sm:text-3xl">
+            <Warehouse className="h-7 w-7 text-[#D97706]" />
+            Inventario Operativo
           </h1>
-          <p className="mt-1 text-muted-foreground">
-            Revisa las dos alertas que requieren atención: materia prima baja y caducidades próximas.
+          <p className="mt-1 text-xs sm:text-sm text-[#6E5545]">
+            Monitoreo en tiempo real de materias primas, caducidades y existencia de productos.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => void loadData()}
             disabled={isLoading}
-            className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground shadow-sm transition hover:bg-cream disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-xl border border-[#DECDBB] bg-white px-3.5 py-2 text-xs font-bold text-[#2B170F] shadow-xs transition hover:bg-[#FAF5EE] disabled:opacity-50"
           >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`h-4 w-4 text-[#D97706] ${isLoading ? "animate-spin" : ""}`} />
             Actualizar
           </button>
           <button
             onClick={() => void checkExpirations()}
             disabled={isCheckingExpirations}
-            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-xl bg-[#D97706] px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-[#B45309] disabled:opacity-50"
           >
             <CalendarClock className={`h-4 w-4 ${isCheckingExpirations ? "animate-spin" : ""}`} />
             Revisar caducidades
@@ -158,112 +156,112 @@ export default function InventarioResumenPage() {
       </div>
 
       {error && (
-        <div className="mb-6 flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
-          <AlertTriangle className="h-5 w-5" />
+        <div className="flex items-center gap-2 rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-xs font-bold text-destructive">
+          <AlertTriangle className="h-4 w-4" />
           {error}
         </div>
       )}
 
-      <div className="mb-8 grid gap-5 lg:grid-cols-2">
-        <section className="rounded-xl border border-border bg-card p-6 shadow-sm">
+      <div className="grid gap-5 lg:grid-cols-2">
+        <section className="rounded-2xl border border-[#E8DCCB] bg-white p-6 shadow-xs">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
-              <h2 className="flex items-center gap-2 text-lg font-bold text-foreground">
-                <AlertTriangle className="h-5 w-5 text-warning" />
-                Materia prima baja
+              <h2 className="flex items-center gap-2 text-base font-bold text-[#2B170F]">
+                <AlertTriangle className="h-4.5 w-4.5 text-[#D97706]" />
+                Materias primas bajo mínimo
               </h2>
-              <p className="mt-1 text-sm text-muted-foreground">Se alerta al llegar al mínimo configurado.</p>
+              <p className="mt-0.5 text-xs text-[#6E5545]">Se alerta al llegar al stock mínimo configurado.</p>
             </div>
-            <span className="rounded-full bg-warning/10 px-3 py-1 text-sm font-bold text-warning">
+            <span className="rounded-full bg-[#FAF0E6] border border-[#ECCDB5] px-2.5 py-0.5 text-xs font-bold text-[#9E4D1A]">
               {lowMaterials.length}
             </span>
           </div>
           {lowMaterials.length === 0 ? (
-            <div className="flex items-center gap-2 rounded-lg bg-success/10 p-4 text-sm text-success">
-              <CheckCircle2 className="h-5 w-5" />
+            <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 p-4 text-xs font-bold text-emerald-700">
+              <CheckCircle2 className="h-4 w-4" />
               No hay materias primas por debajo del mínimo.
             </div>
           ) : (
             <div className="space-y-2">
               {lowMaterials.slice(0, 6).map((item) => (
-                <div key={item.id} className="flex items-center justify-between rounded-lg border border-warning/20 bg-warning/5 p-3">
+                <div key={item.id} className="flex items-center justify-between rounded-xl border border-[#ECCDB5] bg-[#FAF0E6] p-3">
                   <div>
-                    <p className="font-medium text-foreground">{item.rawMaterial.name}</p>
-                    <p className="text-xs text-muted-foreground">{item.branch.name}</p>
+                    <p className="font-bold text-xs text-[#2B170F]">{item.rawMaterial.name}</p>
+                    <p className="text-[11px] text-[#8C522B]">{item.branch.name}</p>
                   </div>
-                  <span className="text-sm font-bold text-warning">
+                  <span className="text-xs font-bold text-[#9E4D1A]">
                     {Number(item.quantity).toFixed(1)} {item.rawMaterial.baseUnit}
                   </span>
                 </div>
               ))}
               {lowMaterials.length > 6 && (
-                <p className="pt-2 text-xs text-muted-foreground">Hay {lowMaterials.length - 6} alertas más.</p>
+                <p className="pt-2 text-xs text-[#8C522B] font-semibold">Hay {lowMaterials.length - 6} alertas más.</p>
               )}
             </div>
           )}
-          <Link href="/admin/inventario/materias-primas" className="mt-4 inline-flex text-sm font-semibold text-primary hover:underline">
+          <Link href="/admin/inventario/materias-primas" className="mt-4 inline-flex text-xs font-bold text-[#D97706] hover:underline">
             Gestionar materias primas →
           </Link>
         </section>
 
-        <section className="rounded-xl border border-border bg-card p-6 shadow-sm">
+        <section className="rounded-2xl border border-[#E8DCCB] bg-white p-6 shadow-xs">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
-              <h2 className="flex items-center gap-2 text-lg font-bold text-foreground">
-                <CalendarClock className="h-5 w-5 text-destructive" />
+              <h2 className="flex items-center gap-2 text-base font-bold text-[#2B170F]">
+                <CalendarClock className="h-4.5 w-4.5 text-orange-600" />
                 Próximos vencimientos
               </h2>
-              <p className="mt-1 text-sm text-muted-foreground">Solo lotes de productos comprados dentro de 7 días.</p>
+              <p className="mt-0.5 text-xs text-[#6E5545]">Lotes con caducidad en los próximos 7 días.</p>
             </div>
-            <span className="rounded-full bg-destructive/10 px-3 py-1 text-sm font-bold text-destructive">
+            <span className="rounded-full bg-orange-50 border border-orange-200 px-2.5 py-0.5 text-xs font-bold text-orange-700">
               {expiringLots.length}
             </span>
           </div>
           {expiringLots.length === 0 ? (
-            <div className="flex items-center gap-2 rounded-lg bg-success/10 p-4 text-sm text-success">
-              <CheckCircle2 className="h-5 w-5" />
+            <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 p-4 text-xs font-bold text-emerald-700">
+              <CheckCircle2 className="h-4 w-4" />
               No hay lotes próximos a vencer.
             </div>
           ) : (
             <div className="space-y-2">
               {expiringLots.slice(0, 6).map((lot) => (
-                <div key={lot.id} className="flex items-center justify-between rounded-lg border border-destructive/20 bg-destructive/5 p-3">
+                <div key={lot.id} className="flex items-center justify-between rounded-xl border border-orange-200 bg-orange-50/70 p-3">
                   <div>
-                    <p className="font-medium text-foreground">{lot.product.name}</p>
-                    <p className="text-xs text-muted-foreground">{lot.branch.name} · {lot.availableQuantity} disponibles</p>
+                    <p className="font-bold text-xs text-[#2B170F]">{lot.product.name}</p>
+                    <p className="text-[11px] text-[#6E5545]">{lot.branch.name} · {lot.availableQuantity} disponibles</p>
                   </div>
-                  <span className="text-right text-sm font-bold text-destructive">
+                  <span className="text-right text-xs font-bold text-orange-800">
                     {lot.expiresAt ? formatDate(lot.expiresAt) : "Sin fecha"}
-                    {lot.daysLeft !== null && <span className="block text-xs font-normal">{lot.daysLeft} días</span>}
+                    {lot.daysLeft !== null && <span className="block text-[10px] font-normal text-orange-700">{lot.daysLeft} días</span>}
                   </span>
                 </div>
               ))}
               {expiringLots.length > 6 && (
-                <p className="pt-2 text-xs text-muted-foreground">Hay {expiringLots.length - 6} lotes más.</p>
+                <p className="pt-2 text-xs text-[#8C522B] font-semibold">Hay {expiringLots.length - 6} lotes más.</p>
               )}
             </div>
           )}
-          <Link href="/admin/inventario/caducidades" className="mt-4 inline-flex text-sm font-semibold text-primary hover:underline">
+          <Link href="/admin/inventario/caducidades" className="mt-4 inline-flex text-xs font-bold text-[#D97706] hover:underline">
             Ver caducidades →
           </Link>
         </section>
       </div>
 
       <section>
-        <h2 className="mb-4 text-lg font-bold text-foreground">Operaciones de inventario</h2>
+        <h2 className="mb-4 text-base font-bold text-[#2B170F]">Módulos de Inventario</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {INVENTORY_TOOLS.map((tool) => {
             const Icon = tool.icon
             return (
-              <Link key={tool.href} href={tool.href} className="group rounded-xl border border-border bg-card p-5 shadow-sm transition hover:border-primary/30 hover:shadow-md">
+              <Link key={tool.href} href={tool.href} className="group rounded-2xl border border-[#E8DCCB] bg-white p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-[#D97706] hover:shadow-md">
                 <div className="mb-4 flex items-center justify-between">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FAF0E6] text-[#D97706] transition-colors group-hover:bg-[#D97706] group-hover:text-white">
                     <Icon className="h-5 w-5" />
                   </div>
-                  <span className="text-muted-foreground transition group-hover:translate-x-1 group-hover:text-primary">→</span>
+                  <span className="text-xs font-bold text-[#DECDBB] transition group-hover:translate-x-1 group-hover:text-[#D97706]">→</span>
                 </div>
-                <h3 className="font-semibold text-foreground">{tool.title}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">{tool.description}</p>
+                <h3 className="font-bold text-xs text-[#2B170F]">{tool.title}</h3>
+                <p className="mt-1 text-xs text-[#6E5545]">{tool.description}</p>
               </Link>
             )
           })}

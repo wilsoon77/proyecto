@@ -1,13 +1,11 @@
 "use client"
 
-import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { ShoppingCart, Heart, Star } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { useState } from "react"
+import { Cake, Cookie, Coffee, ShoppingCart, Sparkles, Wheat } from "lucide-react"
 import { formatPrice } from "@/lib/utils"
-import { Product } from "@/types"
-import { Badge } from "@/components/ui/badge"
+import type { Product } from "@/types"
 import { defaultSalePresentation, maxPresentationQuantity, presentationUnitPrice } from "@/lib/presentation-quantities"
 
 interface ProductCardProps {
@@ -16,173 +14,87 @@ interface ProductCardProps {
   onToggleFavorite?: (productId: number) => void
 }
 
-function getCategoryEmoji(category: string): string {
-  const categoryMap: Record<string, string> = {
-    pan: '🥖',
-    panes: '🥖',
-    pasteles: '🎂',
-    pastel: '🎂',
-    galletas: '🍪',
-    galleta: '🍪',
-    dulces: '🍬',
-    dulce: '🍬',
-    bebidas: '☕',
-    bebida: '☕',
-  }
-  return categoryMap[category?.toLowerCase()] || '🥐'
+function CategoryMark({ category, className }: { category?: string; className?: string }) {
+  const value = category?.toLowerCase() || ""
+  if (value.includes("pan")) return <Wheat className={className} aria-hidden="true" />
+  if (value.includes("pastel") || value.includes("postre")) return <Cake className={className} aria-hidden="true" />
+  if (value.includes("galleta") || value.includes("dulce")) return <Cookie className={className} aria-hidden="true" />
+  if (value.includes("bebida") || value.includes("cafe") || value.includes("café")) return <Coffee className={className} aria-hidden="true" />
+  return <Sparkles className={className} aria-hidden="true" />
 }
 
-export function ProductCard({ product, onAddToCart, onToggleFavorite }: ProductCardProps) {
-  const [imageError, setImageError] = useState(false)
-  const [isFavorite, setIsFavorite] = useState(false)
-  const [cartAnimating, setCartAnimating] = useState(false)
+function categoryLabel(category: string) {
+  return category.replace(/[-_]/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase())
+}
 
-  const hasValidImage = product.imageUrl && !imageError
+export function ProductCard({ product, onAddToCart }: ProductCardProps) {
+  const [imageError, setImageError] = useState(false)
   const defaultPresentation = defaultSalePresentation(product)
   const displayPrice = presentationUnitPrice(product, defaultPresentation)
   const presentationStock = defaultPresentation ? maxPresentationQuantity(product, defaultPresentation) : product.stock
-  const isOutOfStock = product.stock === 0 || presentationStock === 0
-  const isLowStock = presentationStock > 0 && presentationStock <= 5
-
-  const handleAddToCart = () => {
-    setCartAnimating(true)
-    onAddToCart?.(product.id)
-    setTimeout(() => setCartAnimating(false), 400)
-  }
-
-  const handleFavorite = (e: React.MouseEvent) => {
-    e.preventDefault()
-    setIsFavorite(!isFavorite)
-    onToggleFavorite?.(product.id)
-  }
+  const isOutOfStock = product.stock === 0 || presentationStock === 0 || !product.isAvailable
+  const isLowStock = !isOutOfStock && presentationStock <= 5
 
   return (
-    <div className="group relative overflow-hidden rounded-xl border border-border bg-card shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover">
-      <Link href={`/productos/${product.slug}`}>
-        <div className="relative aspect-square overflow-hidden bg-muted">
-          {hasValidImage ? (
+    <article className="group flex h-full min-w-0 flex-col overflow-hidden rounded-3xl border border-[#E8DCCB] bg-white shadow-sm transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1.5 hover:border-[#D97706]/50 hover:shadow-[0_20px_40px_-20px_rgba(43,23,15,0.22)]">
+      <Link href={`/productos/${product.slug}`} className="public-focus block">
+        <div className="relative aspect-[4/3] overflow-hidden bg-[#F5ECE1]">
+          {product.imageUrl && !imageError ? (
             <Image
-              src={product.imageUrl!}
+              src={product.imageUrl}
               alt={product.name}
               fill
-              sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-              className="object-cover transition-transform duration-500 ease-out group-hover:scale-110"
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.05]"
               onError={() => setImageError(true)}
             />
           ) : (
-            <div className="flex h-full items-center justify-center flex-col gap-2 bg-bakery-gradient">
-              <span className="text-6xl transition-transform duration-300 group-hover:scale-110">{getCategoryEmoji(product.category)}</span>
-            </div>
-          )}
-
-          {/* Gradient overlay on hover */}
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-
-          {/* Badges */}
-          <div className="absolute left-3 top-3 flex flex-col gap-1.5">
-            {product.isNew && (
-              <Badge className="bg-success text-white shadow-sm">Nuevo</Badge>
-            )}
-            {defaultPresentation ? (
-              <Badge className="bg-primary text-primary-foreground shadow-sm">
-                {defaultPresentation.name}: Q{Number(displayPrice).toFixed(2)}
-              </Badge>
-            ) : null}
-            {isOutOfStock && (
-              <Badge variant="destructive" className="shadow-sm">Agotado</Badge>
-            )}
-            {isLowStock && (
-              <Badge className="bg-warning text-white shadow-sm">
-                ¡Últimas {presentationStock}!
-              </Badge>
-            )}
-          </div>
-
-          {/* Favorite Button */}
-          <button
-            onClick={handleFavorite}
-            className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-card/90 shadow-md backdrop-blur-sm transition-all duration-300 hover:scale-110 hover:bg-card group-hover:translate-y-0 group-hover:opacity-100 sm:translate-y-2 sm:opacity-0"
-            aria-label="Agregar a favoritos"
-          >
-            <Heart
-              className={`h-4 w-4 transition-colors ${
-                isFavorite
-                  ? 'fill-destructive text-destructive'
-                  : 'text-muted-foreground hover:text-destructive'
-              }`}
-            />
-          </button>
-
-          {/* Low stock progress bar */}
-          {isLowStock && (
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-muted">
-              <div
-                className="h-full bg-warning transition-all duration-500"
-                style={{ width: `${(presentationStock / 5) * 100}%` }}
-              />
+            <div className="flex h-full flex-col items-center justify-center gap-3 bg-[radial-gradient(circle_at_top_right,#FDE68A,transparent_60%),#F5ECE1] text-[#A25514]">
+              <CategoryMark category={product.category} className="h-9 w-9 stroke-[1.5]" />
+              <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#8C522B]">Pan artesanal</span>
             </div>
           )}
         </div>
       </Link>
 
-      {/* Product Info */}
-      <div className="p-4">
-        <Link href={`/productos/${product.slug}`}>
-          <h3 className="mb-1 font-display text-base font-semibold text-card-foreground line-clamp-1 transition-colors hover:text-primary">
-            {product.name}
-          </h3>
-        </Link>
-
-        {product.description && (
-          <p className="mb-2 text-sm text-muted-foreground line-clamp-2">
-            {product.description}
-          </p>
-        )}
-
-        {/* Rating */}
-        {product.rating && (
-          <div className="mb-2 flex items-center gap-1.5">
-            <div className="flex">
-              {[...Array(5)].map((_, i) => (
-                <Star
-                  key={i}
-                  className={`h-3.5 w-3.5 transition-colors ${
-                    i < Math.floor(product.rating!)
-                      ? 'fill-warning text-warning'
-                      : 'text-muted-foreground/30'
-                  }`}
-                />
-              ))}
-            </div>
-            <span className="text-xs text-muted-foreground">
-              ({product.reviewCount || 0})
-            </span>
-          </div>
-        )}
-
-        {/* Price */}
-        <div className="mb-3 flex items-baseline gap-2">
-          <span className="text-lg font-bold text-primary">
-            {formatPrice(displayPrice)}
-          </span>
-          {defaultPresentation ? (
-            <span className="text-xs text-primary/70 font-medium">
-              {defaultPresentation.name}
-            </span>
-          ) : null}
+      <div className="flex flex-1 flex-col p-4 sm:p-5">
+        <div className="flex items-center justify-between gap-2 text-[10px] font-bold uppercase tracking-[0.14em]">
+          <span className="truncate text-[#8C522B]">{categoryLabel(product.category)}</span>
+          {product.isNew && (
+            <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[#9E4D1A]">Nuevo</span>
+          )}
         </div>
 
-        {/* Add to Cart Button */}
-        <Button
-          onClick={handleAddToCart}
-          disabled={isOutOfStock}
-          className={`w-full transition-all ${cartAnimating ? 'animate-cart-bounce' : ''}`}
-          size="sm"
-        >
-          <ShoppingCart className="mr-2 h-4 w-4" />
-          {isOutOfStock ? 'Agotado' : 'Agregar'}
-        </Button>
+        <Link href={`/productos/${product.slug}`} className="public-focus mt-2 block">
+          <h2 className="line-clamp-2 min-h-[2.65rem] font-display text-lg leading-tight tracking-[-0.025em] text-[#24140D] transition-colors group-hover:text-[#D97706] sm:text-xl">{product.name}</h2>
+        </Link>
+
+        {product.description && <p className="mt-2 hidden line-clamp-2 text-xs leading-relaxed text-[#6E5545] sm:block">{product.description}</p>}
+
+        <div className="mt-auto border-t border-[#EFE5D8] pt-3.5 sm:mt-5">
+          <div className="flex items-end justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8C522B]">Desde</p>
+              <p className="mt-0.5 truncate text-base font-bold text-[#24140D] sm:text-lg">{formatPrice(displayPrice)}</p>
+              {isLowStock && <p className="mt-1 text-[10px] font-semibold text-[#D97706]">Quedan {presentationStock}</p>}
+              {isOutOfStock && <p className="mt-1 text-[10px] font-semibold text-destructive">Agotado por ahora</p>}
+            </div>
+
+            {onAddToCart && (
+              <button
+                type="button"
+                onClick={() => onAddToCart(product.id)}
+                disabled={isOutOfStock}
+                aria-label={isOutOfStock ? `${product.name}, agotado` : `Agregar ${product.name} al carrito`}
+                className="public-focus touch-tactile inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-full bg-primary px-3.5 text-xs font-bold text-primary-foreground shadow-[0_6px_16px_-4px_rgba(217,119,6,0.5)] transition-all hover:bg-primary/90 hover:shadow-[0_8px_20px_-4px_rgba(217,119,6,0.65)] disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none sm:px-4"
+              >
+                <ShoppingCart className="h-4 w-4" aria-hidden="true" />
+                <span className="hidden sm:inline">Agregar</span>
+              </button>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
+    </article>
   )
 }

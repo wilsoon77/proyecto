@@ -48,11 +48,11 @@ export class OrdersController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Reservar pedido para recoger en sucursal',
-    description: 'Crea una reserva para retiro en la sucursal indicada y descuenta el stock disponible. Si permanece en PENDING sin confirmarse, se cancela automáticamente después de 2 horas por defecto y libera la reserva.',
+    description: 'Crea una reserva para retiro en la sucursal indicada y descuenta el stock disponible. Si permanece en PENDING sin confirmarse, se cancela automáticamente después de 2 horas por defecto y libera la reserva. La operación se rechaza si la tienda no acepta pedidos o si está en modo catálogo solo informativo.',
   })
   @ApiBody({ type: ReserveOrderDto })
   @ApiResponse({ status: 201, description: 'Pedido creado y stock reservado' })
-  @ApiBadRequestResponse({ description: 'Validación o stock insuficiente' })
+  @ApiBadRequestResponse({ description: 'Validación, stock insuficiente o compras deshabilitadas por configuración' })
   async reserve(@Req() req: any, @Body() dto: ReserveOrderDto) {
     const branchSlug = ORDER_OPERATOR_ROLES.has(req.user?.role) || req.user?.role === 'BAKER'
       ? await this.branchScope.resolveBranchSlug(req.user, dto.branchSlug)

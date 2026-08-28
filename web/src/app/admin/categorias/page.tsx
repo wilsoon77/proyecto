@@ -90,18 +90,18 @@ export default function AdminCategoriasPage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-foreground flex items-center gap-3">
-            <Tag className="h-7 w-7 text-primary" />
+          <h1 className="text-2xl lg:text-3xl font-bold text-[#2B170F] font-display flex items-center gap-3">
+            <Tag className="h-7 w-7 text-[#D97706]" />
             Categorías
           </h1>
-          <p className="text-muted-foreground mt-1">Gestiona las categorías de productos</p>
+          <p className="text-xs sm:text-sm text-[#6E5545] mt-1">Organización y clasificación del catálogo</p>
         </div>
         <Link href="/admin/categorias/nuevo">
-          <Button className="bg-primary hover:bg-primary/90">
+          <Button className="bg-[#D97706] hover:bg-[#B45309] text-white font-bold rounded-xl shadow-xs text-xs w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             Nueva Categoría
           </Button>
@@ -109,39 +109,44 @@ export default function AdminCategoriasPage() {
       </div>
 
       {/* Search */}
-      <div className="bg-card rounded-xl shadow-sm border border-border p-4 mb-6">
+      <div className="bg-white rounded-2xl shadow-xs border border-[#E8DCCB] p-4">
         <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8C522B]" />
           <input
             type="text"
-            placeholder="Buscar categorías..."
+            placeholder="Buscar categorías por nombre o slug..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] placeholder:text-[#8C522B]/60 focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
           />
         </div>
       </div>
 
       {/* Content */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="flex items-center justify-center py-16">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin text-[#D97706] mx-auto" />
+            <p className="mt-3 text-xs font-semibold text-[#8C522B]">Cargando categorías...</p>
+          </div>
         </div>
       ) : filteredCategories.length === 0 ? (
-        <div className="bg-card rounded-xl shadow-sm border border-border p-12 text-center">
-          <Tag className="h-12 w-12 text-muted-foreground/40 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-foreground mb-2">
-            {searchTerm ? "No se encontraron categorías" : "No hay categorías"}
+        <div className="bg-white rounded-2xl shadow-xs border border-[#E8DCCB] p-12 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FAF0E6] text-[#D97706] mx-auto mb-4">
+            <Tag className="h-7 w-7" />
+          </div>
+          <h3 className="text-sm font-bold text-[#2B170F] mb-1">
+            {searchTerm ? "No se encontraron categorías" : "No hay categorías registradas"}
           </h3>
-          <p className="text-muted-foreground mb-4">
+          <p className="text-xs text-[#6E5545] mb-4 max-w-md mx-auto">
             {searchTerm 
               ? "Intenta con otro término de búsqueda" 
-              : "Crea tu primera categoría para organizar los productos"
+              : "Crea tu primera categoría para organizar los panes, galletas y bebidas."
             }
           </p>
           {!searchTerm && (
             <Link href="/admin/categorias/nuevo">
-              <Button className="bg-primary hover:bg-primary/90">
+              <Button className="bg-[#D97706] hover:bg-[#B45309] text-white font-bold rounded-xl shadow-xs text-xs">
                 <Plus className="h-4 w-4 mr-2" />
                 Nueva Categoría
               </Button>
@@ -153,15 +158,15 @@ export default function AdminCategoriasPage() {
           {paginatedCategories.map((category) => (
             <div 
               key={category.id}
-              className="bg-card rounded-xl shadow-sm border border-border p-5 hover:shadow-md transition-shadow"
+              className="bg-white rounded-2xl shadow-xs border border-[#E8DCCB] p-5 hover:border-[#D97706] hover:shadow-md transition-all duration-200"
             >
               <div className="flex items-start justify-between mb-3">
-                <div className="h-10 w-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                  <Package className="h-5 w-5 text-primary" />
+                <div className="h-10 w-10 bg-[#FAF0E6] text-[#D97706] rounded-xl flex items-center justify-center">
+                  <Package className="h-5 w-5" />
                 </div>
                 <div className="flex gap-1">
                   <Link href={`/admin/categorias/${category.slug}`}>
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-[#6E5545] hover:text-[#2B170F] hover:bg-[#FAF5EE]" title="Editar">
                       <Edit className="h-4 w-4" />
                     </Button>
                   </Link>
@@ -169,18 +174,19 @@ export default function AdminCategoriasPage() {
                     variant="ghost" 
                     size="sm"
                     onClick={() => setDeleteTarget(category)}
-                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                    title="Eliminar"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
               
-              <h3 className="font-semibold text-foreground mb-1">{category.name}</h3>
-              <p className="text-sm text-muted-foreground mb-2 font-mono">/{category.slug}</p>
+              <h3 className="font-bold text-xs sm:text-sm text-[#2B170F] mb-0.5">{category.name}</h3>
+              <p className="text-[11px] text-[#8C522B] mb-2 font-mono">/{category.slug}</p>
               
               {category.description && (
-                <p className="text-sm text-muted-foreground line-clamp-2">{category.description}</p>
+                <p className="text-xs text-[#6E5545] line-clamp-2">{category.description}</p>
               )}
             </div>
           ))}
@@ -189,8 +195,8 @@ export default function AdminCategoriasPage() {
 
       {/* Pagination */}
       {!isLoading && totalPages > 1 && (
-        <div className="flex items-center justify-between mt-6 bg-card rounded-xl shadow-sm border border-border px-4 sm:px-6 py-4">
-          <p className="text-sm text-muted-foreground">
+        <div className="flex items-center justify-between bg-white rounded-2xl shadow-xs border border-[#E8DCCB] px-6 py-3.5">
+          <p className="text-xs font-semibold text-[#8C522B]">
             Página {currentPage} de {totalPages} ({filteredCategories.length} categorías)
           </p>
           <div className="flex items-center gap-2">
@@ -199,16 +205,18 @@ export default function AdminCategoriasPage() {
               size="sm"
               disabled={currentPage <= 1}
               onClick={() => setCurrentPage(prev => prev - 1)}
+              className="border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] rounded-lg h-8 px-2.5 text-xs font-bold"
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Anterior
             </Button>
             <Button
               variant="outline"
               size="sm"
               disabled={currentPage >= totalPages}
               onClick={() => setCurrentPage(prev => prev + 1)}
+              className="border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] rounded-lg h-8 px-2.5 text-xs font-bold"
             >
-              <ChevronRight className="h-4 w-4" />
+              Siguiente <ChevronRight className="h-3.5 w-3.5 ml-1" />
             </Button>
           </div>
         </div>

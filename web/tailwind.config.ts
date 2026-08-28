@@ -75,24 +75,45 @@ const config: Config = {
       },
       fontFamily: {
         sans: [
-          'var(--font-inter)',
+          'var(--font-sans)',
           'system-ui',
+          '-apple-system',
           'sans-serif'
         ],
         display: [
           'var(--font-display)',
-          'var(--font-inter)',
+          'Georgia',
+          'serif'
+        ],
+        serif: [
+          'var(--font-display)',
+          'Georgia',
           'serif'
         ]
       },
       boxShadow: {
-        'card': '0 2px 8px -2px hsl(20 14% 10% / 0.08), 0 1px 3px -1px hsl(20 14% 10% / 0.06)',
-        'card-hover': '0 12px 24px -6px hsl(20 14% 10% / 0.12), 0 4px 8px -2px hsl(20 14% 10% / 0.08)',
-        'warm': '0 4px 16px -4px hsl(32 85% 48% / 0.15)',
+        'card': '0 2px 8px -2px hsl(20 14% 10% / 0.06), 0 1px 3px -1px hsl(20 14% 10% / 0.04)',
+        'card-hover': '0 14px 28px -6px hsl(20 14% 10% / 0.10), 0 6px 12px -2px hsl(20 14% 10% / 0.06)',
+        'warm': '0 4px 16px -4px hsl(32 85% 48% / 0.20)',
+        'warm-lg': '0 10px 30px -5px hsl(32 85% 48% / 0.25)',
       },
       backgroundImage: {
-        'bakery-gradient': 'linear-gradient(135deg, hsl(40 45% 96%) 0%, hsl(38 60% 88%) 100%)',
-        'warm-radial': 'radial-gradient(ellipse at top, hsl(38 60% 92%) 0%, hsl(40 38% 98%) 60%)',
+        'bakery-gradient': 'linear-gradient(135deg, hsl(40 45% 98%) 0%, hsl(38 50% 92%) 100%)',
+        'warm-radial': 'radial-gradient(ellipse at top, hsl(38 60% 94%) 0%, hsl(40 38% 98%) 70%)',
+      },
+      keyframes: {
+        'marquee-scroll': {
+          '0%': { transform: 'translateX(0%)' },
+          '100%': { transform: 'translateX(-100%)' },
+        },
+        'marquee-scroll-reverse': {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(0%)' },
+        },
+      },
+      animation: {
+        'marquee-scroll': 'marquee-scroll 32s linear infinite',
+        'marquee-scroll-reverse': 'marquee-scroll-reverse 32s linear infinite',
       },
     }
   },

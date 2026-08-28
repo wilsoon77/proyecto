@@ -1,215 +1,83 @@
-import Link from "next/link"
 import Image from "next/image"
-import { Facebook, Instagram, Twitter, Mail, Phone, MapPin } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import Link from "next/link"
+import { Clock3, Mail, MapPin } from "lucide-react"
 import { ROUTES } from "@/lib/constants"
+
+const footerLinks = [
+  { label: "Productos", href: ROUTES.products },
+  { label: "Sobre nosotros", href: ROUTES.about },
+  { label: "Sucursales", href: ROUTES.branches },
+  { label: "Contacto", href: ROUTES.contact },
+]
 
 export function Footer() {
   return (
-    <footer className="border-t bg-gray-50">
-      {/* Newsletter Section */}
-      <div className="border-b bg-white">
-        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-          <div className="grid gap-8 md:grid-cols-2 md:items-center">
-            <div>
-              <h3 className="text-2xl font-bold text-gray-900">
-                Suscríbete a nuestro Newsletter
-              </h3>
-              <p className="mt-2 text-gray-600">
-                Recibe promociones exclusivas y novedades directamente en tu correo.
-              </p>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <input
-                type="email"
-                placeholder="tu@email.com"
-                className="h-11 flex-1 rounded-md border border-gray-300 px-4 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+    <footer className="border-t border-[#E8DCCB] bg-[#FAF5EE] text-[#2B170F]">
+      <div className="public-container py-12 sm:py-16">
+        <div className="grid gap-12 lg:grid-cols-[1.3fr_0.7fr_0.8fr_1.2fr] lg:gap-10">
+          <div>
+            <Link href={ROUTES.home} className="public-focus relative block h-16 w-56 sm:h-20 sm:w-72">
+              <Image
+                src="/images/logo-panaderia.svg"
+                alt="Panadería Svetlana"
+                fill
+                sizes="(max-width: 640px) 224px, 288px"
+                className="object-contain object-left mix-blend-multiply"
               />
-              <Button size="lg">Suscribirme</Button>
+            </Link>
+            <p className="mt-5 max-w-sm text-sm leading-relaxed text-[#6E5545]">
+              Pan fresco y repostería artesanal para compartir en Chimaltenango. Reserva en línea y recoge recién salido del horno.
+            </p>
+          </div>
+
+          <div>
+            <p className="mb-4 text-xs font-bold uppercase tracking-[0.16em] text-[#8C522B]">Explora</p>
+            <nav aria-label="Enlaces del pie de página" className="grid gap-3 text-sm">
+              {footerLinks.map((link) => (
+                <Link key={link.href} href={link.href} className="public-focus w-fit text-[#5C3D2E] transition-colors hover:text-[#D97706]">
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
+
+          <div>
+            <p className="mb-4 text-xs font-bold uppercase tracking-[0.16em] text-[#8C522B]">Atención</p>
+            <nav aria-label="Ayuda y pedidos" className="grid gap-3 text-sm">
+              <Link href={ROUTES.orders} className="public-focus w-fit text-[#5C3D2E] transition-colors hover:text-[#D97706]">Mis pedidos</Link>
+              <Link href={ROUTES.profile} className="public-focus w-fit text-[#5C3D2E] transition-colors hover:text-[#D97706]">Mi cuenta</Link>
+              <Link href={ROUTES.privacy} className="public-focus w-fit text-[#5C3D2E] transition-colors hover:text-[#D97706]">Privacidad</Link>
+              <Link href={ROUTES.terms} className="public-focus w-fit text-[#5C3D2E] transition-colors hover:text-[#D97706]">Términos</Link>
+            </nav>
+          </div>
+
+          <div>
+            <p className="mb-4 text-xs font-bold uppercase tracking-[0.16em] text-[#8C522B]">Encuéntranos</p>
+            <div className="grid gap-3 text-sm text-[#5C3D2E]">
+              <div className="flex items-start gap-3">
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#D97706]" aria-hidden="true" />
+                <span>Chimaltenango, Guatemala</span>
+              </div>
+              <a href="mailto:panaderiasvetlana@gmail.com" className="public-focus flex items-center gap-3 transition-colors hover:text-[#D97706]">
+                <Mail className="h-4 w-4 shrink-0 text-[#D97706]" aria-hidden="true" />
+                panaderiasvetlana@gmail.com
+              </a>
+              <div className="flex items-start gap-3">
+                <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-[#D97706]" aria-hidden="true" />
+                <span>Lunes a sábado, 5:00 AM – 8:30 PM</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Main Footer */}
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
-          {/* Company Info */}
-          <div>
-            <div className="flex items-center">
-              <Image 
-                src="/images/logo-panaderia.png" 
-                alt="Panaderia Svetlana" 
-                width={120} 
-                height={48}
-                className="h-12 w-auto object-contain rounded-lg"
-              />
-            </div>
-            <p className="mt-4 text-sm text-gray-600">
-              Sistema inteligente de gestión para panaderías en Guatemala. 
-              Pan fresco, calidad garantizada.
-            </p>
-            
-            {/* Social Media */}
-            <div className="mt-6 flex gap-3">
-              <a
-                href="https://facebook.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex h-11 w-11 items-center justify-center rounded-full bg-gray-200 text-gray-600 transition-colors hover:bg-primary hover:text-white"
-              >
-                <Facebook className="h-5 w-5" />
-              </a>
-              <a
-                href="https://instagram.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex h-11 w-11 items-center justify-center rounded-full bg-gray-200 text-gray-600 transition-colors hover:bg-primary hover:text-white"
-              >
-                <Instagram className="h-5 w-5" />
-              </a>
-              <a
-                href="https://twitter.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex h-11 w-11 items-center justify-center rounded-full bg-gray-200 text-gray-600 transition-colors hover:bg-primary hover:text-white"
-              >
-                <Twitter className="h-5 w-5" />
-              </a>
-            </div>
-          </div>
-
-          {/* Quick Links */}
-          <div>
-            <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-900">
-              Enlaces Rápidos
-            </h4>
-            <ul className="space-y-3 text-sm">
-              <li>
-                <Link
-                  href={ROUTES.products}
-                  className="text-gray-600 transition-colors hover:text-primary"
-                >
-                  Productos
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/sobre-nosotros"
-                  className="text-gray-600 transition-colors hover:text-primary"
-                >
-                  Sobre Nosotros
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href={ROUTES.contact}
-                  className="text-gray-600 transition-colors hover:text-primary"
-                >
-                  Contacto
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href={ROUTES.branches}
-                  className="text-gray-600 transition-colors hover:text-primary"
-                >
-                  Nuestras Sucursales
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Customer Service */}
-          <div>
-            <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-900">
-              Atención al Cliente
-            </h4>
-            <ul className="space-y-3 text-sm">
-              <li>
-                <Link
-                  href="/sucursales"
-                  className="text-gray-600 transition-colors hover:text-primary"
-                >
-                  Sucursales y Retiro
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href={ROUTES.orders}
-                  className="text-gray-600 transition-colors hover:text-primary"
-                >
-                  Rastrear Pedido
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href={ROUTES.contact}
-                  className="text-gray-600 transition-colors hover:text-primary"
-                >
-                  Contacto
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Contact Info */}
-          <div>
-            <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-900">
-              Contacto
-            </h4>
-            <ul className="space-y-3 text-sm text-gray-600">
-              <li className="flex items-start gap-2">
-                <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
-                <span>
-                  Chimaltenango, Guatemala
-                </span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Phone className="h-4 w-4 flex-shrink-0 text-primary" />
-                <a href="tel:+50212345678" className="hover:text-primary">
-                  +502 1234-5678
-                </a>
-              </li>
-              <li className="flex items-center gap-2">
-                <Mail className="h-4 w-4 flex-shrink-0 text-primary" />
-                <a href="mailto:info@panaderia.gt" className="hover:text-primary">
-                  info@panaderia.gt
-                </a>
-              </li>
-            </ul>
-
-            {/* Horarios */}
-            <div className="mt-4">
-              <p className="text-xs font-semibold text-gray-900">HORARIOS</p>
-              <p className="mt-1 text-sm text-gray-600">
-                Lunes a Sábado: 7:00 AM - 8:00 PM
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom Bar */}
-      <div className="border-t">
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-          <div className="flex flex-col items-center justify-between gap-4 text-sm text-gray-600 sm:flex-row">
-            <p>
-              &copy; {new Date().getFullYear()} Panaderia Svetlana Smart System. 
-              Todos los derechos reservados.
-            </p>
-            <div className="flex gap-6">
-              <Link href="/privacidad" className="hover:text-primary">
-                Privacidad
-              </Link>
-              <Link href="/terminos" className="hover:text-primary">
-                Términos
-              </Link>
-              <Link href="/cookies" className="hover:text-primary">
-                Cookies
-              </Link>
-            </div>
-          </div>
+      <div className="border-t border-[#E8DCCB] bg-[#F3E9DC]">
+        <div className="public-container flex flex-col gap-3 py-5 text-xs text-[#8C522B] sm:flex-row sm:items-center sm:justify-between">
+          <p>© {new Date().getFullYear()} Panadería Svetlana. Todos los derechos reservados.</p>
+          <Link href={ROUTES.contact} className="public-focus inline-flex items-center gap-2 font-semibold text-[#2B170F] transition-colors hover:text-[#D97706]">
+            ¿Necesitas ayuda con tu pedido?
+            <span aria-hidden="true">→</span>
+          </Link>
         </div>
       </div>
     </footer>

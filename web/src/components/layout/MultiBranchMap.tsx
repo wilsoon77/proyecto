@@ -1,48 +1,44 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import { STATIC_BRANCHES } from "@/lib/branches"
 
-export interface BranchLocation {
-  id: string
-  name: string
-  address: string
-  phone: string
-  schedule: string
-  lat: number
-  lng: number
-  mapsUrl: string
+interface LeafletMap {
+  setView(center: [number, number], zoom: number): LeafletMap
+  fitBounds(bounds: [number, number][], options: { padding: [number, number] }): void
+  remove(): void
 }
 
-export const STATIC_BRANCHES: BranchLocation[] = [
-  {
-    id: "central",
-    name: "Sucursal Central",
-    address: "Aldea Buena Vista, Zona 8, Sector Sur, Chimaltenango",
-    phone: "+502 1234-5678",
-    schedule: "Lunes a Sábado: 7:00 AM - 8:00 PM",
-    lat: 14.664106,
-    lng: -90.845432,
-    mapsUrl: "https://maps.app.goo.gl/T9saBh42VUrirRSYA",
-  },
-  {
-    id: "secundaria",
-    name: "Sucursal Secundaria",
-    address: "Frente a Pradera Chimaltenango, Chimaltenango",
-    phone: "+502 8765-4321",
-    schedule: "Lunes a Sábado: 7:00 AM - 8:00 PM",
-    lat: 14.6597265,
-    lng: -90.809855,
-    mapsUrl: "https://maps.app.goo.gl/hZDJzWiRhHeunxrp7",
-  },
-]
+interface LeafletMarker {
+  addTo(map: LeafletMap): LeafletMarker
+  bindPopup(content: string): LeafletMarker
+}
+
+interface LeafletApi {
+  map(container: HTMLElement, options: { zoomControl: boolean; scrollWheelZoom: boolean }): LeafletMap
+  tileLayer(url: string, options: { attribution: string; maxZoom: number }): { addTo(map: LeafletMap): void }
+  divIcon(options: {
+    className: string
+    html: string
+    iconSize: [number, number]
+    iconAnchor: [number, number]
+    popupAnchor: [number, number]
+  }): object
+  marker(center: [number, number], options: { icon: object }): LeafletMarker
+}
+
+declare global {
+  interface Window {
+    L?: LeafletApi
+  }
+}
 
 export default function MultiBranchMap() {
   const mapRef = useRef<HTMLDivElement>(null)
   const [mapLoaded, setMapLoaded] = useState(false)
-  const [activeBranch, setActiveBranch] = useState<BranchLocation | null>(null)
 
   useEffect(() => {
-    let mapInstance: any = null
+    let mapInstance: LeafletMap | null = null
 
     const loadLeaflet = async () => {
       // 1. Cargar CSS de Leaflet si no existe
@@ -55,17 +51,17 @@ export default function MultiBranchMap() {
       }
 
       // 2. Cargar Script de Leaflet si no existe
-      if (!(window as any).L) {
-        await new Promise((resolve, reject) => {
+      if (!window.L) {
+        await new Promise<void>((resolve, reject) => {
           const script = document.createElement("script")
           script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-          script.onload = resolve
+          script.onload = () => resolve()
           script.onerror = reject
           document.head.appendChild(script)
         })
       }
 
-      const L = (window as any).L
+      const L = window.L
       if (!L || !mapRef.current) return
 
       // Prevenir inicialización duplicada
@@ -74,23 +70,24 @@ export default function MultiBranchMap() {
       }
 
       // Inicializar Mapa centrado en Chimaltenango
-      mapInstance = L.map(mapRef.current, {
+      const map = L.map(mapRef.current, {
         zoomControl: true,
         scrollWheelZoom: false,
       }).setView([14.6619, -90.8276], 13)
+      mapInstance = map
 
       // Agregar tiles de OpenStreetMap
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
         maxZoom: 19,
-      }).addTo(mapInstance)
+      }).addTo(map)
 
       // Icono personalizado para las sucursales de la panadería
       const customIcon = L.divIcon({
         className: "custom-map-pin",
         html: `
           <div style="
-            background-color: #d97706;
+            background-color: #c35a42;
             color: white;
             border: 2px solid white;
             border-radius: 50%;
@@ -119,38 +116,34 @@ export default function MultiBranchMap() {
       STATIC_BRANCHES.forEach((b) => {
         bounds.push([b.lat, b.lng])
 
-        const marker = L.marker([b.lat, b.lng], { icon: customIcon }).addTo(mapInstance)
+        const marker = L.marker([b.lat, b.lng], { icon: customIcon }).addTo(map)
         
         const popupContent = `
           <div style="font-family: sans-serif; padding: 4px; max-width: 220px;">
-            <strong style="font-size: 14px; color: #111827;">${b.name}</strong>
+            <strong style="font-size: 14px; color: #111827; display: block; font-family: serif;">${b.name}</strong>
             <p style="margin: 4px 0; font-size: 12px; color: #4b5563; line-height: 1.3;">${b.address}</p>
-            <p style="margin: 2px 0; font-size: 12px; color: #d97706; font-weight: 600;">📞 ${b.phone}</p>
+            <p style="margin: 2px 0; font-size: 12px; color: #c35a42; font-weight: 600;">Tel: ${b.phone}</p>
             <a href="${b.mapsUrl}" target="_blank" rel="noreferrer" style="
               display: inline-block;
               margin-top: 6px;
               font-size: 11px;
               color: white;
-              background-color: #d97706;
+              background-color: #c35a42;
               padding: 5px 10px;
               border-radius: 6px;
               text-decoration: none;
               font-weight: 600;
             ">
-              📍 Abrir en Google Maps
+              Abrir en Google Maps &rarr;
             </a>
           </div>
         `
         marker.bindPopup(popupContent)
-
-        marker.on("click", () => {
-          setActiveBranch(b)
-        })
       })
 
       // Ajustar vista para encuadrar ambos marcadores con margen suficiente
       if (bounds.length > 0) {
-        mapInstance.fitBounds(bounds, { padding: [60, 60] })
+        map.fitBounds(bounds, { padding: [60, 60] })
       }
 
       setMapLoaded(true)
@@ -168,22 +161,22 @@ export default function MultiBranchMap() {
   return (
     <div className="space-y-4">
       {/* Visualizador del Mapa con los 2 Marcadores en Chimaltenango */}
-      <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-gray-100 shadow-md">
+      <div className="relative overflow-hidden rounded-2xl border border-border bg-secondary shadow-sm">
         <div ref={mapRef} className="h-[450px] w-full z-0" />
 
         {!mapLoaded && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-100/90 text-gray-500 text-sm font-medium z-10">
-            Cargando mapa de sucursales en Chimaltenango…
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-secondary/90 text-sm font-medium text-muted-foreground">
+            Cargando mapa de sucursales en Chimaltenango...
           </div>
         )}
 
         {/* Indicador de Marcadores en el Mapa */}
-        <div className="absolute top-3 right-3 z-10 bg-white/95 backdrop-blur px-3 py-2 rounded-lg border border-gray-200 shadow-sm text-xs space-y-1">
-          <p className="font-bold text-gray-900 flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-amber-600 inline-block" />
-            2 Sucursales Activas
+        <div className="absolute right-3 top-3 z-10 space-y-1 rounded-xl border border-border bg-card/95 px-3 py-2 text-xs shadow-sm backdrop-blur">
+          <p className="flex items-center gap-1.5 font-bold text-foreground">
+            <span className="inline-block h-2.5 w-2.5 rounded-full bg-primary" />
+            2 sucursales activas
           </p>
-          <p className="text-[11px] text-gray-500">Chimaltenango, Guatemala</p>
+          <p className="text-[11px] text-muted-foreground">Chimaltenango, Guatemala</p>
         </div>
       </div>
     </div>

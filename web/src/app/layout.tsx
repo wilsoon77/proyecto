@@ -18,31 +18,37 @@ const organizationJsonLd = {
   "@type": "Bakery",
   name: "Panadería Svetlana",
   url: siteUrl,
+  logo: `${siteUrl}/images/logo-panaderia.svg`,
+  image: `${siteUrl}/images/logo-panaderia.svg`,
+  description: "Pan fresco, pan dulce tradicional y productos horneados artesanales de Panadería Svetlana en Guatemala.",
+  address: {
+    "@type": "PostalAddress",
+    addressLocality: "Chimaltenango",
+    addressCountry: "GT",
+  },
 };
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: "Panadería Svetlana | Pan fresco en Guatemala",
-  description: "Pan fresco, pasteles y productos artesanales de Panadería Svetlana en Guatemala.",
-  keywords: ["panadería", "Guatemala", "pan", "pasteles", "productos artesanales"],
+  description: "Pan fresco, pan dulce tradicional y productos horneados artesanales de Panadería Svetlana en Guatemala.",
+  keywords: ["panadería", "Guatemala", "pan", "pan dulce", "pan artesanal", "productos horneados", "Chimaltenango"],
   applicationName: "Panadería Svetlana",
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    type: "website",
-    locale: "es_GT",
     url: "/",
     siteName: "Panadería Svetlana",
     title: "Panadería Svetlana | Pan fresco en Guatemala",
-    description: "Pan fresco, pasteles y productos artesanales en Guatemala.",
-    images: [{ url: "/images/Panaderia_Svetlana_logo.jpeg", alt: "Panadería Svetlana" }],
+    description: "Pan fresco, pan dulce tradicional y productos horneados artesanales en Guatemala.",
+    images: [{ url: "/images/logo-panaderia.svg", alt: "Panadería Svetlana" }],
   },
   twitter: {
     card: "summary",
     title: "Panadería Svetlana | Pan fresco en Guatemala",
-    description: "Pan fresco, pasteles y productos artesanales en Guatemala.",
-    images: ["/images/Panaderia_Svetlana_logo.jpeg"],
+    description: "Pan fresco, pan dulce tradicional y productos horneados artesanales en Guatemala.",
+    images: ["/images/logo-panaderia.svg"],
   },
   robots: {
     index: true,
@@ -78,7 +84,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd).replace(/</g, "\\u003c") }}
         />
       </head>
-      <body className="antialiased font-sans">
+      <body className="antialiased font-sans bg-background text-foreground selection:bg-primary/20 selection:text-foreground">
         <QueryProvider>
           <ToastProvider>
             <SystemConfigProvider>

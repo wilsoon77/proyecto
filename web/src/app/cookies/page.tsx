@@ -21,7 +21,7 @@ export default function CookiesPage() {
         <p>Puedes controlar las cookies desde la configuración de tu navegador. Ten en cuenta que deshabilitarlas puede afectar la experiencia.</p>
 
         <h2>Contacto</h2>
-        <p>Para dudas sobre cookies, escríbenos a info@panaderia.gt.</p>
+        <p>Para dudas sobre cookies, escríbenos a panaderiasvetlana@gmail.com.</p>
       </div>
     </div>
   )

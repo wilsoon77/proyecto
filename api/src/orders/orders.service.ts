@@ -53,6 +53,10 @@ export class OrdersService {
       throw new BadRequestException('La tienda no está aceptando pedidos en línea en este momento.');
     }
 
+    if (await this.systemConfig.getBool('orders.catalog_only')) {
+      throw new BadRequestException('La tienda está en modo catálogo. Las compras están deshabilitadas en este momento.');
+    }
+
     const maxItems = await this.systemConfig.getNumber('orders.max_items');
     const totalItems = dto.items?.reduce((sum, item) => sum + item.quantity, 0) ?? 0;
     if (totalItems > maxItems) {

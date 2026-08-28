@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader as Loader2 } from 'lucide-react'
+import { Loader2, Search, SlidersHorizontal } from 'lucide-react'
 import { ProductGrid } from '@/components/products/ProductGrid'
-import { CategoryBadge } from '@/components/products/CategoryBadge'
 import { Button } from '@/components/ui/button'
 import { useCart } from '@/context/CartContext'
 import { useToast } from '@/context/ToastContext'
+import { useSystemConfig } from '@/context/SystemConfigContext'
 import { productsService } from '@/lib/api'
 import { apiProductToProduct } from '@/lib/api/transformers'
 import type { ApiCategory, PaginatedResponse, ProductFilters } from '@/lib/api/types'
@@ -36,6 +36,7 @@ export function CatalogClient({ initialCatalog, categories, filters }: CatalogCl
   const router = useRouter()
   const { addItem } = useCart()
   const { show } = useToast()
+  const { canPurchase, isCatalogOnly, isLoading: isConfigLoading } = useSystemConfig()
   const [products, setProducts] = useState<Product[]>(() => initialCatalog.data.map(apiProductToProduct))
   const [currentPage, setCurrentPage] = useState(initialCatalog.meta.page)
   const [totalPages, setTotalPages] = useState(initialCatalog.meta.pageCount)
@@ -43,13 +44,17 @@ export function CatalogClient({ initialCatalog, categories, filters }: CatalogCl
   const [isLoadingMore, setIsLoadingMore] = useState(false)
 
   useEffect(() => {
-    setProducts(initialCatalog.data.map(apiProductToProduct))
-    setCurrentPage(initialCatalog.meta.page)
-    setTotalPages(initialCatalog.meta.pageCount)
-    setTotalProducts(initialCatalog.meta.total)
+    const timer = window.setTimeout(() => {
+      setProducts(initialCatalog.data.map(apiProductToProduct))
+      setCurrentPage(initialCatalog.meta.page)
+      setTotalPages(initialCatalog.meta.pageCount)
+      setTotalProducts(initialCatalog.meta.total)
+    }, 0)
+    return () => window.clearTimeout(timer)
   }, [initialCatalog])
 
   const handleAddToCart = (productId: number) => {
+    if (!canPurchase) return
     const product = products.find((item) => item.id === productId)
     if (product) addItem(product, 1, defaultSalePresentation(product))
   }
@@ -63,11 +68,7 @@ export function CatalogClient({ initialCatalog, categories, filters }: CatalogCl
 
     setIsLoadingMore(true)
     try {
-      const response = await productsService.list({
-        ...filters,
-        page: currentPage + 1,
-        pageSize: filters.pageSize ?? 12,
-      })
+      const response = await productsService.list({ ...filters, page: currentPage + 1, pageSize: filters.pageSize ?? 12 })
       setProducts((current) => [...current, ...response.data.map(apiProductToProduct)])
       setCurrentPage(response.meta.page)
       setTotalPages(response.meta.pageCount)
@@ -80,89 +81,85 @@ export function CatalogClient({ initialCatalog, categories, filters }: CatalogCl
     }
   }
 
-  const displayCount = products.length
-  const progress = totalProducts > 0 ? Math.min((displayCount / totalProducts) * 100, 100) : 0
-
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      <div className="mb-6">
-        <h1 className="font-display text-3xl font-bold text-foreground">Productos</h1>
-        <p className="mt-1 text-muted-foreground">{totalProducts} productos encontrados</p>
+    <div className="public-container py-8 sm:py-12">
+      <header className="grid gap-5 border-b border-[#E8DCCB] pb-8 lg:grid-cols-[1fr_auto] lg:items-end">
+        <div>
+          <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/80 bg-amber-100/60 px-3.5 py-1 text-xs font-bold uppercase tracking-[0.16em] text-amber-900">
+            Catálogo Svetlana
+          </div>
+          <h1 className="mt-3 max-w-2xl font-display text-4xl font-semibold leading-tight tracking-[-0.04em] text-[#24140D] sm:text-5xl">Elige algo recién horneado.</h1>
+          <p className="mt-4 max-w-xl text-sm leading-relaxed text-[#6E5545] sm:text-base">Explora pan, repostería y bebidas tradicionales. Todo se prepara para que lo recojas recién horneado en tu sucursal favorita.</p>
+        </div>
+        <p className="text-sm font-semibold text-[#8C522B] lg:pb-1">{totalProducts} {totalProducts === 1 ? 'producto disponible' : 'productos disponibles'}</p>
+      </header>
+
+      {!isConfigLoading && isCatalogOnly && (
+        <div role="status" className="mt-6 rounded-2xl border border-amber-300/70 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-950">
+          Catálogo informativo: puedes consultar productos y precios, pero las compras están deshabilitadas temporalmente.
+        </div>
+      )}
+
+      <div className="mt-8 flex items-center gap-2.5">
+        <SlidersHorizontal className="h-4 w-4 shrink-0 text-[#D97706]" aria-hidden="true" />
+        <p className="text-sm font-bold text-[#24140D]">Filtrar el catálogo</p>
       </div>
 
-      <form action="/productos" method="get" className="mb-8 grid items-end gap-4 rounded-xl border border-border bg-card p-4 shadow-card sm:grid-cols-2 lg:grid-cols-4">
+      <form action="/productos" method="get" className="mt-4 grid gap-3.5 rounded-3xl border border-[#DECDBB] bg-[#F3E9DC] p-5 shadow-sm sm:grid-cols-2 lg:grid-cols-[1.6fr_0.65fr_0.65fr_1fr_auto] lg:items-end lg:p-6">
         {filters.branch && <input type="hidden" name="branch" value={filters.branch} />}
-        <div>
-          <label htmlFor="catalog-search" className="mb-1 block text-sm font-medium text-foreground">Buscar</label>
-          <input
-            id="catalog-search"
-            name="q"
-            defaultValue={filters.search ?? ''}
-            placeholder="Buscar productos..."
-            className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
-          />
-        </div>
-        <div>
-          <label htmlFor="catalog-category" className="mb-1 block text-sm font-medium text-foreground">Categoría</label>
-          <select
-            id="catalog-category"
-            name="cat"
-            defaultValue={filters.category ?? ''}
-            className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
-          >
-            <option value="">Todas</option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.slug}>{category.name}</option>
-            ))}
-          </select>
-        </div>
-        <div className="flex gap-2">
-          <div className="flex-1">
-            <label htmlFor="catalog-min" className="mb-1 block text-sm font-medium text-foreground">Precio mín.</label>
-            <input id="catalog-min" name="min" defaultValue={filters.min ?? ''} placeholder="0" type="number" min="0" step="0.01" className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors" />
-          </div>
-          <div className="flex-1">
-            <label htmlFor="catalog-max" className="mb-1 block text-sm font-medium text-foreground">Precio máx.</label>
-            <input id="catalog-max" name="max" defaultValue={filters.max ?? ''} placeholder="100" type="number" min="0" step="0.01" className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors" />
+        {filters.category && <input type="hidden" name="cat" value={filters.category} />}
+
+        <div className="sm:col-span-2 lg:col-span-1">
+          <label htmlFor="catalog-search" className="mb-2 block text-xs font-bold uppercase tracking-[0.14em] text-[#8C522B]">Buscar</label>
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8C522B]" aria-hidden="true" />
+            <input id="catalog-search" name="q" defaultValue={filters.search ?? ''} placeholder="Pan francés, conchas..." className="public-focus h-12 w-full rounded-2xl border border-[#DECDBB] bg-white pl-10 pr-3 text-sm text-[#24140D] placeholder:text-[#8C522B]/60 shadow-xs" />
           </div>
         </div>
+
         <div>
-          <div className="mb-1 flex items-center justify-between">
-            <label htmlFor="catalog-sort" className="block text-sm font-medium text-foreground">Ordenar</label>
-            <Button type="button" variant="link" size="sm" className="px-0" onClick={() => router.push('/productos')}>Limpiar filtros</Button>
-          </div>
-          <select id="catalog-sort" name="sort" defaultValue={filters.sort ?? ''} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors">
+          <label htmlFor="catalog-min" className="mb-2 block text-xs font-bold uppercase tracking-[0.14em] text-[#8C522B]">Precio mínimo</label>
+          <input id="catalog-min" name="min" defaultValue={filters.min ?? ''} placeholder="Q 0" type="number" min="0" step="0.01" className="public-focus h-12 w-full rounded-2xl border border-[#DECDBB] bg-white px-3 text-sm text-[#24140D] placeholder:text-[#8C522B]/60 shadow-xs" />
+        </div>
+
+        <div>
+          <label htmlFor="catalog-max" className="mb-2 block text-xs font-bold uppercase tracking-[0.14em] text-[#8C522B]">Precio máximo</label>
+          <input id="catalog-max" name="max" defaultValue={filters.max ?? ''} placeholder="Q 100" type="number" min="0" step="0.01" className="public-focus h-12 w-full rounded-2xl border border-[#DECDBB] bg-white px-3 text-sm text-[#24140D] placeholder:text-[#8C522B]/60 shadow-xs" />
+        </div>
+
+        <div>
+          <label htmlFor="catalog-sort" className="mb-2 block text-xs font-bold uppercase tracking-[0.14em] text-[#8C522B]">Ordenar</label>
+          <select id="catalog-sort" name="sort" defaultValue={filters.sort ?? ''} className="public-focus h-12 w-full rounded-2xl border border-[#DECDBB] bg-white px-3 text-sm text-[#24140D] shadow-xs">
             <option value="">Relevancia</option>
-            <option value="precio-asc">Precio: menor a mayor</option>
-            <option value="precio-desc">Precio: mayor a menor</option>
+            <option value="precio-asc">Precio menor</option>
+            <option value="precio-desc">Precio mayor</option>
             <option value="nuevo">Novedades</option>
           </select>
         </div>
-        <div className="sm:col-span-2 lg:col-span-4 flex justify-end">
-          <Button type="submit" className="shadow-warm">Aplicar filtros</Button>
-        </div>
+
+        <Button type="submit" className="h-12 rounded-2xl px-6 font-bold shadow-[0_4px_12px_-2px_rgba(217,119,6,0.4)] lg:min-w-[118px]">Aplicar</Button>
       </form>
 
-      <div className="mb-6 flex flex-wrap items-center gap-2">
-        {categories.slice(0, 6).map((category) => (
-          <button key={category.id} type="button" onClick={() => changeCategory(category.slug)}>
-            <CategoryBadge category={category.slug} label={category.name} />
-          </button>
-        ))}
-        {filters.category && <Button variant="ghost" onClick={() => changeCategory()}>Limpiar categoría</Button>}
+      <nav aria-label="Categorías de productos" className="mt-6 -mx-4 overflow-x-auto px-4 pb-1 no-scrollbar sm:mx-0 sm:px-0">
+        <div className="flex min-w-max items-center gap-2">
+          <button type="button" onClick={() => changeCategory()} className={`public-focus rounded-full border px-5 py-2.5 text-sm font-bold transition-all ${!filters.category ? 'border-primary bg-primary text-primary-foreground shadow-sm' : 'border-[#DFCFC0] bg-white text-[#6E5545] hover:border-primary hover:text-primary'}`}>Todos</button>
+          {categories.map((category) => {
+            const active = filters.category === category.slug
+            return <button key={category.id} type="button" onClick={() => changeCategory(category.slug)} className={`public-focus rounded-full border px-5 py-2.5 text-sm font-bold transition-all ${active ? 'border-primary bg-primary text-primary-foreground shadow-sm' : 'border-[#DFCFC0] bg-white text-[#6E5545] hover:border-primary hover:text-primary'}`}>{category.name}</button>
+          })}
+        </div>
+      </nav>
+
+      <div className="mt-8">
+        <ProductGrid products={products} onAddToCart={canPurchase ? handleAddToCart : undefined} />
       </div>
 
-      <ProductGrid products={products} onAddToCart={handleAddToCart} />
-
       {products.length > 0 && (
-        <div className="mt-8 flex flex-col items-center gap-4">
-          <p className="text-sm text-muted-foreground">Mostrando {displayCount} de {totalProducts} productos</p>
-          <div className="h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-muted">
-            <div className="h-full rounded-full bg-primary transition-all duration-300" style={{ width: `${progress}%` }} />
-          </div>
+        <div className="mt-12 flex flex-col items-center gap-4 border-t border-border pt-7">
+          <p className="text-sm text-muted-foreground">Mostrando {products.length} de {totalProducts}</p>
           {currentPage < totalPages && (
-            <Button variant="outline" size="lg" onClick={loadMore} disabled={isLoadingMore} className="min-w-[200px]">
-              {isLoadingMore ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Cargando...</> : 'Cargar más productos'}
+            <Button variant="outline" size="lg" onClick={loadMore} disabled={isLoadingMore} className="h-12 rounded-full border-border px-6">
+              {isLoadingMore ? <><Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> Cargando...</> : 'Cargar más productos'}
             </Button>
           )}
         </div>

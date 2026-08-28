@@ -36,6 +36,8 @@ El catálogo permite seleccionar presentaciones como `Tira completa` y `Media ti
 
 El flujo administrativo de conteo de inventario y cierre diario permite capturar presentaciones y piezas sueltas. Consulta [`documentation/planeacion/PRESENTACIONES_PRODUCTO.md`](../documentation/planeacion/PRESENTACIONES_PRODUCTO.md) para las reglas funcionales.
 
+Desde Configuración, el administrador puede activar `Catálogo solo informativo`. En ese modo el público sigue viendo productos y precios, pero se ocultan los botones de compra, el carrito y el checkout; las reservas también quedan bloqueadas en la API.
+
 ## Estructura del proyecto
 
 ```

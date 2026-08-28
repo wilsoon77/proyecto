@@ -18,6 +18,7 @@ export default function TerminosPage() {
         <h2>Pagos</h2>
         <p>El pago se realiza en efectivo al momento de recoger el pedido en la sucursal seleccionada.</p>
 
+
         <h2>Retiro de pedidos</h2>
         <p>Todos los pedidos se recogen en la sucursal seleccionada. El pedido mínimo es de Q15.</p>
 
@@ -25,7 +26,7 @@ export default function TerminosPage() {
         <p>Por tratarse de productos alimenticios, las devoluciones se evalúan caso por caso dentro del mismo día de compra.</p>
 
         <h2>Contacto</h2>
-        <p>Para soporte, escríbenos a info@panaderia.gt.</p>
+        <p>Para soporte, escríbenos a panaderiasvetlana@gmail.com.</p>
       </div>
     </div>
   )

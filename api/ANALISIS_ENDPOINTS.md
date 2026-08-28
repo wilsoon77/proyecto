@@ -40,6 +40,8 @@ No se exponen módulos de POS, dashboard predictivo, analíticas de demanda, dir
 - `POST /orders/:id/pickup`
 - `GET /orders`, `GET /orders/my-orders`, `GET /orders/:id`
 
+La configuración pública `orders.catalog_only` permite mantener visible el catálogo y sus precios sin permitir nuevas compras. Cuando está activa, el frontend oculta carrito/checkout y `POST /orders/reserve` también rechaza la reserva. `orders.accept_orders=false` produce el mismo modo efectivo de solo catálogo.
+
 Estados válidos: `PENDING`, `CONFIRMED`, `PREPARING`, `READY`, `PICKED_UP` y `CANCELLED`. Una reserva `PENDING` sin confirmar se cancela automáticamente después de 2 horas por defecto y libera su reserva de inventario. Los demás estados no expiran automáticamente.
 
 ### Inventario y producción

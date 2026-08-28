@@ -576,7 +576,7 @@ function MovimientoForm() {
                   type="text"
                   value={transferSearch}
                   onChange={(e) => setTransferSearch(e.target.value)}
-                  placeholder="Buscar pan, pastel, bebida o SKU a transferir..."
+                  placeholder="Buscar pan, galleta, bebida o SKU a transferir..."
                   className="w-full rounded-xl border border-stone-300 bg-white py-2.5 pl-10 pr-8 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
                 {transferSearch && (

@@ -117,18 +117,6 @@ export default function SucursalesPage() {
                     <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
                     <span>{branch.address}</span>
                   </li>
-                  {branch.phone && (
-                    <li className="flex items-center gap-2">
-                      <Phone className="h-4 w-4 flex-shrink-0 text-primary" />
-                      <a 
-                        href={`tel:${branch.phone.replace(/[^\d+]/g, '')}`} 
-                        className="hover:text-primary"
-                        onClick={e => e.stopPropagation()}
-                      >
-                        {branch.phone}
-                      </a>
-                    </li>
-                  )}
                   <li className="flex items-center gap-2">
                     <Clock className="h-4 w-4 flex-shrink-0 text-primary" />
                     <span>Lunes a Sábado: 7:00 AM - 8:00 PM</span>

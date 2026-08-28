@@ -556,6 +556,17 @@ async function main() {
       sortOrder: 9,
     },
     {
+      key: 'orders.catalog_only',
+      value: false,
+      type: 'boolean',
+      category: 'OPERATIONS',
+      label: 'Catálogo solo informativo',
+      description: 'Muestra productos y precios públicamente, pero deshabilita la compra y las nuevas reservas.',
+      isPublic: true,
+      isReadOnly: false,
+      sortOrder: 10,
+    },
+    {
       key: 'operations.maintenance_mode',
       value: false,
       type: 'boolean',
@@ -564,7 +575,7 @@ async function main() {
       description: 'Habilita el modo mantenimiento para suspender temporalmente el acceso público.',
       isPublic: true,
       isReadOnly: false,
-      sortOrder: 10,
+      sortOrder: 11,
     },
   ];
 

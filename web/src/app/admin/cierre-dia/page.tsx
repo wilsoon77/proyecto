@@ -358,67 +358,65 @@ export default function DailyClosePage() {
   // Vista de éxito / Cierre Registrado
   if (result) {
     return (
-      <div className="min-h-screen bg-stone-50 p-4 sm:p-6 lg:p-8">
-        <div className="mx-auto max-w-4xl">
-          <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm sm:p-8">
-            <div className="mb-8 text-center space-y-2">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                <Check className="h-8 w-8" />
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 font-serif">¡Cierre Diario Registrado!</h1>
-              <p className="text-sm sm:text-base text-gray-600">
-                Jornada: <span className="font-semibold text-gray-900">{result.closeDate}</span> · Sucursal: <span className="font-semibold text-gray-900">{selectedBranchName}</span>
-              </p>
+      <div className="mx-auto max-w-4xl space-y-6">
+        <div className="rounded-2xl border border-[#E8DCCB] bg-white p-6 shadow-xs sm:p-8">
+          <div className="mb-8 text-center space-y-2">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+              <Check className="h-8 w-8" />
             </div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#2B170F] font-display">¡Cierre Diario Registrado!</h1>
+            <p className="text-xs sm:text-sm text-[#6E5545]">
+              Jornada: <span className="font-bold text-[#2B170F]">{result.closeDate}</span> · Sucursal: <span className="font-bold text-[#2B170F]">{selectedBranchName}</span>
+            </p>
+          </div>
 
-            <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <SummaryCard label="Ventas calculadas" value={result.summary.totalSold} tone="blue" />
-              <SummaryCard label="Mermas declaradas" value={result.summary.totalWaste} tone="orange" />
-              <SummaryCard label="Sobrantes" value={result.summary.totalSurplus} tone="green" />
-              <SummaryCard label="Productos cerrados" value={result.summary.productsClosed} tone="gray" />
-            </div>
+          <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <SummaryCard label="Ventas calculadas" value={result.summary.totalSold} tone="blue" />
+            <SummaryCard label="Mermas declaradas" value={result.summary.totalWaste} tone="orange" />
+            <SummaryCard label="Sobrantes" value={result.summary.totalSurplus} tone="green" />
+            <SummaryCard label="Productos cerrados" value={result.summary.productsClosed} tone="gray" />
+          </div>
 
-            <div className="mb-8 overflow-x-auto rounded-xl border border-stone-200">
-              <table className="w-full min-w-[620px] text-sm">
-                <thead className="bg-stone-100/70 text-left text-xs uppercase text-stone-600 font-semibold">
-                  <tr>
-                    <th className="px-4 py-3">Producto</th>
-                    <th className="px-4 py-3 text-center">Stock Sistema</th>
-                    <th className="px-4 py-3 text-center">Conteo Físico</th>
-                    <th className="px-4 py-3 text-center">Venta</th>
-                    <th className="px-4 py-3 text-center">Merma</th>
-                    <th className="px-4 py-3 text-center">Sobrante</th>
+          <div className="mb-8 overflow-x-auto rounded-2xl border border-[#E8DCCB]">
+            <table className="w-full min-w-[620px] text-xs">
+              <thead className="bg-[#FAF5EE] text-left text-[11px] uppercase text-[#8C522B] font-bold">
+                <tr>
+                  <th className="px-4 py-3">Producto</th>
+                  <th className="px-4 py-3 text-center">Stock Sistema</th>
+                  <th className="px-4 py-3 text-center">Conteo Físico</th>
+                  <th className="px-4 py-3 text-center">Venta</th>
+                  <th className="px-4 py-3 text-center">Merma</th>
+                  <th className="px-4 py-3 text-center">Sobrante</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#E8DCCB]">
+                {result.items.map((item) => (
+                  <tr key={item.productId} className="hover:bg-[#FAF5EE]/40">
+                    <td className="px-4 py-3 font-bold text-[#2B170F]">{item.productName}</td>
+                    <td className="px-4 py-3 text-center text-[#6E5545]">{item.systemQty}</td>
+                    <td className="px-4 py-3 text-center font-bold text-[#2B170F]">{item.countedQty}</td>
+                    <td className="px-4 py-3 text-center font-bold text-sky-700">{item.soldQty}</td>
+                    <td className="px-4 py-3 text-center font-bold text-[#D97706]">{item.wasteQty}</td>
+                    <td className="px-4 py-3 text-center font-bold text-emerald-700">{item.surplusQty}</td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-stone-100">
-                  {result.items.map((item) => (
-                    <tr key={item.productId} className="hover:bg-stone-50/50">
-                      <td className="px-4 py-3 font-medium text-gray-900">{item.productName}</td>
-                      <td className="px-4 py-3 text-center text-gray-500">{item.systemQty}</td>
-                      <td className="px-4 py-3 text-center font-bold text-gray-900">{item.countedQty}</td>
-                      <td className="px-4 py-3 text-center font-semibold text-blue-600">{item.soldQty}</td>
-                      <td className="px-4 py-3 text-center font-semibold text-amber-600">{item.wasteQty}</td>
-                      <td className="px-4 py-3 text-center font-semibold text-emerald-600">{item.surplusQty}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-            <div className="flex flex-wrap justify-center gap-3">
-              {(user?.role === "ADMIN" || user?.role === "MANAGER") && (
-                <Link href="/admin/cierre-dia/historial">
-                  <Button variant="outline" className="h-11">
-                    <History className="mr-2 h-4 w-4" />Ver historial
-                  </Button>
-                </Link>
-              )}
-              <Link href="/admin">
-                <Button className="h-11">
-                  <ArrowLeft className="mr-2 h-4 w-4" />Volver al panel
+          <div className="flex flex-wrap justify-center gap-3">
+            {(user?.role === "ADMIN" || user?.role === "MANAGER") && (
+              <Link href="/admin/cierre-dia/historial">
+                <Button variant="outline" className="border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] rounded-xl h-11 text-xs font-bold">
+                  <History className="mr-2 h-4 w-4 text-[#D97706]" />Ver historial
                 </Button>
               </Link>
-            </div>
+            )}
+            <Link href="/admin">
+              <Button className="bg-[#D97706] hover:bg-[#B45309] text-white rounded-xl h-11 text-xs font-bold shadow-xs">
+                <ArrowLeft className="mr-2 h-4 w-4" />Volver al panel
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
@@ -426,26 +424,26 @@ export default function DailyClosePage() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 pb-28 sm:pb-20 p-3 sm:p-6 lg:p-8">
+    <div className="space-y-6 pb-20">
       <div className="mx-auto max-w-7xl space-y-6">
         {/* Header Superior */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <Link href="/admin" className="mb-2 inline-flex items-center gap-1 text-xs sm:text-sm text-stone-500 hover:text-stone-900 transition-colors">
+            <Link href="/admin" className="mb-2 inline-flex items-center gap-1 text-xs font-semibold text-[#8C522B] hover:text-[#2B170F] transition-colors">
               <ArrowLeft className="h-3.5 w-3.5" />Volver al panel
             </Link>
-            <h1 className="flex items-center gap-2.5 text-2xl sm:text-3xl font-extrabold text-gray-900 font-serif">
-              <ClipboardCheck className="h-7 w-7 text-primary flex-shrink-0" />
+            <h1 className="flex items-center gap-2.5 text-2xl sm:text-3xl font-bold text-[#2B170F] font-display">
+              <ClipboardCheck className="h-7 w-7 text-[#D97706] flex-shrink-0" />
               Cierre del Día
             </h1>
-            <p className="mt-1 text-xs sm:text-sm text-stone-600 max-w-2xl leading-relaxed">
+            <p className="mt-1 text-xs sm:text-sm text-[#6E5545] max-w-2xl leading-relaxed">
               Arqueo físico de inventario al final de la jornada. Cuenta las piezas restantes para deducir automáticamente las ventas en mostrador y mermas.
             </p>
           </div>
           {(user?.role === "ADMIN" || user?.role === "MANAGER") && (
             <Link href="/admin/cierre-dia/historial">
-              <Button variant="outline" size="sm" className="h-10 border-stone-300">
-                <History className="mr-2 h-4 w-4" />Historial de Cierres
+              <Button variant="outline" size="sm" className="border-[#DECDBB] text-[#2B170F] hover:bg-white rounded-xl h-10 text-xs font-bold shadow-xs">
+                <History className="mr-2 h-4 w-4 text-[#D97706]" />Historial de Cierres
               </Button>
             </Link>
           )}
@@ -611,7 +609,7 @@ export default function DailyClosePage() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={`Buscar ${activeTab === 'PRODUCIDO' ? 'pan, pastel o concha...' : 'bebida o producto...'}`}
+                  placeholder={`Buscar ${activeTab === 'PRODUCIDO' ? 'pan dulce, francés o concha...' : 'bebida o producto...'}`}
                   className="w-full rounded-xl border border-stone-300 bg-white py-2 pl-9 pr-8 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
                 {searchQuery && (

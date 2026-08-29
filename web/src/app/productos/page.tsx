@@ -7,7 +7,7 @@ export const revalidate = 60
 
 export const metadata: Metadata = {
   title: 'Productos | Panadería Svetlana',
-  description: 'Explora el catálogo de pan fresco, pasteles y productos artesanales de Panadería Svetlana.',
+  description: 'Explora el catálogo de pan fresco, pan dulce tradicional y repostería horneada de Panadería Svetlana.',
   alternates: { canonical: '/productos' },
 }
 

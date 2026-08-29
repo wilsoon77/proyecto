@@ -11,15 +11,15 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/images/Panaderia_Svetlana_logo.jpeg",
-      "sizes": "192x192",
-      "type": "image/jpeg",
+      "src": "/images/icon-panaderia.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
       "purpose": "any maskable"
     },
     {
-      "src": "/images/Panaderia_Svetlana_logo.jpeg",
-      "sizes": "512x512",
-      "type": "image/jpeg",
+      "src": "/icon-panaderia.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
       "purpose": "any maskable"
     },
     {

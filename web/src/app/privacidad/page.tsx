@@ -21,6 +21,7 @@ export default function PrivacidadPage() {
         <ul>
           <li>Procesar tus pedidos y coordinar el retiro en la sucursal seleccionada.</li>
           <li>Comunicar promociones y novedades (si lo autorizas).</li>
+          <li>Comunicar promociones y novedades (si lo autorizas).</li>
           <li>Mejorar nuestra plataforma y atención al cliente.</li>
         </ul>
 
@@ -28,13 +29,13 @@ export default function PrivacidadPage() {
         <p>Conservamos tus datos el tiempo necesario para prestarte el servicio y cumplimos con medidas razonables de seguridad.</p>
 
         <h2>Tus derechos</h2>
-        <p>Puedes solicitar acceso, rectificación o eliminación de tus datos escribiendo a info@panaderia.gt.</p>
+        <p>Puedes solicitar acceso, rectificación o eliminación de tus datos escribiendo a panaderiasvetlana@gmail.com.</p>
 
         <h2>Cookies</h2>
         <p>Usamos cookies para mejorar la experiencia. Puedes gestionar tus preferencias en la página de Cookies.</p>
 
         <h2>Contacto</h2>
-        <p>Si tienes preguntas sobre esta política, contáctanos en info@panaderia.gt.</p>
+        <p>Si tienes preguntas sobre esta política, contáctanos en panaderiasvetlana@gmail.com.</p>
       </div>
     </div>
   )

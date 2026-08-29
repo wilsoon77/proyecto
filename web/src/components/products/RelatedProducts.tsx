@@ -12,8 +12,9 @@ export function RelatedProducts({ products, currentId, category }: RelatedProduc
   if (related.length === 0) return null
 
   return (
-    <section className="mt-12">
-      <h2 className="mb-4 font-display text-2xl font-bold text-foreground">Productos Relacionados</h2>
+    <section>
+      <p className="section-kicker">También puede gustarte</p>
+      <h2 className="mb-6 mt-3 font-display text-3xl font-semibold tracking-[-0.035em] text-foreground">Más para compartir</h2>
       <ProductGrid products={related} />
     </section>
   )

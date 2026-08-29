@@ -266,17 +266,21 @@ export default function AdminOperationPage() {
   }, [activity, maxActivity])
 
   return (
-    <div className="space-y-6 p-4 sm:p-6 lg:p-8">
+    <div className="space-y-6">
       {/* Header Principal */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <p className="text-sm text-muted-foreground">{greeting}</p>
-          <p className="mt-1 text-xs font-medium uppercase tracking-wide text-primary">
-            {clock ? clock.toLocaleTimeString("es-GT", { hour: "2-digit", minute: "2-digit" }) : "--:--"}
-          </p>
-          <h1 className="mt-1 text-2xl font-bold text-foreground sm:text-3xl">Operación de la panadería</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Alertas y tareas de inventario, producción y cierre.
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-amber-100/80 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#9E4D1A]">
+              {greeting}
+            </span>
+            <span className="text-xs font-semibold text-[#8C522B]">
+              {clock ? clock.toLocaleTimeString("es-GT", { hour: "2-digit", minute: "2-digit" }) : "--:--"}
+            </span>
+          </div>
+          <h1 className="mt-1 font-display text-2xl font-bold text-[#2B170F] sm:text-3xl">Operación de la panadería</h1>
+          <p className="mt-1 text-xs text-[#6E5545] sm:text-sm">
+            Control de inventario, producción del día y cierres de turno.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -284,9 +288,9 @@ export default function AdminOperationPage() {
             type="button"
             onClick={checkExpirations}
             disabled={isCheckingExpirations}
-            className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-muted disabled:opacity-60 transition"
+            className="inline-flex items-center gap-2 rounded-xl border border-[#DECDBB] bg-white px-3.5 py-2 text-xs font-bold text-[#2B170F] hover:border-[#D97706] hover:bg-[#FAF5EE] disabled:opacity-60 transition shadow-xs"
           >
-            <RefreshCw className={"h-4 w-4 " + (isCheckingExpirations ? "animate-spin" : "")} />
+            <RefreshCw className={"h-4 w-4 text-[#D97706] " + (isCheckingExpirations ? "animate-spin" : "")} />
             <span className="hidden sm:inline">Revisar caducidades</span>
             <span className="sm:hidden">Caducidades</span>
           </button>
@@ -294,52 +298,69 @@ export default function AdminOperationPage() {
         </div>
       </div>
 
-      {/* Tarjetas de Métricas Rápidas */}
+      {/* Tarjetas Bento de Métricas Rápidas */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Link href="/admin/inventario/materias-primas" className="rounded-xl border border-amber-200 bg-amber-50 p-4 shadow-sm transition hover:border-amber-400 hover:shadow-md">
+        {/* Card 1: Warm Amber Oat */}
+        <Link href="/admin/inventario/materias-primas" className="group rounded-2xl border border-[#ECCDB5] bg-[#FAF0E6] p-5 shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-[#D97706] hover:shadow-md">
           <div className="flex items-center justify-between">
-            <Wheat className="h-5 w-5 text-amber-600" />
-            <span className="text-3xl font-bold text-amber-950">{lowMaterials.length}</span>
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F0DDCD] text-[#C85A17]">
+              <Wheat className="h-5 w-5" />
+            </div>
+            <span className="font-display text-3xl font-bold text-[#9E4D1A]">{lowMaterials.length}</span>
           </div>
-          <p className="mt-3 text-sm font-semibold text-amber-950">Materias primas bajas</p>
-          <p className="text-xs text-amber-800">Revisar y reabastecer</p>
+          <p className="mt-4 text-xs font-bold uppercase tracking-wider text-[#9E4D1A]">Materias primas bajas</p>
+          <p className="mt-0.5 text-xs text-[#6E5545]">Revisar y reabastecer stock</p>
         </Link>
-        <Link href="/admin/inventario/caducidades?status=expiring" className="rounded-xl border border-orange-200 bg-orange-50 p-4 shadow-sm transition hover:border-orange-400 hover:shadow-md">
+
+        {/* Card 2: Oat Cream */}
+        <Link href="/admin/inventario/caducidades?status=expiring" className="group rounded-2xl border border-[#DECDBB] bg-[#F3E9DC] p-5 shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-[#D97706] hover:shadow-md">
           <div className="flex items-center justify-between">
-            <CalendarClock className="h-5 w-5 text-orange-600" />
-            <span className="text-3xl font-bold text-orange-950">{expiringLots.length}</span>
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#E8DAC9] text-[#A25514]">
+              <CalendarClock className="h-5 w-5" />
+            </div>
+            <span className="font-display text-3xl font-bold text-[#2B170F]">{expiringLots.length}</span>
           </div>
-          <p className="mt-3 text-sm font-medium">Próximos a vencer</p>
-          <p className="text-xs text-muted-foreground">Productos comprados, próximos 7 días</p>
+          <p className="mt-4 text-xs font-bold uppercase tracking-wider text-[#8C522B]">Próximos a vencer</p>
+          <p className="mt-0.5 text-xs text-[#6E5545]">Lotes en los próximos 7 días</p>
         </Link>
-        <Link href="/admin/produccion" className="rounded-xl border border-primary/20 bg-primary/5 p-4 shadow-sm transition hover:border-primary hover:shadow-md">
+
+        {/* Card 3: Deep Roast Espresso */}
+        <Link href="/admin/produccion" className="group rounded-2xl border border-[#42261B] bg-[#2B170F] p-5 text-[#FAF5EE] shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
           <div className="flex items-center justify-between">
-            <Factory className="h-5 w-5 text-primary" />
-            <span className="text-3xl font-bold text-primary">{producedUnits}</span>
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#3D2317] text-[#F59E0B]">
+              <Factory className="h-5 w-5" />
+            </div>
+            <span className="font-display text-3xl font-bold text-[#FBBF24]">{producedUnits}</span>
           </div>
-          <p className="mt-3 text-sm font-semibold">Unidades producidas hoy</p>
-          <p className="text-xs text-muted-foreground">Amasijos registrados: {production.length}</p>
+          <p className="mt-4 text-xs font-bold uppercase tracking-wider text-[#D49E6E]">Unidades producidas hoy</p>
+          <p className="mt-0.5 text-xs text-[#D2C3B4]">Amasijos registrados: {production.length}</p>
         </Link>
-        <Link href="/admin/cierre-dia" className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm transition hover:border-emerald-400 hover:shadow-md">
+
+        {/* Card 4: Clean White Card */}
+        <Link href="/admin/cierre-dia" className="group rounded-2xl border border-[#DECDBB] bg-white p-5 shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-[#D97706] hover:shadow-md">
           <div className="flex items-center justify-between">
-            <ClipboardCheck className="h-5 w-5 text-emerald-600" />
-            <CheckCircle2 className="h-5 w-5 text-emerald-700" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+              <ClipboardCheck className="h-5 w-5" />
+            </div>
+            <CheckCircle2 className="h-5 w-5 text-emerald-600" />
           </div>
-          <p className="mt-3 text-sm font-semibold text-emerald-950">Cierre diario</p>
-          <p className="text-xs text-emerald-800">Conciliar existencias antes de terminar</p>
+          <p className="mt-4 text-xs font-bold uppercase tracking-wider text-[#2B170F]">Cierre del turno</p>
+          <p className="mt-0.5 text-xs text-[#6E5545]">Conciliar existencias y ventas</p>
         </Link>
       </div>
 
       {/* SECCIÓN DE MOVIMIENTO OPERATIVO (Con cambio de tipo de gráfica y filtros) */}
-      <section className="rounded-xl border border-border bg-card p-4 shadow-sm sm:p-6 space-y-4">
+      <section className="rounded-2xl border border-[#E8DCCB] bg-white p-5 shadow-xs sm:p-6 space-y-4">
         {/* Barra Superior con Título y Controles */}
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between border-b border-border pb-4">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between border-b border-[#E8DCCB] pb-4">
           <div>
             <div className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-primary" />
-              <h2 className="font-semibold text-lg text-foreground">Movimiento operativo</h2>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#FAF0E6] text-[#D97706]">
+                <TrendingUp className="h-4 w-4" />
+              </div>
+              <h2 className="font-bold text-base text-[#2B170F] sm:text-lg">Movimiento operativo</h2>
             </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="text-xs text-[#6E5545] mt-1">
               Tendencia de producción, ventas y mermas en unidades físicas
             </p>
           </div>
@@ -349,11 +370,11 @@ export default function AdminOperationPage() {
             {/* Filtro de Sucursal (Para roles globales) */}
             {isGlobalRole && (
               <div className="relative inline-flex items-center">
-                <Building2 className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                <Building2 className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#8C522B] pointer-events-none" />
                 <select
                   value={selectedBranchSlug}
                   onChange={(e) => setSelectedBranchSlug(e.target.value)}
-                  className="h-9 pl-8 pr-7 text-xs font-medium bg-background border border-border rounded-lg text-foreground hover:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary appearance-none cursor-pointer"
+                  className="h-9 pl-8 pr-7 text-xs font-semibold bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] hover:border-[#D97706] focus:outline-none focus:ring-1 focus:ring-[#D97706] appearance-none cursor-pointer"
                   title="Filtrar por sucursal"
                 >
                   <option value="">Todas las sucursales</option>
@@ -363,21 +384,21 @@ export default function AdminOperationPage() {
                     </option>
                   ))}
                 </select>
-                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
+                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-[#8C522B] pointer-events-none" />
               </div>
             )}
 
             {/* Selector de Rango de Días */}
-            <div className="inline-flex rounded-lg border border-border bg-muted/40 p-0.5 text-xs font-medium">
+            <div className="inline-flex rounded-xl border border-[#DECDBB] bg-[#FAF5EE] p-0.5 text-xs font-semibold">
               {([7, 14, 30] as DayRange[]).map((days) => (
                 <button
                   key={days}
                   type="button"
                   onClick={() => setSelectedDays(days)}
-                  className={`px-2.5 py-1 rounded-md transition ${
+                  className={`px-2.5 py-1 rounded-lg transition ${
                     selectedDays === days
-                      ? "bg-card text-foreground font-semibold shadow-xs"
-                      : "text-muted-foreground hover:text-foreground"
+                      ? "bg-white text-[#D97706] font-bold shadow-2xs"
+                      : "text-[#6E5545] hover:text-[#2B170F]"
                   }`}
                 >
                   {days}D
@@ -386,14 +407,14 @@ export default function AdminOperationPage() {
             </div>
 
             {/* Toggle Tipo de Gráfica (Barras / Líneas / Área) */}
-            <div className="inline-flex rounded-lg border border-border bg-muted/40 p-0.5 text-xs font-medium">
+            <div className="inline-flex rounded-xl border border-[#DECDBB] bg-[#FAF5EE] p-0.5 text-xs font-semibold">
               <button
                 type="button"
                 onClick={() => setChartType("bars")}
-                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md transition ${
+                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg transition ${
                   chartType === "bars"
-                    ? "bg-card text-foreground font-semibold shadow-xs text-primary"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-white text-[#D97706] font-bold shadow-2xs"
+                    : "text-[#6E5545] hover:text-[#2B170F]"
                 }`}
                 title="Vista de Barras"
               >
@@ -403,10 +424,10 @@ export default function AdminOperationPage() {
               <button
                 type="button"
                 onClick={() => setChartType("lines")}
-                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md transition ${
+                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg transition ${
                   chartType === "lines"
-                    ? "bg-card text-foreground font-semibold shadow-xs text-primary"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-white text-[#D97706] font-bold shadow-2xs"
+                    : "text-[#6E5545] hover:text-[#2B170F]"
                 }`}
                 title="Vista de Líneas"
               >
@@ -416,10 +437,10 @@ export default function AdminOperationPage() {
               <button
                 type="button"
                 onClick={() => setChartType("area")}
-                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md transition ${
+                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg transition ${
                   chartType === "area"
-                    ? "bg-card text-foreground font-semibold shadow-xs text-primary"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-white text-[#D97706] font-bold shadow-2xs"
+                    : "text-[#6E5545] hover:text-[#2B170F]"
                 }`}
                 title="Vista de Área Suave"
               >
@@ -430,33 +451,76 @@ export default function AdminOperationPage() {
           </div>
         </div>
 
-        {/* Resumen de Métricas del Período */}
-        <div className="grid grid-cols-3 gap-2 sm:gap-4 pt-1">
-          <div className="rounded-lg border border-primary/20 bg-primary/5 p-2.5 sm:p-3 text-center sm:text-left">
-            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Producción Total</p>
-            <p className="text-base sm:text-xl font-bold text-primary mt-0.5">{totals.produced} <span className="text-xs font-normal text-muted-foreground">uds</span></p>
-          </div>
-          <div className="rounded-lg border border-chart-3/20 bg-chart-3/5 p-2.5 sm:p-3 text-center sm:text-left">
-            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Ventas Totales</p>
-            <p className="text-base sm:text-xl font-bold text-chart-3 mt-0.5">{totals.sold} <span className="text-xs font-normal text-muted-foreground">uds</span></p>
-          </div>
-          <div className="rounded-lg border border-orange-200 bg-orange-50/70 p-2.5 sm:p-3 text-center sm:text-left">
-            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Mermas Totales</p>
-            <p className="text-base sm:text-xl font-bold text-orange-600 mt-0.5">{totals.waste} <span className="text-xs font-normal text-muted-foreground">uds</span></p>
-          </div>
-        </div>
+        {/* Resumen de Métricas del Período con Indicador de Decisión */}
+        {(() => {
+          const wasteRate = totals.produced > 0 ? (totals.waste / totals.produced) * 100 : 0
+          const salesRate = totals.produced > 0 ? (totals.sold / totals.produced) * 100 : 0
+          return (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5 pt-1">
+              {/* 1. Producción */}
+              <div className="rounded-2xl border border-blue-200 bg-blue-50/70 p-3.5 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-bold text-blue-800 uppercase tracking-wider">Producción Total</p>
+                  <span className="h-2 w-2 rounded-full bg-blue-600" />
+                </div>
+                <p className="text-lg sm:text-2xl font-bold text-blue-700 mt-1">
+                  {totals.produced.toLocaleString()} <span className="text-xs font-normal text-blue-800">uds</span>
+                </p>
+                <p className="text-[11px] text-blue-600 font-semibold mt-0.5">Volumen horneado</p>
+              </div>
+
+              {/* 2. Ventas */}
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-3.5 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">Ventas Totales</p>
+                  <span className="h-2 w-2 rounded-full bg-emerald-600" />
+                </div>
+                <p className="text-lg sm:text-2xl font-bold text-emerald-700 mt-1">
+                  {totals.sold.toLocaleString()} <span className="text-xs font-normal text-emerald-800">uds</span>
+                </p>
+                <p className="text-[11px] text-emerald-700 font-bold mt-0.5">{salesRate.toFixed(1)}% colocado</p>
+              </div>
+
+              {/* 3. Mermas */}
+              <div className="rounded-2xl border border-red-200 bg-red-50/70 p-3.5 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-bold text-red-800 uppercase tracking-wider">Mermas Totales</p>
+                  <span className="h-2 w-2 rounded-full bg-red-600" />
+                </div>
+                <p className="text-lg sm:text-2xl font-bold text-red-600 mt-1">
+                  {totals.waste.toLocaleString()} <span className="text-xs font-normal text-red-800">uds</span>
+                </p>
+                <p className="text-[11px] text-red-600 font-bold mt-0.5">{wasteRate.toFixed(1)}% desperdicio</p>
+              </div>
+
+              {/* 4. Semáforo de Control Operativo */}
+              <div className="rounded-2xl border border-[#DECDBB] bg-[#FAF5EE] p-3.5 shadow-2xs">
+                <p className="text-[10px] font-bold text-[#8C522B] uppercase tracking-wider">Tasa de Merma</p>
+                <div className="mt-1 flex items-center gap-1.5">
+                  <span className={`h-2.5 w-2.5 rounded-full ${wasteRate <= 5 ? 'bg-emerald-500' : wasteRate <= 10 ? 'bg-amber-500' : 'bg-red-500'}`} />
+                  <span className="text-sm sm:text-base font-bold text-[#2B170F]">
+                    {wasteRate.toFixed(1)}%
+                  </span>
+                </div>
+                <p className="text-[11px] font-semibold text-[#6E5545] mt-0.5">
+                  {wasteRate <= 5 ? 'Control óptimo (<5%)' : wasteRate <= 10 ? 'Rango normal (5-10%)' : 'Alerta: Reducir amasijo'}
+                </p>
+              </div>
+            </div>
+          )
+        })()}
 
         {/* CONTENEDOR DE GRÁFICA */}
         <div className="pt-2">
           {activity.length === 0 ? (
-            <div className="py-12 text-center text-sm text-muted-foreground">
+            <div className="py-12 text-center text-sm text-[#6E5545]">
               No hay movimientos registrados para el período o sucursal seleccionada.
             </div>
           ) : chartType === "bars" ? (
-            /* 1. MODO BARRAS */
+            /* 1. MODO BARRAS DE ALTO CONTRASTE */
             <div className="overflow-x-auto pb-2">
               <div className="min-w-[500px]">
-                <div className="flex h-52 items-end gap-1.5 sm:gap-2 border-b border-border pb-1">
+                <div className="flex h-52 items-end gap-1.5 sm:gap-2 border-b border-[#E8DCCB] pb-1">
                   {activity.map((day, idx) => {
                     const dateObj = new Date(`${day.date}T12:00:00`)
                     const label = dateObj.toLocaleDateString("es-GT", { weekday: "short" }).replace(".", "")
@@ -468,28 +532,28 @@ export default function AdminOperationPage() {
                         key={day.date}
                         onMouseEnter={() => setHoveredIndex(idx)}
                         onMouseLeave={() => setHoveredIndex(null)}
-                        className={`flex min-w-0 flex-1 flex-col items-center justify-end gap-2 rounded-t-lg transition-colors p-1 ${
-                          isHovered ? "bg-muted/40" : ""
+                        className={`flex min-w-0 flex-1 flex-col items-center justify-end gap-2 rounded-xl transition-colors p-1 ${
+                          isHovered ? "bg-[#FAF5EE]" : ""
                         }`}
                         title={`${day.date}: ${day.produced} producidas, ${day.sold} vendidas, ${day.waste} mermas`}
                       >
                         <div className="flex h-40 w-full items-end justify-center gap-0.5 sm:gap-1">
                           <span
-                            className="w-1/3 rounded-t bg-primary/80 transition-all hover:bg-primary"
+                            className="w-1/3 rounded-t-md bg-blue-600 transition-all hover:bg-blue-700"
                             style={{ height: `${Math.max(3, (day.produced / maxActivity) * 100)}%` }}
                           />
                           <span
-                            className="w-1/3 rounded-t bg-chart-3/80 transition-all hover:bg-chart-3"
+                            className="w-1/3 rounded-t-md bg-emerald-600 transition-all hover:bg-emerald-700"
                             style={{ height: `${Math.max(3, (day.sold / maxActivity) * 100)}%` }}
                           />
                           <span
-                            className="w-1/3 rounded-t bg-orange-400/80 transition-all hover:bg-orange-500"
+                            className="w-1/3 rounded-t-md bg-red-500 transition-all hover:bg-red-600"
                             style={{ height: `${Math.max(3, (day.waste / maxActivity) * 100)}%` }}
                           />
                         </div>
                         <div className="text-center">
-                          <span className="block text-[11px] font-semibold text-foreground">{dayNum}</span>
-                          <span className="block text-[10px] capitalize text-muted-foreground">{label}</span>
+                          <span className="block text-[11px] font-bold text-[#2B170F]">{dayNum}</span>
+                          <span className="block text-[10px] capitalize text-[#8C522B]">{label}</span>
                         </div>
                       </div>
                     )
@@ -498,7 +562,7 @@ export default function AdminOperationPage() {
               </div>
             </div>
           ) : (
-            /* 2. MODO LÍNEAS / ÁREA SUAVE (SVG Vectorial) */
+            /* 2. MODO LÍNEAS / ÁREA SUAVE (SVG Vectorial con Paleta de Decisión) */
             <div className="overflow-x-auto pb-2">
               <div className="min-w-[500px]">
                 <div className="relative h-56 w-full">
@@ -507,20 +571,20 @@ export default function AdminOperationPage() {
                     className="h-full w-full overflow-visible"
                   >
                     <defs>
-                      {/* Gradiente Producción */}
+                      {/* Gradiente Producción (Azul Cobalto) */}
                       <linearGradient id="grad-prod" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#d97706" stopOpacity="0.35" />
-                        <stop offset="100%" stopColor="#d97706" stopOpacity="0.0" />
+                        <stop offset="0%" stopColor="#2563eb" stopOpacity="0.30" />
+                        <stop offset="100%" stopColor="#2563eb" stopOpacity="0.0" />
                       </linearGradient>
-                      {/* Gradiente Ventas */}
+                      {/* Gradiente Ventas (Verde Esmeralda) */}
                       <linearGradient id="grad-sold" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#10b981" stopOpacity="0.35" />
-                        <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
+                        <stop offset="0%" stopColor="#059669" stopOpacity="0.30" />
+                        <stop offset="100%" stopColor="#059669" stopOpacity="0.0" />
                       </linearGradient>
-                      {/* Gradiente Mermas */}
+                      {/* Gradiente Mermas (Rojo Carmesí) */}
                       <linearGradient id="grad-waste" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#f97316" stopOpacity="0.35" />
-                        <stop offset="100%" stopColor="#f97316" stopOpacity="0.0" />
+                        <stop offset="0%" stopColor="#dc2626" stopOpacity="0.30" />
+                        <stop offset="100%" stopColor="#dc2626" stopOpacity="0.0" />
                       </linearGradient>
                     </defs>
 
@@ -535,8 +599,8 @@ export default function AdminOperationPage() {
                             y1={y}
                             x2={svgMetrics.width - 20}
                             y2={y}
-                            stroke="currentColor"
-                            strokeOpacity="0.1"
+                            stroke="#E8DCCB"
+                            strokeOpacity="0.8"
                             strokeDasharray={ratio === 0 ? "none" : "3,3"}
                           />
                           <text
@@ -544,8 +608,8 @@ export default function AdminOperationPage() {
                             y={y + 3}
                             textAnchor="end"
                             fontSize="10"
-                            fill="currentColor"
-                            opacity="0.5"
+                            fontWeight="600"
+                            fill="#8C522B"
                           >
                             {val}
                           </text>
@@ -562,26 +626,26 @@ export default function AdminOperationPage() {
                       </>
                     )}
 
-                    {/* Líneas de Tendencia */}
+                    {/* Líneas de Tendencia de Alto Contraste */}
                     <path
                       d={svgMetrics.pathProduced}
                       fill="none"
-                      stroke="#d97706"
-                      strokeWidth="2.5"
+                      stroke="#2563eb"
+                      strokeWidth="2.75"
                       strokeLinecap="round"
                     />
                     <path
                       d={svgMetrics.pathSold}
                       fill="none"
-                      stroke="#10b981"
-                      strokeWidth="2.5"
+                      stroke="#059669"
+                      strokeWidth="2.75"
                       strokeLinecap="round"
                     />
                     <path
                       d={svgMetrics.pathWaste}
                       fill="none"
-                      stroke="#f97316"
-                      strokeWidth="2.5"
+                      stroke="#dc2626"
+                      strokeWidth="2.75"
                       strokeLinecap="round"
                     />
 
@@ -610,53 +674,53 @@ export default function AdminOperationPage() {
                               y1={svgMetrics.paddingTop}
                               x2={ptProd.x}
                               y2={svgMetrics.baselineY}
-                              stroke="currentColor"
-                              strokeOpacity="0.25"
+                              stroke="#8C522B"
+                              strokeOpacity="0.35"
                               strokeWidth="1.5"
                               strokeDasharray="2,2"
                             />
                           )}
 
-                          {/* Punto Producción */}
+                          {/* Punto Producción (Azul) */}
                           <circle
                             cx={ptProd.x}
                             cy={ptProd.y}
-                            r={isHovered ? "5" : "3.5"}
-                            fill="#d97706"
+                            r={isHovered ? "5.5" : "3.5"}
+                            fill="#2563eb"
                             stroke="#ffffff"
-                            strokeWidth="1.5"
+                            strokeWidth="2"
                             className="transition-all"
                           />
-                          {/* Punto Venta */}
+                          {/* Punto Venta (Verde) */}
                           <circle
                             cx={ptSold.x}
                             cy={ptSold.y}
-                            r={isHovered ? "5" : "3.5"}
-                            fill="#10b981"
+                            r={isHovered ? "5.5" : "3.5"}
+                            fill="#059669"
                             stroke="#ffffff"
-                            strokeWidth="1.5"
+                            strokeWidth="2"
                             className="transition-all"
                           />
-                          {/* Punto Merma */}
+                          {/* Punto Merma (Rojo) */}
                           <circle
                             cx={ptWaste.x}
                             cy={ptWaste.y}
-                            r={isHovered ? "5" : "3.5"}
-                            fill="#f97316"
+                            r={isHovered ? "5.5" : "3.5"}
+                            fill="#dc2626"
                             stroke="#ffffff"
-                            strokeWidth="1.5"
+                            strokeWidth="2"
                             className="transition-all"
                           />
 
                           {/* Etiqueta Eje X */}
                           <text
                             x={ptProd.x}
-                            y={svgMetrics.baselineY + 14}
+                            y={svgMetrics.baselineY + 15}
                             textAnchor="middle"
                             fontSize="10"
-                            fontWeight={isHovered ? "bold" : "normal"}
-                            fill="currentColor"
-                            opacity={isHovered ? "1" : "0.7"}
+                            fontWeight={isHovered ? "bold" : "600"}
+                            fill="#2B170F"
+                            opacity={isHovered ? "1" : "0.75"}
                           >
                             {dayNum} {label}
                           </text>
@@ -672,8 +736,8 @@ export default function AdminOperationPage() {
 
         {/* Tarjeta de Detalle en Hover */}
         {hoveredIndex !== null && activity[hoveredIndex] && (
-          <div className="rounded-lg border border-border bg-muted/30 p-2.5 text-xs flex flex-wrap items-center justify-between gap-3 animate-in fade-in">
-            <span className="font-semibold text-foreground">
+          <div className="rounded-2xl border border-[#DECDBB] bg-[#FAF5EE] p-3 text-xs flex flex-wrap items-center justify-between gap-3 animate-in fade-in">
+            <span className="font-bold text-[#2B170F]">
               {new Date(`${activity[hoveredIndex].date}T12:00:00`).toLocaleDateString("es-GT", {
                 weekday: "long",
                 day: "numeric",
@@ -681,16 +745,16 @@ export default function AdminOperationPage() {
               })}
             </span>
             <div className="flex items-center gap-4">
-              <span className="inline-flex items-center gap-1.5 font-medium text-amber-700">
-                <i className="h-2 w-2 rounded-full bg-primary" />
+              <span className="inline-flex items-center gap-1.5 font-bold text-blue-700">
+                <i className="h-2.5 w-2.5 rounded-full bg-blue-600" />
                 Producción: <strong>{activity[hoveredIndex].produced}</strong> uds
               </span>
-              <span className="inline-flex items-center gap-1.5 font-medium text-emerald-700">
-                <i className="h-2 w-2 rounded-full bg-chart-3" />
+              <span className="inline-flex items-center gap-1.5 font-bold text-emerald-700">
+                <i className="h-2.5 w-2.5 rounded-full bg-emerald-600" />
                 Ventas: <strong>{activity[hoveredIndex].sold}</strong> uds
               </span>
-              <span className="inline-flex items-center gap-1.5 font-medium text-orange-700">
-                <i className="h-2 w-2 rounded-full bg-orange-500" />
+              <span className="inline-flex items-center gap-1.5 font-bold text-red-600">
+                <i className="h-2.5 w-2.5 rounded-full bg-red-600" />
                 Mermas: <strong>{activity[hoveredIndex].waste}</strong> uds
               </span>
             </div>
@@ -698,22 +762,22 @@ export default function AdminOperationPage() {
         )}
 
         {/* Leyenda Inferior */}
-        <div className="flex flex-wrap items-center justify-between gap-4 border-t border-border/70 pt-3 text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-t border-[#E8DCCB] pt-3 text-xs text-[#6E5545]">
           <div className="flex flex-wrap items-center gap-4">
-            <span className="inline-flex items-center gap-1.5">
-              <i className="h-2.5 w-2.5 rounded-full bg-primary/80" />
-              Producción
+            <span className="inline-flex items-center gap-1.5 font-bold text-blue-700">
+              <i className="h-2.5 w-2.5 rounded-full bg-blue-600" />
+              Producción (Horneado)
             </span>
-            <span className="inline-flex items-center gap-1.5">
-              <i className="h-2.5 w-2.5 rounded-full bg-chart-3/80" />
-              Ventas
+            <span className="inline-flex items-center gap-1.5 font-bold text-emerald-700">
+              <i className="h-2.5 w-2.5 rounded-full bg-emerald-600" />
+              Ventas (Despacho)
             </span>
-            <span className="inline-flex items-center gap-1.5">
-              <i className="h-2.5 w-2.5 rounded-full bg-orange-400/80" />
-              Mermas
+            <span className="inline-flex items-center gap-1.5 font-bold text-red-600">
+              <i className="h-2.5 w-2.5 rounded-full bg-red-600" />
+              Mermas (Desperdicio)
             </span>
           </div>
-          <span className="text-[11px] text-muted-foreground/80">
+          <span className="text-[11px] text-[#8C522B] font-semibold">
             {selectedBranchSlug
               ? `Filtrado por: ${branches.find((b) => b.slug === selectedBranchSlug)?.name || selectedBranchSlug}`
               : "Consolidado de todas las sucursales"}
@@ -723,29 +787,29 @@ export default function AdminOperationPage() {
 
       {/* Grid Inferior de Alertas y Caducidades */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <section className="rounded-xl border border-border bg-card shadow-sm">
-          <div className="flex items-center justify-between border-b border-border p-4">
+        <section className="rounded-2xl border border-[#E8DCCB] bg-white shadow-xs overflow-hidden">
+          <div className="flex items-center justify-between border-b border-[#E8DCCB] p-4 bg-[#FAF5EE]/60">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-600" />
-              <h2 className="font-semibold">Alertas activas</h2>
+              <AlertTriangle className="h-4.5 w-4.5 text-[#D97706]" />
+              <h2 className="font-bold text-sm text-[#2B170F]">Alertas activas</h2>
             </div>
-            <Link href="/admin/historial" className="text-xs font-medium text-primary hover:underline">
+            <Link href="/admin/historial" className="text-xs font-bold text-[#D97706] hover:underline">
               Ver historial
             </Link>
           </div>
-          <div className="divide-y divide-border">
+          <div className="divide-y divide-[#E8DCCB]">
             {isLoading ? (
-              <p className="p-4 text-sm text-muted-foreground">Cargando alertas...</p>
+              <p className="p-4 text-xs text-[#6E5545]">Cargando alertas...</p>
             ) : notifications.length === 0 ? (
-              <p className="p-4 text-sm text-muted-foreground">No hay alertas recientes.</p>
+              <p className="p-4 text-xs text-[#6E5545]">No hay alertas recientes.</p>
             ) : (
               notifications.slice(0, 8).map((item) => (
-                <div key={item.id} className="flex gap-3 p-4">
-                  <Bell className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <div key={item.id} className="flex gap-3 p-4 hover:bg-[#FAF5EE]/40 transition-colors">
+                  <Bell className="mt-0.5 h-4 w-4 shrink-0 text-[#D97706]" />
                   <div className="min-w-0">
-                    <p className="text-sm font-medium">{item.title}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{item.message}</p>
-                    <p className="mt-1 text-[11px] text-muted-foreground/70">{formatDate(item.createdAt)}</p>
+                    <p className="text-xs font-bold text-[#2B170F]">{item.title}</p>
+                    <p className="mt-0.5 text-xs text-[#6E5545]">{item.message}</p>
+                    <p className="mt-1 text-[10px] text-[#8C522B]">{formatDate(item.createdAt)}</p>
                   </div>
                 </div>
               ))
@@ -753,27 +817,29 @@ export default function AdminOperationPage() {
           </div>
         </section>
 
-        <section className="rounded-xl border border-border bg-card shadow-sm">
-          <div className="flex items-center justify-between border-b border-border p-4">
+        <section className="rounded-2xl border border-[#E8DCCB] bg-white shadow-xs overflow-hidden">
+          <div className="flex items-center justify-between border-b border-[#E8DCCB] p-4 bg-[#FAF5EE]/60">
             <div className="flex items-center gap-2">
-              <Package className="h-5 w-5 text-orange-600" />
-              <h2 className="font-semibold">Productos próximos a vencer</h2>
+              <Package className="h-4.5 w-4.5 text-[#D97706]" />
+              <h2 className="font-bold text-sm text-[#2B170F]">Productos próximos a vencer</h2>
             </div>
-            <Link href="/admin/inventario/caducidades" className="text-xs font-medium text-primary hover:underline">
+            <Link href="/admin/inventario/caducidades" className="text-xs font-bold text-[#D97706] hover:underline">
               Ver lotes
             </Link>
           </div>
-          <div className="divide-y divide-border">
+          <div className="divide-y divide-[#E8DCCB]">
             {expiringLots.length === 0 ? (
-              <p className="p-4 text-sm text-muted-foreground">No hay lotes próximos a vencer.</p>
+              <p className="p-4 text-xs text-[#6E5545]">No hay lotes próximos a vencer.</p>
             ) : (
               expiringLots.slice(0, 8).map((lot) => (
-                <div key={lot.id} className="flex items-center justify-between gap-4 p-4">
+                <div key={lot.id} className="flex items-center justify-between gap-4 p-4 hover:bg-[#FAF5EE]/40 transition-colors">
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{lot.product.name}</p>
-                    <p className="text-xs text-muted-foreground">{lot.branch.name} · vence {lot.expiresAt}</p>
+                    <p className="truncate text-xs font-bold text-[#2B170F]">{lot.product.name}</p>
+                    <p className="text-[11px] text-[#6E5545]">{lot.branch.name} · vence {lot.expiresAt}</p>
                   </div>
-                  <span className="shrink-0 text-sm font-semibold">{lot.availableQuantity} uds.</span>
+                  <span className="shrink-0 text-xs font-bold text-[#2B170F] bg-[#FAF5EE] border border-[#DECDBB] px-2.5 py-1 rounded-lg">
+                    {lot.availableQuantity} uds.
+                  </span>
                 </div>
               ))
             )}
@@ -782,34 +848,34 @@ export default function AdminOperationPage() {
       </div>
 
       {/* Sección Materias Primas Bajo Mínimo */}
-      <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
+      <section className="rounded-2xl border border-[#E8DCCB] bg-white p-5 shadow-xs">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Wheat className="h-5 w-5 text-amber-600" />
-            <h2 className="font-semibold">Materias primas bajo mínimo</h2>
+            <Wheat className="h-4.5 w-4.5 text-[#D97706]" />
+            <h2 className="font-bold text-sm text-[#2B170F]">Materias primas bajo mínimo</h2>
           </div>
-          <Link href="/admin/inventario/materias-primas" className="text-xs font-medium text-primary hover:underline">
+          <Link href="/admin/inventario/materias-primas" className="text-xs font-bold text-[#D97706] hover:underline">
             Gestionar inventario
           </Link>
         </div>
         {lowMaterials.length === 0 ? (
-          <p className="mt-4 text-sm text-muted-foreground">No hay materias primas bajo mínimo en la sucursal consultada.</p>
+          <p className="mt-4 text-xs text-[#6E5545]">No hay materias primas bajo mínimo en la sucursal consultada.</p>
         ) : (
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {lowMaterials.slice(0, 9).map((item) => (
-              <div key={item.id} className="rounded-lg border border-amber-200 bg-amber-50 p-3">
-                <p className="text-sm font-medium text-amber-950">{item.rawMaterial.name}</p>
-                <p className="mt-1 text-xs text-amber-800">
+              <div key={item.id} className="rounded-xl border border-[#ECCDB5] bg-[#FAF0E6] p-3.5">
+                <p className="text-xs font-bold text-[#2B170F]">{item.rawMaterial.name}</p>
+                <p className="mt-1 text-xs text-[#9E4D1A]">
                   {asNumber(item.quantity).toFixed(1)} {item.rawMaterial.baseUnit} · mínimo {asNumber(item.rawMaterial.minStock).toFixed(1)}
                 </p>
-                <p className="mt-1 text-[11px] text-amber-700">{item.branch.name}</p>
+                <p className="mt-1 text-[10px] text-[#8C522B]">{item.branch.name}</p>
               </div>
             ))}
           </div>
         )}
       </section>
 
-      <p className="text-right text-xs text-muted-foreground">
+      <p className="text-right text-[11px] text-[#8C522B]">
         {lastUpdated ? "Actualizado " + lastUpdated.toLocaleTimeString("es-GT") : "Sin actualizar"}
       </p>
     </div>

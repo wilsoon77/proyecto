@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, Suspense, useRef, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
+import { useEffect, useRef, useState, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import HCaptcha from "@hcaptcha/react-hcaptcha"
+import { Eye, EyeOff, LockKeyhole, Mail } from "lucide-react"
 import { ROUTES } from "@/lib/constants"
 import { useAuth } from "@/context/AuthContext"
 import { useToast } from "@/context/ToastContext"
@@ -14,268 +15,216 @@ import { getDeviceId } from "@/lib/device-fingerprint"
 import { authService } from "@/lib/api/auth"
 
 function getSafeReturnUrl(value: string | null): string {
-  if (!value || !value.startsWith('/') || value.startsWith('//') || value.includes('\\')) {
-    return ROUTES.home
-  }
-
+  if (!value || !value.startsWith("/") || value.startsWith("//") || value.includes("\\")) return ROUTES.home
   return value
 }
 
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const returnUrl = getSafeReturnUrl(searchParams.get('returnUrl'))
-  const oauthError = searchParams.get('error')
+  const returnUrl = getSafeReturnUrl(searchParams.get("returnUrl"))
+  const oauthError = searchParams.get("error")
   const { login, isLoading } = useAuth()
   const { show } = useToast()
-  
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
-  const [error, setError] = useState<string | null>(oauthError === 'oauth_failed' ? 'Error al iniciar sesión con OAuth' : null)
-  const [oauthLoading, setOauthLoading] = useState<'google' | null>(null)
+  const [error, setError] = useState<string | null>(oauthError === "oauth_failed" ? "No fue posible iniciar sesión con Google." : null)
+  const [oauthLoading, setOauthLoading] = useState<"google" | null>(null)
   const [captchaToken, setCaptchaToken] = useState<string | null>(null)
   const captchaRef = useRef<HCaptcha>(null)
-  
-  // Nuevos estados para UX mejorada
   const [rememberMe, setRememberMe] = useState(false)
-  const [deviceId, setDeviceId] = useState<string>("")
+  const [deviceId, setDeviceId] = useState("")
   const [requiresCaptcha, setRequiresCaptcha] = useState(false)
   const [checkingCaptcha, setCheckingCaptcha] = useState(false)
 
-  // Obtener deviceId al montar el componente
   useEffect(() => {
-    const id = getDeviceId()
-    setDeviceId(id)
+    const timer = window.setTimeout(() => setDeviceId(getDeviceId()), 0)
+    return () => window.clearTimeout(timer)
   }, [])
 
-  // Verificar si se requiere captcha cuando cambia el email
   const checkCaptchaRequired = async (emailToCheck: string) => {
     if (!emailToCheck || !deviceId) return
-    
     setCheckingCaptcha(true)
     try {
       const result = await authService.checkCaptcha(emailToCheck, deviceId)
       setRequiresCaptcha(result.required)
-      // Si ya no se requiere captcha, limpiar el token
-      if (!result.required) {
-        setCaptchaToken(null)
-      }
+      if (!result.required) setCaptchaToken(null)
     } catch {
-      // Si hay error, mostrar captcha por seguridad
       setRequiresCaptcha(true)
     } finally {
       setCheckingCaptcha(false)
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault()
     setError(null)
-
     if (!email || !password) {
-      setError("Por favor, completa todos los campos")
+      setError("Completa tu correo y contraseña para continuar.")
       return
     }
 
-    // Validar CAPTCHA solo si es requerido
-    const captchaRequired = isCaptchaEnabled() && requiresCaptcha
-    if (captchaRequired && !captchaToken) {
-      setError("Por favor, completa la verificación de seguridad")
+    if (isCaptchaEnabled() && requiresCaptcha && !captchaToken) {
+      setError("Completa la verificación de seguridad para continuar.")
       return
     }
 
     try {
-      await login({ 
-        email, 
-        password, 
-        captchaToken: captchaToken || undefined,
-        rememberMe,
-        deviceId: deviceId || undefined
-      })
-      show("¡Bienvenido de vuelta!", { variant: "success" })
+      await login({ email, password, captchaToken: captchaToken || undefined, rememberMe, deviceId: deviceId || undefined })
+      show("Bienvenido de vuelta.", { variant: "success" })
       router.push(returnUrl)
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Error al iniciar sesión"
+    } catch (loginError: unknown) {
+      const message = loginError instanceof Error ? loginError.message : "No fue posible iniciar sesión."
       setError(message)
-      show("Error al iniciar sesión", { variant: "error" })
-      // Resetear el captcha si hay error
+      show("No fue posible iniciar sesión.", { variant: "error" })
       captchaRef.current?.resetCaptcha()
       setCaptchaToken(null)
-      // Después de un error, verificar si ahora se requiere captcha
       await checkCaptchaRequired(email)
     }
   }
 
-  const handleOAuth = async (provider: 'google') => {
+  const handleOAuth = async () => {
     setError(null)
-    setOauthLoading(provider)
-    
+    setOauthLoading("google")
     try {
-      await signInWithOAuth(provider, returnUrl)
-      // La redirección es automática
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : `Error al iniciar sesión con ${provider}`
+      await signInWithOAuth("google", returnUrl)
+    } catch (oauthLoginError: unknown) {
+      const message = oauthLoginError instanceof Error ? oauthLoginError.message : "No fue posible iniciar sesión con Google."
       setError(message)
-      show(`Error al iniciar sesión con ${provider}`, { variant: "error" })
+      show("No fue posible iniciar sesión con Google.", { variant: "error" })
       setOauthLoading(null)
     }
   }
 
+  const disabled = isLoading || !!oauthLoading
+
   return (
-    <div className="mx-auto flex min-h-[calc(100vh-200px)] max-w-md flex-col items-center justify-center px-4 py-16">
-      <div className="w-full rounded-2xl border border-border bg-card p-8 shadow-card animate-fade-up">
-      <div className="mb-8 text-center">
-        <h1 className="mb-2 font-display text-3xl font-bold text-foreground">Iniciar Sesión</h1>
-        <p className="text-muted-foreground">Ingresa a tu cuenta para continuar.</p>
-      </div>
-      
-      {error && (
-        <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-          {error}
+    <div className="mx-auto flex min-h-[calc(100vh-200px)] max-w-lg flex-col items-center justify-center px-4 py-12">
+      <div className="w-full rounded-2xl border border-border/80 bg-card p-6 sm:p-8 shadow-card animate-fade-up">
+        <div className="mb-6 text-center space-y-1">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <LockKeyhole className="h-6 w-6" />
+          </div>
+          <h1 className="font-serif text-2xl sm:text-3xl font-extrabold text-foreground">Iniciar Sesión</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">Accede a tu cuenta para gestionar tus pedidos y preferencias.</p>
         </div>
-      )}
 
-      <form className="space-y-4" onSubmit={handleSubmit}>
-        <div>
-          <label className="mb-1 block text-sm font-medium text-foreground">
-            Correo electrónico
-          </label>
-          <input 
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            onBlur={(e) => checkCaptchaRequired(e.target.value)}
-            className="w-full rounded-md border p-3 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" 
-            placeholder="tu@correo.com"
-            disabled={isLoading || !!oauthLoading}
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium text-foreground">
-            Contraseña
-          </label>
-          <div className="relative">
-            <input 
-              type={showPassword ? "text" : "password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-md border p-3 pr-10 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" 
-              placeholder="••••••••"
-              disabled={isLoading || !!oauthLoading}
+        {error && (
+          <div role="alert" className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs sm:text-sm text-destructive">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="login-email" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-foreground">
+              Correo Electrónico *
+            </label>
+            <div className="relative">
+              <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+              <input
+                id="login-email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                onBlur={(event) => checkCaptchaRequired(event.target.value)}
+                placeholder="tu@correo.com"
+                disabled={disabled}
+                className="h-11 w-full rounded-xl border border-input bg-background pl-10 pr-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors disabled:opacity-60"
+              />
+            </div>
+          </div>
+
+          <div>
+            <div className="mb-1.5 flex items-center justify-between gap-3">
+              <label htmlFor="login-password" className="block text-xs font-bold uppercase tracking-wider text-foreground">
+                Contraseña *
+              </label>
+              <Link href="/forgot-password" className="text-xs font-semibold text-primary hover:underline">
+                ¿Olvidaste tu contraseña?
+              </Link>
+            </div>
+            <div className="relative">
+              <LockKeyhole className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+              <input
+                id="login-password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="Tu contraseña"
+                disabled={disabled}
+                className="h-11 w-full rounded-xl border border-input bg-background pl-10 pr-11 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors disabled:opacity-60"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((value) => !value)}
+                className="absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground"
+                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+              </button>
+            </div>
+          </div>
+
+          <label className="flex items-center gap-2.5 text-xs text-muted-foreground cursor-pointer pt-1">
+            <input
+              id="rememberMe"
+              name="rememberMe"
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(event) => setRememberMe(event.target.checked)}
+              disabled={disabled}
+              className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
             />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
-              tabIndex={-1}
-            >
-              {showPassword ? (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                </svg>
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-              )}
-            </button>
-          </div>
-          <div className="mt-1 text-right">
-            <Link href="/forgot-password" className="text-sm text-primary hover:underline">
-              ¿Olvidaste tu contraseña?
-            </Link>
-          </div>
-        </div>
-
-        {/* Checkbox Recordar sesión */}
-        <div className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            id="rememberMe"
-            checked={rememberMe}
-            onChange={(e) => setRememberMe(e.target.checked)}
-            className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
-            disabled={isLoading || !!oauthLoading}
-          />
-          <label htmlFor="rememberMe" className="text-sm text-muted-foreground">
             Recordar mi sesión por 30 días
           </label>
+
+          {isCaptchaEnabled() && requiresCaptcha && (
+            <Captcha ref={captchaRef} onVerify={(token) => setCaptchaToken(token)} onExpire={() => setCaptchaToken(null)} />
+          )}
+          {checkingCaptcha && <p className="text-xs text-muted-foreground">Verificando seguridad...</p>}
+
+          <Button
+            type="submit"
+            disabled={disabled || checkingCaptcha}
+            className="touch-tactile h-11 w-full rounded-full font-bold shadow-warm"
+          >
+            {isLoading ? "Ingresando..." : "Ingresar"}
+          </Button>
+        </form>
+
+        <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
+          <span className="h-px flex-1 bg-border" />
+          o continúa con
+          <span className="h-px flex-1 bg-border" />
         </div>
 
-        {/* Captcha inteligente - solo se muestra si es requerido */}
-        {isCaptchaEnabled() && requiresCaptcha && (
-          <Captcha
-            ref={captchaRef}
-            onVerify={(token) => setCaptchaToken(token)}
-            onExpire={() => setCaptchaToken(null)}
-          />
-        )}
-
-        {checkingCaptcha && (
-          <p className="text-xs text-muted-foreground">Verificando seguridad...</p>
-        )}
-
-        <Button 
-          type="submit" 
-          className="w-full shadow-warm"
-          disabled={isLoading || !!oauthLoading || checkingCaptcha}
-        >
-          {isLoading ? "Ingresando..." : "Ingresar"}
-        </Button>
-      </form>
-
-      </div>
-      <div className="my-6 flex w-full items-center gap-2">
-        <div className="h-px flex-1 bg-border" />
-        <span className="text-xs text-muted-foreground">o continúa con</span>
-        <div className="h-px flex-1 bg-border" />
-      </div>
-
-      <div className="grid gap-3">
-        <button 
+        <button
           type="button"
-          onClick={() => handleOAuth('google')}
-          disabled={isLoading || !!oauthLoading}
-          className="flex w-full items-center justify-center gap-3 rounded-md border border-border bg-card p-3 text-sm font-medium hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={handleOAuth}
+          disabled={disabled}
+          className="public-focus touch-tactile flex h-11 w-full items-center justify-center gap-3 rounded-full border border-border bg-background text-sm font-semibold text-foreground hover:bg-secondary transition-colors disabled:opacity-60"
         >
-          <svg className="h-5 w-5" viewBox="0 0 24 24">
-            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-          </svg>
-          {oauthLoading === 'google' ? 'Conectando...' : 'Continuar con Google'}
+          <span className="flex h-5 w-5 items-center justify-center rounded-full border border-border text-xs font-bold">G</span>
+          {oauthLoading === "google" ? "Conectando..." : "Google"}
         </button>
-      </div>
 
-      <p className="mt-6 text-center text-sm text-muted-foreground">
-        ¿No tienes cuenta?{" "}
-        <Link href={ROUTES.register} className="text-primary hover:underline font-medium">
-          Crear cuenta
-        </Link>
-      </p>
+        <p className="mt-6 text-center text-xs text-muted-foreground">
+          ¿No tienes cuenta?{" "}
+          <Link href={ROUTES.register} className="font-bold text-primary hover:underline">
+            Crear cuenta
+          </Link>
+        </p>
+      </div>
     </div>
   )
 }
 
 export default function LoginPage() {
-  return (
-    <Suspense fallback={
-      <div className="mx-auto max-w-md px-4 py-16">
-        <div className="animate-pulse">
-          <div className="h-8 bg-muted rounded w-1/2 mb-4"></div>
-          <div className="h-4 bg-muted rounded w-3/4 mb-8"></div>
-          <div className="space-y-4">
-            <div className="h-12 bg-muted rounded"></div>
-            <div className="h-12 bg-muted rounded"></div>
-            <div className="h-12 bg-muted rounded"></div>
-          </div>
-        </div>
-      </div>
-    }>
-      <LoginForm />
-    </Suspense>
-  )
+  return <Suspense fallback={<div className="public-container flex min-h-[50dvh] items-center justify-center py-16"><div className="w-full max-w-md animate-pulse space-y-4"><div className="h-12 w-2/3 rounded bg-muted" /><div className="h-4 w-1/2 rounded bg-muted" /><div className="h-12 rounded-xl bg-muted" /><div className="h-12 rounded-xl bg-muted" /></div></div>}><LoginForm /></Suspense>
 }

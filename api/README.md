@@ -67,6 +67,10 @@ Backend operativo para una panadería de dos sucursales: catálogo, pedidos para
 
 `isActive=false` oculta el producto del e-commerce, pero no afecta su inventario ni su inclusión en el cierre diario. La disponibilidad temporal de venta se controla separadamente con `isAvailable`.
 
+### Configuración de compra pública
+
+`orders.catalog_only=true` mantiene visibles el catálogo y los precios, pero oculta los controles de compra y rechaza nuevas reservas. `orders.accept_orders=false` también deja el sitio en modo catálogo efectivo. Ambas opciones se administran desde Configuración y la regla se valida tanto en el frontend como en `POST /orders/reserve`.
+
 ### Presentaciones comerciales
 
 Los productos pueden incluir `presentations`, donde cada elemento define `name`, `unitsInStock`, `price`, `isForSale`, `isForProduction`, `isDefault` e `isActive`. El inventario siempre se almacena en la unidad base del producto.

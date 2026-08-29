@@ -1,14 +1,26 @@
 "use client"
 
-import Link from "next/link"
 import Image from "next/image"
-import { ShoppingCart, User, Menu, MapPin, LogOut, Settings, X, Phone, ChevronRight, ChevronDown } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { ROUTES } from "@/lib/constants"
-import { useState, useEffect } from "react"
+import Link from "next/link"
+import { useEffect, useState } from "react"
 import { usePathname } from "next/navigation"
+import {
+  ChevronDown,
+  ChevronRight,
+  LogOut,
+  MapPin,
+  Menu,
+  Phone,
+  Settings,
+  ShoppingBag,
+  ShoppingCart,
+  UserRound,
+  X,
+} from "lucide-react"
+import { ROUTES } from "@/lib/constants"
 import { useCart } from "@/context/CartContext"
 import { useAuth } from "@/context/AuthContext"
+import { useSystemConfig } from "@/context/SystemConfigContext"
 import { branchesService } from "@/lib/api"
 import type { ApiBranch } from "@/lib/api/types"
 import {
@@ -19,417 +31,420 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-// Cache de sucursales para evitar re-fetch en cada navegación (#62)
 let branchesCache: ApiBranch[] | null = null
+
+const navLinks = [
+  { label: "Inicio", href: ROUTES.home },
+  { label: "Productos", href: ROUTES.products },
+  { label: "Nosotros", href: ROUTES.about },
+  { label: "Contacto", href: ROUTES.contact },
+]
+
+function isCurrentPath(pathname: string | null, href: string) {
+  if (href === ROUTES.home) return pathname === href
+  return pathname?.startsWith(href) ?? false
+}
 
 export function Navbar() {
   const { itemCount } = useCart()
   const { user, isLoggedIn, logout } = useAuth()
+  const { canPurchase } = useSystemConfig()
+  const pathname = usePathname()
   const [branches, setBranches] = useState<ApiBranch[]>(branchesCache || [])
   const [selectedBranch, setSelectedBranch] = useState<ApiBranch | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const pathname = usePathname()
 
-  // Cargar sucursales desde la API (con cache)
   useEffect(() => {
+    const applyBranch = (data: ApiBranch[]) => {
+      const savedSlug = typeof window !== "undefined" ? localStorage.getItem("selectedBranch") : null
+      const saved = savedSlug ? data.find((branch) => branch.slug === savedSlug) : null
+      setSelectedBranch(saved || data[0] || null)
+    }
+
     if (branchesCache) {
-      const savedSlug = typeof window !== 'undefined' ? localStorage.getItem('selectedBranch') : null
-      const saved = savedSlug ? branchesCache.find(b => b.slug === savedSlug) : null
-      setSelectedBranch(saved || branchesCache[0] || null)
+      applyBranch(branchesCache)
       return
     }
-    branchesService.list()
-      .then(data => {
+
+    branchesService
+      .list()
+      .then((data) => {
         branchesCache = data
         setBranches(data)
-        const savedSlug = typeof window !== 'undefined' ? localStorage.getItem('selectedBranch') : null
-        const saved = savedSlug ? data.find(b => b.slug === savedSlug) : null
-        setSelectedBranch(saved || data[0] || null)
+        applyBranch(data)
       })
-      .catch(err => console.error('Error cargando sucursales:', err))
+      .catch((error) => console.error("Error cargando sucursales:", error))
   }, [])
 
-  const handleBranchSelect = (branch: ApiBranch) => {
-    setSelectedBranch(branch)
-    if (typeof window !== 'undefined') {
-      const currentBranch = localStorage.getItem('selectedBranch')
-      if (currentBranch !== branch.slug) {
-        localStorage.removeItem('cart')
-        localStorage.setItem('selectedBranch', branch.slug)
-        window.location.reload()
-      }
-    }
-  }
-
-  // Cerrar menú móvil al cambiar de ruta
   useEffect(() => {
-    setMobileMenuOpen(false)
-  }, [pathname])
-
-  // Bloquear scroll del body cuando el menú móvil está abierto
-  useEffect(() => {
-    if (mobileMenuOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
+    document.body.style.overflow = mobileMenuOpen ? "hidden" : ""
     return () => {
-      document.body.style.overflow = ''
+      document.body.style.overflow = ""
     }
   }, [mobileMenuOpen])
 
+  const handleBranchSelect = (branch: ApiBranch) => {
+    setSelectedBranch(branch)
+    if (typeof window === "undefined") return
+
+    const currentBranch = localStorage.getItem("selectedBranch")
+    if (currentBranch === branch.slug) return
+
+    localStorage.removeItem("cart")
+    localStorage.setItem("selectedBranch", branch.slug)
+    window.location.reload()
+  }
+
+  const hasStaffAccess = ["ADMIN", "MANAGER", "BAKER"].includes(user?.role || "")
+
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-white">
-      {/* Top Bar - Información adicional */}
-      <div className="border-b bg-gray-50">
-        <div className="mx-auto flex h-10 max-w-7xl items-center justify-between px-4 text-sm sm:px-6 lg:px-8">
-          <div className="flex items-center gap-2 text-gray-600">
-            <MapPin className="h-4 w-4" />
-            {branches.length > 1 ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger className="hidden sm:inline-flex items-center gap-1 hover:text-primary transition-colors">
-                  {selectedBranch?.name || 'Seleccionar sucursal'}
-                  <ChevronDown className="h-3 w-3" />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  {branches.map(branch => (
-                    <DropdownMenuItem
-                      key={branch.id}
-                      onClick={() => handleBranchSelect(branch)}
-                      className={selectedBranch?.id === branch.id ? 'bg-amber-50 text-amber-700' : ''}
-                    >
-                      <MapPin className="h-3 w-3 mr-2" />
-                      {branch.name}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <span className="hidden sm:inline">{selectedBranch?.name || 'Cargando...'}</span>
-            )}
-            <Link href="/sucursales" className="text-primary hover:underline text-xs sm:text-sm">Ver sucursales</Link>
-          </div>
-          <div className="flex items-center gap-4 text-gray-600 text-xs sm:text-sm">
-            <span className="hidden md:inline">📞 {selectedBranch?.phone || '+502 0000-0000'}</span>
-            <span className="hidden lg:inline">Reserva y recoge en sucursal</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Navbar */}
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-18 items-center justify-between gap-4">
-          {/* Logo */}
-          <Link href={ROUTES.home} className="flex items-center">
-            <Image 
-              src="/images/logo-panaderia.png" 
-              alt="Panadería Svetlana Logo" 
-              width={160} 
-              height={70}
-              className="h-12 w-auto object-contain"
-              priority
-            />
-          </Link>
-
-          {/* Navigation Links - Desktop (4 Enlaces Principales) */}
-          <nav className="hidden items-center gap-7 lg:flex">
+    <>
+      <header
+        style={{ backgroundColor: '#ffffff' }}
+        className="sticky top-0 z-40 w-full border-b border-[#E8DCCB] bg-white shadow-[0_2px_12px_-4px_rgba(40,20,10,0.06)]"
+      >
+        <div className="public-container">
+          <div className="flex h-[64px] sm:h-[72px] items-center justify-between gap-1.5 sm:gap-3">
             <Link
               href={ROUTES.home}
-              className={`text-sm font-medium transition-colors hover:text-primary ${
-                pathname === ROUTES.home ? "text-primary font-semibold" : "text-gray-700"
-              }`}
+              aria-label="Panadería Svetlana, inicio"
+              className="public-focus relative block h-9 w-[108px] min-[360px]:h-10 min-[360px]:w-[120px] min-[400px]:h-11 min-[400px]:w-[140px] sm:h-14 sm:w-[184px] shrink-0"
             >
-              Inicio
-            </Link>
-            <Link
-              href={ROUTES.products}
-              className={`text-sm font-medium transition-colors hover:text-primary ${
-                pathname.startsWith(ROUTES.products) ? "text-primary font-semibold" : "text-gray-700"
-              }`}
-            >
-              Productos
-            </Link>
-            <Link
-              href="/sobre-nosotros"
-              className={`text-sm font-medium transition-colors hover:text-primary ${
-                pathname === "/sobre-nosotros" ? "text-primary font-semibold" : "text-gray-700"
-              }`}
-            >
-              Nosotros
-            </Link>
-            <Link
-              href={ROUTES.contact}
-              className={`text-sm font-medium transition-colors hover:text-primary ${
-                pathname === ROUTES.contact ? "text-primary font-semibold" : "text-gray-700"
-              }`}
-            >
-              Contacto
-            </Link>
-          </nav>
-
-          {/* Actions */}
-          <div className="flex items-center gap-2">
-            {/* Cart */}
-            <Link href={ROUTES.cart}>
-              <Button variant="ghost" size="icon" className="relative h-11 w-11">
-                <ShoppingCart className="h-5 w-5" />
-                {itemCount > 0 && (
-                  <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
-                    {itemCount > 9 ? '9+' : itemCount}
-                  </span>
-                )}
-              </Button>
+              <Image
+                src="/images/logo-panaderia.svg"
+                alt="Panadería Svetlana"
+                fill
+                priority
+                sizes="(max-width: 640px) 120px, 184px"
+                className="object-contain object-left"
+              />
             </Link>
 
-            {/* User Menu */}
-            {isLoggedIn ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="relative h-11 w-11">
-                    <User className="h-5 w-5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <div className="px-2 py-1.5">
-                    <p className="text-sm font-medium">{user?.firstName} {user?.lastName}</p>
-                    <p className="text-xs text-gray-500">{user?.email}</p>
+            <nav aria-label="Navegación principal" className="hidden items-center gap-1 lg:flex">
+              {navLinks.map((link) => {
+                const active = isCurrentPath(pathname, link.href)
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`public-focus rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                      active
+                        ? "bg-secondary text-foreground"
+                        : "text-muted-foreground hover:bg-secondary/70 hover:text-foreground"
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                )
+              })}
+            </nav>
+
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+              <div className="flex items-center">
+                {branches.length > 1 ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        className="public-focus inline-flex h-9 sm:h-10 items-center gap-1 sm:gap-1.5 rounded-full border border-border bg-card px-2 sm:px-3 text-[11px] sm:text-xs font-semibold text-foreground transition-colors hover:border-primary/40 hover:bg-secondary"
+                        aria-label="Elegir sucursal de retiro"
+                      >
+                        <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
+                        <span className="max-w-[62px] min-[360px]:max-w-[76px] min-[400px]:max-w-[110px] sm:max-w-[160px] md:max-w-[200px] truncate">
+                          {selectedBranch?.name || "Sucursal"}
+                        </span>
+                        <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" aria-hidden="true" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-64 p-1.5 shadow-lg">
+                      <div className="px-2 py-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                        Elige tu sucursal de retiro
+                      </div>
+                      {branches.map((branch) => {
+                        const isSelected = selectedBranch?.id === branch.id
+                        return (
+                          <DropdownMenuItem
+                            key={branch.id}
+                            onClick={() => handleBranchSelect(branch)}
+                            className={`flex items-start justify-between gap-2 rounded-lg p-2 text-xs cursor-pointer ${
+                              isSelected ? "bg-primary/10 text-primary font-bold" : "text-foreground hover:bg-secondary"
+                            }`}
+                          >
+                            <div className="flex items-start gap-2">
+                              <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
+                              <div>
+                                <p className="font-semibold">{branch.name}</p>
+                                {branch.address && (
+                                  <p className="text-[10px] font-normal text-muted-foreground line-clamp-1">{branch.address}</p>
+                                )}
+                              </div>
+                            </div>
+                            {isSelected && (
+                              <span className="shrink-0 rounded bg-primary px-1.5 py-0.5 text-[9px] font-bold text-white uppercase">
+                                Activa
+                              </span>
+                            )}
+                          </DropdownMenuItem>
+                        )
+                      })}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <div className="inline-flex h-9 sm:h-10 items-center gap-1.5 rounded-full border border-border bg-card px-2 sm:px-3 text-[11px] sm:text-xs font-semibold text-muted-foreground">
+                    <MapPin className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+                    <span className="max-w-[70px] sm:max-w-[120px] truncate">{selectedBranch?.name || "Sucursal"}</span>
                   </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href={ROUTES.profile}>Mi perfil</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href={ROUTES.orders}>Mis pedidos</Link>
-                  </DropdownMenuItem>
-                  {(['ADMIN', 'MANAGER', 'BAKER'].includes(user?.role || '')) && (
-                    <>
-                      <DropdownMenuSeparator />
+                )}
+              </div>
+
+              {canPurchase && (
+                <Link
+                  href={ROUTES.cart}
+                  aria-label={`Carrito${itemCount ? `, ${itemCount} productos` : ""}`}
+                  className="public-focus relative inline-flex h-9 w-9 sm:h-10 sm:w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full border border-transparent text-foreground transition-colors hover:border-border hover:bg-secondary"
+                >
+                  <ShoppingCart className="h-[18px] w-[18px] sm:h-[19px] sm:w-[19px]" aria-hidden="true" />
+                  {itemCount > 0 && (
+                    <span className="absolute -right-0.5 -top-0.5 sm:right-0.5 sm:top-0.5 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
+                      {itemCount > 99 ? "99+" : itemCount}
+                    </span>
+                  )}
+                </Link>
+              )}
+
+              {isLoggedIn ? (
+                <div className="hidden sm:block">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        className="public-focus inline-flex h-10 sm:h-11 items-center gap-2 rounded-full border border-border bg-card px-3.5 text-xs font-semibold text-foreground transition-colors hover:bg-secondary"
+                        aria-label="Menú de usuario"
+                      >
+                        <UserRound className="h-4 w-4 text-primary" aria-hidden="true" />
+                        <span className="max-w-[110px] truncate">{user?.firstName || "Mi cuenta"}</span>
+                        <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <div className="px-3 py-2 border-b border-border">
+                        <p className="text-xs font-medium text-muted-foreground">Sesión iniciada como</p>
+                        <p className="text-sm font-semibold truncate text-foreground">{user?.firstName} {user?.lastName}</p>
+                      </div>
                       <DropdownMenuItem asChild>
-                        <Link href="/admin" className="text-amber-600 font-medium">
-                          <Settings className="mr-2 h-4 w-4" />
-                          {user?.role === 'ADMIN' ? 'Panel Admin' : 'Panel de Trabajo'}
+                        <Link href={ROUTES.profile} className="flex items-center">
+                          <UserRound className="mr-2 h-4 w-4 text-primary" aria-hidden="true" />
+                          Mi perfil
                         </Link>
                       </DropdownMenuItem>
-                    </>
-                  )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => logout()} className="text-red-600">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Cerrar sesión
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <Link href="/login">
-                <Button variant="ghost" size="icon" className="h-11 w-11">
-                  <User className="h-5 w-5" />
-                </Button>
-              </Link>
-            )}
+                      <DropdownMenuItem asChild>
+                        <Link href={ROUTES.orders} className="flex items-center">
+                          <ShoppingBag className="mr-2 h-4 w-4 text-primary" aria-hidden="true" />
+                          Mis pedidos
+                        </Link>
+                      </DropdownMenuItem>
+                      {hasStaffAccess && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem asChild>
+                            <Link href="/admin" className="flex items-center font-medium text-primary">
+                              <Settings className="mr-2 h-4 w-4" aria-hidden="true" />
+                              Panel de trabajo
+                            </Link>
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={logout} className="text-destructive focus:text-destructive">
+                        <LogOut className="mr-2 h-4 w-4" aria-hidden="true" />
+                        Cerrar sesión
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              ) : (
+                <div className="hidden items-center gap-2 sm:flex">
+                  <Link
+                    href={ROUTES.login}
+                    className="public-focus rounded-full px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
+                  >
+                    Ingresar
+                  </Link>
+                  <Link
+                    href={ROUTES.register}
+                    className="touch-tactile public-focus rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+                  >
+                    Crear cuenta
+                  </Link>
+                </div>
+              )}
 
-            {/* Auth Buttons - Desktop */}
-            {!isLoggedIn && (
-              <div className="hidden items-center gap-2 sm:flex">
-                <Link href="/login">
-                  <Button variant="outline">Ingresar</Button>
-                </Link>
-                <Link href="/registro">
-                  <Button>Crear cuenta</Button>
-                </Link>
-              </div>
-            )}
-
-            {/* Mobile Menu Toggle */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="lg:hidden h-11 w-11"
-              aria-label="Menú"
-              onClick={() => setMobileMenuOpen(true)}
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(true)}
+                className="public-focus inline-flex h-9 w-9 sm:h-10 sm:w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full border border-border bg-card text-foreground transition-colors hover:bg-secondary lg:hidden"
+                aria-label="Abrir menú"
+                aria-expanded={mobileMenuOpen}
+              >
+                <Menu className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Mobile Menu Overlay */}
+      {/* Mobile Drawer Overlay */}
       {mobileMenuOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-[60] lg:hidden"
+        <button
+          type="button"
+          aria-label="Cerrar menú"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm lg:hidden transition-opacity duration-300"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
 
-      {/* Mobile Menu Panel */}
-      <div 
-        className={`
-          fixed top-0 right-0 z-[70] h-full w-[85%] max-w-sm bg-white shadow-xl
-          transform transition-transform duration-300 ease-in-out lg:hidden
-          ${mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}
-        `}
+      {/* Mobile Drawer Menu */}
+      <aside
+        aria-label="Menú móvil"
+        className={`fixed inset-y-0 right-0 z-50 flex w-[min(88vw,390px)] flex-col border-l border-border bg-white shadow-2xl transition-transform duration-300 ease-out lg:hidden ${
+          mobileMenuOpen ? "translate-x-0" : "translate-x-full"
+        }`}
       >
-        {/* Mobile Menu Header */}
-        <div className="flex items-center justify-between border-b px-4 py-4">
-          <span className="text-lg font-semibold text-gray-900">Menú</span>
+        <div className="flex h-[72px] items-center justify-between border-b border-border px-4 bg-white">
+          <Link href={ROUTES.home} onClick={() => setMobileMenuOpen(false)} className="relative h-11 w-36 overflow-hidden rounded-lg">
+            <Image src="/images/logo-panaderia.svg" alt="Panadería Svetlana" fill sizes="144px" className="object-contain" />
+          </Link>
           <button
+            type="button"
             onClick={() => setMobileMenuOpen(false)}
-            className="flex h-11 w-11 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+            className="public-focus inline-flex h-11 w-11 items-center justify-center rounded-full border border-border text-foreground hover:bg-secondary"
             aria-label="Cerrar menú"
           >
-            <X className="h-6 w-6" />
+            <X className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
 
-        {/* Mobile Menu Content */}
-        <div className="flex flex-col h-[calc(100%-65px)] overflow-y-auto">
-          {/* User Info (if logged in) */}
-          {isLoggedIn && user && (
-            <div className="border-b px-4 py-4 bg-gray-50">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                  <User className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">{user.firstName} {user.lastName}</p>
-                  <p className="text-xs text-gray-500">{user.email}</p>
-                </div>
-              </div>
+        {isLoggedIn && user && (
+          <div className="border-b border-border bg-secondary/45 px-5 py-4">
+            <p className="text-sm font-semibold text-foreground">Hola, {user.firstName}</p>
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">{user.email}</p>
+          </div>
+        )}
+
+        <div className="flex-1 overflow-y-auto px-4 py-5 bg-white">
+          <nav aria-label="Navegación móvil">
+            <p className="section-kicker mb-3 px-3">Descubre la panadería</p>
+            <div className="space-y-1">
+              {navLinks.map((link) => {
+                const active = isCurrentPath(pathname, link.href)
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`public-focus flex items-center justify-between rounded-xl px-3 py-3.5 text-base font-semibold transition-colors ${
+                      active ? "bg-secondary text-foreground" : "text-muted-foreground hover:bg-secondary/70 hover:text-foreground"
+                    }`}
+                  >
+                    {link.label}
+                    <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                  </Link>
+                )
+              })}
+              <Link href={ROUTES.branches} onClick={() => setMobileMenuOpen(false)} className="public-focus flex items-center justify-between rounded-xl px-3 py-3.5 text-base font-semibold text-muted-foreground hover:bg-secondary/70 hover:text-foreground">
+                Sucursales
+                <ChevronRight className="h-4 w-4" aria-hidden="true" />
+              </Link>
             </div>
-          )}
-
-          {/* Navigation Links (4 Enlaces Principales en Móvil) */}
-          <nav className="flex-1 px-2 py-3">
-            <ul className="space-y-1">
-              <li>
-                <Link
-                  href={ROUTES.home}
-                  className={`flex items-center justify-between rounded-lg px-4 py-3 text-base font-medium transition-colors ${
-                    pathname === ROUTES.home
-                      ? "bg-amber-50 text-primary font-semibold"
-                      : "text-gray-700 hover:bg-gray-100 hover:text-primary"
-                  }`}
-                >
-                  Inicio
-                  <ChevronRight className="h-4 w-4 text-gray-400" />
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href={ROUTES.products}
-                  className={`flex items-center justify-between rounded-lg px-4 py-3 text-base font-medium transition-colors ${
-                    pathname.startsWith(ROUTES.products)
-                      ? "bg-amber-50 text-primary font-semibold"
-                      : "text-gray-700 hover:bg-gray-100 hover:text-primary"
-                  }`}
-                >
-                  Productos
-                  <ChevronRight className="h-4 w-4 text-gray-400" />
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/sobre-nosotros"
-                  className={`flex items-center justify-between rounded-lg px-4 py-3 text-base font-medium transition-colors ${
-                    pathname === "/sobre-nosotros"
-                      ? "bg-amber-50 text-primary font-semibold"
-                      : "text-gray-700 hover:bg-gray-100 hover:text-primary"
-                  }`}
-                >
-                  Nosotros
-                  <ChevronRight className="h-4 w-4 text-gray-400" />
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href={ROUTES.contact}
-                  className={`flex items-center justify-between rounded-lg px-4 py-3 text-base font-medium transition-colors ${
-                    pathname === ROUTES.contact
-                      ? "bg-amber-50 text-primary font-semibold"
-                      : "text-gray-700 hover:bg-gray-100 hover:text-primary"
-                  }`}
-                >
-                  Contacto
-                  <ChevronRight className="h-4 w-4 text-gray-400" />
-                </Link>
-              </li>
-            </ul>
-
-            {/* User-specific links */}
-            {isLoggedIn && (
-              <>
-                <div className="my-3 border-t border-gray-200" />
-                <ul className="space-y-1">
-                  <li>
-                    <Link
-                      href={ROUTES.profile}
-                      className="flex items-center justify-between rounded-lg px-4 py-3 text-base font-medium text-gray-700 hover:bg-gray-100 hover:text-primary transition-colors"
-                    >
-                      Mi perfil
-                      <ChevronRight className="h-4 w-4 text-gray-400" />
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      href={ROUTES.orders}
-                      className="flex items-center justify-between rounded-lg px-4 py-3 text-base font-medium text-gray-700 hover:bg-gray-100 hover:text-primary transition-colors"
-                    >
-                      Mis pedidos
-                      <ChevronRight className="h-4 w-4 text-gray-400" />
-                    </Link>
-                  </li>
-                  {(['ADMIN', 'MANAGER', 'BAKER'].includes(user?.role || '')) && (
-                    <li>
-                      <Link
-                        href="/admin"
-                        className="flex items-center justify-between rounded-lg px-4 py-3 text-base font-medium text-amber-600 hover:bg-amber-50 transition-colors"
-                      >
-                        <span className="flex items-center gap-2">
-                          <Settings className="h-4 w-4" />
-                          {user?.role === 'ADMIN' ? 'Panel Admin' : 'Panel de Trabajo'}
-                        </span>
-                        <ChevronRight className="h-4 w-4 text-amber-400" />
-                      </Link>
-                    </li>
-                  )}
-                </ul>
-              </>
-            )}
           </nav>
 
-          {/* Bottom Section */}
-          <div className="border-t px-4 py-4 space-y-3">
-            {/* Phone */}
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Phone className="h-4 w-4" />
-              <span>{selectedBranch?.phone || '+502 0000-0000'}</span>
+          <div className="my-5 border-t border-border" />
+
+          <div className="rounded-2xl border border-[#E8DCCB] bg-[#FAF5EE] p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-[#D97706]" aria-hidden="true" />
+                <p className="text-xs font-bold uppercase tracking-wider text-[#8C522B]">Sucursal de retiro</p>
+              </div>
+              <span className="text-[10px] font-medium text-[#8C522B]">Cambiar</span>
             </div>
 
-            {/* Auth Buttons or Logout */}
-            {isLoggedIn ? (
-              <button
-                onClick={() => {
-                  logout()
-                  setMobileMenuOpen(false)
-                }}
-                className="flex w-4 items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-100 transition-colors w-full"
-              >
-                <LogOut className="h-4 w-4" />
-                Cerrar sesión
-              </button>
-            ) : (
-              <div className="flex flex-col gap-2">
-                <Link href="/login" className="w-full">
-                  <Button variant="outline" className="w-full h-11">Ingresar</Button>
-                </Link>
-                <Link href="/registro" className="w-full">
-                  <Button className="w-full h-11">Crear cuenta</Button>
-                </Link>
-              </div>
-            )}
+            <div className="space-y-2">
+              {branches.map((branch) => {
+                const isSelected = selectedBranch?.id === branch.id
+                return (
+                  <button
+                    key={branch.id}
+                    type="button"
+                    onClick={() => {
+                      handleBranchSelect(branch)
+                      setMobileMenuOpen(false)
+                    }}
+                    className={`public-focus flex w-full items-start justify-between rounded-xl p-3 text-left transition-all ${
+                      isSelected
+                        ? "border-2 border-[#D97706] bg-white shadow-xs"
+                        : "border border-[#DECDBB] bg-white/70 hover:bg-white text-[#2B170F]"
+                    }`}
+                  >
+                    <div className="pr-2">
+                      <p className={`text-xs font-bold ${isSelected ? "text-[#D97706]" : "text-[#2B170F]"}`}>
+                        {branch.name}
+                      </p>
+                      {branch.address && (
+                        <p className="mt-0.5 text-[11px] text-[#6E5545] line-clamp-1">{branch.address}</p>
+                      )}
+                    </div>
+                    {isSelected ? (
+                      <span className="shrink-0 rounded-full bg-[#D97706] px-2 py-0.5 text-[10px] font-bold text-white">
+                        Activa
+                      </span>
+                    ) : (
+                      <span className="shrink-0 text-[11px] font-semibold text-[#8C522B]">
+                        Elegir
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
           </div>
+
+          {isLoggedIn && (
+            <div className="mt-6 space-y-1">
+              <Link href={ROUTES.profile} onClick={() => setMobileMenuOpen(false)} className="public-focus flex items-center justify-between rounded-xl px-3 py-3 text-sm font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground">
+                Mi perfil
+                <ChevronRight className="h-4 w-4" aria-hidden="true" />
+              </Link>
+              <Link href={ROUTES.orders} onClick={() => setMobileMenuOpen(false)} className="public-focus flex items-center justify-between rounded-xl px-3 py-3 text-sm font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground">
+                Mis pedidos
+                <ChevronRight className="h-4 w-4" aria-hidden="true" />
+              </Link>
+              {hasStaffAccess && (
+                <Link href="/admin" onClick={() => setMobileMenuOpen(false)} className="public-focus flex items-center justify-between rounded-xl px-3 py-3 text-sm font-semibold text-primary hover:bg-secondary">
+                  <span className="inline-flex items-center gap-2"><Settings className="h-4 w-4" aria-hidden="true" />Panel de trabajo</span>
+                  <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                </Link>
+              )}
+            </div>
+          )}
         </div>
-      </div>
-    </header>
+
+        <div className="border-t border-border p-4 pb-5 bg-white">
+          {isLoggedIn ? (
+            <button type="button" onClick={() => { logout(); setMobileMenuOpen(false) }} className="public-focus flex h-12 w-full items-center justify-center gap-2 rounded-full border border-destructive/30 text-sm font-semibold text-destructive hover:bg-destructive/10">
+              <LogOut className="h-4 w-4" aria-hidden="true" />
+              Cerrar sesión
+            </button>
+          ) : (
+            <div className="grid grid-cols-2 gap-2">
+              <Link href={ROUTES.login} onClick={() => setMobileMenuOpen(false)} className="public-focus inline-flex h-12 items-center justify-center rounded-full border border-border text-sm font-semibold text-foreground hover:bg-secondary">
+                Ingresar
+              </Link>
+              <Link href={ROUTES.register} onClick={() => setMobileMenuOpen(false)} className="public-focus inline-flex h-12 items-center justify-center rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90">
+                Crear cuenta
+              </Link>
+            </div>
+          )}
+        </div>
+      </aside>
+    </>
   )
 }

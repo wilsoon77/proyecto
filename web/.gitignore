@@ -19,6 +19,14 @@ yarn-error.log*
 .idea/
 *.swp
 
+# Next.js
+.next/
+out/
+build/
+
+# Uncompressed source frames (180MB raw video frames)
+public/langing-scroll/
+
 # OS
 Thumbs.db
 .DS_Store

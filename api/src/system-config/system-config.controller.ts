@@ -32,7 +32,7 @@ export class SystemConfigController {
   ) {}
 
   @Get('public')
-  @ApiOperation({ summary: 'Obtener configuración pública', description: 'Obtiene las configuraciones accesibles públicamente como un objeto plano.' })
+  @ApiOperation({ summary: 'Obtener configuración pública', description: 'Obtiene las configuraciones accesibles públicamente como un objeto plano. Incluye orders.catalog_only para permitir mostrar el catálogo sin habilitar compras.' })
   @ApiResponse({
     status: 200,
     description: 'Configuración pública',

@@ -117,13 +117,6 @@ export function apiOrderToOrder(apiOrder: ApiOrder): Order {
 /**
  * Placeholder para imagen de producto
  */
-export function getProductPlaceholder(category: string): string {
-  const emojis: Record<string, string> = {
-    pan: '🥖',
-    pasteles: '🎂',
-    galletas: '🍪',
-    dulces: '🍞',
-    default: '🥐',
-  }
-  return emojis[category] || emojis.default
+export function getProductPlaceholder(category?: string): string {
+  return '/images/icon-panaderia.svg'
 }

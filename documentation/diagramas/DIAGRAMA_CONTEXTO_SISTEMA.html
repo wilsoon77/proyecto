@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diagrama de Contexto del Sistema — Panadería Svetlana</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --surface: #f8fafc;
+      --border: #cbd5e1;
+      --text: #0f172a;
+      --text-muted: #334155;
+      --primary: #1d4ed8;
+      --accent: #b45309;
+      --success: #15803d;
+      --purple: #6b21a8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      background-color: #f1f5f9;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.5rem 1rem;
+      min-height: 100vh;
+    }
+    .container {
+      background: var(--bg);
+      border-radius: 12px;
+      box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.08);
+      border: 1px solid var(--border);
+      max-width: 1040px;
+      width: 100%;
+      overflow: hidden;
+    }
+    .header {
+      padding: 1.25rem 1.75rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .badge {
+      display: inline-block;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.3rem 0.75rem;
+      border-radius: 9999px;
+      background: #dbeafe;
+      color: #1e40af;
+      border: 1px solid #93c5fd;
+      margin-bottom: 0.4rem;
+    }
+    .title {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 0.2rem;
+    }
+    .subtitle {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .diagram-wrapper {
+      padding: 1.5rem 1rem;
+      display: flex;
+      justify-content: center;
+      background: #ffffff;
+    }
+    svg {
+      max-width: 100%;
+      height: auto;
+    }
+    .footer-notes {
+      padding: 1.25rem 1.75rem;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <span class="badge">Arquitectura de Software • Nivel 0 • Formato Vertical</span>
+    <h1 class="title">Diagrama de Contexto del Sistema (System Context Diagram)</h1>
+    <p class="subtitle">Frontera del software, actores humanos, servicios en la nube y flujos de información bidireccionales.</p>
+  </div>
+
+  <div class="diagram-wrapper">
+    <svg id="diagram-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1020 1380" width="1020" height="1380">
+      <defs>
+        <!-- Arrowhead Markers -->
+        <marker id="arr-blue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1d4ed8" />
+        </marker>
+        <marker id="arr-green" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#15803d" />
+        </marker>
+        <marker id="arr-amber" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#b45309" />
+        </marker>
+        <marker id="arr-purple" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#6b21a8" />
+        </marker>
+        <marker id="arr-dark" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#0f172a" />
+        </marker>
+      </defs>
+
+      <!-- ============================================================ -->
+      <!-- TOP ACTOR: PROPIETARIO / SUPER ADMIN                         -->
+      <!-- ============================================================ -->
+      <g transform="translate(310, 20)">
+        <rect x="0" y="0" width="400" height="110" rx="10" fill="#ffffff" stroke="#0f172a" stroke-width="2.5" />
+        <rect x="0" y="0" width="400" height="30" rx="10" fill="#0f172a" />
+        <rect x="0" y="20" width="400" height="10" fill="#0f172a" />
+        <text x="200" y="21" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="800" fill="#ffffff" text-anchor="middle">«Actor» Propietario / Super Admin</text>
+        
+        <g transform="translate(25, 42)">
+          <circle cx="15" cy="15" r="10" fill="#f8fafc" stroke="#0f172a" stroke-width="2" />
+          <line x1="15" y1="25" x2="15" y2="45" stroke="#0f172a" stroke-width="2" />
+          <line x1="5" y1="32" x2="25" y2="32" stroke="#0f172a" stroke-width="2" />
+          <line x1="15" y1="45" x2="5" y2="60" stroke="#0f172a" stroke-width="2" />
+          <line x1="15" y1="45" x2="25" y2="60" stroke="#0f172a" stroke-width="2" />
+        </g>
+        <text x="65" y="58" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="700" fill="#0f172a">Rol: ADMIN Global (Acceso Total)</text>
+        <text x="65" y="76" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" fill="#334155">• Configuración de sucursales, precios y asignación de personal</text>
+        <text x="65" y="94" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" fill="#334155">• Monitoreo de balances, cierres diarios y analítica ejecutiva</text>
+      </g>
+
+      <!-- Connection: SuperAdmin -> Core -->
+      <line x1="510" y1="130" x2="510" y2="360" stroke="#0f172a" stroke-width="2.5" marker-end="url(#arr-dark)" />
+      <rect x="420" y="210" width="180" height="26" rx="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" />
+      <text x="510" y="227" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#0f172a" text-anchor="middle">Configuración &amp; Auditoría</text>
+
+
+      <!-- ============================================================ -->
+      <!-- CENTRAL SYSTEM CONTAINER (CORE BOUNDARY)                     -->
+      <!-- ============================================================ -->
+      <g transform="translate(250, 360)">
+        <rect x="0" y="0" width="520" height="540" rx="14" fill="#ffffff" stroke="#1d4ed8" stroke-width="3" />
+        <rect x="0" y="0" width="520" height="44" rx="14" fill="#1d4ed8" />
+        <rect x="0" y="24" width="520" height="20" fill="#1d4ed8" />
+        <text x="260" y="24" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="800" fill="#ffffff" text-anchor="middle">SISTEMA PANADERÍA SVETLANA</text>
+        <text x="260" y="38" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" font-weight="600" fill="#bfdbfe" text-anchor="middle">«Frontera del Software / Core Application»</text>
+
+        <!-- Subsystem 1: Frontend SPA -->
+        <g transform="translate(20, 60)">
+          <rect x="0" y="0" width="480" height="75" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2" />
+          <rect x="0" y="0" width="480" height="24" rx="8" fill="#0f172a" />
+          <rect x="0" y="14" width="480" height="10" fill="#0f172a" />
+          <text x="12" y="17" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="800" fill="#ffffff">1. Frontend Web SPA (Next.js 14 / React / Tailwind)</text>
+          <text x="14" y="44" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#0f172a">• Catálogo B2C interactivo y reservas en línea</text>
+          <text x="14" y="62" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#475569">• Portal administrativo para cierre de día, producción y semáforo FEFO</text>
+        </g>
+
+        <!-- Subsystem 2: Backend API Gateway -->
+        <g transform="translate(20, 150)">
+          <rect x="0" y="0" width="480" height="75" rx="8" fill="#eff6ff" stroke="#93c5fd" stroke-width="2" />
+          <rect x="0" y="0" width="480" height="24" rx="8" fill="#1d4ed8" />
+          <rect x="0" y="14" width="480" height="10" fill="#1d4ed8" />
+          <text x="12" y="17" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="800" fill="#ffffff">2. Backend API Gateway (NestJS REST Modules)</text>
+          <text x="14" y="44" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#1e40af">• Autenticación JWT con rotación de Refresh Tokens y Fingerprinting</text>
+          <text x="14" y="62" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#1d4ed8">• RolesGuard y BranchScopeGuard (Aislamiento Multi-Sede estricto)</text>
+        </g>
+
+        <!-- Subsystem 3: Motores de Negocio -->
+        <g transform="translate(20, 240)">
+          <rect x="0" y="0" width="480" height="180" rx="8" fill="#f0fdf4" stroke="#86efac" stroke-width="2" />
+          <rect x="0" y="0" width="480" height="24" rx="8" fill="#15803d" />
+          <rect x="0" y="14" width="480" height="10" fill="#15803d" />
+          <text x="12" y="17" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="800" fill="#ffffff">3. Motores de Negocio Transaccionales (Core Logic)</text>
+          
+          <text x="14" y="45" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#166534">A. Módulo Cierre de Día (Venta Residual):</text>
+          <text x="24" y="62" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#334155">Cálculo atómico sin POS: Venta = Teórico - (Físico + Merma)</text>
+
+          <text x="14" y="85" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#166534">B. Módulo de Producción por Amasijos:</text>
+          <text x="24" y="102" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#334155">Escalado de recetas y deducción proporcional de materia prima (LB/ML)</text>
+
+          <text x="14" y="125" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#166534">C. Módulo de Caducidades FEFO:</text>
+          <text x="24" y="142" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#334155">Control de lotes perecederos y semáforo preventivo a 7 días</text>
+
+          <text x="14" y="163" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#166534">D. Módulo de Reservas B2C:</text>
+          <text x="24" y="175" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#334155">Retención temporal de stock con TTL y retiro programado</text>
+        </g>
+
+        <!-- Subsystem 4: Asistente IA -->
+        <g transform="translate(20, 435)">
+          <rect x="0" y="0" width="480" height="85" rx="8" fill="#faf5ff" stroke="#d8b4fe" stroke-width="2" />
+          <rect x="0" y="0" width="480" height="24" rx="8" fill="#6b21a8" />
+          <rect x="0" y="14" width="480" height="10" fill="#6b21a8" />
+          <text x="12" y="17" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="800" fill="#ffffff">4. Asistente Inteligente (Google Gemini + Tool Calling)</text>
+          <text x="14" y="44" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#6b21a8">• Interacción por Lenguaje Natural vía Telegram para directivos</text>
+          <text x="14" y="62" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#475569">• Consultas analíticas seguras sobre ventas, stock y mermas por sucursal</text>
+          <text x="14" y="78" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#6b21a8">• Despacho automatizado de resúmenes ejecutivos nocturnos</text>
+        </g>
+      </g>
+
+
+      <!-- ============================================================ -->
+      <!-- LEFT SIDE ACTORS                                             -->
+      <!-- ============================================================ -->
+
+      <!-- Left Actor 1: Cliente Web (B2C) -->
+      <g transform="translate(20, 260)">
+        <rect x="0" y="0" width="200" height="150" rx="10" fill="#ffffff" stroke="#1d4ed8" stroke-width="2.5" />
+        <rect x="0" y="0" width="200" height="28" rx="10" fill="#1d4ed8" />
+        <rect x="0" y="18" width="200" height="10" fill="#1d4ed8" />
+        <text x="100" y="19" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">«Actor» Cliente Web</text>
+        
+        <text x="10" y="48" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1e40af">Canal: Portal Público B2C</text>
+        <text x="10" y="68" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#334155">• Consulta catálogo y combos</text>
+        <text x="10" y="86" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#334155">• Reserva pedido en línea</text>
+        <text x="10" y="104" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#334155">• Selecciona franja horaria</text>
+        <text x="10" y="122" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#1d4ed8">• Recibe comprobante email</text>
+      </g>
+      <!-- Connection: Cliente Web <-> Core -->
+      <line x1="220" y1="335" x2="250" y2="400" stroke="#1d4ed8" stroke-width="2" marker-end="url(#arr-blue)" />
+
+      <!-- Left Actor 2: Personal de Sucursal -->
+      <g transform="translate(20, 520)">
+        <rect x="0" y="0" width="200" height="210" rx="10" fill="#ffffff" stroke="#0f172a" stroke-width="2.5" />
+        <rect x="0" y="0" width="200" height="28" rx="10" fill="#0f172a" />
+        <rect x="0" y="18" width="200" height="10" fill="#0f172a" />
+        <text x="100" y="19" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">«Actor» Personal Sucursal</text>
+        
+        <text x="10" y="48" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#0f172a">Encargado / Cajero:</text>
+        <text x="10" y="66" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#334155">• Conteo físico y mermas</text>
+        <text x="10" y="84" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#334155">• Confirma Cierre de Día</text>
+        <text x="10" y="102" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#334155">• Despacho y cobro pedidos</text>
+
+        <text x="10" y="130" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#0f172a">Maestro Panadero:</text>
+        <text x="10" y="148" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#334155">• Consulta formulación</text>
+        <text x="10" y="166" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#334155">• Registro de horneadas</text>
+        <text x="10" y="184" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#334155">• Alertas de insumos</text>
+      </g>
+      <!-- Connection: Personal <-> Core -->
+      <line x1="220" y1="625" x2="250" y2="625" stroke="#0f172a" stroke-width="2.5" marker-end="url(#arr-dark)" />
+
+      <!-- Left Actor 3: Encargado de Bodega -->
+      <g transform="translate(20, 830)">
+        <rect x="0" y="0" width="200" height="150" rx="10" fill="#ffffff" stroke="#b45309" stroke-width="2.5" />
+        <rect x="0" y="0" width="200" height="28" rx="10" fill="#b45309" />
+        <rect x="0" y="18" width="200" height="10" fill="#b45309" />
+        <text x="100" y="19" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">«Actor» Bodega / Compras</text>
+        
+        <text x="10" y="48" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#b45309">Área: Almacén e Insumos</text>
+        <text x="10" y="68" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#334155">• Recepción de compras</text>
+        <text x="10" y="86" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#334155">• Registro lotes InventoryLot</text>
+        <text x="10" y="104" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#334155">• Gestión de mermas e insumos</text>
+        <text x="10" y="122" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#b45309">• Control salidas FEFO</text>
+      </g>
+      <!-- Connection: Bodega <-> Core -->
+      <line x1="220" y1="905" x2="250" y2="840" stroke="#b45309" stroke-width="2" marker-end="url(#arr-amber)" />
+
+
+      <!-- ============================================================ -->
+      <!-- RIGHT SIDE EXTERNAL SYSTEMS                                  -->
+      <!-- ============================================================ -->
+
+      <!-- Right System 1: Email Transaccional -->
+      <g transform="translate(800, 260)">
+        <rect x="0" y="0" width="200" height="150" rx="10" fill="#ffffff" stroke="#1d4ed8" stroke-width="2.5" />
+        <rect x="0" y="0" width="200" height="28" rx="10" fill="#1d4ed8" />
+        <rect x="0" y="18" width="200" height="10" fill="#1d4ed8" />
+        <text x="100" y="19" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">«Servicio» Email Resend</text>
+        
+        <text x="10" y="48" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#1e40af">Proveedor: Resend / SMTP</text>
+        <text x="10" y="68" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#334155">• Comprobantes de reserva</text>
+        <text x="10" y="86" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#334155">• Códigos de recogida</text>
+        <text x="10" y="104" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#334155">• Tokens de recuperación</text>
+        <text x="10" y="122" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#1d4ed8">• Webhook de entrega</text>
+      </g>
+      <!-- Connection: Core -> Email -->
+      <line x1="770" y1="400" x2="800" y2="335" stroke="#1d4ed8" stroke-width="2" marker-end="url(#arr-blue)" />
+
+      <!-- Right System 2: Telegram Bot & Gemini -->
+      <g transform="translate(800, 520)">
+        <rect x="0" y="0" width="200" height="210" rx="10" fill="#ffffff" stroke="#6b21a8" stroke-width="2.5" />
+        <rect x="0" y="0" width="200" height="28" rx="10" fill="#6b21a8" />
+        <rect x="0" y="18" width="200" height="10" fill="#6b21a8" />
+        <text x="100" y="19" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">«Cloud» Telegram &amp; IA</text>
+        
+        <text x="10" y="48" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#6b21a8">Telegram Bot API:</text>
+        <text x="10" y="66" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#334155">• Webhook HTTPS seguro</text>
+        <text x="10" y="84" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#334155">• Autenticación OTP por usuario</text>
+        <text x="10" y="102" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#6b21a8">• Alertas push de cierre</text>
+
+        <text x="10" y="130" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#6b21a8">Google Gemini Pro 1.5:</text>
+        <text x="10" y="148" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#334155">• Extracción semántica NL</text>
+        <text x="10" y="166" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#334155">• Tool Calling validado</text>
+        <text x="10" y="184" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#334155">• Reportes ejecutivos</text>
+      </g>
+      <!-- Connection: Core <-> Telegram -->
+      <line x1="770" y1="625" x2="800" y2="625" stroke="#6b21a8" stroke-width="2.5" marker-end="url(#arr-purple)" />
+
+      <!-- Right System 3: Base de Datos PostgreSQL -->
+      <g transform="translate(800, 830)">
+        <rect x="0" y="0" width="200" height="150" rx="10" fill="#ffffff" stroke="#15803d" stroke-width="2.5" />
+        <rect x="0" y="0" width="200" height="28" rx="10" fill="#15803d" />
+        <rect x="0" y="18" width="200" height="10" fill="#15803d" />
+        <text x="100" y="19" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">«Database» PostgreSQL 16</text>
+        
+        <text x="10" y="48" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#166534">Motor: Supabase / Prisma</text>
+        <text x="10" y="68" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#334155">• Persistencia relacional ACID</text>
+        <text x="10" y="86" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#334155">• 18 tablas de dominio core</text>
+        <text x="10" y="104" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#334155">• 14 tablas de soporte y logs</text>
+        <text x="10" y="122" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#15803d">• Kardex inmutable</text>
+      </g>
+      <!-- Connection: Core -> DB -->
+      <line x1="770" y1="840" x2="800" y2="905" stroke="#15803d" stroke-width="2.5" marker-end="url(#arr-green)" />
+
+
+      <!-- ============================================================ -->
+      <!-- BOTTOM SYSTEM: CRON JOBS & DAEMONS                           -->
+      <!-- ============================================================ -->
+      <g transform="translate(310, 1190)">
+        <rect x="0" y="0" width="400" height="115" rx="10" fill="#ffffff" stroke="#b45309" stroke-width="2.5" />
+        <rect x="0" y="0" width="400" height="30" rx="10" fill="#b45309" />
+        <rect x="0" y="20" width="400" height="10" fill="#b45309" />
+        <text x="200" y="21" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="800" fill="#ffffff" text-anchor="middle">«Daemon» Cron Jobs &amp; Tareas Programadas</text>
+        
+        <text x="20" y="55" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#b45309">Frecuencia: Auditoría Diaria (00:00 UTC) y TTL por Minuto</text>
+        <text x="20" y="75" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" fill="#334155">• Evaluación y actualización del Semáforo Preventivo FEFO a 7 días</text>
+        <text x="20" y="95" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" fill="#334155">• Liberación automática de reservas no reclamadas tras TTL de 60 min</text>
+      </g>
+
+      <!-- Connection: Cron -> Core -->
+      <line x1="510" y1="1190" x2="510" y2="900" stroke="#b45309" stroke-width="2.5" marker-end="url(#arr-amber)" />
+      <rect x="410" y="1030" width="200" height="26" rx="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" />
+      <text x="510" y="1047" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#b45309" text-anchor="middle">Trigger de Tareas &amp; Alertas FEFO</text>
+
+    </svg>
+  </div>
+
+  <div class="footer-notes">
+    <strong>Nota de Arquitectura de Contexto (Nivel 0):</strong> El diagrama delimita las fronteras del sistema <em>Panadería Svetlana</em> frente a los 4 perfiles de actores humanos y los 4 sistemas externos en la nube. Todo el tráfico externo hacia el backend pasa por autenticación estricta con políticas RBAC y aislamiento por sucursal física.
+  </div>
+</div>
+
+</body>
+</html>

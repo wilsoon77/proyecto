@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HI-03: Prototipo Alta Fidelidad — Cierre de Día y Venta Residual</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --surface: #f8fafc;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #475569;
+      --primary: #d97706;
+      --primary-dark: #b45309;
+      --primary-light: #fef3c7;
+      --success: #059669;
+      --success-light: #ecfdf5;
+      --slate: #1e293b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      background-color: #f1f5f9;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.5rem 1rem;
+      min-height: 100vh;
+    }
+    .container {
+      background: var(--bg);
+      border-radius: 12px;
+      box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.08);
+      border: 1px solid var(--border);
+      max-width: 1040px;
+      width: 100%;
+      overflow: hidden;
+    }
+    .header {
+      padding: 1.25rem 1.75rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .badge {
+      display: inline-block;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.3rem 0.75rem;
+      border-radius: 9999px;
+      background: #fef3c7;
+      color: #b45309;
+      border: 1px solid #fde68a;
+      margin-bottom: 0.4rem;
+    }
+    .title {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 0.2rem;
+    }
+    .subtitle {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .diagram-wrapper {
+      padding: 1.5rem 1rem;
+      display: flex;
+      justify-content: center;
+      background: #ffffff;
+    }
+    svg {
+      max-width: 100%;
+      height: auto;
+    }
+    .footer-notes {
+      padding: 1.25rem 1.75rem;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <span class="badge">Prototipo UI • Alta Fidelidad • HI-03</span>
+    <h1 class="title">Panel Operativo: Cierre de Día y Venta Residual Automática</h1>
+    <p class="subtitle">Diseño visual de alta fidelidad con conciliación física por bandejas/tiras, métricas en tiempo real y bloqueo contable.</p>
+  </div>
+
+  <div class="diagram-wrapper">
+    <svg id="diagram-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1320" width="1000" height="1320">
+      
+      <g transform="translate(10, 10)">
+        <rect x="0" y="0" width="980" height="1300" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="2" />
+        
+        <!-- Browser Top Bar -->
+        <rect x="0" y="0" width="980" height="40" rx="12" fill="#0f172a" />
+        <rect x="0" y="24" width="980" height="16" fill="#0f172a" />
+        <circle cx="20" cy="20" r="5.5" fill="#ef4444" />
+        <circle cx="38" cy="20" r="5.5" fill="#f59e0b" />
+        <circle cx="56" cy="20" r="5.5" fill="#10b981" />
+        <rect x="180" y="8" width="620" height="24" rx="6" fill="#1e293b" />
+        <text x="490" y="24" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#94a3b8" text-anchor="middle">🔒 https://panaderiasvetlana.com/admin/cierre-dia</text>
+
+        <!-- Navbar Header -->
+        <rect x="0" y="40" width="980" height="65" fill="#ffffff" stroke="#f1f5f9" stroke-width="1.5" />
+        <g transform="translate(25, 49)">
+          <rect x="0" y="0" width="40" height="40" rx="8" fill="#d97706" />
+          <text x="20" y="26" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="900" fill="#ffffff" text-anchor="middle">🥖</text>
+          <text x="48" y="19" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="900" fill="#0f172a">SVETLANA</text>
+          <text x="48" y="33" font-family="Segoe UI, Arial, sans-serif" font-size="9" font-weight="700" fill="#d97706" letter-spacing="0.1em">SISTEMA OPERATIVO</text>
+        </g>
+
+        <!-- Module Navigation Links with Active state -->
+        <text x="235" y="78" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="800" fill="#d97706">Cierre de Día</text>
+        <line x1="235" y1="86" x2="310" y2="86" stroke="#d97706" stroke-width="2.5" stroke-linecap="round" />
+
+        <text x="345" y="78" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="600" fill="#475569">Producción</text>
+        <text x="445" y="78" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="600" fill="#475569">Inventario & FEFO</text>
+        <text x="580" y="78" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="600" fill="#475569">Historial</text>
+
+        <!-- User Role Pill -->
+        <g transform="translate(730, 52)">
+          <rect x="0" y="0" width="225" height="40" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2" />
+          <circle cx="20" cy="20" r="12" fill="#d97706" />
+          <text x="20" y="24" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="800" fill="#ffffff" text-anchor="middle">ES</text>
+          <text x="40" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="800" fill="#0f172a">Eduardo Silva</text>
+          <text x="40" y="32" font-family="Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#059669">● Encargado Sede Central</text>
+        </g>
+
+
+        <!-- ======================================================== -->
+        <!-- CONTROL BAR: BRANCH, DATE & FORMULA BANNER               -->
+        <!-- ======================================================== -->
+        <g transform="translate(25, 120)">
+          <rect x="0" y="0" width="930" height="90" rx="10" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.8" />
+          
+          <text x="20" y="30" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="900" fill="#0f172a">📋 Conciliación Física Diaria y Cierre Contable Nocturno</text>
+          
+          <!-- Branch Select Pill -->
+          <text x="20" y="55" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" font-weight="800" fill="#64748b">SUCURSAL OPERATIVA</text>
+          <rect x="20" y="60" width="230" height="36" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2" />
+          <text x="32" y="83" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="700" fill="#0f172a">📍 Sucursal Central (Matriz) <tspan fill="#d97706">▼</tspan></text>
+
+          <!-- Date Select Pill -->
+          <text x="270" y="55" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" font-weight="800" fill="#64748b">FECHA CONTABLE</text>
+          <rect x="270" y="60" width="180" height="36" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2" />
+          <text x="282" y="83" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="700" fill="#0f172a">📅 14 de Agosto, 2026</text>
+
+          <!-- Formula Badge -->
+          <g transform="translate(470, 48)">
+            <rect x="0" y="0" width="440" height="48" rx="8" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.2" />
+            <text x="20" y="20" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" font-weight="800" fill="#1e40af">ALGORITMO DE VENTA RESIDUAL:</text>
+            <text x="20" y="38" font-family="monospace" font-size="11.5" font-weight="800" fill="#1d4ed8">Venta = Stock Teórico - Conteo Físico - Merma</text>
+          </g>
+        </g>
+
+
+        <!-- ======================================================== -->
+        <!-- HIGH-FIDELITY KPI METRICS ROW                            -->
+        <!-- ======================================================== -->
+        <g transform="translate(25, 225)">
+          <!-- KPI 1 -->
+          <rect x="0" y="0" width="220" height="88" rx="10" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.8" />
+          <text x="16" y="24" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="800" fill="#64748b">STOCK TEÓRICO TOTAL</text>
+          <text x="16" y="56" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="900" fill="#0f172a">320 <tspan font-size="13" font-weight="600" fill="#64748b">pzs</tspan></text>
+          <text x="16" y="76" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#64748b">Saldo Inicial + Horneadas</text>
+
+          <!-- KPI 2 -->
+          <rect x="235" y="0" width="220" height="88" rx="10" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.8" />
+          <text x="16" y="24" transform="translate(235, 0)" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="800" fill="#64748b">CONTEO FÍSICO (SOBRANTE)</text>
+          <text x="16" y="56" transform="translate(235, 0)" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="900" fill="#2563eb">42 <tspan font-size="13" font-weight="600" fill="#64748b">pzs</tspan></text>
+          <text x="16" y="76" transform="translate(235, 0)" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" font-weight="600" fill="#2563eb">13.1% del stock inicial</text>
+
+          <!-- KPI 3 -->
+          <rect x="470" y="0" width="220" height="88" rx="10" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.8" />
+          <text x="16" y="24" transform="translate(470, 0)" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="800" fill="#64748b">MERMAS DECLARADAS</text>
+          <text x="16" y="56" transform="translate(470, 0)" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="900" fill="#dc2626">8 <tspan font-size="13" font-weight="600" fill="#64748b">pzs</tspan></text>
+          <text x="16" y="76" transform="translate(470, 0)" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" font-weight="600" fill="#dc2626">2.5% merma aceptable</text>
+
+          <!-- KPI 4: Venta -->
+          <rect x="705" y="0" width="225" height="88" rx="10" fill="#0f172a" />
+          <text x="16" y="24" transform="translate(705, 0)" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="800" fill="#cbd5e1">VENTA RESIDUAL CALCULADA</text>
+          <text x="16" y="56" transform="translate(705, 0)" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="900" fill="#f59e0b">270 <tspan font-size="13" font-weight="600" fill="#ffffff">pzs</tspan></text>
+          <text x="16" y="76" transform="translate(705, 0)" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff">Total Venta: $470.90 USD</text>
+        </g>
+
+
+        <!-- ======================================================== -->
+        <!-- HIGH-FIDELITY PRODUCT COUNTING TABLE                     -->
+        <!-- ======================================================== -->
+        <g transform="translate(25, 330)">
+          <rect x="0" y="0" width="930" height="520" rx="10" fill="#ffffff" stroke="#e2e8f0" stroke-width="2" />
+          <rect x="0" y="0" width="930" height="44" rx="10" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+          
+          <text x="20" y="28" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="900" fill="#0f172a">🥖 Captura de Existencias Físicas y Deducción Automática</text>
+          <rect x="780" y="10" width="130" height="24" rx="12" fill="#ecfdf5" />
+          <text x="845" y="26" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" font-weight="800" fill="#059669" text-anchor="middle">● Conteo en Proceso</text>
+
+          <!-- Table Header -->
+          <rect x="15" y="54" width="900" height="34" rx="4" fill="#f1f5f9" />
+          <text x="25" y="75" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="800" fill="#475569">PRODUCTO / SKU</text>
+          <text x="235" y="75" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="800" fill="#475569">TEÓRICO</text>
+          <text x="325" y="75" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="800" fill="#475569">CONTEO FÍSICO (Bandejas/Un)</text>
+          <text x="500" y="75" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="800" fill="#475569">MERMA</text>
+          <text x="615" y="75" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="800" fill="#475569">VENTA (RESIDUAL)</text>
+          <text x="765" y="75" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="800" fill="#475569">P. UNIT</text>
+          <text x="895" y="75" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="800" fill="#475569" text-anchor="end">TOTAL ($)</text>
+
+          <!-- Row 1: Pan Masa Madre -->
+          <g transform="translate(15, 96)">
+            <rect x="0" y="0" width="900" height="85" rx="8" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.2" />
+            <text x="14" y="28" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="900" fill="#0f172a">Pan Rústico Masa Madre</text>
+            <text x="14" y="46" font-family="monospace" font-size="11" fill="#64748b">SKU: PAN-MM-001</text>
+            <rect x="14" y="54" width="165" height="20" rx="4" fill="#fef3c7" />
+            <text x="20" y="68" font-family="Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="700" fill="#b45309">Factor: 1 Bandeja = 10 piezas</text>
+
+            <text x="220" y="40" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="800" fill="#0f172a">80 pzs</text>
+            
+            <!-- Conteo Físico Inputs -->
+            <rect x="310" y="16" width="70" height="36" rx="6" fill="#f8fafc" stroke="#d97706" stroke-width="1.8" />
+            <text x="345" y="39" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800" fill="#d97706" text-anchor="middle">1 band</text>
+            
+            <rect x="385" y="16" width="60" height="36" rx="6" fill="#f8fafc" stroke="#d97706" stroke-width="1.8" />
+            <text x="415" y="39" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800" fill="#d97706" text-anchor="middle">2 un</text>
+            <text x="380" y="68" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" font-weight="700" fill="#2563eb">Total Físico = 12</text>
+
+            <!-- Merma input -->
+            <rect x="485" y="16" width="65" height="36" rx="6" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.2" />
+            <text x="517" y="39" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800" fill="#dc2626" text-anchor="middle">2 un</text>
+
+            <!-- Venta Calculada -->
+            <text x="600" y="38" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="900" fill="#059669">66 pzs</text>
+            <text x="600" y="58" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#64748b">(80 - 12 - 2)</text>
+
+            <text x="750" y="38" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="600" fill="#0f172a">$3.50</text>
+            <text x="885" y="38" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="900" fill="#0f172a" text-anchor="end">$231.00</text>
+          </g>
+
+          <!-- Row 2: Croissant -->
+          <g transform="translate(15, 190)">
+            <rect x="0" y="0" width="900" height="85" rx="8" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.2" />
+            <text x="14" y="28" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="900" fill="#0f172a">Croissant Mantequilla Pura</text>
+            <text x="14" y="46" font-family="monospace" font-size="11" fill="#64748b">SKU: CRO-MP-002</text>
+            <rect x="14" y="54" width="165" height="20" rx="4" fill="#fef3c7" />
+            <text x="20" y="68" font-family="Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="700" fill="#b45309">Factor: 1 Bandeja = 12 piezas</text>
+
+            <text x="220" y="40" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="800" fill="#0f172a">60 pzs</text>
+            
+            <rect x="310" y="16" width="70" height="36" rx="6" fill="#f8fafc" stroke="#d97706" stroke-width="1.8" />
+            <text x="345" y="39" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800" fill="#d97706" text-anchor="middle">0 band</text>
+            
+            <rect x="385" y="16" width="60" height="36" rx="6" fill="#f8fafc" stroke="#d97706" stroke-width="1.8" />
+            <text x="415" y="39" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800" fill="#d97706" text-anchor="middle">8 un</text>
+            <text x="380" y="68" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" font-weight="700" fill="#2563eb">Total Físico = 8</text>
+
+            <rect x="485" y="16" width="65" height="36" rx="6" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.2" />
+            <text x="517" y="39" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800" fill="#dc2626" text-anchor="middle">2 un</text>
+
+            <text x="600" y="38" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="900" fill="#059669">50 pzs</text>
+            <text x="600" y="58" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#64748b">(60 - 8 - 2)</text>
+
+            <text x="750" y="38" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="600" fill="#0f172a">$1.50</text>
+            <text x="885" y="38" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="900" fill="#0f172a" text-anchor="end">$75.00</text>
+          </g>
+
+          <!-- Row 3: Baguette -->
+          <g transform="translate(15, 285)">
+            <rect x="0" y="0" width="900" height="85" rx="8" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.2" />
+            <text x="14" y="28" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="900" fill="#0f172a">Baguette Tradicional Francés</text>
+            <text x="14" y="46" font-family="monospace" font-size="11" fill="#64748b">SKU: BAG-TR-003</text>
+            <rect x="14" y="54" width="165" height="20" rx="4" fill="#fef3c7" />
+            <text x="20" y="68" font-family="Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="700" fill="#b45309">Factor: 1 Tira = 5 piezas</text>
+
+            <text x="220" y="40" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="800" fill="#0f172a">100 pzs</text>
+            
+            <rect x="310" y="16" width="70" height="36" rx="6" fill="#f8fafc" stroke="#d97706" stroke-width="1.8" />
+            <text x="345" y="39" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800" fill="#d97706" text-anchor="middle">2 tiras</text>
+            
+            <rect x="385" y="16" width="60" height="36" rx="6" fill="#f8fafc" stroke="#d97706" stroke-width="1.8" />
+            <text x="415" y="39" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800" fill="#d97706" text-anchor="middle">4 un</text>
+            <text x="380" y="68" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" font-weight="700" fill="#2563eb">Total Físico = 14</text>
+
+            <rect x="485" y="16" width="65" height="36" rx="6" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.2" />
+            <text x="517" y="39" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800" fill="#dc2626" text-anchor="middle">1 un</text>
+
+            <text x="600" y="38" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="900" fill="#059669">85 pzs</text>
+            <text x="600" y="58" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#64748b">(100 - 14 - 1)</text>
+
+            <text x="750" y="38" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="600" fill="#0f172a">$1.25</text>
+            <text x="885" y="38" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="900" fill="#0f172a" text-anchor="end">$106.25</text>
+          </g>
+
+          <!-- Row 4: Concha -->
+          <g transform="translate(15, 380)">
+            <rect x="0" y="0" width="900" height="85" rx="8" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.2" />
+            <text x="14" y="28" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="900" fill="#0f172a">Concha Dulce de Vainilla</text>
+            <text x="14" y="46" font-family="monospace" font-size="11" fill="#64748b">SKU: CON-VN-004</text>
+            <rect x="14" y="54" width="165" height="20" rx="4" fill="#fef3c7" />
+            <text x="20" y="68" font-family="Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="700" fill="#b45309">Factor: 1 Bandeja = 15 piezas</text>
+
+            <text x="220" y="40" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="800" fill="#0f172a">80 pzs</text>
+            
+            <rect x="310" y="16" width="70" height="36" rx="6" fill="#f8fafc" stroke="#d97706" stroke-width="1.8" />
+            <text x="345" y="39" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800" fill="#d97706" text-anchor="middle">0 band</text>
+            
+            <rect x="385" y="16" width="60" height="36" rx="6" fill="#f8fafc" stroke="#d97706" stroke-width="1.8" />
+            <text x="415" y="39" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800" fill="#d97706" text-anchor="middle">8 un</text>
+            <text x="380" y="68" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" font-weight="700" fill="#2563eb">Total Físico = 8</text>
+
+            <rect x="485" y="16" width="65" height="36" rx="6" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.2" />
+            <text x="517" y="39" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800" fill="#dc2626" text-anchor="middle">3 un</text>
+
+            <text x="600" y="38" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="900" fill="#059669">69 pzs</text>
+            <text x="600" y="58" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#64748b">(80 - 8 - 3)</text>
+
+            <text x="750" y="38" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="600" fill="#0f172a">$0.85</text>
+            <text x="885" y="38" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="900" fill="#0f172a" text-anchor="end">$58.65</text>
+          </g>
+
+          <!-- Table Summary Total Bar -->
+          <g transform="translate(15, 475)">
+            <rect x="0" y="0" width="900" height="36" rx="6" fill="#0f172a" />
+            <text x="20" y="23" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="900" fill="#ffffff">TOTAL CONCILIACIÓN DEL DÍA:</text>
+            <text x="220" y="23" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="900" fill="#ffffff">320 pzs</text>
+            <text x="380" y="23" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="900" fill="#93c5fd">42 pzs</text>
+            <text x="517" y="23" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="900" fill="#fca5a5">8 pzs</text>
+            <text x="600" y="23" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="900" fill="#34d399">270 pzs vendidas</text>
+            <text x="885" y="23" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="900" fill="#f59e0b" text-anchor="end">$470.90 USD</text>
+          </g>
+        </g>
+
+
+        <!-- ======================================================== -->
+        <!-- ACTION BAR WITH ATOMIC PRISMA TRANSACTION NOTICE         -->
+        <!-- ======================================================== -->
+        <g transform="translate(25, 870)">
+          <rect x="0" y="0" width="930" height="145" rx="10" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.8" />
+          
+          <text x="20" y="28" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#0f172a">Observaciones de Turno:</text>
+          <rect x="20" y="38" width="560" height="48" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2" />
+          <text x="32" y="62" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="500" fill="#0f172a">Turno nocturno cerrado con total normalidad. Se retiró la merma a compostaje.</text>
+
+          <text x="20" y="105" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" font-weight="600" fill="#b45309">⚠️ Acción irreversible: Esta acción bloquea la fecha e inserta las transacciones en Kardex y DailyClose.</text>
+
+          <!-- Confirm Button -->
+          <rect x="610" y="38" width="290" height="48" rx="8" fill="#059669" />
+          <text x="755" y="67" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="900" fill="#ffffff" text-anchor="middle">🔒 Confirmar Cierre Definitivo ➔</text>
+
+          <rect x="610" y="96" width="140" height="34" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2" />
+          <text x="680" y="118" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#475569" text-anchor="middle">Guardar Borrador</text>
+
+          <rect x="760" y="96" width="140" height="34" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2" />
+          <text x="830" y="118" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#0f172a" text-anchor="middle">🖨️ Imprimir Acta PDF</text>
+        </g>
+
+        <!-- Footer Architecture Note -->
+        <g transform="translate(25, 1030)">
+          <rect x="0" y="0" width="930" height="50" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2" />
+          <text x="20" y="30" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" fill="#475569">💡 <strong>Mecanismo Transaccional ACID:</strong> La confirmación ejecuta un `$transaction` en Prisma que crea la cabecera `DailyClose`, los ítems en `DailyCloseItem` y los movimientos en `StockMovement` de forma indivisible.</text>
+        </g>
+
+      </g>
+    </svg>
+  </div>
+
+  <div class="footer-notes">
+    <strong>Ficha Técnica de Prototipo (HI-03):</strong> Módulo operativo nocturno. Convierte bandejas y tiras a unidades reales, computa la venta residual por sustracción, reporta mermas con control de porcentaje y consolida el cierre contable con persistencia atómica en PostgreSQL.
+  </div>
+</div>
+
+</body>
+</html>

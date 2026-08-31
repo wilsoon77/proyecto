@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diagrama de Modelo Entidad-Relación — Panadería Svetlana</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --surface: #f8fafc;
+      --border: #cbd5e1;
+      --text: #0f172a;
+      --text-muted: #334155;
+      --primary: #1d4ed8;
+      --accent: #b45309;
+      --success: #15803d;
+      --purple: #6b21a8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      background-color: #f1f5f9;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.5rem 1rem;
+      min-height: 100vh;
+    }
+    .container {
+      background: var(--bg);
+      border-radius: 12px;
+      box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.08);
+      border: 1px solid var(--border);
+      max-width: 1040px;
+      width: 100%;
+      overflow: hidden;
+    }
+    .header {
+      padding: 1.25rem 1.75rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .badge {
+      display: inline-block;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.3rem 0.75rem;
+      border-radius: 9999px;
+      background: #dbeafe;
+      color: #1e40af;
+      border: 1px solid #93c5fd;
+      margin-bottom: 0.4rem;
+    }
+    .title {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 0.2rem;
+    }
+    .subtitle {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .diagram-wrapper {
+      padding: 1.5rem 1rem;
+      display: flex;
+      justify-content: center;
+      background: #ffffff;
+    }
+    svg {
+      max-width: 100%;
+      height: auto;
+    }
+    .footer-notes {
+      padding: 1.25rem 1.75rem;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <span class="badge">Modelo de Base de Datos • Relacional / Prisma ORM • Formato Vertical</span>
+    <h1 class="title">Diagrama de Modelo Entidad-Relación (MER / Relational Data Model)</h1>
+    <p class="subtitle">Estructura relacional de PostgreSQL para la gestión multi-sucursal, producción por amasijos, control FEFO y reservas B2C.</p>
+  </div>
+
+  <div class="diagram-wrapper">
+    <svg id="diagram-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1020 1660" width="1020" height="1660">
+      <defs>
+        <!-- Arrowhead Markers -->
+        <marker id="crow-many" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 1 L 10 6 L 0 11 M 10 0 L 10 12" fill="none" stroke="#475569" stroke-width="2" />
+        </marker>
+        <marker id="one-one" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 3 0 L 3 10 M 7 0 L 7 10" fill="none" stroke="#475569" stroke-width="2" />
+        </marker>
+      </defs>
+
+      <!-- ============================================================ -->
+      <!-- TIER 1: SEGURIDAD, USUARIOS Y SUCURSALES                     -->
+      <!-- ============================================================ -->
+      <g transform="translate(20, 20)">
+        <rect x="0" y="0" width="980" height="270" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="6,4" />
+        <rect x="15" y="12" width="460" height="26" rx="6" fill="#0f172a" />
+        <text x="25" y="30" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff">TIER 1: SEGURIDAD, ROLES (RBAC) Y SUCURSALES</text>
+
+        <!-- Entity: Branch -->
+        <g transform="translate(25, 55)">
+          <rect x="0" y="0" width="290" height="195" rx="8" fill="#ffffff" stroke="#0f172a" stroke-width="2" />
+          <rect x="0" y="0" width="290" height="26" rx="8" fill="#0f172a" />
+          <rect x="0" y="16" width="290" height="10" fill="#0f172a" />
+          <text x="145" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">Branch (Sucursales Físicas)</text>
+          
+          <text x="12" y="46" font-family="monospace" font-size="11" font-weight="800" fill="#1d4ed8">PK id: Int (Autoincrement)</text>
+          <text x="12" y="65" font-family="monospace" font-size="11" fill="#0f172a">name: String</text>
+          <text x="12" y="84" font-family="monospace" font-size="11" fill="#0f172a">slug: String (UNIQUE)</text>
+          <text x="12" y="103" font-family="monospace" font-size="11" fill="#0f172a">address: String</text>
+          <text x="12" y="122" font-family="monospace" font-size="11" fill="#475569">phone: String?</text>
+          <text x="12" y="141" font-family="monospace" font-size="11" fill="#475569">latitude / longitude: Float?</text>
+          <text x="12" y="160" font-family="monospace" font-size="11" fill="#15803d">isActive: Boolean = true</text>
+          <text x="12" y="179" font-family="monospace" font-size="10.5" fill="#64748b">createdAt / updatedAt</text>
+        </g>
+
+        <!-- Entity: User -->
+        <g transform="translate(365, 55)">
+          <rect x="0" y="0" width="290" height="195" rx="8" fill="#ffffff" stroke="#0f172a" stroke-width="2" />
+          <rect x="0" y="0" width="290" height="26" rx="8" fill="#0f172a" />
+          <rect x="0" y="16" width="290" height="10" fill="#0f172a" />
+          <text x="145" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">User (Usuarios del Sistema)</text>
+          
+          <text x="12" y="46" font-family="monospace" font-size="11" font-weight="800" fill="#1d4ed8">PK id: String (CUID)</text>
+          <text x="12" y="65" font-family="monospace" font-size="11" fill="#0f172a">email: String (UNIQUE)</text>
+          <text x="12" y="84" font-family="monospace" font-size="11" fill="#475569">passwordHash: String?</text>
+          <text x="12" y="103" font-family="monospace" font-size="11" fill="#0f172a">firstName / lastName: String</text>
+          <text x="12" y="122" font-family="monospace" font-size="11" font-weight="700" fill="#b45309">role: UserRole (ADMIN, MGR...)</text>
+          <text x="12" y="141" font-family="monospace" font-size="11" font-weight="800" fill="#dc2626">FK branchId: Int?</text>
+          <text x="12" y="160" font-family="monospace" font-size="11" fill="#15803d">isActive: Boolean = true</text>
+          <text x="12" y="179" font-family="monospace" font-size="10.5" fill="#64748b">createdAt / updatedAt</text>
+        </g>
+
+        <!-- Entity: TelegramLink -->
+        <g transform="translate(705, 55)">
+          <rect x="0" y="0" width="250" height="195" rx="8" fill="#ffffff" stroke="#6b21a8" stroke-width="2" />
+          <rect x="0" y="0" width="250" height="26" rx="8" fill="#6b21a8" />
+          <rect x="0" y="16" width="250" height="10" fill="#6b21a8" />
+          <text x="125" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">TelegramLink (Chat Privado)</text>
+          
+          <text x="12" y="46" font-family="monospace" font-size="11" font-weight="800" fill="#1d4ed8">PK id: String (CUID)</text>
+          <text x="12" y="65" font-family="monospace" font-size="11" font-weight="800" fill="#dc2626">FK userId: String (UNIQUE)</text>
+          <text x="12" y="84" font-family="monospace" font-size="11" fill="#0f172a">chatId: String (UNIQUE)</text>
+          <text x="12" y="103" font-family="monospace" font-size="11" fill="#475569">username: String?</text>
+          <text x="12" y="122" font-family="monospace" font-size="11" fill="#15803d">active: Boolean = true</text>
+          <text x="12" y="141" font-family="monospace" font-size="10.5" fill="#64748b">linkedAt / lastSeenAt</text>
+        </g>
+
+        <!-- Connection Branch (1) -> User (N) -->
+        <line x1="315" y1="150" x2="365" y2="150" stroke="#475569" stroke-width="2" marker-start="url(#one-one)" marker-end="url(#crow-many)" />
+        <!-- Connection User (1) -> TelegramLink (1:1) -->
+        <line x1="655" y1="150" x2="705" y2="150" stroke="#475569" stroke-width="2" marker-start="url(#one-one)" marker-end="url(#one-one)" />
+      </g>
+
+
+      <!-- ============================================================ -->
+      <!-- TIER 2: CATÁLOGO, RECETAS Y MATERIA PRIMA                    -->
+      <!-- ============================================================ -->
+      <g transform="translate(20, 310)">
+        <rect x="0" y="0" width="980" height="390" rx="10" fill="#eff6ff" stroke="#bfdbfe" stroke-width="2" stroke-dasharray="6,4" />
+        <rect x="15" y="12" width="460" height="26" rx="6" fill="#1e40af" />
+        <text x="25" y="30" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff">TIER 2: CATÁLOGO, RECETAS Y MATERIA PRIMA</text>
+
+        <!-- Entity: Category -->
+        <g transform="translate(25, 55)">
+          <rect x="0" y="0" width="260" height="140" rx="8" fill="#ffffff" stroke="#1e40af" stroke-width="2" />
+          <rect x="0" y="0" width="260" height="26" rx="8" fill="#1e40af" />
+          <rect x="0" y="16" width="260" height="10" fill="#1e40af" />
+          <text x="130" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">Category</text>
+          
+          <text x="12" y="46" font-family="monospace" font-size="11" font-weight="800" fill="#1d4ed8">PK id: Int (Autoincrement)</text>
+          <text x="12" y="65" font-family="monospace" font-size="11" fill="#0f172a">name: String (UNIQUE)</text>
+          <text x="12" y="84" font-family="monospace" font-size="11" fill="#0f172a">slug: String (UNIQUE)</text>
+          <text x="12" y="103" font-family="monospace" font-size="11" fill="#475569">description: String?</text>
+          <text x="12" y="122" font-family="monospace" font-size="11" fill="#15803d">isActive: Boolean = true</text>
+        </g>
+
+        <!-- Entity: Product -->
+        <g transform="translate(340, 55)">
+          <rect x="0" y="0" width="310" height="205" rx="8" fill="#ffffff" stroke="#1e40af" stroke-width="2" />
+          <rect x="0" y="0" width="310" height="26" rx="8" fill="#1e40af" />
+          <rect x="0" y="16" width="310" height="10" fill="#1e40af" />
+          <text x="155" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">Product (Catálogo Base)</text>
+          
+          <text x="12" y="46" font-family="monospace" font-size="11" font-weight="800" fill="#1d4ed8">PK id: Int (Autoincrement)</text>
+          <text x="12" y="65" font-family="monospace" font-size="11" fill="#0f172a">sku: String (UNIQUE)</text>
+          <text x="12" y="84" font-family="monospace" font-size="11" fill="#0f172a">name: String</text>
+          <text x="12" y="103" font-family="monospace" font-size="11" font-weight="800" fill="#dc2626">FK categoryId: Int</text>
+          <text x="12" y="122" font-family="monospace" font-size="11" font-weight="700" fill="#15803d">basePrice: Decimal(10,2)</text>
+          <text x="12" y="141" font-family="monospace" font-size="11" fill="#b45309">origin: ProductOrigin</text>
+          <text x="12" y="160" font-family="monospace" font-size="11" fill="#475569">unitsPerTray: Int? (Latas)</text>
+          <text x="12" y="179" font-family="monospace" font-size="11" fill="#6b21a8">tracksExpiration: Boolean</text>
+          <text x="12" y="196" font-family="monospace" font-size="10.5" fill="#64748b">isActive / isAvailable</text>
+        </g>
+
+        <!-- Entity: ProductPresentation -->
+        <g transform="translate(695, 55)">
+          <rect x="0" y="0" width="260" height="140" rx="8" fill="#ffffff" stroke="#1e40af" stroke-width="2" />
+          <rect x="0" y="0" width="260" height="26" rx="8" fill="#1e40af" />
+          <rect x="0" y="16" width="260" height="10" fill="#1e40af" />
+          <text x="130" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">ProductPresentation</text>
+          
+          <text x="12" y="46" font-family="monospace" font-size="11" font-weight="800" fill="#1d4ed8">PK id: Int (Autoincrement)</text>
+          <text x="12" y="65" font-family="monospace" font-size="11" font-weight="800" fill="#dc2626">FK productId: Int</text>
+          <text x="12" y="84" font-family="monospace" font-size="11" fill="#0f172a">name: String ("Media tira")</text>
+          <text x="12" y="103" font-family="monospace" font-size="11" font-weight="800" fill="#15803d">unitsInStock: Int (Piezas)</text>
+          <text x="12" y="122" font-family="monospace" font-size="11" fill="#15803d">price: Decimal(10,2)?</text>
+        </g>
+
+        <!-- Entity: Recipe -->
+        <g transform="translate(25, 220)">
+          <rect x="0" y="0" width="260" height="145" rx="8" fill="#ffffff" stroke="#1e40af" stroke-width="2" />
+          <rect x="0" y="0" width="260" height="26" rx="8" fill="#1e40af" />
+          <rect x="0" y="16" width="260" height="10" fill="#1e40af" />
+          <text x="130" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">Recipe (Fórmula Amasijo)</text>
+          
+          <text x="12" y="46" font-family="monospace" font-size="11" font-weight="800" fill="#1d4ed8">PK id: Int (Autoincrement)</text>
+          <text x="12" y="65" font-family="monospace" font-size="11" font-weight="800" fill="#dc2626">FK productId: Int</text>
+          <text x="12" y="84" font-family="monospace" font-size="11" fill="#0f172a">name: String ("Amasijo 50lb")</text>
+          <text x="12" y="103" font-family="monospace" font-size="11" fill="#b45309">standardTrays: Int (Latas)</text>
+          <text x="12" y="122" font-family="monospace" font-size="11" fill="#15803d">isActive: Boolean = true</text>
+        </g>
+
+        <!-- Entity: RecipeIngredient -->
+        <g transform="translate(340, 270)">
+          <rect x="0" y="0" width="310" height="95" rx="8" fill="#ffffff" stroke="#1e40af" stroke-width="2" />
+          <rect x="0" y="0" width="310" height="24" rx="8" fill="#1e40af" />
+          <rect x="0" y="14" width="310" height="10" fill="#1e40af" />
+          <text x="155" y="17" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="800" fill="#ffffff" text-anchor="middle">RecipeIngredient (Deducción Insumos)</text>
+          
+          <text x="12" y="44" font-family="monospace" font-size="10.5" font-weight="800" fill="#1d4ed8">PK id: Int</text>
+          <text x="12" y="61" font-family="monospace" font-size="10.5" font-weight="800" fill="#dc2626">FK recipeId: Int | FK rawMaterialId: Int</text>
+          <text x="12" y="78" font-family="monospace" font-size="10.5" font-weight="800" fill="#15803d">quantity: Decimal(10,4)</text>
+        </g>
+
+        <!-- Entity: RawMaterial -->
+        <g transform="translate(695, 220)">
+          <rect x="0" y="0" width="260" height="145" rx="8" fill="#ffffff" stroke="#1e40af" stroke-width="2" />
+          <rect x="0" y="0" width="260" height="26" rx="8" fill="#1e40af" />
+          <rect x="0" y="16" width="260" height="10" fill="#1e40af" />
+          <text x="130" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">RawMaterial (Insumos Base)</text>
+          
+          <text x="12" y="46" font-family="monospace" font-size="11" font-weight="800" fill="#1d4ed8">PK id: Int (Autoincrement)</text>
+          <text x="12" y="65" font-family="monospace" font-size="11" fill="#0f172a">name: String (Harina, Azúcar)</text>
+          <text x="12" y="84" font-family="monospace" font-size="11" font-weight="700" fill="#b45309">baseUnit: BaseUnit (LB / ML)</text>
+          <text x="12" y="103" font-family="monospace" font-size="11" fill="#15803d">costPerUnit: Decimal(10,4)</text>
+          <text x="12" y="122" font-family="monospace" font-size="11" fill="#dc2626">minStock: Decimal(10,2)?</text>
+        </g>
+
+        <!-- Connections Tier 2 -->
+        <line x1="285" y1="125" x2="340" y2="125" stroke="#475569" stroke-width="2" marker-start="url(#one-one)" marker-end="url(#crow-many)" />
+        <line x1="650" y1="125" x2="695" y2="125" stroke="#475569" stroke-width="2" marker-start="url(#one-one)" marker-end="url(#crow-many)" />
+        <!-- Product (1) -> Recipe (N) Orthogonal Connection -->
+        <path d="M 340 200 L 310 200 L 310 260 L 285 260" fill="none" stroke="#475569" stroke-width="2" marker-start="url(#one-one)" marker-end="url(#crow-many)" />
+        <line x1="285" y1="315" x2="340" y2="315" stroke="#475569" stroke-width="2" marker-start="url(#one-one)" marker-end="url(#crow-many)" />
+        <line x1="650" y1="315" x2="695" y2="315" stroke="#475569" stroke-width="2" marker-start="url(#crow-many)" marker-end="url(#one-one)" />
+      </g>
+
+
+      <!-- ============================================================ -->
+      <!-- TIER 3: OPERACIONES Y CIERRE DE DÍA RESIDUAL                 -->
+      <!-- ============================================================ -->
+      <g transform="translate(20, 720)">
+        <rect x="0" y="0" width="980" height="380" rx="10" fill="#fffbeb" stroke="#fde68a" stroke-width="2" stroke-dasharray="6,4" />
+        <rect x="15" y="12" width="460" height="26" rx="6" fill="#b45309" />
+        <text x="25" y="30" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff">TIER 3: OPERACIONES, PRODUCCIÓN Y CIERRE DE DÍA</text>
+
+        <!-- Entity: ProductionLog -->
+        <g transform="translate(25, 55)">
+          <rect x="0" y="0" width="290" height="180" rx="8" fill="#ffffff" stroke="#b45309" stroke-width="2" />
+          <rect x="0" y="0" width="290" height="26" rx="8" fill="#b45309" />
+          <rect x="0" y="16" width="290" height="10" fill="#b45309" />
+          <text x="145" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">ProductionLog (Horneadas)</text>
+          
+          <text x="12" y="46" font-family="monospace" font-size="11" font-weight="800" fill="#1d4ed8">PK id: Int (Autoincrement)</text>
+          <text x="12" y="65" font-family="monospace" font-size="11" font-weight="800" fill="#dc2626">FK recipeId: Int | FK branchId: Int</text>
+          <text x="12" y="84" font-family="monospace" font-size="11" font-weight="800" fill="#dc2626">FK userId: String (Panadero)</text>
+          <text x="12" y="103" font-family="monospace" font-size="11" fill="#b45309">traysProduced: Int</text>
+          <text x="12" y="122" font-family="monospace" font-size="11" font-weight="800" fill="#15803d">unitsProduced: Int</text>
+          <text x="12" y="141" font-family="monospace" font-size="11" fill="#475569">presentationId: Int?</text>
+          <text x="12" y="160" font-family="monospace" font-size="10.5" fill="#64748b">createdAt: DateTime</text>
+        </g>
+
+        <!-- Entity: DailyClose -->
+        <g transform="translate(355, 55)">
+          <rect x="0" y="0" width="290" height="180" rx="8" fill="#ffffff" stroke="#b45309" stroke-width="2" />
+          <rect x="0" y="0" width="290" height="26" rx="8" fill="#b45309" />
+          <rect x="0" y="16" width="290" height="10" fill="#b45309" />
+          <text x="145" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">DailyClose (Cabecera Cierre)</text>
+          
+          <text x="12" y="46" font-family="monospace" font-size="11" font-weight="800" fill="#1d4ed8">PK id: Int (Autoincrement)</text>
+          <text x="12" y="65" font-family="monospace" font-size="11" font-weight="800" fill="#dc2626">FK branchId: Int</text>
+          <text x="12" y="84" font-family="monospace" font-size="11" font-weight="800" fill="#dc2626">FK userId: String (Encargado)</text>
+          <text x="12" y="103" font-family="monospace" font-size="11" font-weight="800" fill="#0f172a">closeDate: Date</text>
+          <text x="12" y="122" font-family="monospace" font-size="11" fill="#475569">snapshotAt: DateTime</text>
+          <text x="12" y="141" font-family="monospace" font-size="11" fill="#475569">note: String?</text>
+          <text x="12" y="160" font-family="monospace" font-size="10.5" fill="#64748b">UNIQUE(branchId, closeDate)</text>
+        </g>
+
+        <!-- Entity: DailyCloseItem -->
+        <g transform="translate(675, 55)">
+          <rect x="0" y="0" width="280" height="215" rx="8" fill="#ffffff" stroke="#b45309" stroke-width="2" />
+          <rect x="0" y="0" width="280" height="26" rx="8" fill="#b45309" />
+          <rect x="0" y="16" width="280" height="10" fill="#b45309" />
+          <text x="140" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">DailyCloseItem (Venta Residual)</text>
+          
+          <text x="12" y="46" font-family="monospace" font-size="11" font-weight="800" fill="#1d4ed8">PK id: Int (Autoincrement)</text>
+          <text x="12" y="65" font-family="monospace" font-size="11" font-weight="800" fill="#dc2626">FK dailyCloseId: Int</text>
+          <text x="12" y="84" font-family="monospace" font-size="11" font-weight="800" fill="#dc2626">FK productId: Int</text>
+          <text x="12" y="103" font-family="monospace" font-size="11" fill="#475569">systemQty: Int (Teórico)</text>
+          <text x="12" y="122" font-family="monospace" font-size="11" font-weight="800" fill="#0f172a">countedQty: Int (Físico)</text>
+          <text x="12" y="141" font-family="monospace" font-size="11" font-weight="800" fill="#dc2626">wasteQty: Int (Merma)</text>
+          <text x="12" y="160" font-family="monospace" font-size="11" font-weight="800" fill="#15803d">soldQty: Int (Venta = Teo-Fis-Mer)</text>
+          <text x="12" y="179" font-family="monospace" font-size="11" fill="#b45309">surplusQty: Int (Sobrante)</text>
+          <text x="12" y="198" font-family="monospace" font-size="10.5" fill="#64748b">UNIQUE(dailyCloseId, productId)</text>
+        </g>
+
+        <!-- Entity: RawMaterialInventory -->
+        <g transform="translate(25, 250)">
+          <rect x="0" y="0" width="290" height="110" rx="8" fill="#ffffff" stroke="#b45309" stroke-width="2" />
+          <rect x="0" y="0" width="290" height="24" rx="8" fill="#b45309" />
+          <rect x="0" y="14" width="290" height="10" fill="#b45309" />
+          <text x="145" y="17" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="800" fill="#ffffff" text-anchor="middle">RawMaterialInventory</text>
+          
+          <text x="12" y="44" font-family="monospace" font-size="10.5" font-weight="800" fill="#1d4ed8">PK id: Int</text>
+          <text x="12" y="61" font-family="monospace" font-size="10.5" font-weight="800" fill="#dc2626">FK rawMaterialId: Int | FK branchId: Int</text>
+          <text x="12" y="78" font-family="monospace" font-size="10.5" font-weight="800" fill="#15803d">quantity: Decimal(12,4)</text>
+          <text x="12" y="95" font-family="monospace" font-size="10" fill="#64748b">UNIQUE(rawMaterialId, branchId)</text>
+        </g>
+
+        <!-- Connections Tier 3 -->
+        <line x1="645" y1="145" x2="675" y2="145" stroke="#475569" stroke-width="2" marker-start="url(#one-one)" marker-end="url(#crow-many)" />
+      </g>
+
+
+      <!-- ============================================================ -->
+      <!-- TIER 4: INVENTARIO, FEFO Y RESERVAS B2C                      -->
+      <!-- ============================================================ -->
+      <g transform="translate(20, 1120)">
+        <rect x="0" y="0" width="980" height="520" rx="10" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="2" stroke-dasharray="6,4" />
+        <rect x="15" y="12" width="460" height="26" rx="6" fill="#15803d" />
+        <text x="25" y="30" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff">TIER 4: INVENTARIO, TRAZABILIDAD FEFO Y RESERVAS B2C</text>
+
+        <!-- Entity: Inventory -->
+        <g transform="translate(25, 55)">
+          <rect x="0" y="0" width="280" height="155" rx="8" fill="#ffffff" stroke="#15803d" stroke-width="2" />
+          <rect x="0" y="0" width="280" height="26" rx="8" fill="#15803d" />
+          <rect x="0" y="16" width="280" height="10" fill="#15803d" />
+          <text x="140" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">Inventory (Stock Mostrador)</text>
+          
+          <text x="12" y="46" font-family="monospace" font-size="11" font-weight="800" fill="#1d4ed8">PK id: Int (Autoincrement)</text>
+          <text x="12" y="65" font-family="monospace" font-size="11" font-weight="800" fill="#dc2626">FK productId: Int | FK branchId: Int</text>
+          <text x="12" y="84" font-family="monospace" font-size="11" font-weight="800" fill="#15803d">quantity: Int (Físico Real)</text>
+          <text x="12" y="103" font-family="monospace" font-size="11" font-weight="800" fill="#b45309">reserved: Int (Comprometido B2C)</text>
+          <text x="12" y="122" font-family="monospace" font-size="10.5" fill="#64748b">UNIQUE(productId, branchId)</text>
+        </g>
+
+        <!-- Entity: InventoryLot -->
+        <g transform="translate(340, 55)">
+          <rect x="0" y="0" width="310" height="180" rx="8" fill="#ffffff" stroke="#15803d" stroke-width="2" />
+          <rect x="0" y="0" width="310" height="26" rx="8" fill="#15803d" />
+          <rect x="0" y="16" width="310" height="10" fill="#15803d" />
+          <text x="155" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">InventoryLot (Lotes FEFO)</text>
+          
+          <text x="12" y="46" font-family="monospace" font-size="11" font-weight="800" fill="#1d4ed8">PK id: Int (Autoincrement)</text>
+          <text x="12" y="65" font-family="monospace" font-size="11" font-weight="800" fill="#dc2626">FK productId: Int | FK branchId: Int</text>
+          <text x="12" y="84" font-family="monospace" font-size="11" fill="#475569">sourceType: PRODUCTION / PURCHASE</text>
+          <text x="12" y="103" font-family="monospace" font-size="11" fill="#0f172a">initialQuantity: Int</text>
+          <text x="12" y="122" font-family="monospace" font-size="11" font-weight="800" fill="#15803d">availableQuantity: Int</text>
+          <text x="12" y="141" font-family="monospace" font-size="11" font-weight="800" fill="#dc2626">expiresAt: DateTime?</text>
+          <text x="12" y="160" font-family="monospace" font-size="11" font-weight="700" fill="#b45309">alertAt: DateTime?</text>
+        </g>
+
+        <!-- Entity: Order (B2C) -->
+        <g transform="translate(685, 55)">
+          <rect x="0" y="0" width="270" height="180" rx="8" fill="#ffffff" stroke="#15803d" stroke-width="2" />
+          <rect x="0" y="0" width="270" height="26" rx="8" fill="#15803d" />
+          <rect x="0" y="16" width="270" height="10" fill="#15803d" />
+          <text x="135" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">Order (Reserva Web B2C)</text>
+          
+          <text x="12" y="46" font-family="monospace" font-size="11" font-weight="800" fill="#1d4ed8">PK id: Int (Autoincrement)</text>
+          <text x="12" y="65" font-family="monospace" font-size="11" fill="#0f172a">orderNumber: String (UNIQUE)</text>
+          <text x="12" y="84" font-family="monospace" font-size="11" font-weight="800" fill="#dc2626">FK userId: String? | FK branchId: Int?</text>
+          <text x="12" y="103" font-family="monospace" font-size="11" font-weight="800" fill="#b45309">status: OrderStatus (PENDING...)</text>
+          <text x="12" y="122" font-family="monospace" font-size="11" font-weight="800" fill="#15803d">total: Decimal(10,2)</text>
+          <text x="12" y="141" font-family="monospace" font-size="11" fill="#475569">paymentMethod: EFECTIVO</text>
+          <text x="12" y="160" font-family="monospace" font-size="10.5" fill="#64748b">expiresAt: DateTime?</text>
+        </g>
+
+        <!-- Entity: StockMovement -->
+        <g transform="translate(25, 260)">
+          <rect x="0" y="0" width="280" height="235" rx="8" fill="#ffffff" stroke="#15803d" stroke-width="2" />
+          <rect x="0" y="0" width="280" height="26" rx="8" fill="#15803d" />
+          <rect x="0" y="16" width="280" height="10" fill="#15803d" />
+          <text x="140" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">StockMovement (Kardex)</text>
+          
+          <text x="12" y="46" font-family="monospace" font-size="11" font-weight="800" fill="#1d4ed8">PK id: Int (Autoincrement)</text>
+          <text x="12" y="65" font-family="monospace" font-size="11" font-weight="800" fill="#dc2626">FK productId: Int</text>
+          <text x="12" y="84" font-family="monospace" font-size="11" font-weight="800" fill="#dc2626">FK fromBranchId / toBranchId: Int?</text>
+          <text x="12" y="103" font-family="monospace" font-size="11" font-weight="800" fill="#b45309">type: StockMovementType</text>
+          <text x="12" y="122" font-family="monospace" font-size="11" font-weight="800" fill="#15803d">quantity: Int (Siempre +)</text>
+          <text x="12" y="141" font-family="monospace" font-size="11" fill="#475569">FK productionLogId: Int?</text>
+          <text x="12" y="160" font-family="monospace" font-size="11" fill="#475569">FK dailyCloseId: Int?</text>
+          <text x="12" y="179" font-family="monospace" font-size="11" fill="#475569">FK userId: String?</text>
+          <text x="12" y="198" font-family="monospace" font-size="10.5" fill="#64748b">createdAt: DateTime</text>
+        </g>
+
+        <!-- Entity: InventoryLotConsumption -->
+        <g transform="translate(340, 260)">
+          <rect x="0" y="0" width="310" height="120" rx="8" fill="#ffffff" stroke="#15803d" stroke-width="2" />
+          <rect x="0" y="0" width="310" height="24" rx="8" fill="#15803d" />
+          <rect x="0" y="14" width="310" height="10" fill="#15803d" />
+          <text x="155" y="17" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="800" fill="#ffffff" text-anchor="middle">InventoryLotConsumption</text>
+          
+          <text x="12" y="44" font-family="monospace" font-size="10.5" font-weight="800" fill="#1d4ed8">PK id: Int</text>
+          <text x="12" y="61" font-family="monospace" font-size="10.5" font-weight="800" fill="#dc2626">FK lotId: Int | FK stockMovementId: Int</text>
+          <text x="12" y="78" font-family="monospace" font-size="10.5" font-weight="800" fill="#15803d">quantity: Int</text>
+          <text x="12" y="95" font-family="monospace" font-size="10" fill="#64748b">UNIQUE(lotId, stockMovementId)</text>
+        </g>
+
+        <!-- Entity: OrderItem -->
+        <g transform="translate(685, 260)">
+          <rect x="0" y="0" width="270" height="145" rx="8" fill="#ffffff" stroke="#15803d" stroke-width="2" />
+          <rect x="0" y="0" width="270" height="24" rx="8" fill="#15803d" />
+          <rect x="0" y="14" width="270" height="10" fill="#15803d" />
+          <text x="135" y="17" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="800" fill="#ffffff" text-anchor="middle">OrderItem (Detalle Reserva)</text>
+          
+          <text x="12" y="44" font-family="monospace" font-size="10.5" font-weight="800" fill="#1d4ed8">PK id: Int</text>
+          <text x="12" y="61" font-family="monospace" font-size="10.5" font-weight="800" fill="#dc2626">FK orderId: Int | FK productId: Int</text>
+          <text x="12" y="78" font-family="monospace" font-size="10.5" fill="#0f172a">quantity: Int (Comercial)</text>
+          <text x="12" y="95" font-family="monospace" font-size="10.5" font-weight="800" fill="#15803d">stockQuantity: Int (Físico)</text>
+          <text x="12" y="112" font-family="monospace" font-size="10.5" fill="#15803d">unitPrice / lineTotal</text>
+        </g>
+
+        <!-- Connections Tier 4 -->
+        <line x1="495" y1="235" x2="495" y2="260" stroke="#475569" stroke-width="2" marker-start="url(#one-one)" marker-end="url(#crow-many)" />
+        <line x1="305" y1="320" x2="340" y2="320" stroke="#475569" stroke-width="2" marker-start="url(#one-one)" marker-end="url(#crow-many)" />
+        <line x1="820" y1="235" x2="820" y2="260" stroke="#475569" stroke-width="2" marker-start="url(#one-one)" marker-end="url(#crow-many)" />
+      </g>
+
+    </svg>
+  </div>
+
+  <div class="footer-notes">
+    <strong>Regla de Arquitectura de Datos:</strong> El modelo relacional implementa restricciones estrictas de integridad referencial (FK), índices compuestos para acelerar filtros por sucursal y fecha contable (<code>branchId, closeDate</code>), y partición de inventario en doble nivel: resumen balanceado (<code>Inventory</code>) y trazabilidad por lotes (<code>InventoryLot</code>) para soporte FEFO.
+  </div>
+</div>
+
+</body>
+</html>

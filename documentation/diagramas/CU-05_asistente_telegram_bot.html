@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diagrama UML: Asistente Gerencial vía Telegram Bot con IA</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --surface: #f8fafc;
+      --border: #cbd5e1;
+      --text: #0f172a;
+      --text-muted: #334155;
+      --primary: #1d4ed8;
+      --accent: #b45309;
+      --success: #15803d;
+      --danger: #dc2626;
+      --purple: #6b21a8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      background-color: #f1f5f9;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.5rem 1rem;
+      min-height: 100vh;
+    }
+    .container {
+      background: var(--bg);
+      border-radius: 12px;
+      box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.08);
+      border: 1px solid var(--border);
+      max-width: 1040px;
+      width: 100%;
+      overflow: hidden;
+    }
+    .header {
+      padding: 1.25rem 1.75rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .badge {
+      display: inline-block;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.3rem 0.75rem;
+      border-radius: 9999px;
+      background: #dbeafe;
+      color: #1e40af;
+      border: 1px solid #93c5fd;
+      margin-bottom: 0.4rem;
+    }
+    .title {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 0.2rem;
+    }
+    .subtitle {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .diagram-wrapper {
+      padding: 1.5rem 1rem;
+      display: flex;
+      justify-content: center;
+      background: #ffffff;
+    }
+    svg {
+      max-width: 100%;
+      height: auto;
+    }
+    .footer-notes {
+      padding: 1.25rem 1.75rem;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <span class="badge">Casos de Uso UML 2.5 • Formato Word / Impresión</span>
+    <h1 class="title">Proceso de Asistente Gerencial vía Telegram Bot e Inferencia IA</h1>
+    <p class="subtitle">Consultas operativas en lenguaje natural, Function Calling y despacho de alertas nocturnas.</p>
+  </div>
+
+  <div class="diagram-wrapper">
+    <svg id="diagram-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1020 620" width="1020" height="620">
+      <defs>
+        <marker id="open-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 1.5 L 9 5 L 0 8.5" fill="none" stroke="#334155" stroke-width="2" />
+        </marker>
+        
+      </defs>
+
+      <!-- SYSTEM BOUNDARY -->
+      <rect x="210" y="20" width="580" height="580" rx="14" fill="#f8fafc" stroke="#475569" stroke-width="2" stroke-dasharray="6,4" />
+      <rect x="210" y="20" width="580" height="38" rx="14" fill="#0f172a" />
+      <rect x="210" y="44" width="580" height="14" fill="#0f172a" />
+      <text x="500" y="45" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="800" fill="#ffffff" text-anchor="middle">SISTEMA PANADERÍA SVETLANA (TELEGRAM ASSISTANT)</text>
+
+      <!-- ACTOR 1: Dueño / Administrador (Left) -->
+      <g id="actor-owner" transform="translate(25, 200)">
+        <rect x="0" y="0" width="155" height="195" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="2" />
+        <g transform="translate(77, 48)">
+          <circle cx="0" cy="0" r="16" fill="#f8fafc" stroke="#0f172a" stroke-width="3" />
+          <line x1="0" y1="16" x2="0" y2="58" stroke="#0f172a" stroke-width="3" />
+          <line x1="-24" y1="32" x2="24" y2="32" stroke="#0f172a" stroke-width="3" />
+          <line x1="0" y1="58" x2="-20" y2="92" stroke="#0f172a" stroke-width="3" />
+          <line x1="0" y1="58" x2="20" y2="92" stroke="#0f172a" stroke-width="3" />
+        </g>
+        <rect x="10" y="148" width="135" height="36" rx="6" fill="#0f172a" />
+        <text x="77" y="163" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">Dueño / Gerente</text>
+        <text x="77" y="177" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#93c5fd" text-anchor="middle">«Rol ADMIN»</text>
+        <circle cx="155" cy="98" r="4" fill="#1d4ed8" />
+      </g>
+
+      <!-- ACTOR 2: Telegram Webhook API (Right Top) -->
+      <g id="actor-tg" transform="translate(835, 75)">
+        <rect x="0" y="0" width="160" height="155" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="2" />
+        <g transform="translate(80, 40)">
+          <circle cx="0" cy="0" r="20" fill="#f8fafc" stroke="#0f172a" stroke-width="3" />
+          <path d="M -10 0 L 12 -10 L 4 12 L -2 4 Z" fill="#6b21a8" />
+        </g>
+        <rect x="10" y="102" width="140" height="38" rx="6" fill="#6b21a8" />
+        <text x="80" y="118" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">API Telegram</text>
+        <text x="80" y="132" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#e9d5ff" text-anchor="middle">«Bot Webhook»</text>
+        <circle cx="0" cy="77" r="4" fill="#6b21a8" />
+      </g>
+
+      <!-- ACTOR 3: Motor IA / Tool Calling (Right Bottom) -->
+      <g id="actor-ai" transform="translate(835, 335)">
+        <rect x="0" y="0" width="160" height="160" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="2" />
+        <g transform="translate(80, 35)">
+          <circle cx="0" cy="0" r="20" fill="#f8fafc" stroke="#0f172a" stroke-width="3" />
+          <path d="M 0 -12 L 3 -3 L 12 0 L 3 3 L 0 12 L -3 3 L -12 0 L -3 -3 Z" fill="#6b21a8" />
+        </g>
+        <rect x="10" y="108" width="140" height="38" rx="6" fill="#0f172a" />
+        <text x="80" y="124" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">Motor Tool Calling</text>
+        <text x="80" y="138" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#93c5fd" text-anchor="middle">«Gemini / NestJS»</text>
+        <circle cx="0" cy="80" r="4" fill="#1d4ed8" />
+      </g>
+
+      <!-- USE CASES -->
+
+      <!-- Vincular Cuenta Telegram -->
+      <g id="uc25">
+        <rect x="235" y="80" width="240" height="58" rx="29" fill="#ffffff" stroke="#0f172a" stroke-width="2.5" />
+        <text x="355" y="105" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="800" fill="#0f172a" text-anchor="middle">Vincular Cuenta Telegram</text>
+        <text x="355" y="123" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="600" fill="#475569" text-anchor="middle">Validar Token OTP y Chat ID</text>
+      </g>
+
+      <!-- Consultar Métricas (CORE) -->
+      <g id="uc26">
+        <rect x="235" y="200" width="240" height="66" rx="33" fill="#fffbeb" stroke="#d97706" stroke-width="2.5" />
+        <text x="355" y="227" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="800" fill="#92400e" text-anchor="middle">Consultar Métricas</text>
+        <text x="355" y="247" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#b45309" text-anchor="middle">"¿Cuánto se vendió hoy en Central?"</text>
+      </g>
+
+      <!-- Ejecutar Tool Calling -->
+      <g id="uc27">
+        <rect x="535" y="204" width="235" height="60" rx="30" fill="#eff6ff" stroke="#1d4ed8" stroke-width="2.5" />
+        <text x="652" y="229" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="800" fill="#1e40af" text-anchor="middle">Ejecutar Tool Calling</text>
+        <text x="652" y="247" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="600" fill="#2563eb" text-anchor="middle">Consulta Segura a PostgreSQL</text>
+      </g>
+
+      <!-- Consultar Alertas Insumos -->
+      <g id="uc28">
+        <rect x="235" y="325" width="240" height="60" rx="30" fill="#ffffff" stroke="#0f172a" stroke-width="2.5" />
+        <text x="355" y="350" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="800" fill="#0f172a" text-anchor="middle">Consultar Alertas</text>
+        <text x="355" y="368" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="600" fill="#475569" text-anchor="middle">Stock Crítico y Caducidades</text>
+      </g>
+
+      <!-- Recibir Notificación Push Cierre -->
+      <g id="uc29">
+        <rect x="235" y="445" width="240" height="60" rx="30" fill="#f0fdf4" stroke="#15803d" stroke-width="2.5" />
+        <text x="355" y="470" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="800" fill="#166534" text-anchor="middle">Recibir Alerta de Cierre</text>
+        <text x="355" y="488" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="600" fill="#15803d" text-anchor="middle">Resumen Push al Final del Turno</text>
+      </g>
+
+      <!-- CONNECTIONS -->
+
+      <!-- Owner to UCs -->
+      <line x1="180" y1="298" x2="235" y2="109" stroke="#0f172a" stroke-width="2" />
+      <line x1="180" y1="298" x2="235" y2="233" stroke="#0f172a" stroke-width="2" />
+      <line x1="180" y1="298" x2="235" y2="355" stroke="#0f172a" stroke-width="2" />
+      <line x1="180" y1="298" x2="235" y2="475" stroke="#0f172a" stroke-width="2" />
+
+      <!-- Métricas <<include>> Tool Calling -->
+      <line x1="475" y1="233" x2="535" y2="233" stroke="#334155" stroke-width="2" stroke-dasharray="5,4" marker-end="url(#open-arrow)" />
+      <rect x="475" y="222" width="60" height="22" rx="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" />
+      <text x="505" y="237" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="700" fill="#334155" text-anchor="middle">«include»</text>
+
+      <!-- Telegram Webhook to UC25 & UC29 -->
+      <line x1="475" y1="109" x2="835" y2="152" stroke="#6b21a8" stroke-width="2" />
+      <line x1="475" y1="475" x2="835" y2="152" stroke="#6b21a8" stroke-width="2" />
+
+      <!-- AI Tool Calling Engine to UC27 -->
+      <line x1="770" y1="233" x2="835" y2="415" stroke="#0f172a" stroke-width="2" />
+
+    </svg>
+  </div>
+
+  <div class="footer-notes">
+    <strong>Regla de Negocio (RN-BOT01):</strong> El bot de Telegram está restringido exclusivamente a usuarios con rol <code>ADMIN</code>. Cada interacción pasa por el webhook con validación de firma y ejecuta funciones de lectura seguras mediante <em>Tool Calling</em> sin exponer credenciales directas.
+  </div>
+</div>
+
+</body>
+</html>

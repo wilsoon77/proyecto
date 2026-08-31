@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diagrama de Clases UML — Panadería Svetlana</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --surface: #f8fafc;
+      --border: #cbd5e1;
+      --text: #0f172a;
+      --text-muted: #334155;
+      --primary: #1d4ed8;
+      --accent: #b45309;
+      --success: #15803d;
+      --purple: #6b21a8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      background-color: #f1f5f9;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.5rem 1rem;
+      min-height: 100vh;
+    }
+    .container {
+      background: var(--bg);
+      border-radius: 12px;
+      box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.08);
+      border: 1px solid var(--border);
+      max-width: 1080px;
+      width: 100%;
+      overflow: hidden;
+    }
+    .header {
+      padding: 1.25rem 1.75rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .badge {
+      display: inline-block;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.3rem 0.75rem;
+      border-radius: 9999px;
+      background: #dbeafe;
+      color: #1e40af;
+      border: 1px solid #93c5fd;
+      margin-bottom: 0.4rem;
+    }
+    .title {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 0.2rem;
+    }
+    .subtitle {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .diagram-wrapper {
+      padding: 1.5rem 1rem;
+      display: flex;
+      justify-content: center;
+      background: #ffffff;
+    }
+    svg {
+      max-width: 100%;
+      height: auto;
+    }
+    .footer-notes {
+      padding: 1.25rem 1.75rem;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <span class="badge">Estructura Estática • UML 2.5 • Formato Vertical</span>
+    <h1 class="title">Diagrama de Clases (UML Class Diagram)</h1>
+    <p class="subtitle">Arquitectura orientada a servicios de NestJS: Controladores REST, Capa de Lógica de Negocio, DTOs y Persistencia Atómica con Prisma.</p>
+  </div>
+
+  <div class="diagram-wrapper">
+    <svg id="diagram-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1020 1480" width="1020" height="1480">
+      <defs>
+        <!-- Arrowhead Markers -->
+        <marker id="arrow-depend" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#0f172a" />
+        </marker>
+        <marker id="arrow-blue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1d4ed8" />
+        </marker>
+        <marker id="diamond-comp" viewBox="0 0 16 10" refX="15" refY="5" markerWidth="10" markerHeight="7" orient="auto-start-reverse">
+          <polygon points="0,5 8,1 16,5 8,9" fill="#0f172a" stroke="#0f172a" stroke-width="1.5"/>
+        </marker>
+        
+        
+      </defs>
+
+      <!-- ============================================================ -->
+      <!-- SECTION 1: CAPA DE CONTROLADORES REST                        -->
+      <!-- ============================================================ -->
+      <g transform="translate(30, 20)">
+        <rect x="0" y="0" width="960" height="340" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="6,4" />
+        <rect x="15" y="12" width="450" height="30" rx="6" fill="#0f172a" />
+        <text x="25" y="32" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="800" fill="#ffffff">CAPA DE CONTROLADORES REST (API GATEWAY / NESTJS)</text>
+
+        <!-- Ctrl 1: DailyCloseController -->
+        <g transform="translate(20, 55)">
+          <rect x="0" y="0" width="450" height="130" rx="8" fill="#ffffff" stroke="#94a3b8" stroke-width="2" />
+          <rect x="0" y="0" width="450" height="32" rx="8" fill="#0f172a" />
+          <rect x="0" y="22" width="450" height="10" fill="#0f172a" />
+          <text x="225" y="21" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="700" fill="#ffffff" text-anchor="middle">«Controller» DailyCloseController</text>
+          
+          <text x="12" y="52" font-family="Consolas, monospace" font-size="12" fill="#475569">- dailyCloseService: DailyCloseService</text>
+          <line x1="0" y1="60" x2="450" y2="60" stroke="#e2e8f0" stroke-width="1.5"/>
+          
+          <text x="12" y="80" font-family="Consolas, monospace" font-size="12" font-weight="700" fill="#1d4ed8">+ getPreview(branchId, date): Promise&lt;Snapshot&gt;</text>
+          <text x="12" y="100" font-family="Consolas, monospace" font-size="12" font-weight="700" fill="#1d4ed8">+ confirmClose(dto: ConfirmDailyCloseDto, user)</text>
+          <text x="12" y="120" font-family="Consolas, monospace" font-size="11.5" fill="#15803d">@UseGuards(JwtAuthGuard, RolesGuard, BranchScopeGuard)</text>
+        </g>
+
+        <!-- Ctrl 2: ProductionController -->
+        <g transform="translate(490, 55)">
+          <rect x="0" y="0" width="450" height="130" rx="8" fill="#ffffff" stroke="#94a3b8" stroke-width="2" />
+          <rect x="0" y="0" width="450" height="32" rx="8" fill="#0f172a" />
+          <rect x="0" y="22" width="450" height="10" fill="#0f172a" />
+          <text x="225" y="21" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="700" fill="#ffffff" text-anchor="middle">«Controller» ProductionController</text>
+          
+          <text x="12" y="52" font-family="Consolas, monospace" font-size="12" fill="#475569">- productionService: ProductionService</text>
+          <line x1="0" y1="60" x2="450" y2="60" stroke="#e2e8f0" stroke-width="1.5"/>
+          
+          <text x="12" y="80" font-family="Consolas, monospace" font-size="12" font-weight="700" fill="#1d4ed8">+ registerBatch(dto: CreateProductionDto, user)</text>
+          <text x="12" y="100" font-family="Consolas, monospace" font-size="12" font-weight="700" fill="#1d4ed8">+ validateRecipeAvailability(recipeId, batches)</text>
+          <text x="12" y="120" font-family="Consolas, monospace" font-size="11.5" fill="#15803d">@UseGuards(JwtAuthGuard, RolesGuard) @Roles('BAKER')</text>
+        </g>
+
+        <!-- Ctrl 3: OrdersController -->
+        <g transform="translate(20, 195)">
+          <rect x="0" y="0" width="450" height="130" rx="8" fill="#ffffff" stroke="#94a3b8" stroke-width="2" />
+          <rect x="0" y="0" width="450" height="32" rx="8" fill="#0f172a" />
+          <rect x="0" y="22" width="450" height="10" fill="#0f172a" />
+          <text x="225" y="21" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="700" fill="#ffffff" text-anchor="middle">«Controller» OrdersController</text>
+          
+          <text x="12" y="52" font-family="Consolas, monospace" font-size="12" fill="#475569">- ordersService: OrdersService</text>
+          <line x1="0" y1="60" x2="450" y2="60" stroke="#e2e8f0" stroke-width="1.5"/>
+          
+          <text x="12" y="80" font-family="Consolas, monospace" font-size="12" font-weight="700" fill="#1d4ed8">+ createReservation(dto: CreateOrderDto, user?)</text>
+          <text x="12" y="100" font-family="Consolas, monospace" font-size="12" font-weight="700" fill="#1d4ed8">+ updateStatus(orderId, status: OrderStatus)</text>
+          <text x="12" y="120" font-family="Consolas, monospace" font-size="12" font-weight="700" fill="#1d4ed8">+ markPickedUp(orderId: number, user: User)</text>
+        </g>
+
+        <!-- Ctrl 4: TelegramWebhookController -->
+        <g transform="translate(490, 195)">
+          <rect x="0" y="0" width="450" height="130" rx="8" fill="#ffffff" stroke="#94a3b8" stroke-width="2" />
+          <rect x="0" y="0" width="450" height="32" rx="8" fill="#0f172a" />
+          <rect x="0" y="22" width="450" height="10" fill="#0f172a" />
+          <text x="225" y="21" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="700" fill="#ffffff" text-anchor="middle">«Controller» TelegramWebhookController</text>
+          
+          <text x="12" y="52" font-family="Consolas, monospace" font-size="12" fill="#475569">- assistantService: AssistantService</text>
+          <line x1="0" y1="60" x2="450" y2="60" stroke="#e2e8f0" stroke-width="1.5"/>
+          
+          <text x="12" y="80" font-family="Consolas, monospace" font-size="12" font-weight="700" fill="#1d4ed8">+ handleWebhook(update: TelegramUpdateDto)</text>
+          <text x="12" y="100" font-family="Consolas, monospace" font-size="12" font-weight="700" fill="#1d4ed8">+ generateLinkToken(user: CurrentUser)</text>
+          <text x="12" y="120" font-family="Consolas, monospace" font-size="11.5" fill="#6b21a8">@UseGuards(TelegramSignatureGuard)</text>
+        </g>
+      </g>
+
+
+      <!-- ============================================================ -->
+      <!-- CONNECTOR 1 -> 2 (IoC Composition lines)                     -->
+      <!-- ============================================================ -->
+      <line x1="275" y1="360" x2="275" y2="400" stroke="#0f172a" stroke-width="2.5" marker-start="url(#diamond-comp)" marker-end="url(#arrow-depend)" />
+      <line x1="745" y1="360" x2="745" y2="400" stroke="#0f172a" stroke-width="2.5" marker-start="url(#diamond-comp)" marker-end="url(#arrow-depend)" />
+
+
+      <!-- ============================================================ -->
+      <!-- SECTION 2: CAPA DE SERVICIOS Y LÓGICA DE NEGOCIO             -->
+      <!-- ============================================================ -->
+      <g transform="translate(30, 400)">
+        <rect x="0" y="0" width="960" height="490" rx="10" fill="#eff6ff" stroke="#bfdbfe" stroke-width="2" stroke-dasharray="6,4" />
+        <rect x="15" y="12" width="460" height="30" rx="6" fill="#1e40af" />
+        <text x="25" y="32" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="800" fill="#ffffff">CAPA DE SERVICIOS INYECTABLES (LOGICA DE NEGOCIO)</text>
+
+        <!-- Svc 1: DailyCloseService -->
+        <g transform="translate(20, 55)">
+          <rect x="0" y="0" width="450" height="195" rx="8" fill="#ffffff" stroke="#93c5fd" stroke-width="2" />
+          <rect x="0" y="0" width="450" height="32" rx="8" fill="#1e40af" />
+          <rect x="0" y="22" width="450" height="10" fill="#1e40af" />
+          <text x="225" y="21" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800" fill="#ffffff" text-anchor="middle">«Injectable» DailyCloseService</text>
+          
+          <text x="12" y="52" font-family="Consolas, monospace" font-size="12" fill="#475569">- prisma: PrismaService</text>
+          <text x="12" y="70" font-family="Consolas, monospace" font-size="12" fill="#475569">- inventoryService: InventoryService</text>
+          <line x1="0" y1="78" x2="450" y2="78" stroke="#bfdbfe" stroke-width="1.5"/>
+          
+          <text x="12" y="100" font-family="Consolas, monospace" font-size="12" font-weight="700" fill="#1e40af">+ calculateResidualSale(theor, counted, waste)</text>
+          <text x="12" y="122" font-family="Consolas, monospace" font-size="12" font-weight="700" fill="#1d4ed8">+ getClosePreview(branchId, date): Promise</text>
+          <text x="12" y="144" font-family="Consolas, monospace" font-size="12" font-weight="700" fill="#1d4ed8">+ executeAtomicClose(dto): Promise&lt;DailyClose&gt;</text>
+          <text x="12" y="166" font-family="Consolas, monospace" font-size="12" fill="#475569">- createStockMovementTx(tx, items)</text>
+          <text x="12" y="186" font-family="Consolas, monospace" font-size="12" fill="#475569">- dispatchCloseNotification(closeData)</text>
+        </g>
+
+        <!-- Svc 2: ProductionService -->
+        <g transform="translate(490, 55)">
+          <rect x="0" y="0" width="450" height="195" rx="8" fill="#ffffff" stroke="#93c5fd" stroke-width="2" />
+          <rect x="0" y="0" width="450" height="32" rx="8" fill="#1e40af" />
+          <rect x="0" y="22" width="450" height="10" fill="#1e40af" />
+          <text x="225" y="21" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800" fill="#ffffff" text-anchor="middle">«Injectable» ProductionService</text>
+          
+          <text x="12" y="52" font-family="Consolas, monospace" font-size="12" fill="#475569">- prisma: PrismaService</text>
+          <text x="12" y="70" font-family="Consolas, monospace" font-size="12" fill="#475569">- inventoryService: InventoryService</text>
+          <line x1="0" y1="78" x2="450" y2="78" stroke="#bfdbfe" stroke-width="1.5"/>
+          
+          <text x="12" y="100" font-family="Consolas, monospace" font-size="12" font-weight="700" fill="#1e40af">+ recordBatchProduction(dto): Promise&lt;Log&gt;</text>
+          <text x="12" y="122" font-family="Consolas, monospace" font-size="12" font-weight="700" fill="#1d4ed8">+ scaleRecipeIngredients(recipeId, batches)</text>
+          <text x="12" y="144" font-family="Consolas, monospace" font-size="12" font-weight="700" fill="#1d4ed8">+ validateRawMaterialStock(branchId, req)</text>
+          <text x="12" y="166" font-family="Consolas, monospace" font-size="12" fill="#475569">- deductRawMaterialsTx(tx, scaledUnits)</text>
+          <text x="12" y="186" font-family="Consolas, monospace" font-size="12" fill="#475569">- incrementFinishedStockTx(tx, prodId, qty)</text>
+        </g>
+
+        <!-- Svc 3: InventoryService (FEFO) -->
+        <g transform="translate(20, 270)">
+          <rect x="0" y="0" width="450" height="200" rx="8" fill="#ffffff" stroke="#93c5fd" stroke-width="2" />
+          <rect x="0" y="0" width="450" height="32" rx="8" fill="#1e40af" />
+          <rect x="0" y="22" width="450" height="10" fill="#1e40af" />
+          <text x="225" y="21" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800" fill="#ffffff" text-anchor="middle">«Injectable» InventoryService (Motor FEFO)</text>
+          
+          <text x="12" y="52" font-family="Consolas, monospace" font-size="12" fill="#475569">- prisma: PrismaService</text>
+          <line x1="0" y1="60" x2="450" y2="60" stroke="#bfdbfe" stroke-width="1.5"/>
+          
+          <text x="12" y="82" font-family="Consolas, monospace" font-size="12" font-weight="700" fill="#1e40af">+ reserveStock(branchId, productId, qty)</text>
+          <text x="12" y="104" font-family="Consolas, monospace" font-size="12" font-weight="700" fill="#1d4ed8">+ releaseReservation(branchId, productId, qty)</text>
+          <text x="12" y="126" font-family="Consolas, monospace" font-size="12" font-weight="700" fill="#166534">+ consumeLotsFEFO(tx, branchId, prodId, qty)</text>
+          <text x="12" y="148" font-family="Consolas, monospace" font-size="12" font-weight="700" fill="#b45309">+ getExpiryStatusSemaphore(branchId): Semaphore</text>
+          <text x="12" y="170" font-family="Consolas, monospace" font-size="12" font-weight="700" fill="#1d4ed8">+ createLot(dto: CreateLotDto): Promise&lt;Lot&gt;</text>
+          <text x="12" y="190" font-family="Consolas, monospace" font-size="11.5" fill="#475569">- auditExpiredLotsJob(): Cron(0 0 * * *)</text>
+        </g>
+
+        <!-- Svc 4: AssistantService (Gemini) -->
+        <g transform="translate(490, 270)">
+          <rect x="0" y="0" width="450" height="200" rx="8" fill="#ffffff" stroke="#d8b4fe" stroke-width="2" />
+          <rect x="0" y="0" width="450" height="32" rx="8" fill="#6b21a8" />
+          <rect x="0" y="22" width="450" height="10" fill="#6b21a8" />
+          <text x="225" y="21" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800" fill="#ffffff" text-anchor="middle">«Injectable» AssistantService (AI Tools)</text>
+          
+          <text x="12" y="52" font-family="Consolas, monospace" font-size="12" fill="#475569">- prisma: PrismaService</text>
+          <text x="12" y="70" font-family="Consolas, monospace" font-size="12" fill="#475569">- geminiProvider: GeminiClient</text>
+          <line x1="0" y1="78" x2="450" y2="78" stroke="#d8b4fe" stroke-width="1.5"/>
+          
+          <text x="12" y="100" font-family="Consolas, monospace" font-size="12" font-weight="700" fill="#6b21a8">+ processUserQuery(prompt, userId): Promise</text>
+          <text x="12" y="122" font-family="Consolas, monospace" font-size="12" font-weight="700" fill="#6b21a8">+ executeToolCall(toolName, args): Promise</text>
+          <text x="12" y="144" font-family="Consolas, monospace" font-size="12" fill="#475569">- queryDailySalesTool(branchId?, date?)</text>
+          <text x="12" y="166" font-family="Consolas, monospace" font-size="12" fill="#475569">- queryCriticalStockTool(branchId?)</text>
+          <text x="12" y="188" font-family="Consolas, monospace" font-size="12" fill="#475569">- queryExpiringProductsTool(daysThreshold)</text>
+        </g>
+      </g>
+
+
+      <!-- ============================================================ -->
+      <!-- CONNECTOR 2 -> 3 (Services to Data Layer)                    -->
+      <!-- ============================================================ -->
+      <line x1="510" y1="890" x2="510" y2="930" stroke="#0f172a" stroke-width="2.5" marker-end="url(#arrow-depend)" />
+
+
+      <!-- ============================================================ -->
+      <!-- SECTION 3: GUARDS, PRISMA ORM Y VALIDATION DTOS             -->
+      <!-- ============================================================ -->
+      <g transform="translate(30, 930)">
+        <rect x="0" y="0" width="960" height="520" rx="10" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="2" stroke-dasharray="6,4" />
+        <rect x="15" y="12" width="480" height="30" rx="6" fill="#166534" />
+        <text x="25" y="32" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="800" fill="#ffffff">ACCESO A DATOS (PRISMA ORM), SEGURIDAD Y DTOS</text>
+
+        <!-- Guard: BranchScopeGuard & RolesGuard -->
+        <g transform="translate(20, 55)">
+          <rect x="0" y="0" width="450" height="190" rx="8" fill="#ffffff" stroke="#fde68a" stroke-width="2" />
+          <rect x="0" y="0" width="450" height="32" rx="8" fill="#92400e" />
+          <rect x="0" y="22" width="450" height="10" fill="#92400e" />
+          <text x="225" y="21" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800" fill="#ffffff" text-anchor="middle">«Security» BranchScopeGuard &amp; RolesGuard</text>
+          
+          <text x="12" y="52" font-family="Consolas, monospace" font-size="12" fill="#475569">- reflector: Reflector</text>
+          <text x="12" y="70" font-family="Consolas, monospace" font-size="12" fill="#475569">- prisma: PrismaService</text>
+          <line x1="0" y1="78" x2="450" y2="78" stroke="#fde68a" stroke-width="1.5"/>
+          
+          <text x="12" y="100" font-family="Consolas, monospace" font-size="12" font-weight="700" fill="#92400e">+ canActivate(ctx: ExecutionContext): boolean</text>
+          <text x="12" y="122" font-family="Consolas, monospace" font-size="12" font-weight="700" fill="#92400e">+ validateBranchAccess(user, branchId): boolean</text>
+          <text x="12" y="144" font-family="Consolas, monospace" font-size="12" font-weight="700" fill="#92400e">+ matchUserRoles(requiredRoles, userRole): boolean</text>
+          <text x="12" y="166" font-family="Consolas, monospace" font-size="11.5" fill="#475569">- extractTokenFromHeader(request: Request)</text>
+        </g>
+
+        <!-- PrismaService -->
+        <g transform="translate(490, 55)">
+          <rect x="0" y="0" width="450" height="190" rx="8" fill="#ffffff" stroke="#86efac" stroke-width="2" />
+          <rect x="0" y="0" width="450" height="32" rx="8" fill="#166534" />
+          <rect x="0" y="22" width="450" height="10" fill="#166534" />
+          <text x="225" y="21" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800" fill="#ffffff" text-anchor="middle">«ORM Adapter» PrismaService</text>
+          
+          <text x="12" y="52" font-family="Consolas, monospace" font-size="12" fill="#475569">+ user, branch, product, inventory: Delegates</text>
+          <text x="12" y="70" font-family="Consolas, monospace" font-size="12" fill="#475569">+ dailyClose, inventoryLot, stockMovement: Delegates</text>
+          <line x1="0" y1="78" x2="450" y2="78" stroke="#86efac" stroke-width="1.5"/>
+          
+          <text x="12" y="100" font-family="Consolas, monospace" font-size="12" font-weight="700" fill="#166534">+ $transaction&lt;T&gt;(fn: (tx) =&gt; Promise&lt;T&gt;): Promise&lt;T&gt;</text>
+          <text x="12" y="122" font-family="Consolas, monospace" font-size="12" font-weight="700" fill="#166534">+ onModuleInit(): Promise&lt;void&gt;</text>
+          <text x="12" y="144" font-family="Consolas, monospace" font-size="12" font-weight="700" fill="#166534">+ onModuleDestroy(): Promise&lt;void&gt;</text>
+          <text x="12" y="166" font-family="Consolas, monospace" font-size="11.5" fill="#475569">- poolMetrics &amp; connectionLifecycle()</text>
+        </g>
+
+        <!-- Validation DTOs (Full Width) -->
+        <g transform="translate(20, 260)">
+          <rect x="0" y="0" width="920" height="240" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="2" />
+          <rect x="0" y="0" width="920" height="32" rx="8" fill="#334155" />
+          <rect x="0" y="22" width="920" height="10" fill="#334155" />
+          <text x="460" y="21" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800" fill="#ffffff" text-anchor="middle">«Data Transfer Objects» DTOs con Validación Declarativa (class-validator)</text>
+          
+          <!-- DTO 1 -->
+          <text x="20" y="58" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800" fill="#0f172a">ConfirmDailyCloseDto:</text>
+          <text x="35" y="78" font-family="Consolas, monospace" font-size="12" fill="#334155">• @IsInt() branchId: number, @IsISO8601() closeDate: string</text>
+          <text x="35" y="96" font-family="Consolas, monospace" font-size="12" fill="#334155">• @ValidateNested() @Type(() =&gt; CloseItemDto) items: CloseItemDto[] (theorQty, countedQty, wasteQty)</text>
+          
+          <!-- DTO 2 -->
+          <text x="20" y="124" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800" fill="#0f172a">CreateProductionDto:</text>
+          <text x="35" y="144" font-family="Consolas, monospace" font-size="12" fill="#334155">• @IsInt() recipeId: number, @IsInt() branchId: number, @IsNumber() traysProduced: number</text>
+          <text x="35" y="162" font-family="Consolas, monospace" font-size="12" fill="#334155">• @IsOptional() @IsString() notes?: string, @IsOptional() @IsDateString() customBatchTime?: string</text>
+          
+          <!-- DTO 3 -->
+          <text x="20" y="190" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800" fill="#0f172a">CreateOrderDto &amp; TelegramUpdateDto:</text>
+          <text x="35" y="210" font-family="Consolas, monospace" font-size="12" fill="#334155">• CreateOrderDto: @IsInt() branchId, @ArrayMinSize(1) items: OrderItemDto[], @IsOptional() customerNotes</text>
+          <text x="35" y="228" font-family="Consolas, monospace" font-size="12" fill="#334155">• TelegramUpdateDto: @IsInt() update_id, @IsOptional() message: { message_id, from, chat, text }</text>
+        </g>
+      </g>
+
+    </svg>
+  </div>
+
+  <div class="footer-notes">
+    <strong>Patrones de Diseño de Software:</strong> La arquitectura implementa Inyección de Dependencias (IoC), Capa de Servicios con separación estricta de responsabilidades (Single Responsibility), validación declarativa mediante DTOs con <code>class-validator</code>, y persistencia atómica ACID garantizada mediante el método <code>PrismaService.$transaction()</code>.
+  </div>
+</div>
+
+</body>
+</html>

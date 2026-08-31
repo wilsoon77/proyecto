@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HI-01: Prototipo Alta Fidelidad — Catálogo Público y Carrito B2C</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --surface: #f8fafc;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #475569;
+      --primary: #d97706;
+      --primary-dark: #b45309;
+      --primary-light: #fef3c7;
+      --success: #059669;
+      --success-light: #ecfdf5;
+      --slate: #1e293b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      background-color: #f1f5f9;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.5rem 1rem;
+      min-height: 100vh;
+    }
+    .container {
+      background: var(--bg);
+      border-radius: 12px;
+      box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.08);
+      border: 1px solid var(--border);
+      max-width: 1040px;
+      width: 100%;
+      overflow: hidden;
+    }
+    .header {
+      padding: 1.25rem 1.75rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .badge {
+      display: inline-block;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.3rem 0.75rem;
+      border-radius: 9999px;
+      background: #fef3c7;
+      color: #b45309;
+      border: 1px solid #fde68a;
+      margin-bottom: 0.4rem;
+    }
+    .title {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 0.2rem;
+    }
+    .subtitle {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .diagram-wrapper {
+      padding: 1.5rem 1rem;
+      display: flex;
+      justify-content: center;
+      background: #ffffff;
+    }
+    svg {
+      max-width: 100%;
+      height: auto;
+    }
+    .footer-notes {
+      padding: 1.25rem 1.75rem;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <span class="badge">Prototipo UI • Alta Fidelidad • HI-01</span>
+    <h1 class="title">Portal Web Público: Catálogo y Carrito Lateral de Reservas</h1>
+    <p class="subtitle">Diseño visual final con paleta de marca, tipografía pulida, selector de sucursal y drawer transaccional.</p>
+  </div>
+
+  <div class="diagram-wrapper">
+    <svg id="diagram-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1320" width="1000" height="1320">
+      
+      <!-- Window Frame / Browser Top Bar -->
+      <g transform="translate(10, 10)">
+        <rect x="0" y="0" width="980" height="1300" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="2" />
+        
+        <!-- Browser Bar -->
+        <rect x="0" y="0" width="980" height="40" rx="12" fill="#0f172a" />
+        <rect x="0" y="24" width="980" height="16" fill="#0f172a" />
+        <circle cx="20" cy="20" r="5.5" fill="#ef4444" />
+        <circle cx="38" cy="20" r="5.5" fill="#f59e0b" />
+        <circle cx="56" cy="20" r="5.5" fill="#10b981" />
+        <rect x="180" y="8" width="620" height="24" rx="6" fill="#1e293b" />
+        <text x="490" y="24" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#94a3b8" text-anchor="middle">🔒 https://panaderiasvetlana.com/catalogo</text>
+
+        <!-- Navbar Header -->
+        <rect x="0" y="40" width="980" height="68" fill="#ffffff" stroke="#f1f5f9" stroke-width="1.5" />
+        
+        <!-- Logo Branding -->
+        <g transform="translate(25, 52)">
+          <rect x="0" y="0" width="42" height="42" rx="8" fill="#d97706" />
+          <text x="21" y="27" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="900" fill="#ffffff" text-anchor="middle">🥖</text>
+          <text x="52" y="20" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="900" fill="#0f172a">SVETLANA</text>
+          <text x="52" y="34" font-family="Segoe UI, Arial, sans-serif" font-size="9" font-weight="700" fill="#d97706" letter-spacing="0.1em">PANADERÍA ARTESANAL</text>
+        </g>
+        
+        <!-- Nav Links -->
+        <text x="235" y="79" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="800" fill="#d97706">Catálogo</text>
+        <line x1="235" y1="87" x2="285" y2="87" stroke="#d97706" stroke-width="2.5" stroke-linecap="round" />
+
+        <text x="315" y="79" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="600" fill="#475569">Combos</text>
+        <text x="390" y="79" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="600" fill="#475569">Sucursales</text>
+        <text x="480" y="79" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="600" fill="#475569">Nosotros</text>
+
+        <!-- Branch Selector Dropdown Pill -->
+        <rect x="580" y="52" width="180" height="42" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5" />
+        <text x="595" y="77" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#0f172a">📍 Sede Central <tspan fill="#d97706">▼</tspan></text>
+
+        <!-- Cart Button -->
+        <rect x="775" y="52" width="115" height="42" rx="8" fill="#0f172a" />
+        <text x="832" y="77" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">🛒 Carrito (3)</text>
+
+        <!-- Login Button -->
+        <rect x="900" y="52" width="65" height="42" rx="8" fill="#fef3c7" stroke="#fde68a" stroke-width="1.5" />
+        <text x="932" y="77" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="800" fill="#b45309" text-anchor="middle">Ingresar</text>
+
+
+        <!-- ======================================================== -->
+        <!-- PROMOTIONAL HERO BANNER                                  -->
+        <!-- ======================================================== -->
+        <g transform="translate(25, 125)">
+          <rect x="0" y="0" width="635" height="75" rx="10" fill="#fffbeb" stroke="#fde68a" stroke-width="1.5" />
+          <rect x="0" y="0" width="8" height="75" rx="4" fill="#d97706" />
+          <text x="25" y="32" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="900" fill="#92400e">🌾 Pan Fresco Horneado en Masa Madre — Cero Químicos</text>
+          <text x="25" y="55" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="500" fill="#78350f">Garantiza tu pedido antes de que se agote. Selecciona tu franja y retira en mostrador sin filas.</text>
+        </g>
+
+
+        <!-- ======================================================== -->
+        <!-- SEARCH & FILTER ROW                                      -->
+        <!-- ======================================================== -->
+        <rect x="25" y="215" width="410" height="42" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" />
+        <text x="45" y="241" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#94a3b8">🔍 Buscar por nombre, masa madre, baguette, concha...</text>
+
+        <rect x="450" y="215" width="210" height="42" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5" />
+        <text x="465" y="241" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="700" fill="#0f172a">Ordenar: <tspan font-weight="500" fill="#475569">Más Populares ▼</tspan></text>
+
+        <!-- Category Chips with active styling -->
+        <rect x="25" y="270" width="75" height="34" rx="17" fill="#d97706" />
+        <text x="62" y="292" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">Todos</text>
+
+        <rect x="110" y="270" width="115" height="34" rx="17" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" />
+        <text x="167" y="292" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#475569" text-anchor="middle">🍞 Panes de Sal</text>
+
+        <rect x="235" y="270" width="125" height="34" rx="17" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" />
+        <text x="297" y="292" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#475569" text-anchor="middle">🥐 Repostería</text>
+
+        <rect x="370" y="270" width="120" height="34" rx="17" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" />
+        <text x="430" y="292" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#475569" text-anchor="middle">🥯 Panes Dulces</text>
+
+        <rect x="500" y="270" width="95" height="34" rx="17" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" />
+        <text x="547" y="292" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#475569" text-anchor="middle">🎁 Combos</text>
+
+
+        <!-- ======================================================== -->
+        <!-- PRODUCT CARDS (HIGH FIDELITY)                            -->
+        <!-- ======================================================== -->
+
+        <!-- Product Card 1: Pan Masa Madre -->
+        <g transform="translate(25, 320)">
+          <rect x="0" y="0" width="305" height="415" rx="10" fill="#ffffff" stroke="#e2e8f0" stroke-width="2" />
+          
+          <!-- Image Box (Warm gradient) -->
+          <rect x="12" y="12" width="281" height="170" rx="8" fill="#fef3c7" />
+          <text x="152" y="95" font-family="Segoe UI, Arial, sans-serif" font-size="52" text-anchor="middle">🥖</text>
+          
+          <!-- Top Floating Badges -->
+          <rect x="22" y="22" width="95" height="22" rx="6" fill="#d97706" />
+          <text x="69" y="37" font-family="Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="800" fill="#ffffff" text-anchor="middle">★ MÁS VENDIDO</text>
+
+          <rect x="200" y="22" width="85" height="22" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" />
+          <text x="242" y="37" font-family="Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="700" fill="#059669" text-anchor="middle">● Stock: 18</text>
+
+          <!-- Card Content -->
+          <text x="16" y="210" font-family="Segoe UI, Arial, sans-serif" font-size="14.5" font-weight="800" fill="#0f172a">Pan Rústico Masa Madre</text>
+          <text x="16" y="228" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#64748b">24h fermentación lenta, hidratación al 80%.</text>
+          
+          <!-- Presentation Dropdown -->
+          <rect x="16" y="245" width="273" height="34" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2" />
+          <text x="26" y="267" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="600" fill="#0f172a">Unidad 750g — $3.50 (Estándar) ▼</text>
+
+          <!-- Price & Button -->
+          <text x="16" y="315" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="900" fill="#0f172a">$3.50</text>
+          <text x="16" y="330" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="700" fill="#059669">✓ Disponible hoy</text>
+
+          <rect x="145" y="295" width="144" height="42" rx="8" fill="#d97706" />
+          <text x="217" y="321" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">+ Reservar</text>
+
+          <line x1="16" y1="355" x2="289" y2="355" stroke="#f1f5f9" stroke-width="1.5" />
+          <text x="16" y="380" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#64748b">🕒 Horneada reciente: 06:30 AM (Lote #2026-0814)</text>
+          <text x="16" y="398" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="700" fill="#b45309">Caducidad óptima: 3 días</text>
+        </g>
+
+        <!-- Product Card 2: Croissant -->
+        <g transform="translate(355, 320)">
+          <rect x="0" y="0" width="305" height="415" rx="10" fill="#ffffff" stroke="#e2e8f0" stroke-width="2" />
+          
+          <rect x="12" y="12" width="281" height="170" rx="8" fill="#fef3c7" />
+          <text x="152" y="95" font-family="Segoe UI, Arial, sans-serif" font-size="52" text-anchor="middle">🥐</text>
+          
+          <rect x="22" y="22" width="90" height="22" rx="6" fill="#059669" />
+          <text x="67" y="37" font-family="Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="800" fill="#ffffff" text-anchor="middle">FRANCÉS</text>
+
+          <rect x="200" y="22" width="85" height="22" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" />
+          <text x="242" y="37" font-family="Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="700" fill="#059669" text-anchor="middle">● Stock: 12</text>
+
+          <text x="16" y="210" font-family="Segoe UI, Arial, sans-serif" font-size="14.5" font-weight="800" fill="#0f172a">Croissant Mantequilla Pura</text>
+          <text x="16" y="228" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#64748b">100% mantequilla de campo, hojaldrado crujiente.</text>
+          
+          <rect x="16" y="245" width="273" height="34" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2" />
+          <text x="26" y="267" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="600" fill="#0f172a">Pack x 2 unidades — $2.80 ▼</text>
+
+          <text x="16" y="315" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="900" fill="#0f172a">$1.50 <tspan font-size="12" font-weight="500" fill="#64748b">c/u</tspan></text>
+          <text x="16" y="330" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="700" fill="#059669">✓ Disponible hoy</text>
+
+          <rect x="145" y="295" width="144" height="42" rx="8" fill="#d97706" />
+          <text x="217" y="321" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">+ Reservar</text>
+
+          <line x1="16" y1="355" x2="289" y2="355" stroke="#f1f5f9" stroke-width="1.5" />
+          <text x="16" y="380" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#64748b">🕒 Horneada reciente: 07:15 AM (Lote #2026-0815)</text>
+          <text x="16" y="398" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="700" fill="#b45309">Caducidad óptima: 2 días</text>
+        </g>
+
+        <!-- Product Card 3 (Bottom Left) -->
+        <g transform="translate(25, 755)">
+          <rect x="0" y="0" width="305" height="340" rx="10" fill="#ffffff" stroke="#e2e8f0" stroke-width="2" />
+          <rect x="12" y="12" width="281" height="130" rx="8" fill="#fef3c7" />
+          <text x="152" y="80" font-family="Segoe UI, Arial, sans-serif" font-size="42" text-anchor="middle">🥖</text>
+          <rect x="200" y="22" width="85" height="22" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" />
+          <text x="242" y="37" font-family="Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="700" fill="#059669" text-anchor="middle">● Stock: 25</text>
+
+          <text x="16" y="170" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="800" fill="#0f172a">Baguette Tradicional</text>
+          <text x="16" y="188" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#64748b">Corteza crocante, miga alveolada y suave.</text>
+          
+          <text x="16" y="235" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="900" fill="#0f172a">$1.25</text>
+          <rect x="145" y="215" width="144" height="40" rx="8" fill="#d97706" />
+          <text x="217" y="240" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">+ Reservar</text>
+
+          <line x1="16" y1="270" x2="289" y2="270" stroke="#f1f5f9" stroke-width="1.5" />
+          <text x="16" y="295" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#64748b">🕒 Horneada: 06:00 AM • Unidad 250g</text>
+        </g>
+
+        <!-- Product Card 4 (Bottom Right) -->
+        <g transform="translate(355, 755)">
+          <rect x="0" y="0" width="305" height="340" rx="10" fill="#ffffff" stroke="#e2e8f0" stroke-width="2" />
+          <rect x="12" y="12" width="281" height="130" rx="8" fill="#fef3c7" />
+          <text x="152" y="80" font-family="Segoe UI, Arial, sans-serif" font-size="42" text-anchor="middle">🧁</text>
+          <rect x="200" y="22" width="85" height="22" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" />
+          <text x="242" y="37" font-family="Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="700" fill="#059669" text-anchor="middle">● Stock: 30</text>
+
+          <text x="16" y="170" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="800" fill="#0f172a">Concha Dulce de Vainilla</text>
+          <text x="16" y="188" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#64748b">Pan dulce tradicional mexicano con pasta azucarada.</text>
+          
+          <text x="16" y="235" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="900" fill="#0f172a">$0.85</text>
+          <rect x="145" y="215" width="144" height="40" rx="8" fill="#d97706" />
+          <text x="217" y="240" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">+ Reservar</text>
+
+          <line x1="16" y1="270" x2="289" y2="270" stroke="#f1f5f9" stroke-width="1.5" />
+          <text x="16" y="295" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#64748b">🕒 Horneada: 08:00 AM • Unidad 100g</text>
+        </g>
+
+
+        <!-- ======================================================== -->
+        <!-- RIGHT DRAWER: MI RESERVA (CARRITO ACTIVO)                -->
+        <!-- ======================================================== -->
+        <g transform="translate(680, 125)">
+          <rect x="0" y="0" width="280" height="970" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="2" />
+          
+          <!-- Drawer Header -->
+          <rect x="0" y="0" width="280" height="52" rx="12" fill="#0f172a" />
+          <rect x="0" y="30" width="280" height="22" fill="#0f172a" />
+          <text x="20" y="32" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="900" fill="#ffffff">🛒 Mi Reserva Online</text>
+          <rect x="235" y="16" width="25" height="20" rx="10" fill="#d97706" />
+          <text x="247" y="30" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="800" fill="#ffffff" text-anchor="middle">3</text>
+
+          <!-- Branch Confirmation Banner -->
+          <g transform="translate(15, 65)">
+            <rect x="0" y="0" width="250" height="50" rx="8" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.2" />
+            <text x="12" y="20" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="800" fill="#1e40af">📍 Sede de Retiro: Central</text>
+            <text x="12" y="38" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#3b82f6">Av. Principal 123 • 07:00 a 20:00</text>
+          </g>
+
+          <!-- Cart Item 1 -->
+          <g transform="translate(15, 125)">
+            <rect x="0" y="0" width="250" height="90" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.2" />
+            <text x="12" y="24" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#0f172a">Pan Rústico Masa Madre</text>
+            <text x="12" y="40" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#64748b">Presentación: 750g ($3.50)</text>
+            
+            <!-- Quantity stepper -->
+            <rect x="12" y="52" width="85" height="28" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2" />
+            <text x="24" y="70" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700" fill="#64748b">-</text>
+            <text x="54" y="70" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#0f172a" text-anchor="middle">1</text>
+            <text x="84" y="70" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700" fill="#d97706" text-anchor="end">+</text>
+
+            <text x="238" y="72" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="900" fill="#0f172a" text-anchor="end">$3.50</text>
+          </g>
+
+          <!-- Cart Item 2 -->
+          <g transform="translate(15, 225)">
+            <rect x="0" y="0" width="250" height="90" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.2" />
+            <text x="12" y="24" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#0f172a">Croissant Mantequilla Pura</text>
+            <text x="12" y="40" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#64748b">Presentación: Individual ($1.50)</text>
+            
+            <rect x="12" y="52" width="85" height="28" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2" />
+            <text x="24" y="70" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700" fill="#64748b">-</text>
+            <text x="54" y="70" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#0f172a" text-anchor="middle">2</text>
+            <text x="84" y="70" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700" fill="#d97706" text-anchor="end">+</text>
+
+            <text x="238" y="72" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="900" fill="#0f172a" text-anchor="end">$3.00</text>
+          </g>
+
+          <!-- Cart Item 3 -->
+          <g transform="translate(15, 325)">
+            <rect x="0" y="0" width="250" height="90" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.2" />
+            <text x="12" y="24" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#0f172a">Baguette Tradicional</text>
+            <text x="12" y="40" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#64748b">Presentación: 250g ($1.25)</text>
+            
+            <rect x="12" y="52" width="85" height="28" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2" />
+            <text x="24" y="70" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700" fill="#64748b">-</text>
+            <text x="54" y="70" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#0f172a" text-anchor="middle">1</text>
+            <text x="84" y="70" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700" fill="#d97706" text-anchor="end">+</text>
+
+            <text x="238" y="72" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="900" fill="#0f172a" text-anchor="end">$1.25</text>
+          </g>
+
+          <!-- Pickup Time Section -->
+          <g transform="translate(15, 430)">
+            <rect x="0" y="0" width="250" height="85" rx="8" fill="#fffbeb" stroke="#fde68a" stroke-width="1.2" />
+            <text x="12" y="24" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="800" fill="#92400e">⏰ Franja Horaria de Retiro:</text>
+            <rect x="12" y="35" width="226" height="36" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2" />
+            <text x="22" y="58" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#0f172a">Hoy: 17:00 - 18:00 (Tarde) <tspan fill="#d97706">▼</tspan></text>
+          </g>
+
+          <!-- Order Summary Details -->
+          <g transform="translate(15, 530)">
+            <rect x="0" y="0" width="250" height="145" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.2" />
+            
+            <text x="14" y="26" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" fill="#64748b">Subtotal (4 productos)</text>
+            <text x="236" y="26" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="700" fill="#0f172a" text-anchor="end">$7.75</text>
+
+            <text x="14" y="50" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" fill="#64748b">IVA Aplicable (15%)</text>
+            <text x="236" y="50" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="700" fill="#0f172a" text-anchor="end">$1.16</text>
+
+            <line x1="14" y1="68" x2="236" y2="68" stroke="#cbd5e1" stroke-width="1.5" />
+
+            <text x="14" y="95" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="900" fill="#0f172a">Total a Pagar:</text>
+            <text x="236" y="95" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="900" fill="#d97706" text-anchor="end">$8.91</text>
+            
+            <rect x="14" y="112" width="222" height="22" rx="4" fill="#ecfdf5" />
+            <text x="125" y="127" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="700" fill="#059669" text-anchor="middle">💵 Pago en Efectivo al Recoger</text>
+          </g>
+
+          <!-- Action CTA -->
+          <rect x="15" y="690" width="250" height="48" rx="8" fill="#d97706" />
+          <text x="140" y="720" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="900" fill="#ffffff" text-anchor="middle">Confirmar Mi Reserva ➔</text>
+
+          <text x="140" y="758" font-family="Segoe UI, Arial, sans-serif" font-size="9.5" fill="#64748b" text-anchor="middle">🔒 Tu stock queda reservado por 60 min.</text>
+        </g>
+
+        <!-- Pagination Footer -->
+        <g transform="translate(25, 1115)">
+          <rect x="0" y="0" width="635" height="48" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.2" />
+          <text x="20" y="29" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="600" fill="#64748b">Mostrando 1 - 4 de 24 productos horneados</text>
+          
+          <rect x="420" y="9" width="30" height="30" rx="6" fill="#d97706" />
+          <text x="435" y="29" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="800" fill="#ffffff" text-anchor="middle">1</text>
+
+          <rect x="460" y="9" width="30" height="30" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" />
+          <text x="475" y="29" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#475569" text-anchor="middle">2</text>
+
+          <rect x="500" y="9" width="30" height="30" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" />
+          <text x="515" y="29" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#475569" text-anchor="middle">3</text>
+
+          <rect x="540" y="9" width="75" height="30" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2" />
+          <text x="577" y="29" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#0f172a" text-anchor="middle">Siguiente ➔</text>
+        </g>
+
+      </g>
+    </svg>
+  </div>
+
+  <div class="footer-notes">
+    <strong>Ficha Técnica de Prototipo (HI-01):</strong> Interfaz del catálogo público B2C. Aplica jerarquía visual mediante tarjetas con badges de estado, desglose de precios con IVA (15%), franja de retiro obligatoria y drawer lateral persistente que agiliza la conversión en reservas.
+  </div>
+</div>
+
+</body>
+</html>

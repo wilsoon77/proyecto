@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WF-05: Wireframe Baja Fidelidad — Control de Caducidades FEFO</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --surface: #f8fafc;
+      --border: #94a3b8;
+      --border-light: #cbd5e1;
+      --text: #0f172a;
+      --text-muted: #475569;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      background-color: #f1f5f9;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.5rem 1rem;
+      min-height: 100vh;
+    }
+    .container {
+      background: var(--bg);
+      border-radius: 12px;
+      box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.08);
+      border: 1px solid var(--border-light);
+      max-width: 1040px;
+      width: 100%;
+      overflow: hidden;
+    }
+    .header {
+      padding: 1.25rem 1.75rem;
+      border-bottom: 1px solid var(--border-light);
+      background: var(--surface);
+    }
+    .badge {
+      display: inline-block;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.3rem 0.75rem;
+      border-radius: 9999px;
+      background: #e2e8f0;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+      margin-bottom: 0.4rem;
+    }
+    .title {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 0.2rem;
+    }
+    .subtitle {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .diagram-wrapper {
+      padding: 1.5rem 1rem;
+      display: flex;
+      justify-content: center;
+      background: #ffffff;
+    }
+    svg {
+      max-width: 100%;
+      height: auto;
+    }
+    .footer-notes {
+      padding: 1.25rem 1.75rem;
+      background: var(--surface);
+      border-top: 1px solid var(--border-light);
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <span class="badge">Wireframe • Baja Fidelidad • WF-05</span>
+    <h1 class="title">Monitor de Control de Caducidades FEFO y Alertas</h1>
+    <p class="subtitle">Estructura para el seguimiento de lotes perecederos, semáforo preventivo y retiro de productos vencidos.</p>
+  </div>
+
+  <div class="diagram-wrapper">
+    <svg id="diagram-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1300" width="1000" height="1300">
+      
+      <g transform="translate(10, 10)">
+        <rect x="0" y="0" width="980" height="1280" rx="12" fill="#ffffff" stroke="#334155" stroke-width="2.5" />
+        
+        <!-- Browser Bar -->
+        <rect x="0" y="0" width="980" height="40" rx="12" fill="#e2e8f0" />
+        <rect x="0" y="24" width="980" height="16" fill="#e2e8f0" />
+        <circle cx="20" cy="20" r="5" fill="#94a3b8" />
+        <circle cx="36" cy="20" r="5" fill="#94a3b8" />
+        <circle cx="52" cy="20" r="5" fill="#94a3b8" />
+        <rect x="180" y="8" width="620" height="24" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" />
+        <text x="490" y="24" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">https://panaderiasvetlana.com/admin/inventario/caducidades</text>
+
+        <!-- Navbar Header -->
+        <rect x="0" y="40" width="980" height="60" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" />
+        <rect x="25" y="50" width="140" height="38" rx="6" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4,3" />
+        <text x="95" y="74" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="700" fill="#334155" text-anchor="middle">[ADMIN / SVETLANA]</text>
+
+        <text x="210" y="75" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#64748b">Operación (Cierre)</text>
+        <text x="330" y="75" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#64748b">Producción</text>
+        <text x="430" y="75" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="700" fill="#0f172a">Inventario & FEFO</text>
+        <text x="560" y="75" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#64748b">Historial</text>
+
+        <rect x="760" y="52" width="200" height="36" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2" />
+        <text x="860" y="75" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#0f172a" text-anchor="middle">👤 Supervisor de Calidad</text>
+
+
+        <!-- ======================================================== -->
+        <!-- HEADER & FILTER TOOLBAR                                  -->
+        <!-- ======================================================== -->
+        <g transform="translate(25, 115)">
+          <rect x="0" y="0" width="930" height="85" rx="8" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.8" />
+          <text x="20" y="32" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="800" fill="#0f172a">⏳ Monitor de Rotación FEFO (First-Expired, First-Out)</text>
+          <text x="20" y="55" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" fill="#475569">Control preventivo de fechas de vencimiento de pan horneado y materias primas en bodega.</text>
+          
+          <rect x="740" y="22" width="170" height="36" rx="6" fill="#0f172a" />
+          <text x="825" y="45" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#ffffff" text-anchor="middle">⚡ Dar de Baja Lote</text>
+        </g>
+
+
+        <!-- ======================================================== -->
+        <!-- FEFO TRAFFIC LIGHT STATUS CARDS                          -->
+        <!-- ======================================================== -->
+        <g transform="translate(25, 215)">
+          <!-- Critical: Caduca Hoy / Vencido -->
+          <rect x="0" y="0" width="295" height="90" rx="8" fill="#ffffff" stroke="#94a3b8" stroke-width="1.8" />
+          <rect x="0" y="0" width="8" height="90" rx="4" fill="#0f172a" />
+          <text x="20" y="26" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="800" fill="#0f172a">🔴 ESTADO CRÍTICO (CADUCA HOY / VENCIDO)</text>
+          <text x="20" y="58" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="900" fill="#0f172a">2 Lotes <tspan font-size="13" font-weight="500">(14 piezas)</tspan></text>
+          <text x="20" y="78" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#475569">Requiere retiro físico inmediato</text>
+
+          <!-- Warning: Caduca en 24-48h -->
+          <rect x="315" y="0" width="295" height="90" rx="8" fill="#ffffff" stroke="#94a3b8" stroke-width="1.8" />
+          <rect x="315" y="0" width="8" height="90" rx="4" fill="#64748b" />
+          <text x="335" y="26" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="800" fill="#0f172a">🟡 ATENCIÓN (CADUCA EN 24 - 48 HORAS)</text>
+          <text x="335" y="58" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="900" fill="#0f172a">4 Lotes <tspan font-size="13" font-weight="500">(48 piezas)</tspan></text>
+          <text x="335" y="78" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#475569">Priorizar en mostrador / Promociones</text>
+
+          <!-- Optimal: > 48h -->
+          <rect x="630" y="0" width="300" height="90" rx="8" fill="#ffffff" stroke="#94a3b8" stroke-width="1.8" />
+          <rect x="630" y="0" width="8" height="90" rx="4" fill="#94a3b8" />
+          <text x="650" y="26" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="800" fill="#0f172a">🟢 ÓPTIMO (VIDA ÚTIL &gt; 2 DÍAS)</text>
+          <text x="650" y="58" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="900" fill="#0f172a">12 Lotes <tspan font-size="13" font-weight="500">(258 piezas)</tspan></text>
+          <text x="650" y="78" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#475569">Stock fresco recién horneado</text>
+        </g>
+
+
+        <!-- ======================================================== -->
+        <!-- BATCH INVENTORY MONITOR TABLE                            -->
+        <!-- ======================================================== -->
+        <g transform="translate(25, 325)">
+          <rect x="0" y="0" width="930" height="570" rx="8" fill="#ffffff" stroke="#94a3b8" stroke-width="1.8" />
+          <rect x="0" y="0" width="930" height="42" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1" />
+          <text x="20" y="27" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800" fill="#0f172a">📋 Matriz de Trazabilidad y Prioridad de Despacho FEFO</text>
+          
+          <!-- Filter Tabs -->
+          <rect x="600" y="8" width="80" height="26" rx="4" fill="#0f172a" />
+          <text x="640" y="25" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" font-weight="700" fill="#ffffff" text-anchor="middle">Todos (18)</text>
+
+          <rect x="690" y="8" width="90" height="26" rx="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" />
+          <text x="735" y="25" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" font-weight="600" fill="#475569" text-anchor="middle">Críticos (2)</text>
+
+          <rect x="790" y="8" width="125" height="26" rx="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" />
+          <text x="852" y="25" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" font-weight="600" fill="#475569" text-anchor="middle">Por Expirar (4)</text>
+
+          <!-- Table Header -->
+          <rect x="15" y="52" width="900" height="32" fill="#f1f5f9" />
+          <text x="25" y="72" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" font-weight="700" fill="#475569">CÓDIGO LOTE / SKU</text>
+          <text x="220" y="72" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" font-weight="700" fill="#475569">PRODUCTO</text>
+          <text x="400" y="72" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" font-weight="700" fill="#475569">HORNEADO</text>
+          <text x="520" y="72" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" font-weight="700" fill="#475569">EXPIRA (FEFO)</text>
+          <text x="660" y="72" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" font-weight="700" fill="#475569">STOCK RESTANTE</text>
+          <text x="790" y="72" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" font-weight="700" fill="#475569">ESTADO / ACCIÓN</text>
+
+          <!-- Row 1: Vencido / Crítico -->
+          <g transform="translate(15, 92)">
+            <rect x="0" y="0" width="900" height="75" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2" />
+            <text x="12" y="26" font-family="monospace" font-size="12" font-weight="800" fill="#0f172a">#LOT-20260811-CR1</text>
+            <text x="12" y="44" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#64748b">SKU: CRO-MP-002</text>
+
+            <text x="205" y="26" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="800" fill="#0f172a">Croissant Mantequilla Pura</text>
+            <text x="205" y="44" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#64748b">Vida útil estándar: 2 días</text>
+
+            <text x="385" y="32" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" fill="#475569">11 Ago, 06:00</text>
+            <text x="505" y="32" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#0f172a">13 Ago (Vencido)</text>
+
+            <text x="645" y="32" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800" fill="#0f172a">6 piezas</text>
+
+            <rect x="775" y="16" width="110" height="32" rx="4" fill="#0f172a" />
+            <text x="830" y="36" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#ffffff" text-anchor="middle">Dar de Baja ✕</text>
+          </g>
+
+          <!-- Row 2: Caduca Hoy -->
+          <g transform="translate(15, 175)">
+            <rect x="0" y="0" width="900" height="75" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" />
+            <text x="12" y="26" font-family="monospace" font-size="12" font-weight="800" fill="#0f172a">#LOT-20260812-BG1</text>
+            <text x="12" y="44" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#64748b">SKU: BAG-TR-003</text>
+
+            <text x="205" y="26" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="800" fill="#0f172a">Baguette Tradicional Francés</text>
+            <text x="205" y="44" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#64748b">Vida útil estándar: 2 días</text>
+
+            <text x="385" y="32" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" fill="#475569">12 Ago, 07:00</text>
+            <text x="505" y="32" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#0f172a">Hoy 14 Ago (18:00)</text>
+
+            <text x="645" y="32" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800" fill="#0f172a">8 piezas</text>
+
+            <rect x="775" y="16" width="110" height="32" rx="4" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2" />
+            <text x="830" y="36" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#0f172a" text-anchor="middle">Priorizar ⚡</text>
+          </g>
+
+          <!-- Row 3: Por Vencer (Amarillo) -->
+          <g transform="translate(15, 258)">
+            <rect x="0" y="0" width="900" height="75" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" />
+            <text x="12" y="26" font-family="monospace" font-size="12" font-weight="800" fill="#0f172a">#LOT-20260813-MM2</text>
+            <text x="12" y="44" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#64748b">SKU: PAN-MM-001</text>
+
+            <text x="205" y="26" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="800" fill="#0f172a">Pan Rústico Masa Madre</text>
+            <text x="205" y="44" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#64748b">Vida útil estándar: 3 días</text>
+
+            <text x="385" y="32" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" fill="#475569">13 Ago, 06:30</text>
+            <text x="505" y="32" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="700" fill="#0f172a">Mañana 15 Ago</text>
+
+            <text x="645" y="32" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800" fill="#0f172a">18 piezas</text>
+
+            <rect x="775" y="16" width="110" height="32" rx="4" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1" />
+            <text x="830" y="36" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="600" fill="#475569" text-anchor="middle">En Vitrina</text>
+          </g>
+
+          <!-- Row 4: Fresco (Verde) -->
+          <g transform="translate(15, 341)">
+            <rect x="0" y="0" width="900" height="75" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" />
+            <text x="12" y="26" font-family="monospace" font-size="12" font-weight="800" fill="#0f172a">#LOT-20260814-MM1</text>
+            <text x="12" y="44" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#64748b">SKU: PAN-MM-001</text>
+
+            <text x="205" y="26" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="800" fill="#0f172a">Pan Rústico Masa Madre</text>
+            <text x="205" y="44" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#64748b">Vida útil estándar: 3 días</text>
+
+            <text x="385" y="32" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" fill="#475569">Hoy 14 Ago, 06:30</text>
+            <text x="505" y="32" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="700" fill="#0f172a">17 Ago (3 días)</text>
+
+            <text x="645" y="32" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800" fill="#0f172a">80 piezas</text>
+
+            <rect x="775" y="16" width="110" height="32" rx="4" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1" />
+            <text x="830" y="36" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="600" fill="#059669" text-anchor="middle">● Óptimo</text>
+          </g>
+
+          <!-- Table Summary Footer -->
+          <g transform="translate(15, 430)">
+            <rect x="0" y="0" width="900" height="120" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2" />
+            <text x="20" y="25" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="800" fill="#0f172a">⚙️ Regla de Negocio FEFO (RN-FEFO01):</text>
+            <text x="20" y="48" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#475569">1. El sistema sugiere y descuenta primero los lotes con fecha de expiración más próxima (`expiresAt ASC`).</text>
+            <text x="20" y="68" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#475569">2. Al dar de baja un lote vencido, se crea un `StockMovement` de tipo `MERMA` o `CADUCIDAD` y se notifica al administrador.</text>
+            <text x="20" y="92" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" font-weight="700" fill="#0f172a">Cronjob Automático: El sistema evalúa diariamente a las 00:00 UTC las alertas de Telegram y Web Push.</text>
+          </g>
+        </g>
+
+      </g>
+    </svg>
+  </div>
+
+  <div class="footer-notes">
+    <strong>Ficha Técnica de Wireframe (WF-05):</strong> Monitor del control de calidad e inventario perecedero. Clasifica los lotes mediante un semáforo visual de 3 estados, permitiendo la rotación obligatoria de existencias más antiguas y el registro de bajas de producto vencido.
+  </div>
+</div>
+
+</body>
+</html>

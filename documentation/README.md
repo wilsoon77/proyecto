@@ -32,7 +32,19 @@ Almacena los reportes de auditorías técnicas, revisiones de seguridad y evalua
 * [AUDITORIA_TECNICA_2026-08-11.md](./informe_auditorias/AUDITORIA_TECNICA_2026-08-11.md) - Auditoría técnica reciente.
 * [3_PRUEBAS_SEGURIDAD.md](./informe_auditorias/3_PRUEBAS_SEGURIDAD.md) - Casos de prueba y validaciones de seguridad.
 
+## 📂 Diagramas del Sistema (`/diagramas`)
+Colección de diagramas técnicos y UML en formato interactivo SVG/HTML de alta legibilidad.
+
+* [README.md](./diagramas/README.md) - Catálogo general de diagramas UML del sistema.
+* [CU-01_cierre_de_dia.html](./diagramas/CU-01_cierre_de_dia.html) - Casos de uso: Cierre de Día y Venta Residual.
+* [CU-02_produccion_materia_prima.html](./diagramas/CU-02_produccion_materia_prima.html) - Casos de uso: Producción Diaria y Materia Prima.
+* [CU-03_reserva_pedidos_checkout.html](./diagramas/CU-03_reserva_pedidos_checkout.html) - Casos de uso: Reserva de Pedidos en Línea.
+* [CU-04_control_caducidades_fefo.html](./diagramas/CU-04_control_caducidades_fefo.html) - Casos de uso: Control de Caducidades y Lotes FEFO.
+* [CU-05_asistente_telegram_bot.html](./diagramas/CU-05_asistente_telegram_bot.html) - Casos de uso: Asistente Gerencial vía Telegram.
+* [CU-06_seguridad_rbac_multisucursal.html](./diagramas/CU-06_seguridad_rbac_multisucursal.html) - Casos de uso: Seguridad y Control Multi-Sucursal.
+
 ## 📂 Guías Operativas, Diseño y Despliegue
 * [GUIA_DISENO_Y_BRANDING.md](./GUIA_DISENO_Y_BRANDING.md) - Guía oficial de identidad visual, paleta cromática, tipografías, logotipo y componentes UI.
 * [GUIA_CONFIGURACION_DOMINIOS.md](./GUIA_CONFIGURACION_DOMINIOS.md) - Guía completa para configuración de subdominios y dominios personalizados en Render, Vercel, Supabase, Google Cloud y hCaptcha.
+
 

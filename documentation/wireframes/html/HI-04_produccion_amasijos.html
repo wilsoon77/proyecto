@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HI-04: Prototipo Alta Fidelidad — Producción por Amasijos</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --surface: #f8fafc;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #475569;
+      --primary: #d97706;
+      --primary-dark: #b45309;
+      --primary-light: #fef3c7;
+      --success: #059669;
+      --success-light: #ecfdf5;
+      --slate: #1e293b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      background-color: #f1f5f9;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.5rem 1rem;
+      min-height: 100vh;
+    }
+    .container {
+      background: var(--bg);
+      border-radius: 12px;
+      box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.08);
+      border: 1px solid var(--border);
+      max-width: 1040px;
+      width: 100%;
+      overflow: hidden;
+    }
+    .header {
+      padding: 1.25rem 1.75rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .badge {
+      display: inline-block;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.3rem 0.75rem;
+      border-radius: 9999px;
+      background: #fef3c7;
+      color: #b45309;
+      border: 1px solid #fde68a;
+      margin-bottom: 0.4rem;
+    }
+    .title {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 0.2rem;
+    }
+    .subtitle {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .diagram-wrapper {
+      padding: 1.5rem 1rem;
+      display: flex;
+      justify-content: center;
+      background: #ffffff;
+    }
+    svg {
+      max-width: 100%;
+      height: auto;
+    }
+    .footer-notes {
+      padding: 1.25rem 1.75rem;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <span class="badge">Prototipo UI • Alta Fidelidad • HI-04</span>
+    <h1 class="title">Registro Operativo de Producción y Deducción de Insumos</h1>
+    <p class="subtitle">Interfaz para el maestro panadero con formulación por amasijo, costeo de receta y descargo automático en bodega.</p>
+  </div>
+
+  <div class="diagram-wrapper">
+    <svg id="diagram-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1300" width="1000" height="1300">
+      
+      <g transform="translate(10, 10)">
+        <rect x="0" y="0" width="980" height="1280" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="2" />
+        
+        <!-- Browser Top Bar -->
+        <rect x="0" y="0" width="980" height="40" rx="12" fill="#0f172a" />
+        <rect x="0" y="24" width="980" height="16" fill="#0f172a" />
+        <circle cx="20" cy="20" r="5.5" fill="#ef4444" />
+        <circle cx="38" cy="20" r="5.5" fill="#f59e0b" />
+        <circle cx="56" cy="20" r="5.5" fill="#10b981" />
+        <rect x="180" y="8" width="620" height="24" rx="6" fill="#1e293b" />
+        <text x="490" y="24" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="500" fill="#94a3b8" text-anchor="middle">🔒 https://panaderiasvetlana.com/admin/produccion</text>
+
+        <!-- Navbar Header -->
+        <rect x="0" y="40" width="980" height="65" fill="#ffffff" stroke="#f1f5f9" stroke-width="1.5" />
+        <g transform="translate(25, 49)">
+          <rect x="0" y="0" width="40" height="40" rx="8" fill="#d97706" />
+          <text x="20" y="26" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="900" fill="#ffffff" text-anchor="middle">🥖</text>
+          <text x="48" y="19" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="900" fill="#0f172a">SVETLANA</text>
+          <text x="48" y="33" font-family="Segoe UI, Arial, sans-serif" font-size="9" font-weight="700" fill="#d97706" letter-spacing="0.1em">SISTEMA OPERATIVO</text>
+        </g>
+
+        <!-- Nav Links -->
+        <text x="235" y="78" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="600" fill="#475569">Cierre de Día</text>
+        <text x="345" y="78" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="800" fill="#d97706">Producción</text>
+        <line x1="345" y1="86" x2="415" y2="86" stroke="#d97706" stroke-width="2.5" stroke-linecap="round" />
+
+        <text x="445" y="78" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="600" fill="#475569">Inventario & FEFO</text>
+        <text x="580" y="78" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="600" fill="#475569">Historial</text>
+
+        <!-- User Role Pill -->
+        <g transform="translate(730, 52)">
+          <rect x="0" y="0" width="225" height="40" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2" />
+          <circle cx="20" cy="20" r="12" fill="#d97706" />
+          <text x="20" y="24" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="800" fill="#ffffff" text-anchor="middle">JR</text>
+          <text x="40" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="800" fill="#0f172a">Jorge Romero</text>
+          <text x="40" y="32" font-family="Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="600" fill="#d97706">👨‍🍳 Maestro Panadero</text>
+        </g>
+
+
+        <!-- ======================================================== -->
+        <!-- HEADER NOTIFICATION                                      -->
+        <!-- ======================================================== -->
+        <g transform="translate(25, 120)">
+          <rect x="0" y="0" width="930" height="80" rx="10" fill="#fffbeb" stroke="#fde68a" stroke-width="1.5" />
+          <rect x="0" y="0" width="8" height="80" rx="4" fill="#d97706" />
+          
+          <text x="25" y="32" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="900" fill="#92400e">🍞 Registro de Horneada Matutina / Control de Amasijos</text>
+          <text x="25" y="55" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="500" fill="#78350f">Calcula automáticamente el incremento de piezas en mostrador y descarga los insumos en PostgreSQL.</text>
+          
+          <rect x="740" y="22" width="170" height="36" rx="8" fill="#d97706" />
+          <text x="825" y="45" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="800" fill="#ffffff" text-anchor="middle">📖 Gestión de Recetas</text>
+        </g>
+
+
+        <!-- ======================================================== -->
+        <!-- 2 COLUMNS: FORMULATION & RAW MATERIAL BREAKDOWN          -->
+        <!-- ======================================================== -->
+
+        <!-- Left Column: Production Setup Form -->
+        <g transform="translate(25, 215)">
+          <rect x="0" y="0" width="450" height="645" rx="10" fill="#ffffff" stroke="#e2e8f0" stroke-width="2" />
+          <rect x="0" y="0" width="450" height="42" rx="10" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+          <text x="20" y="27" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800" fill="#0f172a">📝 1. Configuración de la Horneada</text>
+
+          <!-- Branch -->
+          <text x="20" y="66" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#64748b">SUCURSAL OPERATIVA</text>
+          <rect x="20" y="74" width="410" height="36" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2" />
+          <text x="32" y="97" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="700" fill="#0f172a">📍 Sede Central (Planta de Producción Principal)</text>
+
+          <!-- Recipe Select -->
+          <text x="20" y="132" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#64748b">FÓRMULA / RECETA MAESTRA</text>
+          <rect x="20" y="140" width="410" height="38" rx="6" fill="#ffffff" stroke="#d97706" stroke-width="1.8" />
+          <text x="32" y="164" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="800" fill="#0f172a">🥖 Amasijo Estándar — Pan Rústico Masa Madre <tspan fill="#d97706">▼</tspan></text>
+
+          <!-- Recipe Spec Box -->
+          <g transform="translate(20, 190)">
+            <rect x="0" y="0" width="410" height="44" rx="8" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.2" />
+            <text x="14" y="20" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="800" fill="#1e40af">Rendimiento Teórico por Amasijo:</text>
+            <text x="14" y="34" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#3b82f6">1 Amasijo = 8 Bandejas estándar (80 piezas de 750g c/u)</text>
+          </g>
+
+          <!-- Dough Quantity Slider / Input -->
+          <text x="20" y="260" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#64748b">VOLUMEN DE PRODUCCIÓN (AMASIJOS)</text>
+          <rect x="20" y="268" width="410" height="42" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5" />
+          <text x="35" y="295" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="900" fill="#0f172a">1.0 Amasijo Completo (50 lb Harina)</text>
+          <rect x="360" y="274" width="60" height="30" rx="4" fill="#d97706" />
+          <text x="390" y="294" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="800" fill="#ffffff" text-anchor="middle">EDIT</text>
+
+          <!-- Output Display Card -->
+          <g transform="translate(20, 325)">
+            <rect x="0" y="0" width="410" height="95" rx="8" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="1.5" />
+            <text x="16" y="25" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="800" fill="#065f46">PIEZAS A INGRESAR AL STOCK MOSTRADOR:</text>
+            <text x="16" y="60" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="900" fill="#059669">+ 80 Unidades</text>
+            <text x="16" y="80" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" font-weight="700" fill="#047857">✓ Lote asignado: #LOT-20260814-MM1 (FEFO)</text>
+          </g>
+
+          <!-- Expiration Date Field -->
+          <text x="20" y="445" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#64748b">FECHA DE CADUCIDAD ESTIMADA (FEFO)</text>
+          <rect x="20" y="453" width="410" height="36" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2" />
+          <text x="32" y="476" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="700" fill="#0f172a">📅 17 de Agosto, 2026 (Vida útil: 3 días)</text>
+
+          <!-- Baker Notes -->
+          <text x="20" y="510" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#64748b">OBSERVACIONES TÉCNICAS / HORNEO</text>
+          <rect x="20" y="518" width="410" height="42" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2" />
+          <text x="32" y="544" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" fill="#475569">Horno de piso a 230°C con inyección de vapor de 15s.</text>
+
+          <!-- Submit CTA -->
+          <rect x="20" y="580" width="410" height="48" rx="8" fill="#d97706" />
+          <text x="225" y="610" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="900" fill="#ffffff" text-anchor="middle">🔥 Confirmar Horneada y Descargar Insumos ➔</text>
+        </g>
+
+
+        <!-- Right Column: Raw Material Deduction Table -->
+        <g transform="translate(500, 215)">
+          <rect x="0" y="0" width="455" height="645" rx="10" fill="#ffffff" stroke="#e2e8f0" stroke-width="2" />
+          <rect x="0" y="0" width="455" height="42" rx="10" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+          <text x="20" y="27" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800" fill="#0f172a">⚖️ 2. Descargo Automático de Materia Prima</text>
+
+          <!-- Table Header -->
+          <rect x="15" y="52" width="425" height="30" rx="4" fill="#f1f5f9" />
+          <text x="25" y="72" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" font-weight="800" fill="#475569">INSUMO</text>
+          <text x="180" y="72" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" font-weight="800" fill="#475569">CANT. A DESCONTAR</text>
+          <text x="330" y="72" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" font-weight="800" fill="#475569">STOCK RESTANTE</text>
+
+          <!-- Insumo 1 -->
+          <g transform="translate(15, 92)">
+            <rect x="0" y="0" width="425" height="66" rx="8" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.2" />
+            <text x="12" y="26" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="800" fill="#0f172a">Harina de Fuerza Extra (Trigo)</text>
+            <text x="12" y="44" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#64748b">Bodega Central • Lote #HAR-902</text>
+
+            <text x="180" y="34" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="900" fill="#dc2626">- 50.00 lb</text>
+            <text x="330" y="34" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="800" fill="#059669">450.00 lb (OK)</text>
+          </g>
+
+          <!-- Insumo 2 -->
+          <g transform="translate(15, 168)">
+            <rect x="0" y="0" width="425" height="66" rx="8" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.2" />
+            <text x="12" y="26" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="800" fill="#0f172a">Cultivo Masa Madre Activa</text>
+            <text x="12" y="44" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#64748b">Fermentador 1 • 100% hidratación</text>
+
+            <text x="180" y="34" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="900" fill="#dc2626">- 10.00 lb</text>
+            <text x="330" y="34" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="800" fill="#059669">90.00 lb (OK)</text>
+          </g>
+
+          <!-- Insumo 3 -->
+          <g transform="translate(15, 244)">
+            <rect x="0" y="0" width="425" height="66" rx="8" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.2" />
+            <text x="12" y="26" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="800" fill="#0f172a">Agua Purificada Tratada</text>
+            <text x="12" y="44" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#64748b">Red interna con filtrado UV</text>
+
+            <text x="180" y="34" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="900" fill="#dc2626">- 32.00 lb</text>
+            <text x="330" y="34" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="800" fill="#059669">Ilimitado</text>
+          </g>
+
+          <!-- Insumo 4 -->
+          <g transform="translate(15, 320)">
+            <rect x="0" y="0" width="425" height="66" rx="8" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.2" />
+            <text x="12" y="26" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="800" fill="#0f172a">Sal Marina Fina Artesanal</text>
+            <text x="12" y="44" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#64748b">Insumo Seco • Lote #SAL-112</text>
+
+            <text x="180" y="34" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="900" fill="#dc2626">- 1.00 lb</text>
+            <text x="330" y="34" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="800" fill="#059669">48.00 lb (OK)</text>
+          </g>
+
+          <!-- Cost & Margin Analysis Card -->
+          <g transform="translate(15, 405)">
+            <rect x="0" y="0" width="425" height="150" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.2" />
+            <text x="16" y="26" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="900" fill="#0f172a">📊 Análisis Financiero del Lote:</text>
+            
+            <text x="16" y="50" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#475569">Costo total de insumos del amasijo:</text>
+            <text x="410" y="50" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="800" fill="#0f172a" text-anchor="end">$33.60 USD</text>
+
+            <text x="16" y="72" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#475569">Costo unitario de materia prima por pan:</text>
+            <text x="410" y="72" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="800" fill="#0f172a" text-anchor="end">$0.42 USD / un</text>
+
+            <line x1="16" y1="88" x2="410" y2="88" stroke="#cbd5e1" stroke-width="1" />
+
+            <rect x="16" y="100" width="395" height="34" rx="6" fill="#0f172a" />
+            <text x="213" y="122" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="800" fill="#ffffff" text-anchor="middle">Margen Bruto de Contribución: 88.0% (PVP: $3.50)</text>
+          </g>
+        </g>
+
+        <!-- Bottom Notice -->
+        <g transform="translate(25, 885)">
+          <rect x="0" y="0" width="930" height="50" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2" />
+          <text x="20" y="30" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" fill="#475569">🔒 <strong>Garantía de Trazabilidad:</strong> Cada horneada genera un identificador de lote FEFO único que vincula los sacos de harina utilizados con las piezas en vitrina.</text>
+        </g>
+
+      </g>
+    </svg>
+  </div>
+
+  <div class="footer-notes">
+    <strong>Ficha Técnica de Prototipo (HI-04):</strong> Módulo de registro de producción por amasijos. Transforma recetas artesanales en fórmulas matemáticas escalables, ejecuta el descuento proporcional de insumos en bodega y genera lotes FEFO con estimación de caducidad.
+  </div>
+</div>
+
+</body>
+</html>

@@ -231,7 +231,7 @@ export class InventoryService {
    */
   async updateLotAlert(
     lotId: number,
-    dto: { alertAt?: string | null; daysBefore?: number; expiresAt?: string },
+    dto: { alertAt?: string | null; daysBefore?: number; reminderDays?: number[]; expiresAt?: string },
   ) {
     const lot = await this.prisma.inventoryLot.findUnique({
       where: { id: lotId },
@@ -243,7 +243,12 @@ export class InventoryService {
       throw new BadRequestException('La alerta de caducidad solo aplica a productos COMPRADOS con control por lote');
     }
 
-    if (dto.alertAt === undefined && dto.daysBefore === undefined && dto.expiresAt === undefined) {
+    if (
+      dto.alertAt === undefined
+      && dto.daysBefore === undefined
+      && dto.reminderDays === undefined
+      && dto.expiresAt === undefined
+    ) {
       throw new BadRequestException('Debes indicar una alerta o una fecha de caducidad para actualizar el lote');
     }
 
@@ -268,7 +273,17 @@ export class InventoryService {
       throw new BadRequestException('El lote necesita una fecha de caducidad antes de configurar la alerta');
     }
 
-    if (dto.daysBefore !== undefined) {
+    if (dto.reminderDays !== undefined) {
+      const cleanReminderDays = normalizeExpirationAlertDays(dto.reminderDays);
+      if (cleanReminderDays.length === 0) {
+        throw new BadRequestException('Debes seleccionar al menos un día de anticipación');
+      }
+      await this.prisma.product.update({
+        where: { id: lot.productId },
+        data: { expirationAlertDays: cleanReminderDays },
+      });
+      updateData.alertAt = null;
+    } else if (dto.daysBefore !== undefined) {
       if (!Number.isInteger(dto.daysBefore) || dto.daysBefore < 0 || dto.daysBefore > 90) {
         throw new BadRequestException('Los días de anticipación deben ser un entero entre 0 y 90');
       }

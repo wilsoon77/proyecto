@@ -81,7 +81,7 @@ export default function CaducidadesPage() {
 
   // Estado del Modal de Ajuste de Alerta
   const [selectedLotForEdit, setSelectedLotForEdit] = useState<ExpirationLot | null>(null)
-  const [editDaysBefore, setEditDaysBefore] = useState<number>(3)
+  const [editReminderDays, setEditReminderDays] = useState<number[]>([3])
   const [editCustomAlertAt, setEditCustomAlertAt] = useState<string>("")
   const [editCustomExpiresAt, setEditCustomExpiresAt] = useState<string>("")
   const [isCustomDateMode, setIsCustomDateMode] = useState<boolean>(false)
@@ -130,12 +130,30 @@ export default function CaducidadesPage() {
     if (lot.isCustomAlert) {
       setIsCustomDateMode(true)
       setEditCustomAlertAt(lot.alertAt || "")
-      setEditDaysBefore(3)
+      setEditReminderDays(lot.reminderDays && lot.reminderDays.length > 0 ? lot.reminderDays : [3])
     } else {
       setIsCustomDateMode(false)
-      setEditDaysBefore(lot.defaultDaysBefore || lot.reminderDays?.[0] || 3)
+      const initialDays = lot.reminderDays && lot.reminderDays.length > 0
+        ? lot.reminderDays
+        : (lot.defaultDaysBefore ? [lot.defaultDaysBefore] : [3])
+      setEditReminderDays(initialDays)
       setEditCustomAlertAt("")
     }
+  }
+
+  // Alternar selección de días de anticipación (selección múltiple)
+  const toggleReminderDay = (day: number) => {
+    setEditReminderDays((prev) => {
+      if (prev.includes(day)) {
+        if (prev.length <= 1) {
+          showToast("Debes mantener al menos un día de anticipación seleccionado", "info")
+          return prev
+        }
+        return prev.filter((d) => d !== day)
+      } else {
+        return [...prev, day].sort((a, b) => b - a)
+      }
+    })
   }
 
   // Guardar configuración de alerta
@@ -144,7 +162,7 @@ export default function CaducidadesPage() {
     setIsSavingAlert(true)
 
     try {
-      const payload: { alertAt?: string; daysBefore?: number; expiresAt?: string } = {}
+      const payload: { alertAt?: string; reminderDays?: number[]; expiresAt?: string } = {}
       const targetExpiresAt = editCustomExpiresAt || selectedLotForEdit.expiresAt
 
       if (editCustomExpiresAt && editCustomExpiresAt !== selectedLotForEdit.expiresAt) {
@@ -157,19 +175,23 @@ export default function CaducidadesPage() {
           setIsSavingAlert(false)
           return
         }
+        if (targetExpiresAt && editCustomAlertAt > targetExpiresAt) {
+          showToast("La fecha de alerta no puede ser posterior a la fecha de caducidad", "error")
+          setIsSavingAlert(false)
+          return
+        }
         payload.alertAt = editCustomAlertAt
       } else {
-        payload.daysBefore = editDaysBefore
+        if (editReminderDays.length === 0) {
+          showToast("Debes seleccionar al menos un día de anticipación", "error")
+          setIsSavingAlert(false)
+          return
+        }
+        payload.reminderDays = [...editReminderDays].sort((a, b) => b - a)
       }
 
-      const alertDate = isCustomDateMode ? editCustomAlertAt : previewAlertDate
       if (!targetExpiresAt) {
         showToast("Debes registrar la fecha de caducidad antes de configurar la alerta", "error")
-        setIsSavingAlert(false)
-        return
-      }
-      if (alertDate && alertDate > targetExpiresAt) {
-        showToast("La fecha de alerta no puede ser posterior a la fecha de caducidad", "error")
         setIsSavingAlert(false)
         return
       }
@@ -178,7 +200,7 @@ export default function CaducidadesPage() {
 
       // Actualizar estado local inmediatamente
       setLots((prev) => prev.map((l) => (l.id === updated.id ? { ...l, ...updated } : l)))
-      showToast("Alerta de caducidad actualizada correctamente", "success")
+      showToast("Alertas de caducidad actualizadas correctamente", "success")
       setSelectedLotForEdit(null)
     } catch (error: unknown) {
       showToast(getErrorMessage(error, "No fue posible actualizar la alerta"), "error")
@@ -214,26 +236,31 @@ export default function CaducidadesPage() {
     )
   }, [lots, searchQuery])
 
-  // Cálculo en vivo de la fecha resultante de alerta en el modal
-  const targetExpiresAt = editCustomExpiresAt || selectedLotForEdit?.expiresAt || ""
-  let previewAlertDate: string | null = null
-  if (targetExpiresAt) {
+  // Cálculo de todas las fechas resultantes de alerta para vista previa
+  const previewAlertDates = useMemo(() => {
+    const targetExp = editCustomExpiresAt || selectedLotForEdit?.expiresAt || ""
+    if (!targetExp) return []
     if (isCustomDateMode) {
-      previewAlertDate = editCustomAlertAt || null
-    } else {
-      try {
-        const exp = new Date(`${targetExpiresAt}T12:00:00`)
-        exp.setDate(exp.getDate() - editDaysBefore)
-        previewAlertDate = exp.toISOString().slice(0, 10)
-      } catch {
-        previewAlertDate = null
-      }
+      return editCustomAlertAt ? [{ date: editCustomAlertAt, label: "Fecha personalizada", days: 0 }] : []
     }
-  }
+    try {
+      return editReminderDays.map((days) => {
+        const exp = new Date(`${targetExp}T12:00:00`)
+        exp.setDate(exp.getDate() - days)
+        return {
+          date: exp.toISOString().slice(0, 10),
+          days,
+          label: `${days} ${days === 1 ? "día" : "días"} antes`,
+        }
+      }).sort((a, b) => a.date.localeCompare(b.date))
+    } catch {
+      return []
+    }
+  }, [editCustomAlertAt, editCustomExpiresAt, editReminderDays, isCustomDateMode, selectedLotForEdit?.expiresAt])
 
   const quickReminderDays = useMemo(() => {
     const configured = selectedLotForEdit?.reminderDays ?? []
-    return [...new Set([...configured, 1, 2, 3, 5, 7, 14, 15, 30])].sort((a, b) => a - b)
+    return [...new Set([...configured, 1, 2, 3, 5, 7, 10, 14, 15, 30, 45, 60])].sort((a, b) => a - b)
   }, [selectedLotForEdit])
 
   return (
@@ -473,8 +500,9 @@ export default function CaducidadesPage() {
 
                             {isExpired && (
                               <Link
-                                href={`/admin/inventario/movimiento?producto=${lot.product.slug}&sucursal=${lot.branch.slug}&tipo=MERMA`}
+                                href={`/admin/inventario/movimiento?producto=${lot.product.slug}&sucursal=${lot.branch.slug}&tipo=MERMA&cantidad=${lot.availableQuantity}&lote=${lot.id}&caducidad=${lot.expiresAt || ""}&referencia=${encodeURIComponent(`LOTE-${lot.id}`)}&nota=${encodeURIComponent(`Merma por lote vencido #${lot.id} (${lot.product.name})`)}`}
                                 className="inline-flex items-center gap-1 rounded-lg bg-destructive/10 border border-destructive/20 px-2.5 py-1.5 text-xs font-semibold text-destructive hover:bg-destructive/20 transition"
+                                title="Registrar salida por merma de este lote"
                               >
                                 <Trash2 className="h-3.5 w-3.5" /> Merma
                               </Link>
@@ -550,7 +578,7 @@ export default function CaducidadesPage() {
 
                       {isExpired && (
                         <Link
-                          href={`/admin/inventario/movimiento?producto=${lot.product.slug}&sucursal=${lot.branch.slug}&tipo=MERMA`}
+                          href={`/admin/inventario/movimiento?producto=${lot.product.slug}&sucursal=${lot.branch.slug}&tipo=MERMA&cantidad=${lot.availableQuantity}&lote=${lot.id}&caducidad=${lot.expiresAt || ""}&referencia=${encodeURIComponent(`LOTE-${lot.id}`)}&nota=${encodeURIComponent(`Merma por lote vencido #${lot.id} (${lot.product.name})`)}`}
                           className="inline-flex items-center gap-1 rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2 text-xs font-semibold text-destructive hover:bg-destructive/20 transition"
                         >
                           <Trash2 className="h-3.5 w-3.5" /> Registrar merma
@@ -573,7 +601,7 @@ export default function CaducidadesPage() {
             <div className="flex items-start justify-between gap-4 border-b border-border pb-3">
               <div>
                 <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
-                  <SlidersHorizontal className="h-5 w-5 text-primary" /> Ajustar Alerta de Caducidad
+                  <SlidersHorizontal className="h-5 w-5 text-primary" /> Ajustar Alertas de Caducidad
                 </h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   Lote #{selectedLotForEdit.id} · {selectedLotForEdit.product.name} ({selectedLotForEdit.branch.name})
@@ -606,38 +634,44 @@ export default function CaducidadesPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  Programación de la Alerta
+                  Programación de Avisos
                 </label>
                 <button
                   type="button"
                   onClick={() => setIsCustomDateMode(!isCustomDateMode)}
                   className="text-xs font-semibold text-primary hover:underline"
                 >
-                  {isCustomDateMode ? "Usar días de anticipación" : "Elegir fecha exacta en calendario"}
+                  {isCustomDateMode ? "Usar días de anticipación (múltiples)" : "Elegir fecha exacta en calendario"}
                 </button>
               </div>
 
               {!isCustomDateMode ? (
-                /* Modo 1: Botones Rápidos de Días de Anticipación */
-                <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground">
-                    ¿Con cuántos días de anticipación antes del vencimiento deseas recibir la alerta?
-                  </p>
-                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                    {quickReminderDays.map((d) => (
-                      <button
-                        key={d}
-                        type="button"
-                        onClick={() => setEditDaysBefore(d)}
-                        className={`py-2 px-2 rounded-lg text-xs font-semibold border transition ${
-                          editDaysBefore === d
-                            ? "bg-primary text-primary-foreground border-primary shadow-xs"
-                            : "bg-background border-border text-foreground hover:bg-muted"
-                        }`}
-                      >
-                        {d} {d === 1 ? "día" : "días"}
-                      </button>
-                    ))}
+                /* Modo 1: Selección Múltiple de Días de Anticipación */
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">
+                      Selecciona <strong>uno o varios días de anticipación</strong> para recibir recordatorios escalonados:
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                    {quickReminderDays.map((d) => {
+                      const isSelected = editReminderDays.includes(d)
+                      return (
+                        <button
+                          key={d}
+                          type="button"
+                          onClick={() => toggleReminderDay(d)}
+                          className={`py-2 px-2.5 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition ${
+                            isSelected
+                              ? "bg-primary text-primary-foreground border-primary shadow-xs ring-1 ring-primary/30"
+                              : "bg-background border-border text-foreground hover:bg-muted"
+                          }`}
+                        >
+                          {isSelected && <Check className="h-3.5 w-3.5" />}
+                          {d} {d === 1 ? "día" : "días"}
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
               ) : (
@@ -658,13 +692,30 @@ export default function CaducidadesPage() {
                 </div>
               )}
 
-              {/* Vista Previa de la Fecha Resultante */}
-              {previewAlertDate && (
-                <div className="rounded-lg bg-amber-50/80 border border-amber-200 p-3 text-xs flex items-center gap-2.5 text-amber-950">
-                  <Bell className="h-4 w-4 text-amber-600 shrink-0" />
-                  <span>
-                    La alerta se notificará el: <strong>{formatDatePretty(previewAlertDate)}</strong>
-                  </span>
+              {/* Vista Previa de Todas las Fechas Resultantes */}
+              {previewAlertDates.length > 0 && (
+                <div className="rounded-xl bg-amber-50/90 border border-amber-200/80 p-3.5 space-y-2 text-xs text-amber-950">
+                  <div className="flex items-center gap-2 font-bold text-amber-900">
+                    <Bell className="h-4 w-4 text-amber-600 shrink-0" />
+                    <span>
+                      {previewAlertDates.length === 1
+                        ? "Se enviará 1 notificación programada:"
+                        : `Se enviarán ${previewAlertDates.length} notificaciones escalonadas:`}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-0.5">
+                    {previewAlertDates.map((item, idx) => (
+                      <div
+                        key={item.date + idx}
+                        className="flex items-center justify-between bg-white/80 px-2.5 py-1.5 rounded-lg border border-amber-200/60 font-medium"
+                      >
+                        <span className="text-amber-800 text-[11px]">
+                          {isCustomDateMode ? "Alerta:" : `Aviso (${item.label}):`}
+                        </span>
+                        <strong className="text-amber-950 font-bold">{formatDatePretty(item.date)}</strong>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -712,7 +763,7 @@ export default function CaducidadesPage() {
                 className="gap-2 font-semibold"
               >
                 {isSavingAlert && <RefreshCw className="h-4 w-4 animate-spin" />}
-                Guardar alerta
+                Guardar alertas
               </Button>
               </div>
             </div>

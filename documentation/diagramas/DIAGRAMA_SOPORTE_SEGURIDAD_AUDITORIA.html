@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diagrama de Soporte, Seguridad, Auditoría y Notificaciones — Panadería Svetlana</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --surface: #f8fafc;
+      --border: #cbd5e1;
+      --text: #0f172a;
+      --text-muted: #334155;
+      --primary: #1d4ed8;
+      --accent: #b45309;
+      --success: #15803d;
+      --purple: #6b21a8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      background-color: #f1f5f9;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.5rem 1rem;
+      min-height: 100vh;
+    }
+    .container {
+      background: var(--bg);
+      border-radius: 12px;
+      box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.08);
+      border: 1px solid var(--border);
+      max-width: 1040px;
+      width: 100%;
+      overflow: hidden;
+    }
+    .header {
+      padding: 1.25rem 1.75rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .badge {
+      display: inline-block;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.3rem 0.75rem;
+      border-radius: 9999px;
+      background: #dbeafe;
+      color: #1e40af;
+      border: 1px solid #93c5fd;
+      margin-bottom: 0.4rem;
+    }
+    .title {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 0.2rem;
+    }
+    .subtitle {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .diagram-wrapper {
+      padding: 1.5rem 1rem;
+      display: flex;
+      justify-content: center;
+      background: #ffffff;
+    }
+    svg {
+      max-width: 100%;
+      height: auto;
+    }
+    .footer-notes {
+      padding: 1.25rem 1.75rem;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <span class="badge">Arquitectura de Datos • Soporte y Seguridad Transversal • Formato Vertical</span>
+    <h1 class="title">Diagrama de Soporte, Seguridad, Auditoría y Notificaciones</h1>
+    <p class="subtitle">Estructura relacional de las entidades transversales para control de sesiones, no repudio, push W3C y pasarela Telegram.</p>
+  </div>
+
+  <div class="diagram-wrapper">
+    <svg id="diagram-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1020 1560" width="1020" height="1560">
+      <defs>
+        <!-- Arrowhead Markers -->
+        <marker id="crow-many" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 1 L 10 6 L 0 11 M 10 0 L 10 12" fill="none" stroke="#475569" stroke-width="2" />
+        </marker>
+        <marker id="one-one" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 3 0 L 3 10 M 7 0 L 7 10" fill="none" stroke="#475569" stroke-width="2" />
+        </marker>
+      </defs>
+
+      <!-- ============================================================ -->
+      <!-- TIER 1: SESIONES, DISPOSITIVOS Y PROTECCIÓN JWT              -->
+      <!-- ============================================================ -->
+      <g transform="translate(20, 20)">
+        <rect x="0" y="0" width="980" height="290" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="6,4" />
+        <rect x="15" y="12" width="530" height="26" rx="6" fill="#0f172a" />
+        <text x="25" y="30" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff">TIER 1: SESIONES, DISPOSITIVOS Y PROTECCIÓN CONTRA ATAQUES</text>
+
+        <!-- User -->
+        <g transform="translate(25, 55)">
+          <rect x="0" y="0" width="220" height="195" rx="8" fill="#ffffff" stroke="#0f172a" stroke-width="2" />
+          <rect x="0" y="0" width="220" height="26" rx="8" fill="#0f172a" />
+          <rect x="0" y="16" width="220" height="10" fill="#0f172a" />
+          <text x="110" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">User «Pivote Identidad»</text>
+          
+          <text x="12" y="46" font-family="monospace" font-size="11" font-weight="800" fill="#1d4ed8">PK id: String (CUID)</text>
+          <text x="12" y="65" font-family="monospace" font-size="11" fill="#0f172a">email: String (UNIQUE)</text>
+          <text x="12" y="84" font-family="monospace" font-size="11" font-weight="700" fill="#b45309">role: UserRole</text>
+          <text x="12" y="103" font-family="monospace" font-size="11" fill="#15803d">isActive: Boolean</text>
+          <text x="12" y="122" font-family="monospace" font-size="10.5" fill="#475569">firstName / lastName</text>
+          <text x="12" y="141" font-family="monospace" font-size="10.5" fill="#64748b">createdAt / updatedAt</text>
+        </g>
+
+        <!-- RefreshToken -->
+        <g transform="translate(270, 55)">
+          <rect x="0" y="0" width="230" height="210" rx="8" fill="#ffffff" stroke="#334155" stroke-width="2" />
+          <rect x="0" y="0" width="230" height="26" rx="8" fill="#334155" />
+          <rect x="0" y="16" width="230" height="10" fill="#334155" />
+          <text x="115" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">RefreshToken (JWT)</text>
+          
+          <text x="12" y="46" font-family="monospace" font-size="11" font-weight="800" fill="#1d4ed8">PK id: String (CUID)</text>
+          <text x="12" y="65" font-family="monospace" font-size="11" font-weight="800" fill="#dc2626">FK userId: String</text>
+          <text x="12" y="84" font-family="monospace" font-size="10.5" fill="#0f172a">hashedToken: SHA256</text>
+          <text x="12" y="103" font-family="monospace" font-size="11" font-weight="700" fill="#dc2626">expiresAt: DateTime</text>
+          <text x="12" y="122" font-family="monospace" font-size="10.5" fill="#b45309">revokedAt: DateTime?</text>
+          <text x="12" y="141" font-family="monospace" font-size="10.5" fill="#64748b">userAgent / ipAddress</text>
+          <text x="12" y="160" font-family="monospace" font-size="10.5" fill="#15803d">Rotación Automática</text>
+        </g>
+
+        <!-- TrustedDevice -->
+        <g transform="translate(525, 55)">
+          <rect x="0" y="0" width="215" height="195" rx="8" fill="#ffffff" stroke="#334155" stroke-width="2" />
+          <rect x="0" y="0" width="215" height="26" rx="8" fill="#334155" />
+          <rect x="0" y="16" width="215" height="10" fill="#334155" />
+          <text x="107" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">TrustedDevice (Fingerprint)</text>
+          
+          <text x="12" y="46" font-family="monospace" font-size="11" font-weight="800" fill="#1d4ed8">PK id: String (CUID)</text>
+          <text x="12" y="65" font-family="monospace" font-size="11" font-weight="800" fill="#dc2626">FK userId: String</text>
+          <text x="12" y="84" font-family="monospace" font-size="11" fill="#0f172a">deviceId: String (FP)</text>
+          <text x="12" y="103" font-family="monospace" font-size="11" fill="#475569">name: String?</text>
+          <text x="12" y="122" font-family="monospace" font-size="11" fill="#15803d">lastUsedAt: DateTime</text>
+          <text x="12" y="141" font-family="monospace" font-size="10" fill="#64748b">UNIQUE(userId, deviceId)</text>
+        </g>
+
+        <!-- LoginAttempt -->
+        <g transform="translate(765, 55)">
+          <rect x="0" y="0" width="190" height="195" rx="8" fill="#ffffff" stroke="#334155" stroke-width="2" />
+          <rect x="0" y="0" width="190" height="26" rx="8" fill="#334155" />
+          <rect x="0" y="16" width="190" height="10" fill="#334155" />
+          <text x="95" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">LoginAttempt (Anti-Brute)</text>
+          
+          <text x="12" y="46" font-family="monospace" font-size="11" font-weight="800" fill="#1d4ed8">PK id: String (CUID)</text>
+          <text x="12" y="65" font-family="monospace" font-size="11" fill="#0f172a">email: String</text>
+          <text x="12" y="84" font-family="monospace" font-size="11" fill="#0f172a">ipAddress: String(45)</text>
+          <text x="12" y="103" font-family="monospace" font-size="11" font-weight="700" fill="#b45309">success: Boolean</text>
+          <text x="12" y="122" font-family="monospace" font-size="10.5" fill="#475569">deviceId: String?</text>
+          <text x="12" y="141" font-family="monospace" font-size="10" fill="#64748b">createdAt: DateTime</text>
+        </g>
+
+        <!-- Connections Tier 1 -->
+        <line x1="245" y1="140" x2="270" y2="140" stroke="#475569" stroke-width="2" marker-start="url(#one-one)" marker-end="url(#crow-many)" />
+        <line x1="500" y1="140" x2="525" y2="140" stroke="#475569" stroke-width="2" marker-start="url(#one-one)" marker-end="url(#crow-many)" />
+      </g>
+
+
+      <!-- ============================================================ -->
+      <!-- TIER 2: TELEGRAM BOT, IA Y AUTENTICACIÓN OTP                 -->
+      <!-- ============================================================ -->
+      <g transform="translate(20, 330)">
+        <rect x="0" y="0" width="980" height="310" rx="10" fill="#faf5ff" stroke="#e9d5ff" stroke-width="2" stroke-dasharray="6,4" />
+        <rect x="15" y="12" width="480" height="26" rx="6" fill="#6b21a8" />
+        <text x="25" y="30" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff">TIER 2: PASARELA TELEGRAM BOT, ASISTENTE IA Y OTP</text>
+
+        <!-- TelegramLink -->
+        <g transform="translate(25, 55)">
+          <rect x="0" y="0" width="230" height="195" rx="8" fill="#ffffff" stroke="#6b21a8" stroke-width="2" />
+          <rect x="0" y="0" width="230" height="26" rx="8" fill="#6b21a8" />
+          <rect x="0" y="16" width="230" height="10" fill="#6b21a8" />
+          <text x="115" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">TelegramLink (Chat)</text>
+          
+          <text x="12" y="46" font-family="monospace" font-size="11" font-weight="800" fill="#1d4ed8">PK id: String (CUID)</text>
+          <text x="12" y="65" font-family="monospace" font-size="11" font-weight="800" fill="#dc2626">FK userId: String (1:1)</text>
+          <text x="12" y="84" font-family="monospace" font-size="11" fill="#0f172a">chatId: String (UNIQUE)</text>
+          <text x="12" y="103" font-family="monospace" font-size="11" fill="#475569">username: String?</text>
+          <text x="12" y="122" font-family="monospace" font-size="11" fill="#15803d">active: Boolean = true</text>
+          <text x="12" y="141" font-family="monospace" font-size="10.5" fill="#64748b">linkedAt / lastSeenAt</text>
+        </g>
+
+        <!-- TelegramLinkToken -->
+        <g transform="translate(280, 55)">
+          <rect x="0" y="0" width="220" height="195" rx="8" fill="#ffffff" stroke="#6b21a8" stroke-width="2" />
+          <rect x="0" y="0" width="220" height="26" rx="8" fill="#6b21a8" />
+          <rect x="0" y="16" width="220" height="10" fill="#6b21a8" />
+          <text x="110" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">TelegramLinkToken (OTP)</text>
+          
+          <text x="12" y="46" font-family="monospace" font-size="11" font-weight="800" fill="#1d4ed8">PK id: String (CUID)</text>
+          <text x="12" y="65" font-family="monospace" font-size="10.5" fill="#0f172a">tokenHash: String (UNIQUE)</text>
+          <text x="12" y="84" font-family="monospace" font-size="11" font-weight="800" fill="#dc2626">FK userId: String</text>
+          <text x="12" y="103" font-family="monospace" font-size="11" font-weight="700" fill="#dc2626">expiresAt: DateTime (15m)</text>
+          <text x="12" y="122" font-family="monospace" font-size="10.5" fill="#15803d">usedAt: DateTime?</text>
+          <text x="12" y="141" font-family="monospace" font-size="10.5" fill="#64748b">revokedAt: DateTime?</text>
+        </g>
+
+        <!-- AssistantAccess -->
+        <g transform="translate(525, 55)">
+          <rect x="0" y="0" width="220" height="195" rx="8" fill="#ffffff" stroke="#6b21a8" stroke-width="2" />
+          <rect x="0" y="0" width="220" height="26" rx="8" fill="#6b21a8" />
+          <rect x="0" y="16" width="220" height="10" fill="#6b21a8" />
+          <text x="110" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">AssistantAccess (IA)</text>
+          
+          <text x="12" y="46" font-family="monospace" font-size="11" font-weight="800" fill="#1d4ed8">PK id: String (CUID)</text>
+          <text x="12" y="65" font-family="monospace" font-size="11" font-weight="800" fill="#dc2626">FK userId: String (UNIQUE)</text>
+          <text x="12" y="84" font-family="monospace" font-size="11" fill="#15803d">enabled: Boolean = true</text>
+          <text x="12" y="103" font-family="monospace" font-size="11" font-weight="700" fill="#b45309">scope: AssistantScope</text>
+          <text x="12" y="122" font-family="monospace" font-size="10.5" fill="#475569">(ALL_BRANCHES / LOCAL)</text>
+          <text x="12" y="141" font-family="monospace" font-size="10.5" fill="#64748b">createdAt / updatedAt</text>
+        </g>
+
+        <!-- TelegramUpdate -->
+        <g transform="translate(765, 55)">
+          <rect x="0" y="0" width="190" height="150" rx="8" fill="#ffffff" stroke="#6b21a8" stroke-width="2" />
+          <rect x="0" y="0" width="190" height="26" rx="8" fill="#6b21a8" />
+          <rect x="0" y="16" width="190" height="10" fill="#6b21a8" />
+          <text x="95" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">TelegramUpdate (Log)</text>
+          
+          <text x="12" y="46" font-family="monospace" font-size="11" font-weight="800" fill="#1d4ed8">PK updateId: BigInt</text>
+          <text x="12" y="65" font-family="monospace" font-size="11" fill="#0f172a">receivedAt: DateTime</text>
+          <text x="12" y="84" font-family="monospace" font-size="11" fill="#15803d">processedAt: DateTime?</text>
+        </g>
+
+        <!-- Connections Tier 2 -->
+        <line x1="255" y1="140" x2="280" y2="140" stroke="#475569" stroke-width="2" marker-start="url(#one-one)" marker-end="url(#crow-many)" />
+        <line x1="500" y1="140" x2="525" y2="140" stroke="#475569" stroke-width="2" marker-start="url(#one-one)" marker-end="url(#one-one)" />
+      </g>
+
+
+      <!-- ============================================================ -->
+      <!-- TIER 3: AUDITORÍA DE ACCIONES Y CONFIGURACIÓN DINÁMICA        -->
+      <!-- ============================================================ -->
+      <g transform="translate(20, 660)">
+        <rect x="0" y="0" width="980" height="360" rx="10" fill="#fffbeb" stroke="#fde68a" stroke-width="2" stroke-dasharray="6,4" />
+        <rect x="15" y="12" width="530" height="26" rx="6" fill="#b45309" />
+        <text x="25" y="30" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff">TIER 3: AUDITORÍA DE ACCIONES (NO REPUDIO) Y CONFIGURACIÓN DINÁMICA</text>
+
+        <!-- AuditLog -->
+        <g transform="translate(25, 55)">
+          <rect x="0" y="0" width="310" height="250" rx="8" fill="#ffffff" stroke="#b45309" stroke-width="2" />
+          <rect x="0" y="0" width="310" height="26" rx="8" fill="#b45309" />
+          <rect x="0" y="16" width="310" height="10" fill="#b45309" />
+          <text x="155" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">AuditLog (Trazabilidad Global)</text>
+          
+          <text x="12" y="46" font-family="monospace" font-size="11" font-weight="800" fill="#1d4ed8">PK id: String (CUID)</text>
+          <text x="12" y="65" font-family="monospace" font-size="11" font-weight="800" fill="#dc2626">FK userId: String?</text>
+          <text x="12" y="84" font-family="monospace" font-size="11" fill="#0f172a">userName: String</text>
+          <text x="12" y="103" font-family="monospace" font-size="11" font-weight="700" fill="#b45309">action: CREATE / UPDATE / DELETE</text>
+          <text x="12" y="122" font-family="monospace" font-size="11" fill="#0f172a">entity: String / entityId: String?</text>
+          <text x="12" y="141" font-family="monospace" font-size="11" font-weight="700" fill="#6b21a8">details: Json (Payload previo/nuevo)</text>
+          <text x="12" y="160" font-family="monospace" font-size="10.5" fill="#475569">ipAddress / userAgent: String</text>
+          <text x="12" y="179" font-family="monospace" font-size="10.5" fill="#64748b">createdAt: DateTime</text>
+        </g>
+
+        <!-- SystemConfig -->
+        <g transform="translate(360, 55)">
+          <rect x="0" y="0" width="290" height="250" rx="8" fill="#ffffff" stroke="#b45309" stroke-width="2" />
+          <rect x="0" y="0" width="290" height="26" rx="8" fill="#b45309" />
+          <rect x="0" y="16" width="290" height="10" fill="#b45309" />
+          <text x="145" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">SystemConfig (Key-Value)</text>
+          
+          <text x="12" y="46" font-family="monospace" font-size="11" font-weight="800" fill="#1d4ed8">PK id: Int (Autoincrement)</text>
+          <text x="12" y="65" font-family="monospace" font-size="11" font-weight="800" fill="#0f172a">key: String (UNIQUE)</text>
+          <text x="12" y="84" font-family="monospace" font-size="11" font-weight="700" fill="#6b21a8">value: Json</text>
+          <text x="12" y="103" font-family="monospace" font-size="11" fill="#475569">type: String = "string"</text>
+          <text x="12" y="122" font-family="monospace" font-size="11" font-weight="700" fill="#b45309">category: STORE / NOTIF / AUTH</text>
+          <text x="12" y="141" font-family="monospace" font-size="11" fill="#15803d">isPublic: Boolean = false</text>
+          <text x="12" y="160" font-family="monospace" font-size="11" fill="#dc2626">isReadOnly: Boolean = false</text>
+          <text x="12" y="179" font-family="monospace" font-size="10.5" fill="#64748b">sortOrder: Int</text>
+        </g>
+
+        <!-- AlertState -->
+        <g transform="translate(675, 55)">
+          <rect x="0" y="0" width="280" height="250" rx="8" fill="#ffffff" stroke="#b45309" stroke-width="2" />
+          <rect x="0" y="0" width="280" height="26" rx="8" fill="#b45309" />
+          <rect x="0" y="16" width="280" height="10" fill="#b45309" />
+          <text x="140" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">AlertState (Deduplicación Alertas)</text>
+          
+          <text x="12" y="46" font-family="monospace" font-size="11" font-weight="800" fill="#1d4ed8">PK id: String (CUID)</text>
+          <text x="12" y="65" font-family="monospace" font-size="11" font-weight="800" fill="#dc2626">FK branchId: Int</text>
+          <text x="12" y="84" font-family="monospace" font-size="11" font-weight="700" fill="#b45309">alertType: AlertType</text>
+          <text x="12" y="103" font-family="monospace" font-size="11" fill="#0f172a">resourceKey: String</text>
+          <text x="12" y="122" font-family="monospace" font-size="11" font-weight="800" fill="#15803d">active: Boolean = false</text>
+          <text x="12" y="141" font-family="monospace" font-size="10.5" fill="#475569">firstTriggeredAt: DateTime</text>
+          <text x="12" y="160" font-family="monospace" font-size="10.5" fill="#475569">lastNotifiedAt: DateTime</text>
+          <text x="12" y="179" font-family="monospace" font-size="10" fill="#64748b">UNIQUE(branchId, type, key)</text>
+        </g>
+      </g>
+
+
+      <!-- ============================================================ -->
+      <!-- TIER 4: CENTRO DE NOTIFICACIONES PUSH Y MULTIMEDIA           -->
+      <!-- ============================================================ -->
+      <g transform="translate(20, 1040)">
+        <rect x="0" y="0" width="980" height="490" rx="10" fill="#eff6ff" stroke="#bfdbfe" stroke-width="2" stroke-dasharray="6,4" />
+        <rect x="15" y="12" width="530" height="26" rx="6" fill="#1e40af" />
+        <text x="25" y="30" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff">TIER 4: NOTIFICACIONES PUSH W3C, BANDEJA IN-APP Y MULTIMEDIA</text>
+
+        <!-- NotificationConfig -->
+        <g transform="translate(25, 55)">
+          <rect x="0" y="0" width="310" height="235" rx="8" fill="#ffffff" stroke="#1e40af" stroke-width="2" />
+          <rect x="0" y="0" width="310" height="26" rx="8" fill="#1e40af" />
+          <rect x="0" y="16" width="310" height="10" fill="#1e40af" />
+          <text x="155" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">NotificationConfig (Reglas Alertas)</text>
+          
+          <text x="12" y="46" font-family="monospace" font-size="11" font-weight="800" fill="#1d4ed8">PK id: Int (Autoincrement)</text>
+          <text x="12" y="65" font-family="monospace" font-size="11" font-weight="800" fill="#0f172a">key: String (UNIQUE)</text>
+          <text x="12" y="84" font-family="monospace" font-size="11" fill="#0f172a">name: String</text>
+          <text x="12" y="103" font-family="monospace" font-size="11" fill="#15803d">isEnabled: Boolean = true</text>
+          <text x="12" y="122" font-family="monospace" font-size="11" font-weight="700" fill="#6b21a8">targetRoles: Json (["ADMIN"])</text>
+          <text x="12" y="141" font-family="monospace" font-size="11" font-weight="700" fill="#6b21a8">channels: Json (["PUSH"])</text>
+          <text x="12" y="160" font-family="monospace" font-size="11" fill="#475569">thresholds: Json?</text>
+          <text x="12" y="179" font-family="monospace" font-size="10.5" fill="#475569">soundType: String = "suave"</text>
+        </g>
+
+        <!-- Notification (In-App Feed) -->
+        <g transform="translate(360, 55)">
+          <rect x="0" y="0" width="290" height="235" rx="8" fill="#ffffff" stroke="#1e40af" stroke-width="2" />
+          <rect x="0" y="0" width="290" height="26" rx="8" fill="#1e40af" />
+          <rect x="0" y="16" width="290" height="10" fill="#1e40af" />
+          <text x="145" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">Notification (Bandeja In-App)</text>
+          
+          <text x="12" y="46" font-family="monospace" font-size="11" font-weight="800" fill="#1d4ed8">PK id: Int (Autoincrement)</text>
+          <text x="12" y="65" font-family="monospace" font-size="11" font-weight="800" fill="#dc2626">FK userId: String</text>
+          <text x="12" y="84" font-family="monospace" font-size="11" fill="#0f172a">type: String (Config Key)</text>
+          <text x="12" y="103" font-family="monospace" font-size="11" fill="#0f172a">title: String / message: String</text>
+          <text x="12" y="122" font-family="monospace" font-size="11" fill="#1d4ed8">url: String? (Redirección)</text>
+          <text x="12" y="141" font-family="monospace" font-size="11" font-weight="800" fill="#b45309">isRead: Boolean = false</text>
+          <text x="12" y="160" font-family="monospace" font-size="10.5" fill="#15803d">readAt: DateTime?</text>
+          <text x="12" y="179" font-family="monospace" font-size="10.5" fill="#6b21a8">metadata: Json?</text>
+        </g>
+
+        <!-- PushSubscription -->
+        <g transform="translate(675, 55)">
+          <rect x="0" y="0" width="280" height="195" rx="8" fill="#ffffff" stroke="#1e40af" stroke-width="2" />
+          <rect x="0" y="0" width="280" height="26" rx="8" fill="#1e40af" />
+          <rect x="0" y="16" width="280" height="10" fill="#1e40af" />
+          <text x="140" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">PushSubscription (W3C)</text>
+          
+          <text x="12" y="46" font-family="monospace" font-size="11" font-weight="800" fill="#1d4ed8">PK id: Int (Autoincrement)</text>
+          <text x="12" y="65" font-family="monospace" font-size="11" font-weight="800" fill="#dc2626">FK userId: String</text>
+          <text x="12" y="84" font-family="monospace" font-size="10.5" fill="#0f172a">endpoint: String (UNIQUE)</text>
+          <text x="12" y="103" font-family="monospace" font-size="10.5" fill="#475569">p256dh: String (Public Key)</text>
+          <text x="12" y="122" font-family="monospace" font-size="10.5" fill="#475569">auth: String (Secret)</text>
+          <text x="12" y="141" font-family="monospace" font-size="10.5" fill="#64748b">userAgent: String?</text>
+        </g>
+
+        <!-- ProductImage (Multimedia) -->
+        <g transform="translate(675, 270)">
+          <rect x="0" y="0" width="280" height="145" rx="8" fill="#ffffff" stroke="#1e40af" stroke-width="2" />
+          <rect x="0" y="0" width="280" height="26" rx="8" fill="#1e40af" />
+          <rect x="0" y="16" width="280" height="10" fill="#1e40af" />
+          <text x="140" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle">ProductImage (Multimedia)</text>
+          
+          <text x="12" y="46" font-family="monospace" font-size="11" font-weight="800" fill="#1d4ed8">PK id: Int (Autoincrement)</text>
+          <text x="12" y="65" font-family="monospace" font-size="11" font-weight="800" fill="#dc2626">FK productId: Int</text>
+          <text x="12" y="84" font-family="monospace" font-size="11" fill="#1d4ed8">url: String (Cloud Storage)</text>
+          <text x="12" y="103" font-family="monospace" font-size="11" fill="#475569">position: Int = 0</text>
+          <text x="12" y="122" font-family="monospace" font-size="10" fill="#64748b">UNIQUE(productId, position)</text>
+        </g>
+
+        <!-- Connections Tier 4 -->
+        <line x1="335" y1="140" x2="360" y2="140" stroke="#475569" stroke-width="2" marker-start="url(#one-one)" marker-end="url(#crow-many)" />
+        <line x1="650" y1="140" x2="675" y2="140" stroke="#475569" stroke-width="2" marker-start="url(#one-one)" marker-end="url(#crow-many)" />
+      </g>
+
+    </svg>
+  </div>
+
+  <div class="footer-notes">
+    <strong>Arquitectura de Soporte y Seguridad:</strong> Las 14 tablas transversales garantizan seguridad de grado empresarial (sesiones revocables, tokens hash SHA-256, fingerprinting de dispositivos, registro no repudiable de auditoría en JSON y notificaciones Web Push W3C).
+  </div>
+</div>
+
+</body>
+</html>

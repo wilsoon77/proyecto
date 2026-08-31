@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { OrderStatus, Prisma } from '@prisma/client';
+import { OrderStatus, Prisma, ProductOrigin } from '@prisma/client';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { AuditService } from '../audit/audit.service.js';
 import { assertOrderTransition } from '../orders/order-state.js';
@@ -122,6 +122,12 @@ export class TasksService {
   async reconcileInventorySummaries() {
     const [inventories, lotTotals] = await Promise.all([
       this.prisma.inventory.findMany({
+        where: {
+          product: {
+            origin: ProductOrigin.COMPRADO,
+            tracksExpiration: true,
+          },
+        },
         select: {
           productId: true,
           branchId: true,
@@ -133,6 +139,12 @@ export class TasksService {
       }),
       this.prisma.inventoryLot.groupBy({
         by: ['productId', 'branchId'],
+        where: {
+          product: {
+            origin: ProductOrigin.COMPRADO,
+            tracksExpiration: true,
+          },
+        },
         _sum: { availableQuantity: true },
       }),
     ]);
@@ -142,8 +154,7 @@ export class TasksService {
 
     for (const inventory of inventories) {
       const key = `${inventory.productId}:${inventory.branchId}`;
-      if (!totals.has(key)) continue; // Legacy aggregate without lot history.
-      const lotQuantity = totals.get(key)!;
+      const lotQuantity = totals.get(key) ?? 0;
       if (lotQuantity === inventory.quantity) continue;
 
       mismatches++;

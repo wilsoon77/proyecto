@@ -1,0 +1,212 @@
+<svg id="diagram-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 1440" width="980" height="1440">
+      <defs>
+        <!-- Arrowhead Markers -->
+        <marker id="arr-sync" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#0f172a" />
+        </marker>
+        <marker id="arr-blue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1d4ed8" />
+        </marker>
+        <marker id="arr-green" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#15803d" />
+        </marker>
+        <marker id="arr-reply" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 8 1.5 L 0 5 L 8 8.5 z" fill="#1e40af" />
+        </marker>
+        
+        
+      </defs>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+
+      <!-- ============================================================ -->
+      <!-- LIFELINE PARTICIPANTS (TOP HEADERS)                          -->
+      <!-- ============================================================ -->
+      
+      <!-- Participant 1: Actor -->
+      <g transform="translate(40, 30)">
+        <rect x="0" y="0" width="180" height="60" rx="8" fill="#ffffff" stroke="#0f172a" stroke-width="2" />
+        <rect x="0" y="0" width="180" height="24" rx="8" fill="#0f172a" />
+        <rect x="0" y="14" width="180" height="10" fill="#0f172a" />
+        <text x="90" y="17" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="700" fill="#ffffff" text-anchor="middle">«Actor»</text>
+        <text x="90" y="47" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800" fill="#0f172a" text-anchor="middle">Encargado Sucursal</text>
+      </g>
+
+      <!-- Participant 2: Frontend SPA -->
+      <g transform="translate(280, 30)">
+        <rect x="0" y="0" width="180" height="60" rx="8" fill="#ffffff" stroke="#1d4ed8" stroke-width="2" />
+        <rect x="0" y="0" width="180" height="24" rx="8" fill="#1d4ed8" />
+        <rect x="0" y="14" width="180" height="10" fill="#1d4ed8" />
+        <text x="90" y="17" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="700" fill="#ffffff" text-anchor="middle">«Boundary»</text>
+        <text x="90" y="47" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800" fill="#1e40af" text-anchor="middle">Frontend SPA (Next.js)</text>
+      </g>
+
+      <!-- Participant 3: Backend API / Service -->
+      <g transform="translate(520, 30)">
+        <rect x="0" y="0" width="190" height="60" rx="8" fill="#ffffff" stroke="#6b21a8" stroke-width="2" />
+        <rect x="0" y="0" width="190" height="24" rx="8" fill="#6b21a8" />
+        <rect x="0" y="14" width="190" height="10" fill="#6b21a8" />
+        <text x="95" y="17" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="700" fill="#ffffff" text-anchor="middle">«Control / Service»</text>
+        <text x="95" y="47" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800" fill="#6b21a8" text-anchor="middle">DailyCloseService</text>
+      </g>
+
+      <!-- Participant 4: Database / Prisma -->
+      <g transform="translate(760, 30)">
+        <rect x="0" y="0" width="180" height="60" rx="8" fill="#ffffff" stroke="#166534" stroke-width="2" />
+        <rect x="0" y="0" width="180" height="24" rx="8" fill="#166534" />
+        <rect x="0" y="14" width="180" height="10" fill="#166534" />
+        <text x="90" y="17" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="700" fill="#ffffff" text-anchor="middle">«Database / ORM»</text>
+        <text x="90" y="47" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800" fill="#166534" text-anchor="middle">Prisma / PostgreSQL</text>
+      </g>
+
+      <!-- ============================================================ -->
+      <!-- VERTICAL LIFELINES                                           -->
+      <!-- ============================================================ -->
+      <line x1="130" y1="90" x2="130" y2="1360" stroke="#94a3b8" stroke-width="2" stroke-dasharray="6,6" />
+      <line x1="370" y1="90" x2="370" y2="1360" stroke="#94a3b8" stroke-width="2" stroke-dasharray="6,6" />
+      <line x1="615" y1="90" x2="615" y2="1360" stroke="#94a3b8" stroke-width="2" stroke-dasharray="6,6" />
+      <line x1="850" y1="90" x2="850" y2="1360" stroke="#94a3b8" stroke-width="2" stroke-dasharray="6,6" />
+
+      <!-- ============================================================ -->
+      <!-- ACTIVATION BARS (EXECUTION FOCUS)                            -->
+      <!-- ============================================================ -->
+      <!-- Actor activation -->
+      <rect x="122" y="120" width="16" height="1170" rx="3" fill="#e2e8f0" stroke="#0f172a" stroke-width="1.5" />
+      <!-- Frontend SPA activation -->
+      <rect x="362" y="130" width="16" height="1150" rx="3" fill="#dbeafe" stroke="#1d4ed8" stroke-width="1.5" />
+      <!-- Service activation -->
+      <rect x="607" y="270" width="16" height="970" rx="3" fill="#f3e8ff" stroke="#6b21a8" stroke-width="1.5" />
+      <!-- Database activation -->
+      <rect x="842" y="470" width="16" height="690" rx="3" fill="#dcfce7" stroke="#166534" stroke-width="1.5" />
+
+
+      <!-- ============================================================ -->
+      <!-- STEP 1 & 2: GET PREVIEW BALANCES                             -->
+      <!-- ============================================================ -->
+      <!-- 1. Open daily close page -->
+      <line x1="138" y1="140" x2="362" y2="140" stroke="#0f172a" stroke-width="2" marker-end="url(#arr-sync)" />
+      <text x="250" y="130" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="700" fill="#0f172a" text-anchor="middle">1: Abre módulo "Cierre de Día"</text>
+
+      <!-- 2. Request preview -->
+      <line x1="378" y1="180" x2="607" y2="180" stroke="#1d4ed8" stroke-width="2" marker-end="url(#arr-blue)" />
+      <text x="492" y="170" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="700" fill="#1d4ed8" text-anchor="middle">2: GET /daily-close/preview?branchId=1</text>
+
+      <!-- 3. Query system snapshot -->
+      <line x1="623" y1="220" x2="842" y2="220" stroke="#166534" stroke-width="2" marker-end="url(#arr-green)" />
+      <text x="732" y="210" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="700" fill="#166534" text-anchor="middle">3: SELECT initial + prod + purchases</text>
+
+      <!-- 4. Return snapshot -->
+      <line x1="842" y1="260" x2="378" y2="260" stroke="#1e40af" stroke-width="2" stroke-dasharray="6,4" marker-end="url(#arr-reply)" />
+      <text x="610" y="250" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="700" fill="#1e40af" text-anchor="middle">4: Retorna Snapshot Teórico (Stock en mostrador)</text>
+
+
+      <!-- ============================================================ -->
+      <!-- STEP 5 & 6: USER INPUTS PHYSICAL COUNT & SUBMIT              -->
+      <!-- ============================================================ -->
+      <!-- 5. User enters count -->
+      <line x1="138" y1="310" x2="362" y2="310" stroke="#0f172a" stroke-width="2" marker-end="url(#arr-sync)" />
+      <text x="250" y="300" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="700" fill="#0f172a" text-anchor="middle">5: Ingresa Conteo Físico Real y Mermas</text>
+
+      <!-- 6. Submit confirm -->
+      <line x1="378" y1="360" x2="607" y2="360" stroke="#1d4ed8" stroke-width="2.5" marker-end="url(#arr-blue)" />
+      <text x="492" y="350" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800" fill="#1d4ed8" text-anchor="middle">6: POST /daily-close/confirm (DTO validado)</text>
+
+
+      <!-- ============================================================ -->
+      <!-- STEP 7: RESIDUAL SALE CALCULATION (SELF-CALL)                -->
+      <!-- ============================================================ -->
+      <path d="M 623 395 L 685 395 L 685 435 L 623 435" fill="none" stroke="#6b21a8" stroke-width="2.5" marker-end="url(#arr-sync)" />
+      <text x="695" y="408" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="800" fill="#6b21a8">7: calculateResidualSale()</text>
+      <text x="695" y="428" font-family="Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#b45309">Venta = Teórico - (Físico + Merma)</text>
+
+
+      <!-- ============================================================ -->
+      <!-- TRANSACTION GROUP: prisma.$transaction                      -->
+      <!-- ============================================================ -->
+      <g transform="translate(560, 460)">
+        <rect x="0" y="0" width="395" height="590" rx="8" fill="#f0fdf4" stroke="#166534" stroke-width="2" stroke-dasharray="5,4" />
+        <rect x="0" y="0" width="220" height="26" rx="6" fill="#166534" />
+        <text x="10" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff">group: prisma.$transaction [ACID]</text>
+
+        <!-- 8.1 Lock and Verify -->
+        <g transform="translate(0, 50)">
+          <line x1="63" y1="0" x2="282" y2="0" stroke="#166534" stroke-width="2" marker-end="url(#arr-green)" />
+          <text x="172" y="-10" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="700" fill="#166534" text-anchor="middle">8.1: Lock de registros y validación de fecha</text>
+        </g>
+
+        <!-- 8.2 Insert DailyClose -->
+        <g transform="translate(0, 115)">
+          <line x1="63" y1="0" x2="282" y2="0" stroke="#166534" stroke-width="2" marker-end="url(#arr-green)" />
+          <text x="172" y="-10" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="700" fill="#166534" text-anchor="middle">8.2: INSERT INTO "DailyClose" (Cabecera)</text>
+        </g>
+
+        <!-- 8.3 Insert DailyCloseItems -->
+        <g transform="translate(0, 180)">
+          <line x1="63" y1="0" x2="282" y2="0" stroke="#166534" stroke-width="2" marker-end="url(#arr-green)" />
+          <text x="172" y="-10" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="700" fill="#166534" text-anchor="middle">8.3: INSERT INTO "DailyCloseItem" (Detalle)</text>
+        </g>
+
+        <!-- 8.4 Update Inventory to Physical Count -->
+        <g transform="translate(0, 245)">
+          <line x1="63" y1="0" x2="282" y2="0" stroke="#166534" stroke-width="2" marker-end="url(#arr-green)" />
+          <text x="172" y="-10" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#b45309" text-anchor="middle">8.4: UPDATE "Inventory" set quantity = countedQty</text>
+        </g>
+
+        <!-- 8.5 Insert StockMovement Kardex -->
+        <g transform="translate(0, 310)">
+          <line x1="63" y1="0" x2="282" y2="0" stroke="#166534" stroke-width="2" marker-end="url(#arr-green)" />
+          <text x="172" y="-10" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="700" fill="#166534" text-anchor="middle">8.5: INSERT "StockMovement" (VENTA_RESIDUAL)</text>
+        </g>
+
+        <!-- 8.6 Insert StockMovement Waste -->
+        <g transform="translate(0, 375)">
+          <line x1="63" y1="0" x2="282" y2="0" stroke="#166534" stroke-width="2" marker-end="url(#arr-green)" />
+          <text x="172" y="-10" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="700" fill="#166534" text-anchor="middle">8.6: INSERT "StockMovement" (MERMA)</text>
+        </g>
+
+        <!-- 8.7 Commit -->
+        <g transform="translate(0, 445)">
+          <line x1="282" y1="0" x2="63" y2="0" stroke="#166534" stroke-width="2" stroke-dasharray="6,4" marker-end="url(#arr-reply)" />
+          <text x="172" y="-10" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="800" fill="#166534" text-anchor="middle">8.7: COMMIT TRANSACTION (Persistencia Exitosa)</text>
+        </g>
+
+        <!-- 8.8 Dispatch Telegram Notification -->
+        <g transform="translate(0, 520)">
+          <line x1="63" y1="0" x2="282" y2="0" stroke="#6b21a8" stroke-width="2" marker-end="url(#arr-sync)" />
+          <text x="172" y="-10" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="700" fill="#6b21a8" text-anchor="middle">8.8: Despacho Alerta Telegram al Dueño</text>
+        </g>
+      </g>
+
+
+      <!-- ============================================================ -->
+      <!-- STEP 9 & 10: CONFIRMATION RESPONSE                           -->
+      <!-- ============================================================ -->
+      <!-- 9. Return HTTP 201 Created to SPA -->
+      <line x1="607" y1="1120" x2="378" y2="1120" stroke="#1e40af" stroke-width="2.5" stroke-dasharray="6,4" marker-end="url(#arr-reply)" />
+      <text x="492" y="1108" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800" fill="#1e40af" text-anchor="middle">9: 201 Created { dailyCloseId, totalSales, waste }</text>
+
+      <!-- 10. Show Voucher and Confirmation to User -->
+      <line x1="362" y1="1190" x2="138" y2="1190" stroke="#15803d" stroke-width="2.5" stroke-dasharray="6,4" marker-end="url(#arr-reply)" />
+      <text x="250" y="1178" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800" fill="#15803d" text-anchor="middle">10: Muestra Voucher de Cierre y Resumen en Pantalla</text>
+
+
+      <!-- ============================================================ -->
+      <!-- BOTTOM PARTICIPANT REPEATERS                                 -->
+      <!-- ============================================================ -->
+      <g transform="translate(40, 1340)">
+        <rect x="0" y="0" width="180" height="36" rx="6" fill="#0f172a" />
+        <text x="90" y="23" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="700" fill="#ffffff" text-anchor="middle">Encargado Sucursal</text>
+      </g>
+      <g transform="translate(280, 1340)">
+        <rect x="0" y="0" width="180" height="36" rx="6" fill="#1d4ed8" />
+        <text x="90" y="23" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="700" fill="#ffffff" text-anchor="middle">Frontend SPA</text>
+      </g>
+      <g transform="translate(520, 1340)">
+        <rect x="0" y="0" width="190" height="36" rx="6" fill="#6b21a8" />
+        <text x="95" y="23" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="700" fill="#ffffff" text-anchor="middle">DailyCloseService</text>
+      </g>
+      <g transform="translate(760, 1340)">
+        <rect x="0" y="0" width="180" height="36" rx="6" fill="#166534" />
+        <text x="90" y="23" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="700" fill="#ffffff" text-anchor="middle">Prisma / PostgreSQL</text>
+      </g>
+
+    </svg>

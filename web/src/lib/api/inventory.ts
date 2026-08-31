@@ -211,7 +211,7 @@ export const inventoryService = {
   /**
    * Modificar alerta o fecha de caducidad de un lote
    */
-  async updateLotAlert(lotId: number, data: { alertAt?: string | null; daysBefore?: number; expiresAt?: string }): Promise<ExpirationLot> {
+  async updateLotAlert(lotId: number, data: { alertAt?: string | null; daysBefore?: number; reminderDays?: number[]; expiresAt?: string }): Promise<ExpirationLot> {
     return api.patch<ExpirationLot>(`/inventory/lots/${lotId}/alert`, data)
   },
 

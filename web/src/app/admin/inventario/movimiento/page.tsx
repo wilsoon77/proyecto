@@ -137,9 +137,13 @@ function subtractDays(dateValue: string, days: number) {
 
 function MovimientoForm() {
   const searchParams = useSearchParams()
-  const productSlug = searchParams.get("producto")
-  const branchSlug = searchParams.get("sucursal")
+  const productSlug = searchParams.get("producto") || ""
+  const branchSlug = searchParams.get("sucursal") || ""
   const requestedExpirationDate = searchParams.get("caducidad") || ""
+  const requestedQuantity = Number(searchParams.get("cantidad")) || 0
+  const requestedLot = searchParams.get("lote") || ""
+  const requestedNote = searchParams.get("nota") || searchParams.get("motivo") || (searchParams.get("tipo") === "MERMA" && requestedLot ? `Merma por lote vencido #${requestedLot}` : "")
+  const requestedReference = searchParams.get("referencia") || (requestedLot ? `LOTE-${requestedLot}` : "")
   const requestedTypeParam = searchParams.get("tipo")
   const requestedMovementType = requestedTypeParam && Object.prototype.hasOwnProperty.call(MOVEMENT_TYPES, requestedTypeParam)
     ? requestedTypeParam as StockMovementType
@@ -147,9 +151,12 @@ function MovimientoForm() {
   
   const { showToast } = useToast()
 
+  // Si viene algún parámetro individual (como tipo MERMA, producto o lote), iniciar en INDIVIDUAL
+  const isPrefilledIndividual = Boolean(requestedMovementType || productSlug || requestedLot)
+
   // Modo de operación: Transferencia Multiproducto vs Movimiento Individual
   const [mainMode, setMainMode] = useState<"TRANSFER_BULK" | "INDIVIDUAL">(
-    requestedMovementType && requestedMovementType !== "TRANSFERENCIA" ? "INDIVIDUAL" : "TRANSFER_BULK",
+    isPrefilledIndividual ? "INDIVIDUAL" : "TRANSFER_BULK",
   )
 
   // Estados generales
@@ -162,7 +169,7 @@ function MovimientoForm() {
   // ----------------------------------------------------
   // ESTADOS PARA TRANSFERENCIA MULTIPRODUCTO
   // ----------------------------------------------------
-  const [transferFromBranch, setTransferFromBranch] = useState<string>(branchSlug || "")
+  const [transferFromBranch, setTransferFromBranch] = useState<string>(branchSlug)
   const [transferToBranch, setTransferToBranch] = useState<string>("")
   const [selectedItemsMap, setSelectedItemsMap] = useState<Record<string, number>>({})
   const [transferSearch, setTransferSearch] = useState("")
@@ -173,14 +180,14 @@ function MovimientoForm() {
   // ----------------------------------------------------
   // ESTADOS PARA MOVIMIENTO INDIVIDUAL
   // ----------------------------------------------------
-  const [selectedProduct, setSelectedProduct] = useState<string>(productSlug || "")
+  const [selectedProduct, setSelectedProduct] = useState<string>(productSlug)
   const [movementType, setMovementType] = useState<StockMovementType>(requestedMovementType ?? "PRODUCCION")
-  const [movementQuantity, setMovementQuantity] = useState<number>(1)
-  const [movementFromBranch, setMovementFromBranch] = useState<string>(branchSlug || "")
-  const [movementToBranch, setMovementToBranch] = useState<string>(branchSlug || "")
-  const [movementNote, setMovementNote] = useState("")
-  const [movementReference, setMovementReference] = useState("")
-  const [movementExpiresAt, setMovementExpiresAt] = useState(requestedExpirationDate)
+  const [movementQuantity, setMovementQuantity] = useState<number>(requestedQuantity > 0 ? requestedQuantity : 1)
+  const [movementFromBranch, setMovementFromBranch] = useState<string>(branchSlug)
+  const [movementToBranch, setMovementToBranch] = useState<string>(branchSlug)
+  const [movementNote, setMovementNote] = useState<string>(requestedNote)
+  const [movementReference, setMovementReference] = useState<string>(requestedReference)
+  const [movementExpiresAt, setMovementExpiresAt] = useState<string>(requestedExpirationDate)
 
   const selectedProductData = products.find((product) => product.slug === selectedProduct)
   const requiresExpirationDate = movementType === "COMPRA"
@@ -192,6 +199,23 @@ function MovimientoForm() {
   const calculatedAlertDate = movementExpiresAt
     ? subtractDays(movementExpiresAt, Math.max(...configuredReminderDays))
     : ""
+
+  // Sincronizar estados si cambian los parámetros de URL dinámicamente
+  useEffect(() => {
+    if (productSlug) setSelectedProduct(productSlug)
+    if (branchSlug) {
+      setMovementFromBranch(branchSlug)
+      setTransferFromBranch(branchSlug)
+    }
+    if (requestedMovementType) {
+      setMovementType(requestedMovementType)
+      setMainMode("INDIVIDUAL")
+    }
+    if (requestedQuantity > 0) setMovementQuantity(requestedQuantity)
+    if (requestedNote) setMovementNote(requestedNote)
+    if (requestedReference) setMovementReference(requestedReference)
+    if (requestedExpirationDate) setMovementExpiresAt(requestedExpirationDate)
+  }, [branchSlug, productSlug, requestedExpirationDate, requestedMovementType, requestedNote, requestedQuantity, requestedReference])
 
   // Cargar datos maestros
   const loadData = useCallback(async () => {
@@ -230,10 +254,10 @@ function MovimientoForm() {
       if (branchesData.length > 0) {
         const defaultFrom = branchSlug || branchesData[0].slug
         const defaultTo = branchesData.length > 1 ? branchesData[1].slug : branchesData[0].slug
-        setTransferFromBranch(defaultFrom)
-        setTransferToBranch(defaultTo)
-        setMovementFromBranch(defaultFrom)
-        setMovementToBranch(defaultTo)
+        setTransferFromBranch((prev) => prev || defaultFrom)
+        setTransferToBranch((prev) => prev || defaultTo)
+        setMovementFromBranch((prev) => prev || defaultFrom)
+        setMovementToBranch((prev) => prev || defaultTo)
       }
     } catch (error) {
       console.error("Error cargando datos maestros:", error)
@@ -870,6 +894,22 @@ function MovimientoForm() {
                 Para registrar compras a proveedores, producción interna directa, mermas o pérdidas puntuales.
               </p>
             </div>
+
+            {/* Banner de Lote Vencido Autocompletado */}
+            {requestedLot && movementType === "MERMA" && (
+              <div className="rounded-xl border border-amber-300 bg-amber-50/90 p-4 flex items-start gap-3 text-amber-900 animate-in fade-in">
+                <AlertCircle className="h-5 w-5 shrink-0 text-amber-600 mt-0.5" />
+                <div className="text-xs space-y-1">
+                  <p className="font-bold text-amber-950 text-sm">
+                    Autocompletado para Merma de Lote #{requestedLot}
+                  </p>
+                  <p>
+                    Se precargaron automáticamente el producto, la sucursal, la cantidad del lote ({movementQuantity} uds) y la referencia.
+                    Revisa los datos, agrega una observación adicional si lo deseas y pulsa <strong>Guardar Movimiento</strong> para completar la salida.
+                  </p>
+                </div>
+              </div>
+            )}
 
             <form onSubmit={handleIndividualSubmit} className="space-y-5">
               {/* Tipo de Movimiento */}

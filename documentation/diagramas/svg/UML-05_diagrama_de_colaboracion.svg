@@ -1,0 +1,169 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 880" width="1500" height="880">
+      <defs>
+        
+      </defs>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+
+      <!-- ========================================== -->
+      <!-- TOPOLOGY / COLLABORATION CONNECTOR LINES   -->
+      <!-- ========================================== -->
+      
+      <!-- Link 1: Dueño <-> Telegram Cloud (Over the top at y = 40) -->
+      <path d="M 160 85 L 160 40 L 1335 40 L 1335 85" fill="none" stroke="#cbd5e1" stroke-width="2" />
+
+      <!-- Link 2: Telegram Cloud <-> Webhook Controller -->
+      <path d="M 1335 175 L 1335 270 L 180 270 L 180 340" fill="none" stroke="#cbd5e1" stroke-width="2" />
+
+      <!-- Link 3: Webhook Controller <-> AssistantService -->
+      <line x1="300" y1="400" x2="590" y2="400" stroke="#cbd5e1" stroke-width="2" />
+
+      <!-- Link 4: AssistantService <-> Gemini Provider -->
+      <line x1="740" y1="340" x2="740" y2="175" stroke="#cbd5e1" stroke-width="2" />
+
+      <!-- Link 5: AssistantService <-> Prisma Repositories -->
+      <line x1="740" y1="465" x2="740" y2="670" stroke="#cbd5e1" stroke-width="2" />
+
+      <!-- Link 6: AssistantService <-> TelegramBotService -->
+      <line x1="890" y1="400" x2="1190" y2="400" stroke="#cbd5e1" stroke-width="2" />
+
+      <!-- Link 7: TelegramBotService <-> Telegram Cloud -->
+      <line x1="1315" y1="340" x2="1315" y2="175" stroke="#cbd5e1" stroke-width="2" />
+
+
+      <!-- ========================================== -->
+      <!-- NUMBERED MESSAGE BADGES                    -->
+      <!-- ========================================== -->
+
+      <!-- Msg 1: Dueño -> Telegram Cloud (Top Left) -->
+      <g transform="translate(230, 25)">
+        <rect x="0" y="0" width="360" height="26" rx="6" fill="#ffffff" stroke="#0f172a" stroke-width="1.2" />
+        <text x="180" y="17" font-family="Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="700" fill="#0f172a" text-anchor="middle">1: Enviar mensaje ("¿Cómo cerró la sucursal 1?") &#x2794;</text>
+      </g>
+
+      <!-- Msg 10: Telegram Cloud -> Dueño (Top Right) -->
+      <g transform="translate(890, 25)">
+        <rect x="0" y="0" width="370" height="26" rx="6" fill="#f0fdf4" stroke="#86efac" stroke-width="1.2" />
+        <text x="185" y="17" font-family="Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="700" fill="#166534" text-anchor="middle">10: &#x21E0; Entrega de respuesta en chat privado del Dueño</text>
+      </g>
+
+      <!-- Msg 2: Telegram Cloud -> Controller -->
+      <g transform="translate(570, 257)">
+        <rect x="0" y="0" width="340" height="26" rx="6" fill="#ffffff" stroke="#7c3aed" stroke-width="1.2" />
+        <text x="170" y="17" font-family="Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="700" fill="#7c3aed" text-anchor="middle">2: POST /telegram/webhook (update: JSON) &#x2794;</text>
+      </g>
+
+      <!-- Msg 3: Controller -> AssistantService -->
+      <g transform="translate(320, 373)">
+        <rect x="0" y="0" width="250" height="26" rx="6" fill="#ffffff" stroke="#2563eb" stroke-width="1.2" />
+        <text x="125" y="17" font-family="Segoe UI, Arial, sans-serif" font-size="9" font-weight="700" fill="#1e40af" text-anchor="middle">3: processUserQuery(prompt, userId) &#x2794;</text>
+      </g>
+
+      <!-- Msg 4 & 5: AssistantService <-> Gemini -->
+      <g transform="translate(760, 205)">
+        <rect x="0" y="0" width="280" height="48" rx="6" fill="#ffffff" stroke="#7c3aed" stroke-width="1.2" />
+        <text x="14" y="20" font-family="Segoe UI, Arial, sans-serif" font-size="9" font-weight="700" fill="#6b21a8">4: generateContent(prompt, tools) &#x2794;</text>
+        <text x="14" y="38" font-family="Segoe UI, Arial, sans-serif" font-size="9" font-weight="700" fill="#7c3aed">5: &#x21E0; toolCall("getDailyClose", args)</text>
+      </g>
+
+      <!-- Msg 6 & 7: AssistantService <-> Prisma Repositories -->
+      <g transform="translate(760, 535)">
+        <rect x="0" y="0" width="280" height="48" rx="6" fill="#ffffff" stroke="#166534" stroke-width="1.2" />
+        <text x="14" y="20" font-family="Segoe UI, Arial, sans-serif" font-size="9" font-weight="700" fill="#166534">6: executeTool(getDailyClose) &#x2794;</text>
+        <text x="14" y="38" font-family="Segoe UI, Arial, sans-serif" font-size="9" font-weight="700" fill="#15803d">7: &#x21E0; data: { sales: $420, waste: $15 }</text>
+      </g>
+
+      <!-- Msg 8: AssistantService -> TelegramBotService -->
+      <g transform="translate(900, 373)">
+        <rect x="0" y="0" width="280" height="26" rx="6" fill="#ffffff" stroke="#2563eb" stroke-width="1.2" />
+        <text x="140" y="17" font-family="Segoe UI, Arial, sans-serif" font-size="9" font-weight="700" fill="#1e40af" text-anchor="middle">8: sendMessage(chatId, markdown) &#x2794;</text>
+      </g>
+
+      <!-- Msg 9: TelegramBotService -> Telegram Cloud -->
+      <g transform="translate(1330, 235)">
+        <rect x="0" y="0" width="135" height="26" rx="6" fill="#ffffff" stroke="#7c3aed" stroke-width="1.2" />
+        <text x="67" y="17" font-family="Segoe UI, Arial, sans-serif" font-size="8.5" font-weight="700" fill="#7c3aed" text-anchor="middle">9: POST /send &#x2794;</text>
+      </g>
+
+
+      <!-- ========================================== -->
+      <!-- COLLABORATION OBJECT NODES (CARDS)         -->
+      <!-- ========================================== -->
+
+      <!-- 1. Dueño / Actor (Top Left: x=50, y=85) -->
+      <g transform="translate(50, 85)">
+        <rect x="0" y="0" width="220" height="90" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" />
+        <rect x="0" y="0" width="220" height="26" rx="8" fill="#0f172a" />
+        <rect x="0" y="14" width="220" height="12" fill="#0f172a" />
+        <text x="110" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#ffffff" text-anchor="middle" text-decoration="underline">:Dueño / Administrador</text>
+        <text x="12" y="50" font-family="Segoe UI, Arial, sans-serif" font-size="9" fill="#475569">Rol: ADMIN (Telegram User)</text>
+        <text x="12" y="68" font-family="Segoe UI, Arial, sans-serif" font-size="9" fill="#64748b">Dispositivo: App Telegram Móvil</text>
+      </g>
+
+      <!-- 2. Telegram Cloud Gateway (Top Right: x=1220, y=85) -->
+      <g transform="translate(1220, 85)">
+        <rect x="0" y="0" width="230" height="90" rx="8" fill="#ffffff" stroke="#7c3aed" stroke-width="1.5" />
+        <rect x="0" y="0" width="230" height="26" rx="8" fill="#7c3aed" />
+        <rect x="0" y="14" width="230" height="12" fill="#7c3aed" />
+        <text x="115" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#ffffff" text-anchor="middle" text-decoration="underline">:Telegram Cloud Gateway</text>
+        <text x="12" y="50" font-family="Segoe UI, Arial, sans-serif" font-size="9" fill="#475569">API: api.telegram.org</text>
+        <text x="12" y="68" font-family="Segoe UI, Arial, sans-serif" font-size="9" fill="#7c3aed">Despacho Webhook HTTPS</text>
+      </g>
+
+      <!-- 3. TelegramWebhookController (Middle Left: x=50, y=340) -->
+      <g transform="translate(50, 340)">
+        <rect x="0" y="0" width="250" height="120" rx="8" fill="#ffffff" stroke="#2563eb" stroke-width="1.5" />
+        <rect x="0" y="0" width="250" height="26" rx="8" fill="#1e40af" />
+        <rect x="0" y="14" width="250" height="12" fill="#1e40af" />
+        <text x="125" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#ffffff" text-anchor="middle" text-decoration="underline">:TelegramWebhookController</text>
+        <text x="12" y="50" font-family="Segoe UI, Arial, sans-serif" font-size="9" fill="#475569">Ruta: POST /telegram/webhook</text>
+        <text x="12" y="68" font-family="Segoe UI, Arial, sans-serif" font-size="9" fill="#2563eb">Valida: TelegramSignatureGuard</text>
+        <text x="12" y="86" font-family="Segoe UI, Arial, sans-serif" font-size="9" fill="#64748b">DTO: TelegramUpdateDto</text>
+        <text x="12" y="104" font-family="Segoe UI, Arial, sans-serif" font-size="8.5" fill="#94a3b8">Registra: TelegramUpdate (Log)</text>
+      </g>
+
+      <!-- 4. AssistantService (Center: x=590, y=340) -->
+      <g transform="translate(590, 340)">
+        <rect x="0" y="0" width="300" height="125" rx="10" fill="#ffffff" stroke="#7c3aed" stroke-width="2" />
+        <rect x="0" y="0" width="300" height="28" rx="10" fill="#6b21a8" />
+        <rect x="0" y="16" width="300" height="12" fill="#6b21a8" />
+        <text x="150" y="19" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle" text-decoration="underline">:AssistantService</text>
+        <text x="14" y="50" font-family="Segoe UI, Arial, sans-serif" font-size="9.5" font-weight="700" fill="#6b21a8">Orquestador de Inteligencia Artificial</text>
+        <text x="14" y="68" font-family="Segoe UI, Arial, sans-serif" font-size="9" fill="#475569">&#x2022; Inferencia de intención del prompt</text>
+        <text x="14" y="84" font-family="Segoe UI, Arial, sans-serif" font-size="9" fill="#475569">&#x2022; Mapeo a Tool Call (getDailyClose...)</text>
+        <text x="14" y="100" font-family="Segoe UI, Arial, sans-serif" font-size="9" fill="#64748b">&#x2022; Ensamblado de contexto y respuesta</text>
+      </g>
+
+      <!-- 5. GeminiModel (Top Center: x=615, y=85) -->
+      <g transform="translate(615, 85)">
+        <rect x="0" y="0" width="250" height="90" rx="8" fill="#ffffff" stroke="#7c3aed" stroke-width="1.5" />
+        <rect x="0" y="0" width="250" height="26" rx="8" fill="#7c3aed" />
+        <rect x="0" y="14" width="250" height="12" fill="#7c3aed" />
+        <text x="125" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#ffffff" text-anchor="middle" text-decoration="underline">:GeminiModel (Google AI)</text>
+        <text x="12" y="50" font-family="Segoe UI, Arial, sans-serif" font-size="9" fill="#475569">Engine: Gemini Pro 1.5</text>
+        <text x="12" y="68" font-family="Segoe UI, Arial, sans-serif" font-size="9" fill="#7c3aed">Capabilities: Function / Tool Calling</text>
+      </g>
+
+      <!-- 6. Prisma Repositories (Bottom Center: x=590, y=670) -->
+      <g transform="translate(590, 670)">
+        <rect x="0" y="0" width="300" height="110" rx="8" fill="#ffffff" stroke="#166534" stroke-width="1.5" />
+        <rect x="0" y="0" width="300" height="26" rx="8" fill="#166534" />
+        <rect x="0" y="14" width="300" height="12" fill="#166534" />
+        <text x="150" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#ffffff" text-anchor="middle" text-decoration="underline">:PrismaService &amp; Repositories</text>
+        <text x="14" y="48" font-family="Segoe UI, Arial, sans-serif" font-size="9" fill="#166534">Acceso a BD: DailyClose, InventoryLot</text>
+        <text x="14" y="66" font-family="Segoe UI, Arial, sans-serif" font-size="9" fill="#475569">Métricas: Ventas, Mermas, Quiebres Stock</text>
+        <text x="14" y="84" font-family="Segoe UI, Arial, sans-serif" font-size="9" fill="#64748b">Aislamiento por BranchScopeGuard</text>
+      </g>
+
+      <!-- 7. TelegramBotService (Middle Right: x=1190, y=340) -->
+      <g transform="translate(1190, 340)">
+        <rect x="0" y="0" width="240" height="120" rx="8" fill="#ffffff" stroke="#2563eb" stroke-width="1.5" />
+        <rect x="0" y="0" width="240" height="26" rx="8" fill="#1e40af" />
+        <rect x="0" y="14" width="240" height="12" fill="#1e40af" />
+        <text x="120" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#ffffff" text-anchor="middle" text-decoration="underline">:TelegramBotService</text>
+        <text x="12" y="50" font-family="Segoe UI, Arial, sans-serif" font-size="9" fill="#475569">Formateador Markdown V2</text>
+        <text x="12" y="68" font-family="Segoe UI, Arial, sans-serif" font-size="9" fill="#2563eb">sendMessage(chatId, markdown)</text>
+        <text x="12" y="86" font-family="Segoe UI, Arial, sans-serif" font-size="9" fill="#64748b">Manejo de reintentos con backoff</text>
+        <text x="12" y="104" font-family="Segoe UI, Arial, sans-serif" font-size="8.5" fill="#94a3b8">Escape seguro de caracteres especiales</text>
+      </g>
+
+    </svg>

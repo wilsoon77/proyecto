@@ -1,4 +1,4 @@
-import { IsDateString, IsInt, IsOptional, Max, Min } from 'class-validator';
+import { IsArray, IsDateString, IsInt, IsOptional, Max, Min } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateLotAlertDto {
@@ -13,6 +13,14 @@ export class UpdateLotAlertDto {
   @Min(0)
   @Max(90)
   daysBefore?: number;
+
+  @ApiPropertyOptional({ type: [Number], description: 'Múltiples días de anticipación antes de la fecha de caducidad (ej. [30, 15, 3])' })
+  @IsOptional()
+  @IsArray()
+  @IsInt({ each: true })
+  @Min(0, { each: true })
+  @Max(90, { each: true })
+  reminderDays?: number[];
 
   @ApiPropertyOptional({ description: 'Nueva fecha de caducidad del lote si se requiere corregir (YYYY-MM-DD)' })
   @IsOptional()

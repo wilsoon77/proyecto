@@ -2,6 +2,35 @@
  * Constantes de la aplicación para Guatemala
  */
 
+// URL canónica de producción y resolución dinámica automática
+export function getSiteUrl(): string {
+  // 1. Prioridad Máxima: Variable de entorno configurada (cuando compres tu dominio propio ej. https://panaderiasvetlana.com)
+  if (process.env.NEXT_PUBLIC_SITE_URL) {
+    return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '')
+  }
+
+  // 2. Detección automática de Vercel (toma el dominio asignado en el Dashboard de Vercel)
+  if (process.env.NEXT_PUBLIC_VERCEL_URL) {
+    return `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`.replace(/\/$/, '')
+  }
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`.replace(/\/$/, '')
+  }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`.replace(/\/$/, '')
+  }
+
+  // 3. Entorno local de desarrollo
+  if (process.env.NODE_ENV === 'development') {
+    return 'http://localhost:3000'
+  }
+
+  // 4. Fallback de producción por defecto
+  return 'https://panaderiasvetlana.vercel.app'
+}
+
+export const SITE_URL = getSiteUrl()
+
 // Configuración de moneda
 export const CURRENCY = {
   code: 'GTQ',
@@ -58,16 +87,11 @@ export const ORDER_STATUS_LABELS: Record<string, string> = {
   [ORDER_STATUS.PENDING]: 'Pendiente',
   [ORDER_STATUS.CONFIRMED]: 'Confirmado',
   [ORDER_STATUS.PREPARING]: 'En Preparación',
-  [ORDER_STATUS.READY]: 'Listo para Recoger',
-  [ORDER_STATUS.PICKED_UP]: 'Recogido',
+  [ORDER_STATUS.READY]: 'Listo para Retirar',
+  [ORDER_STATUS.PICKED_UP]: 'Entregado',
   [ORDER_STATUS.CANCELLED]: 'Cancelado',
-} as const
+}
 
-/**
- * Devuelve la etiqueta en español de un status de pedido,
- * sin importar si el status viene en UPPERCASE (API) o lowercase (frontend).
- */
 export function getOrderStatusLabel(status: string): string {
-  const key = status.toLowerCase()
-  return ORDER_STATUS_LABELS[key] || status
+  return ORDER_STATUS_LABELS[status] || status
 }

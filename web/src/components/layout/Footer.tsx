@@ -26,7 +26,7 @@ export function Footer() {
               />
             </Link>
             <p className="mt-5 max-w-sm text-sm leading-relaxed text-[#6E5545]">
-              Pan fresco y repostería artesanal para compartir en Chimaltenango. Reserva en línea y recoge recién salido del horno.
+              Pan fresco y tradicional para compartir en Chimaltenango. Reserva en línea y recoge recién salido del horno.
             </p>
           </div>
 

@@ -18,7 +18,7 @@ const SystemConfigContext = createContext<SystemConfigContextType | undefined>(u
 
 const DEFAULT_PUBLIC_CONFIG: Record<string, any> = {
   'store.name': 'Panadería Svetlana',
-  'store.description': 'Los mejores panes de masa madre y repostería artesanal.',
+  'store.description': 'Pan tradicional guatemalteco y pan dulce recién horneado.',
   'store.currency': CURRENCY.code,
   'store.currency_symbol': CURRENCY.symbol,
   'store.timezone': LOCALE.timezone,

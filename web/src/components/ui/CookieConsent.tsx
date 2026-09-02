@@ -36,9 +36,9 @@ export default function CookieConsent() {
               <Cookie className="h-6 w-6 text-primary" />
             </div>
             <div className="flex-1">
-              <h3 className="text-sm font-semibold text-card-foreground mb-1">
+              <p className="text-sm font-bold text-card-foreground mb-1">
                 Uso de Cookies
-              </h3>
+              </p>
               <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
                 Utilizamos cookies estrictamente necesarias para garantizar el correcto
                 funcionamiento del sistema y mantener su sesión segura.{" "}

@@ -108,18 +108,18 @@ export const metadata: Metadata = {
     description: "Pan fresco, pan dulce tradicional y productos horneados artesanales en Chimaltenango, Guatemala.",
     images: [
       {
-        url: `${siteUrl}/images/hero-concha-pedestal.jpg`,
+        url: `${siteUrl}/images/og-banner.jpg`,
         width: 1200,
         height: 630,
         alt: "Panadería Svetlana - Pan artesanal recién horneado en Guatemala",
         type: "image/jpeg",
       },
       {
-        url: `${siteUrl}/images/logo-panaderia.png`,
-        width: 600,
-        height: 315,
-        alt: "Logotipo oficial Panadería Svetlana",
-        type: "image/png",
+        url: `${siteUrl}/images/hero-concha-pedestal.jpg`,
+        width: 640,
+        height: 640,
+        alt: "Pan recién horneado de Panadería Svetlana",
+        type: "image/jpeg",
       },
     ],
   },
@@ -129,7 +129,7 @@ export const metadata: Metadata = {
     creator: "@panaderiasvetlana",
     title: "Panadería Svetlana | Pan fresco en Guatemala",
     description: "Pan fresco, pan dulce tradicional y productos horneados artesanales en Chimaltenango, Guatemala.",
-    images: [`${siteUrl}/images/hero-concha-pedestal.jpg`],
+    images: [`${siteUrl}/images/og-banner.jpg`],
   },
   robots: {
     index: true,

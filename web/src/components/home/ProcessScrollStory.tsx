@@ -146,23 +146,60 @@ export function ProcessScrollStory() {
     ctx.restore()
   }
 
-  // 2. Preload all sequence frames into memory
+  // 2. Progressive sequence loading: initial frame immediately, remaining on intersection / idle
   useEffect(() => {
-    const loadedImages: HTMLImageElement[] = []
+    const loadedImages: HTMLImageElement[] = new Array(TOTAL_FRAMES)
 
-    for (let i = 1; i <= TOTAL_FRAMES; i++) {
-      const img = new Image()
-      const padded = String(i).padStart(3, "0")
-      img.src = `/process-sequence/frame-${padded}.webp`
-      img.onload = () => {
-        if (i === 1 || i - 1 === currentFrameRef.current) {
-          drawFrame(currentFrameRef.current)
-        }
-      }
-      loadedImages.push(img)
+    // Load initial frame 1 immediately for instant paint
+    const firstImg = new Image()
+    firstImg.src = "/process-sequence/frame-001.webp"
+    firstImg.onload = () => {
+      loadedImages[0] = firstImg
+      imagesRef.current = loadedImages
+      drawFrame(0)
     }
 
-    imagesRef.current = loadedImages
+    // Load remaining frames only when user scrolls towards this section
+    let hasLoadedRest = false
+    const loadRemainingFrames = () => {
+      if (hasLoadedRest) return
+      hasLoadedRest = true
+
+      for (let i = 2; i <= TOTAL_FRAMES; i++) {
+        const img = new Image()
+        const padded = String(i).padStart(3, "0")
+        img.src = `/process-sequence/frame-${padded}.webp`
+        const index = i - 1
+        img.onload = () => {
+          loadedImages[index] = img
+          if (index === currentFrameRef.current) {
+            drawFrame(index)
+          }
+        }
+      }
+      imagesRef.current = loadedImages
+    }
+
+    let observer: IntersectionObserver | null = null
+    if (typeof window !== "undefined" && "IntersectionObserver" in window && containerRef.current) {
+      observer = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting) {
+            loadRemainingFrames()
+            observer?.disconnect()
+          }
+        },
+        { rootMargin: "400px 0px" }
+      )
+      observer.observe(containerRef.current)
+    } else {
+      const timer = setTimeout(loadRemainingFrames, 3000)
+      return () => clearTimeout(timer)
+    }
+
+    return () => {
+      observer?.disconnect()
+    }
   }, [])
 
   // 3. Handle scroll progress

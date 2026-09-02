@@ -1,5 +1,3 @@
-"use client"
-
 import Image from "next/image"
 import Link from "next/link"
 import { ArrowRight, Clock3, Sparkles, Store, Wheat } from "lucide-react"
@@ -80,6 +78,7 @@ export function HeroShowcase() {
               src="/images/floating-wheat.jpg"
               alt="Espigas de trigo dorado"
               fill
+              loading="lazy"
               sizes="(max-width: 640px) 160px, 224px"
               className="object-cover"
             />
@@ -91,6 +90,7 @@ export function HeroShowcase() {
               src="/images/floating-concha.jpg"
               alt="Pan dulce tradicional flotando"
               fill
+              loading="lazy"
               sizes="(max-width: 640px) 144px, 192px"
               className="object-cover"
             />

@@ -2,12 +2,29 @@ import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import { getPublicBranches } from '@/lib/catalog/public-api'
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '')
+import { SITE_URL } from '@/lib/constants'
+
+const siteUrl = SITE_URL
 
 export const metadata: Metadata = {
   title: 'Sucursales | Panadería Svetlana',
-  description: 'Encuentra la sucursal de Panadería Svetlana más cercana en Guatemala.',
+  description: 'Encuentra la sucursal de Panadería Svetlana más cercana en Chimaltenango, Guatemala.',
   alternates: { canonical: `${siteUrl}/sucursales` },
+  openGraph: {
+    type: 'website',
+    locale: 'es_GT',
+    url: `${siteUrl}/sucursales`,
+    title: 'Sucursales | Panadería Svetlana',
+    description: 'Encuentra la sucursal de Panadería Svetlana más cercana en Chimaltenango, Guatemala.',
+    images: [{ url: `${siteUrl}/images/hero-concha-pedestal.jpg`, width: 1200, height: 630, alt: 'Sucursales Panadería Svetlana' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    site: '@panaderiasvetlana',
+    title: 'Sucursales | Panadería Svetlana',
+    description: 'Encuentra la sucursal de Panadería Svetlana más cercana en Chimaltenango, Guatemala.',
+    images: [`${siteUrl}/images/hero-concha-pedestal.jpg`],
+  },
 }
 
 export default async function SucursalesLayout({ children }: { children: ReactNode }) {

@@ -98,9 +98,9 @@ export default function Home() {
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F0DDCD] text-[#C85A17] mb-4">
                 <Wheat className="h-6 w-6" aria-hidden="true" />
               </div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#9E4D1A]">Artesanal 100%</p>
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#9E4D1A]">Horneado Diario</p>
               <h2 className="mt-1 font-display text-xl font-semibold text-[#2B170F]">Hecho cada día</h2>
-              <p className="mt-2 text-sm leading-relaxed text-[#5C3D2E]">2 hornadas diarias a las 5 AM y 2 PM. La frescura es la promesa.</p>
+              <p className="mt-2 text-sm leading-relaxed text-[#5C3D2E]">2 hornadas diarias (5 AM y 2 PM) para disfrutar tu pan calientito.</p>
             </div>
           </div>
         </div>
@@ -108,8 +108,8 @@ export default function Home() {
 
       {/* Infinite Artisan Badges & Brands Marquee */}
       <ArtisanMarquee
-        kicker="Sellos y Compromisos Svetlana"
-        title="Ingredientes puros, procesos de verdad"
+        kicker="Nuestros Compromisos"
+        title="Dedicación y esmero en cada horneada"
         className="border-y border-[#DECDBB] bg-[#F3E9DC]"
       />
 
@@ -152,7 +152,7 @@ export default function Home() {
               <div className="rounded-3xl border border-[#DECDBB] bg-[#F3E9DC] p-6 shadow-sm">
                 <span className="font-display text-4xl font-bold text-[#8C522B]">01</span>
                 <h3 className="mt-4 text-base font-bold text-[#2B170F]">Elige</h3>
-                <p className="mt-2 text-xs leading-relaxed text-[#5C3D2E]">Explora el catálogo y añade tus piezas favoritas de pan y repostería.</p>
+                <p className="mt-2 text-xs leading-relaxed text-[#5C3D2E]">Explora el catálogo y elige tus piezas favoritas de pan dulce y tradicional.</p>
               </div>
 
               {/* Step 2: Featured Dark Espresso Card */}

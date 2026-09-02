@@ -5,7 +5,9 @@ import { getPublicCatalog, getPublicProduct, getRelatedPublicProducts } from '@/
 import { apiProductToProduct } from '@/lib/api/transformers'
 import { defaultSalePresentation, presentationUnitPrice } from '@/lib/presentation-quantities'
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '')
+import { SITE_URL } from '@/lib/constants'
+
+const siteUrl = SITE_URL
 
 export const revalidate = 60
 export const dynamicParams = true
@@ -28,18 +30,24 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title: `${product.name} | Panadería Svetlana`,
     description: product.description || `Compra ${product.name} en Panadería Svetlana.`,
-    alternates: { canonical: `/productos/${product.slug}` },
+    alternates: { canonical: `${siteUrl}/productos/${product.slug}` },
     openGraph: {
       type: 'website',
-      title: product.name,
+      locale: 'es_GT',
+      url: `${siteUrl}/productos/${product.slug}`,
+      title: `${product.name} | Panadería Svetlana`,
       description: product.description || `Compra ${product.name} en Panadería Svetlana.`,
-      images: image ? [{ url: image, alt: product.name }] : undefined,
+      images: image
+        ? [{ url: image, alt: product.name }]
+        : [{ url: `${siteUrl}/images/hero-concha-pedestal.jpg`, alt: product.name, width: 1200, height: 630 }],
     },
     twitter: {
       card: 'summary_large_image',
-      title: product.name,
+      site: '@panaderiasvetlana',
+      creator: '@panaderiasvetlana',
+      title: `${product.name} | Panadería Svetlana`,
       description: product.description || `Compra ${product.name} en Panadería Svetlana.`,
-      images: image ? [image] : ['/images/Panaderia_Svetlana_logo.jpeg'],
+      images: image ? [image] : [`${siteUrl}/images/hero-concha-pedestal.jpg`],
     },
   }
 }

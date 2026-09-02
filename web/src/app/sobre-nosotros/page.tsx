@@ -20,7 +20,7 @@ export default function SobreNosotrosPage() {
             El aroma que vuelve a reunirnos.
           </h1>
           <p className="mt-6 max-w-lg text-base leading-relaxed text-[#6E5545] sm:text-lg">
-            En Panadería Svetlana honramos el pan artesanal guatemalteco con recetas cuidadas, masa madre, fermentación natural y una atención cálida y cercana en Chimaltenango.
+            En Panadería Svetlana elaboramos pan tradicional guatemalteco y pan dulce artesanal con recetas familiares, ingredientes frescos y la calidez de siempre en Chimaltenango.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Link href={ROUTES.products} className="w-full sm:w-auto">
@@ -61,9 +61,9 @@ export default function SobreNosotrosPage() {
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#E8DAC9] text-[#A25514] mb-4">
                 <Wheat className="h-6 w-6" aria-hidden="true" />
               </div>
-              <h3 className="font-display text-lg font-bold text-[#2B170F]">Ingredientes cuidados</h3>
+              <h3 className="font-display text-lg font-bold text-[#2B170F]">Ingredientes de calidad</h3>
               <p className="mt-2 text-sm leading-relaxed text-[#5C3D2E]">
-                Seleccionamos materias primas puras que respetan el sabor, textura y aroma de cada receta tradicional.
+                Elegimos materias primas e ingredientes frescos que respetan el sabor y la textura de nuestras recetas tradicionales.
               </p>
             </div>
 
@@ -72,9 +72,9 @@ export default function SobreNosotrosPage() {
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#3D2317] text-[#F59E0B] mb-4">
                 <Flame className="h-6 w-6" aria-hidden="true" />
               </div>
-              <h3 className="font-display text-lg font-bold text-white">Horneado constante</h3>
+              <h3 className="font-display text-lg font-bold text-white">Horneado diario</h3>
               <p className="mt-2 text-sm leading-relaxed text-[#D2C3B4]">
-                2 hornadas diarias a las 5 AM y 2 PM para que siempre encuentres pan caliente y recién salido del horno.
+                2 hornadas diarias a las 5 AM y 2 PM para que siempre encuentres pan caliente tanto para el desayuno como para la tarde.
               </p>
             </div>
 
@@ -83,9 +83,9 @@ export default function SobreNosotrosPage() {
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F0DDCD] text-[#C85A17] mb-4">
                 <Heart className="h-6 w-6" aria-hidden="true" />
               </div>
-              <h3 className="font-display text-lg font-bold text-[#2B170F]">Servicio cercano</h3>
+              <h3 className="font-display text-lg font-bold text-[#2B170F]">Trato cercano</h3>
               <p className="mt-2 text-sm leading-relaxed text-[#5C3D2E]">
-                Atendemos a nuestros vecinos de Chimaltenango con la misma calidez con la que trabajamos la masa.
+                Atendemos a nuestros vecinos de Chimaltenango con la misma amabilidad con la que trabajamos cada día en el horno.
               </p>
             </div>
           </div>
@@ -94,8 +94,8 @@ export default function SobreNosotrosPage() {
 
       {/* Infinite Artisan Quality Ticker */}
       <ArtisanMarquee
-        kicker="Sellos y Certificaciones"
-        title="Garantía de origen y frescura artesanal"
+        kicker="Nuestros Compromisos"
+        title="Dedicación y esmero en cada horneada"
         className="border-y border-[#DECDBB] bg-[#F3E9DC]"
       />
 
@@ -109,8 +109,8 @@ export default function SobreNosotrosPage() {
             El pan está presente en los momentos sencillos.
           </h2>
           <div className="mt-6 max-w-2xl space-y-4 text-base leading-relaxed text-[#6E5545]">
-            <p>Panadería Svetlana nació del amor por la panadería artesanal guatemalteca. Lo que comenzó como un emprendimiento familiar con recetas de pan francés, conchas y champurradas creció gracias a la preferencia de las familias de Chimaltenango.</p>
-            <p>Para nosotros, el pan acompaña el café de la mañana, la merienda de la tarde y la mesa familiar. Por eso cada pieza se prepara con dedicación, fermentación natural y sin aditivos artificiales.</p>
+            <p>Panadería Svetlana nació del amor por la panadería tradicional guatemalteca. Lo que comenzó como un emprendimiento familiar con recetas de pan francés, conchas y champurradas creció gracias a la preferencia de las familias de Chimaltenango.</p>
+            <p>Para nosotros, el pan acompaña el desayuno familiar, la merienda de la tarde y el compartir en casa. Por eso cada pieza se prepara con dedicación, reposo natural y el cariño de siempre.</p>
           </div>
           <blockquote className="mt-8 border-l-3 border-[#D97706] pl-5 font-display text-xl italic leading-relaxed text-[#2B170F] sm:text-2xl">
             “Trabajamos cada madrugada para que al abrir tu bolsa de pan reconozcas el aroma auténtico de casa.”
@@ -123,29 +123,29 @@ export default function SobreNosotrosPage() {
             <ShieldCheck className="mt-0.5 h-6 w-6 shrink-0 text-[#F59E0B]" aria-hidden="true" />
             <div>
               <h3 className="font-display text-2xl font-semibold text-white">Nuestros Compromisos</h3>
-              <p className="mt-1 text-sm leading-relaxed text-[#D2C3B4]">Lo artesanal se demuestra en la constancia y el respeto a la receta.</p>
+              <p className="mt-1 text-sm leading-relaxed text-[#D2C3B4]">Lo tradicional se demuestra en la constancia y el respeto a la receta.</p>
             </div>
           </div>
           <ul className="mt-6 space-y-5">
             <li className="flex items-start gap-3">
               <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#F59E0B]" aria-hidden="true" />
               <div>
-                <h4 className="text-sm font-bold text-white">Ingredientes de primera</h4>
-                <p className="mt-1 text-xs leading-relaxed text-[#D2C3B4]">Harinas 100% seleccionadas, masa madre activa y materias primas frescas.</p>
+                <h4 className="text-sm font-bold text-white">Ingredientes de calidad</h4>
+                <p className="mt-1 text-xs leading-relaxed text-[#D2C3B4]">Harinas seleccionadas, mantequilla fresca y materias primas confiables.</p>
               </div>
             </li>
             <li className="flex items-start gap-3">
               <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#F59E0B]" aria-hidden="true" />
               <div>
-                <h4 className="text-sm font-bold text-white">Producción por turnos</h4>
+                <h4 className="text-sm font-bold text-white">Producción al día</h4>
                 <p className="mt-1 text-xs leading-relaxed text-[#D2C3B4]">Dos momentos de horneado diario (5:00 AM y 2:00 PM) para máxima frescura.</p>
               </div>
             </li>
             <li className="flex items-start gap-3">
               <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#F59E0B]" aria-hidden="true" />
               <div>
-                <h4 className="text-sm font-bold text-white">Reserva sin espera</h4>
-                <p className="mt-1 text-xs leading-relaxed text-[#D2C3B4]">Pide tus panes en línea y retíralos sin hacer cola en sucursal.</p>
+                <h4 className="text-sm font-bold text-white">Reserva sin esperas</h4>
+                <p className="mt-1 text-xs leading-relaxed text-[#D2C3B4]">Elige tus panes en línea y recógelos en sucursal sin perder tiempo.</p>
               </div>
             </li>
           </ul>
@@ -171,22 +171,22 @@ export default function SobreNosotrosPage() {
             <div className="rounded-3xl border border-[#DECDBB] bg-[#F3E9DC] p-6 shadow-sm">
               <span className="font-display text-3xl font-bold text-[#8C522B]">01</span>
               <h3 className="mt-3 text-base font-bold text-[#2B170F]">Mezclar</h3>
-              <p className="mt-2 text-xs leading-relaxed text-[#5C3D2E]">Pesamos con precisión los ingredientes y preparamos el fermento madre.</p>
+              <p className="mt-2 text-xs leading-relaxed text-[#5C3D2E]">Pesamos los ingredientes y preparamos la masa siguiendo la receta de la casa.</p>
             </div>
             <div className="rounded-3xl border border-[#ECCDB5] bg-[#FAF0E6] p-6 shadow-sm">
               <span className="font-display text-3xl font-bold text-[#C85A17]">02</span>
               <h3 className="mt-3 text-base font-bold text-[#2B170F]">Reposar</h3>
-              <p className="mt-2 text-xs leading-relaxed text-[#5C3D2E]">Damos tiempo a la masa para que leude lentamente y desarrolle su sabor.</p>
+              <p className="mt-2 text-xs leading-relaxed text-[#5C3D2E]">Damos el tiempo necesario para que la masa leude y tome consistencia suave.</p>
             </div>
             <div className="rounded-3xl border border-[#DECDBB] bg-[#F3E9DC] p-6 shadow-sm">
               <span className="font-display text-3xl font-bold text-[#8C522B]">03</span>
               <h3 className="mt-3 text-base font-bold text-[#2B170F]">Formar</h3>
-              <p className="mt-2 text-xs leading-relaxed text-[#5C3D2E]">Cada pieza (concha, cuernito, francés) se porciona y marca a mano.</p>
+              <p className="mt-2 text-xs leading-relaxed text-[#5C3D2E]">Cada pieza (conchas, pan francés, champurradas) se porciona y moldea a mano.</p>
             </div>
             <div className="rounded-3xl border border-[#42261B] bg-[#2B170F] p-6 text-[#FAF5EE] shadow-lg">
               <span className="font-display text-3xl font-bold text-[#F59E0B]">04</span>
               <h3 className="mt-3 text-base font-bold text-white">Hornear</h3>
-              <p className="mt-2 text-xs leading-relaxed text-[#D2C3B4]">El calor transforma la masa en corteza dorada y miga suave lista para disfrutar.</p>
+              <p className="mt-2 text-xs leading-relaxed text-[#D2C3B4]">El calor del horno deja la corteza dorada y la miga suave, lista para llevar a la mesa.</p>
             </div>
           </div>
         </div>

@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import Image from "next/image"
 import Link from "next/link"
@@ -19,7 +19,7 @@ export function HeroShowcase() {
         <div className="animate-fade-up flex flex-col justify-center">
           <div className="inline-flex w-fit items-center gap-2 rounded-full border border-amber-300/60 bg-amber-50/80 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-amber-900 shadow-sm backdrop-blur-sm">
             <Sparkles className="h-3.5 w-3.5 text-amber-600 animate-pulse" aria-hidden="true" />
-            <span>Panadería Artesanal de Chimaltenango</span>
+            <span>Panadería Tradicional · Chimaltenango</span>
           </div>
 
           <h1 className="mt-5 font-display text-4xl font-semibold leading-[1.08] tracking-[-0.04em] text-foreground sm:text-5xl lg:text-[3.5rem] xl:text-[4rem]">
@@ -33,7 +33,7 @@ export function HeroShowcase() {
           </h1>
 
           <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Masa madre, fermentación natural y recetas tradicionales. Reserva en línea tus favoritos y recógelos recién horneados en tu sucursal.
+            Elaborado cada día con recetas tradicionales y el toque de siempre. Elige tus panes favoritos en línea y pasa a recogerlos calientitos a tu sucursal.
           </p>
 
           {/* Action Buttons */}
@@ -67,7 +67,7 @@ export function HeroShowcase() {
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100/80 text-primary">
                 <Wheat className="h-4 w-4" aria-hidden="true" />
               </div>
-              <span>Harinas 100% seleccionadas</span>
+              <span>Ingredientes frescos y seleccionados</span>
             </div>
           </div>
         </div>

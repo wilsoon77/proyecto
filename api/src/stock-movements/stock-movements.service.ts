@@ -314,10 +314,30 @@ export class StockMovementsService {
     return { data, meta: { total, pageCount: Math.ceil(total / pageSize) || 0, page, pageSize } };
   }
 
-  async activity(branchSlug?: string, days = 7) {
-    const normalizedDays = Math.max(1, Math.min(30, Math.floor(days) || 7));
-    const to = todayBusinessDate();
-    const from = addDays(to, 1 - normalizedDays);
+  async activity(branchSlug?: string, days?: number, fromDate?: string, toDate?: string) {
+    let from: string;
+    let to: string;
+
+    if (fromDate && toDate) {
+      const validFrom = /^\d{4}-\d{2}-\d{2}$/.test(fromDate) ? fromDate : todayBusinessDate();
+      const validTo = /^\d{4}-\d{2}-\d{2}$/.test(toDate) ? toDate : todayBusinessDate();
+      if (validFrom <= validTo) {
+        from = validFrom;
+        to = validTo;
+      } else {
+        from = validTo;
+        to = validFrom;
+      }
+      // Limitar rango máximo a 90 días
+      const keys = dateKeysBetween(from, to);
+      if (keys.length > 90) {
+        from = addDays(to, -89);
+      }
+    } else {
+      const normalizedDays = Math.max(1, Math.min(90, Math.floor(days ?? 7)));
+      to = todayBusinessDate();
+      from = normalizedDays === 1 ? to : addDays(to, 1 - normalizedDays);
+    }
     const branch = branchSlug
       ? await this.prisma.branch.findUnique({ where: { slug: branchSlug }, select: { id: true } })
       : null;

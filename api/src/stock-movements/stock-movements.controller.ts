@@ -200,10 +200,18 @@ export class StockMovementsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Resumen operativo de movimientos', description: 'Agrupa producción, ventas y mermas de los últimos días para el panel Operación.' })
   @ApiQuery({ name: 'branchSlug', required: false, description: 'Slug de sucursal; MANAGER puede consultar cualquiera de las dos' })
-  @ApiQuery({ name: 'days', required: false, description: 'Cantidad de días a mostrar, entre 1 y 30' })
-  async activity(@Req() req: any, @Query('branchSlug') branchSlug?: string, @Query('days') days?: string) {
+  @ApiQuery({ name: 'days', required: false, description: 'Cantidad de días a mostrar, entre 1 y 90' })
+  @ApiQuery({ name: 'from', required: false, description: 'Fecha inicio en formato YYYY-MM-DD' })
+  @ApiQuery({ name: 'to', required: false, description: 'Fecha fin en formato YYYY-MM-DD' })
+  async activity(
+    @Req() req: any,
+    @Query('branchSlug') branchSlug?: string,
+    @Query('days') days?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
     const scopedBranchSlug = await this.branchScope.resolveBranchSlug(req.user, branchSlug);
-    return this.service.activity(scopedBranchSlug, days ? Number(days) : 7);
+    return this.service.activity(scopedBranchSlug, days ? Number(days) : undefined, from, to);
   }
 
   private async scopeMovementDto(dto: CreateStockMovementDto, actor: any): Promise<CreateStockMovementDto> {

@@ -158,10 +158,17 @@ export const inventoryService = {
     return api.get<StockMovementsListResponse>(url)
   },
 
-  async getOperationalActivity(params?: { branchSlug?: string; days?: number }): Promise<OperationalActivityResponse> {
+  async getOperationalActivity(params?: {
+    branchSlug?: string
+    days?: number
+    from?: string
+    to?: string
+  }): Promise<OperationalActivityResponse> {
     const searchParams = new URLSearchParams()
     if (params?.branchSlug) searchParams.set('branchSlug', params.branchSlug)
     if (params?.days) searchParams.set('days', String(params.days))
+    if (params?.from) searchParams.set('from', params.from)
+    if (params?.to) searchParams.set('to', params.to)
     const query = searchParams.toString()
     return api.get<OperationalActivityResponse>(`/stock-movements/activity${query ? `?${query}` : ''}`)
   },

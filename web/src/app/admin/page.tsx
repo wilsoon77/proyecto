@@ -7,7 +7,10 @@ import {
   BarChart3,
   Bell,
   Building2,
+  Calendar,
   CalendarClock,
+  CalendarDays,
+  Check,
   CheckCircle2,
   ChevronDown,
   ClipboardCheck,
@@ -41,7 +44,24 @@ const ALERT_TYPES = new Set([
 ])
 
 type ChartType = "bars" | "lines" | "area"
-type DayRange = 7 | 14 | 30
+type FilterPreset = "day" | "week" | "month" | "custom"
+
+function getTodayIsoString(): string {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, "0")
+  const day = String(now.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
+
+function getPastIsoString(daysAgo: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() - daysAgo)
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, "0")
+  const day = String(d.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
 
 function asNumber(value: string | number | null | undefined) {
   const parsed = Number(value)
@@ -93,11 +113,29 @@ export default function AdminOperationPage() {
 
   // Controles de Gráfica y Filtros
   const [chartType, setChartType] = useState<ChartType>("bars")
-  const [selectedDays, setSelectedDays] = useState<DayRange>(7)
+  const [filterPreset, setFilterPreset] = useState<FilterPreset>("week")
+  const [customStartDate, setCustomStartDate] = useState<string>(() => getPastIsoString(14))
+  const [customEndDate, setCustomEndDate] = useState<string>(() => getTodayIsoString())
+  const [appliedCustomRange, setAppliedCustomRange] = useState<{ from: string; to: string } | null>(null)
+  const [dateError, setDateError] = useState<string | null>(null)
   const [selectedBranchSlug, setSelectedBranchSlug] = useState<string>("")
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
 
   const isGlobalRole = user?.role === "ADMIN" || user?.role === "MANAGER"
+
+  const handleApplyCustomRange = () => {
+    if (!customStartDate || !customEndDate) {
+      setDateError("Ingresa fecha inicial y final")
+      return
+    }
+    if (customStartDate > customEndDate) {
+      setDateError("La fecha inicial no puede ser posterior a la fecha final")
+      return
+    }
+    setDateError(null)
+    setAppliedCustomRange({ from: customStartDate, to: customEndDate })
+    setHoveredIndex(null)
+  }
 
   useEffect(() => {
     const updateClock = () => setClock(new Date())
@@ -129,6 +167,20 @@ export default function AdminOperationPage() {
       ? (selectedBranchSlug ? branches.find((b) => b.slug === selectedBranchSlug)?.id : undefined)
       : user?.branchId ?? undefined
 
+    let activityParams: { branchSlug?: string; days?: number; from?: string; to?: string } = {
+      branchSlug: effectiveBranchSlug,
+    }
+    if (filterPreset === "day") {
+      activityParams.days = 1
+    } else if (filterPreset === "week") {
+      activityParams.days = 7
+    } else if (filterPreset === "month") {
+      activityParams.days = 30
+    } else if (filterPreset === "custom") {
+      activityParams.from = appliedCustomRange?.from || customStartDate
+      activityParams.to = appliedCustomRange?.to || customEndDate
+    }
+
     const results = await Promise.allSettled([
       notificationsService.getHistory(1, 20),
       rawMaterialsService.getInventory(effectiveBranchId),
@@ -138,10 +190,7 @@ export default function AdminOperationPage() {
         days: 7,
       }),
       productionService.getTodayProduction(effectiveBranchId),
-      inventoryService.getOperationalActivity({
-        branchSlug: effectiveBranchSlug,
-        days: selectedDays,
-      }),
+      inventoryService.getOperationalActivity(activityParams),
     ])
 
     const history = results[0]
@@ -159,7 +208,17 @@ export default function AdminOperationPage() {
 
     setLastUpdated(new Date())
     setIsLoading(false)
-  }, [isGlobalRole, selectedBranchSlug, user?.branch?.slug, user?.branchId, branches, selectedDays])
+  }, [
+    isGlobalRole,
+    selectedBranchSlug,
+    user?.branch?.slug,
+    user?.branchId,
+    branches,
+    filterPreset,
+    appliedCustomRange,
+    customStartDate,
+    customEndDate,
+  ])
 
   useEffect(() => {
     const timer = window.setTimeout(() => void loadOperationalData(), 0)
@@ -198,50 +257,53 @@ export default function AdminOperationPage() {
 
   // Coordenadas calculadas para la gráfica SVG de líneas/área
   const svgMetrics = useMemo(() => {
-    const width = 800
-    const height = 220
-    const paddingLeft = 40
-    const paddingRight = 20
-    const paddingTop = 20
-    const paddingBottom = 35
+    const count = activity.length
+    // Anchura cómoda por punto (al menos 46px por punto para que nunca se amontonen las líneas ni las etiquetas)
+    const columnWidth = count > 20 ? 46 : count > 10 ? 54 : count > 3 ? 72 : 120
+    const computedWidth = Math.max(720, count * columnWidth)
+    const width = computedWidth
+    const height = 240
+    const paddingLeft = 48
+    const paddingRight = 32
+    const paddingTop = 24
+    const paddingBottom = 40
     const innerWidth = width - paddingLeft - paddingRight
     const innerHeight = height - paddingTop - paddingBottom
 
-    const count = activity.length
-    const stepX = count > 1 ? innerWidth / (count - 1) : innerWidth
+    const stepX = count > 1 ? innerWidth / (count - 1) : innerWidth / 2
 
     const pointsProduced = activity.map((item, idx) => ({
-      x: paddingLeft + idx * stepX,
-      y: paddingTop + innerHeight - (item.produced / maxActivity) * innerHeight,
+      x: count === 1 ? paddingLeft + innerWidth / 2 : paddingLeft + idx * stepX,
+      y: paddingTop + innerHeight - (maxActivity > 0 ? (item.produced / maxActivity) * innerHeight : 0),
     }))
 
     const pointsSold = activity.map((item, idx) => ({
-      x: paddingLeft + idx * stepX,
-      y: paddingTop + innerHeight - (item.sold / maxActivity) * innerHeight,
+      x: count === 1 ? paddingLeft + innerWidth / 2 : paddingLeft + idx * stepX,
+      y: paddingTop + innerHeight - (maxActivity > 0 ? (item.sold / maxActivity) * innerHeight : 0),
     }))
 
     const pointsWaste = activity.map((item, idx) => ({
-      x: paddingLeft + idx * stepX,
-      y: paddingTop + innerHeight - (item.waste / maxActivity) * innerHeight,
+      x: count === 1 ? paddingLeft + innerWidth / 2 : paddingLeft + idx * stepX,
+      y: paddingTop + innerHeight - (maxActivity > 0 ? (item.waste / maxActivity) * innerHeight : 0),
     }))
 
     const baselineY = paddingTop + innerHeight
 
     // Paths para líneas
-    const pathProduced = getBezierPath(pointsProduced)
-    const pathSold = getBezierPath(pointsSold)
-    const pathWaste = getBezierPath(pointsWaste)
+    const pathProduced = count > 1 ? getBezierPath(pointsProduced) : ""
+    const pathSold = count > 1 ? getBezierPath(pointsSold) : ""
+    const pathWaste = count > 1 ? getBezierPath(pointsWaste) : ""
 
     // Paths cerrados para áreas con degradado
-    const areaProduced = pointsProduced.length > 1
+    const areaProduced = count > 1 && pointsProduced.length > 1
       ? `${pathProduced} L ${pointsProduced[pointsProduced.length - 1].x} ${baselineY} L ${pointsProduced[0].x} ${baselineY} Z`
       : ""
 
-    const areaSold = pointsSold.length > 1
+    const areaSold = count > 1 && pointsSold.length > 1
       ? `${pathSold} L ${pointsSold[pointsSold.length - 1].x} ${baselineY} L ${pointsSold[0].x} ${baselineY} Z`
       : ""
 
-    const areaWaste = pointsWaste.length > 1
+    const areaWaste = count > 1 && pointsWaste.length > 1
       ? `${pathWaste} L ${pointsWaste[pointsWaste.length - 1].x} ${baselineY} L ${pointsWaste[0].x} ${baselineY} Z`
       : ""
 
@@ -249,7 +311,9 @@ export default function AdminOperationPage() {
       width,
       height,
       paddingLeft,
+      paddingRight,
       paddingTop,
+      paddingBottom,
       innerWidth,
       innerHeight,
       baselineY,
@@ -388,22 +452,70 @@ export default function AdminOperationPage() {
               </div>
             )}
 
-            {/* Selector de Rango de Días */}
+            {/* Presets: Día, Semana, Mes, Personalizado */}
             <div className="inline-flex rounded-xl border border-[#DECDBB] bg-[#FAF5EE] p-0.5 text-xs font-semibold">
-              {([7, 14, 30] as DayRange[]).map((days) => (
-                <button
-                  key={days}
-                  type="button"
-                  onClick={() => setSelectedDays(days)}
-                  className={`px-2.5 py-1 rounded-lg transition ${
-                    selectedDays === days
-                      ? "bg-white text-[#D97706] font-bold shadow-2xs"
-                      : "text-[#6E5545] hover:text-[#2B170F]"
-                  }`}
-                >
-                  {days}D
-                </button>
-              ))}
+              <button
+                type="button"
+                onClick={() => {
+                  setFilterPreset("day")
+                  setHoveredIndex(null)
+                }}
+                className={`px-2.5 py-1.5 rounded-lg transition ${
+                  filterPreset === "day"
+                    ? "bg-white text-[#D97706] font-bold shadow-2xs"
+                    : "text-[#6E5545] hover:text-[#2B170F]"
+                }`}
+                title="Ver actividad de hoy"
+              >
+                Día
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setFilterPreset("week")
+                  setHoveredIndex(null)
+                }}
+                className={`px-2.5 py-1.5 rounded-lg transition ${
+                  filterPreset === "week"
+                    ? "bg-white text-[#D97706] font-bold shadow-2xs"
+                    : "text-[#6E5545] hover:text-[#2B170F]"
+                }`}
+                title="Ver últimos 7 días"
+              >
+                Semana
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setFilterPreset("month")
+                  setHoveredIndex(null)
+                }}
+                className={`px-2.5 py-1.5 rounded-lg transition ${
+                  filterPreset === "month"
+                    ? "bg-white text-[#D97706] font-bold shadow-2xs"
+                    : "text-[#6E5545] hover:text-[#2B170F]"
+                }`}
+                title="Ver últimos 30 días"
+              >
+                Mes
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setFilterPreset("custom")
+                  setHoveredIndex(null)
+                }}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition ${
+                  filterPreset === "custom"
+                    ? "bg-white text-[#D97706] font-bold shadow-2xs"
+                    : "text-[#6E5545] hover:text-[#2B170F]"
+                }`}
+                title="Seleccionar rango de fechas libre"
+              >
+                <Calendar className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Rango libre</span>
+                <span className="sm:hidden">Libre</span>
+              </button>
             </div>
 
             {/* Toggle Tipo de Gráfica (Barras / Líneas / Área) */}
@@ -411,7 +523,7 @@ export default function AdminOperationPage() {
               <button
                 type="button"
                 onClick={() => setChartType("bars")}
-                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg transition ${
+                className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition ${
                   chartType === "bars"
                     ? "bg-white text-[#D97706] font-bold shadow-2xs"
                     : "text-[#6E5545] hover:text-[#2B170F]"
@@ -424,7 +536,7 @@ export default function AdminOperationPage() {
               <button
                 type="button"
                 onClick={() => setChartType("lines")}
-                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg transition ${
+                className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition ${
                   chartType === "lines"
                     ? "bg-white text-[#D97706] font-bold shadow-2xs"
                     : "text-[#6E5545] hover:text-[#2B170F]"
@@ -437,7 +549,7 @@ export default function AdminOperationPage() {
               <button
                 type="button"
                 onClick={() => setChartType("area")}
-                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg transition ${
+                className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition ${
                   chartType === "area"
                     ? "bg-white text-[#D97706] font-bold shadow-2xs"
                     : "text-[#6E5545] hover:text-[#2B170F]"
@@ -450,6 +562,52 @@ export default function AdminOperationPage() {
             </div>
           </div>
         </div>
+
+        {/* Panel Desplegable para Filtro de Rango Libre (Personalizado) */}
+        {filterPreset === "custom" && (
+          <div className="rounded-xl border border-[#DECDBB] bg-[#FAF5EE] p-3 text-xs space-y-2 animate-in fade-in duration-200">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                <span className="font-bold text-[#8C522B]">Desde:</span>
+                <input
+                  type="date"
+                  value={customStartDate}
+                  max={customEndDate || getTodayIsoString()}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                  className="h-8 px-2.5 rounded-lg border border-[#DECDBB] bg-white text-[#2B170F] font-medium focus:outline-none focus:ring-1 focus:ring-[#D97706]"
+                />
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="font-bold text-[#8C522B]">Hasta:</span>
+                <input
+                  type="date"
+                  value={customEndDate}
+                  min={customStartDate}
+                  max={getTodayIsoString()}
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                  className="h-8 px-2.5 rounded-lg border border-[#DECDBB] bg-white text-[#2B170F] font-medium focus:outline-none focus:ring-1 focus:ring-[#D97706]"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={handleApplyCustomRange}
+                className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-lg bg-[#D97706] text-white font-bold hover:bg-[#B45309] transition shadow-xs"
+              >
+                <Check className="h-3.5 w-3.5" />
+                <span>Aplicar</span>
+              </button>
+
+              {appliedCustomRange && (
+                <span className="text-[11px] text-[#8C522B] font-semibold bg-white/70 px-2.5 py-1 rounded-md border border-[#DECDBB]">
+                  Activo: {appliedCustomRange.from} al {appliedCustomRange.to} ({activity.length} días)
+                </span>
+              )}
+            </div>
+            {dateError && (
+              <p className="text-xs text-red-600 font-semibold">{dateError}</p>
+            )}
+          </div>
+        )}
 
         {/* Resumen de Métricas del Período con Indicador de Decisión */}
         {(() => {
@@ -510,252 +668,390 @@ export default function AdminOperationPage() {
           )
         })()}
 
-        {/* CONTENEDOR DE GRÁFICA */}
+        {/* CONTENEDOR DE GRÁFICA / BALANCE */}
         <div className="pt-2">
           {activity.length === 0 ? (
-            <div className="py-12 text-center text-sm text-[#6E5545]">
+            <div className="py-12 text-center text-sm text-[#6E5545] bg-[#FAF5EE]/40 rounded-2xl border border-dashed border-[#DECDBB]">
               No hay movimientos registrados para el período o sucursal seleccionada.
             </div>
-          ) : chartType === "bars" ? (
-            /* 1. MODO BARRAS DE ALTO CONTRASTE */
-            <div className="overflow-x-auto pb-2">
-              <div className="min-w-[500px]">
-                <div className="flex h-52 items-end gap-1.5 sm:gap-2 border-b border-[#E8DCCB] pb-1">
-                  {activity.map((day, idx) => {
-                    const dateObj = new Date(`${day.date}T12:00:00`)
-                    const label = dateObj.toLocaleDateString("es-GT", { weekday: "short" }).replace(".", "")
-                    const dayNum = dateObj.getDate()
-                    const isHovered = hoveredIndex === idx
+          ) : activity.length === 1 ? (
+            /* VISTA ESPECIALIZADA: 1 DÍA (Balance Diario de Alto Impacto) */
+            <div className="rounded-2xl border border-[#E8DCCB] bg-[#FAF5EE]/50 p-5 space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#E8DCCB] pb-3">
+                <div>
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#9E4D1A]">
+                    Jornada Operativa
+                  </span>
+                  <h3 className="font-display text-lg font-bold text-[#2B170F]">
+                    {new Date(`${activity[0].date}T12:00:00`).toLocaleDateString("es-GT", {
+                      weekday: "long",
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    })}
+                  </h3>
+                </div>
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-100/90 px-3 py-1 text-xs font-bold text-[#9E4D1A]">
+                  Vista de 1 Día
+                </div>
+              </div>
 
-                    return (
-                      <div
-                        key={day.date}
-                        onMouseEnter={() => setHoveredIndex(idx)}
-                        onMouseLeave={() => setHoveredIndex(null)}
-                        className={`flex min-w-0 flex-1 flex-col items-center justify-end gap-2 rounded-xl transition-colors p-1 ${
-                          isHovered ? "bg-[#FAF5EE]" : ""
-                        }`}
-                        title={`${day.date}: ${day.produced} producidas, ${day.sold} vendidas, ${day.waste} mermas`}
-                      >
-                        <div className="flex h-40 w-full items-end justify-center gap-0.5 sm:gap-1">
-                          <span
-                            className="w-1/3 rounded-t-md bg-blue-600 transition-all hover:bg-blue-700"
-                            style={{ height: `${Math.max(3, (day.produced / maxActivity) * 100)}%` }}
-                          />
-                          <span
-                            className="w-1/3 rounded-t-md bg-emerald-600 transition-all hover:bg-emerald-700"
-                            style={{ height: `${Math.max(3, (day.sold / maxActivity) * 100)}%` }}
-                          />
-                          <span
-                            className="w-1/3 rounded-t-md bg-red-500 transition-all hover:bg-red-600"
-                            style={{ height: `${Math.max(3, (day.waste / maxActivity) * 100)}%` }}
-                          />
+              {/* 3 Columnas Proporcionales con Valores y Barras Claras */}
+              <div className="grid gap-4 sm:grid-cols-3 pt-1">
+                <div className="rounded-xl border border-blue-200 bg-white p-4 shadow-2xs">
+                  <div className="flex items-center justify-between text-xs font-bold text-blue-800">
+                    <span>PRODUCCIÓN</span>
+                    <span className="h-2 w-2 rounded-full bg-blue-600" />
+                  </div>
+                  <p className="mt-2 text-3xl font-bold text-blue-700">
+                    {activity[0].produced.toLocaleString()} <span className="text-sm font-normal text-blue-800">uds</span>
+                  </p>
+                  <p className="mt-1 text-[11px] text-[#6E5545]">100% volumen elaborado</p>
+                </div>
+
+                <div className="rounded-xl border border-emerald-200 bg-white p-4 shadow-2xs">
+                  <div className="flex items-center justify-between text-xs font-bold text-emerald-800">
+                    <span>VENTAS DESPACHADAS</span>
+                    <span className="h-2 w-2 rounded-full bg-emerald-600" />
+                  </div>
+                  <p className="mt-2 text-3xl font-bold text-emerald-700">
+                    {activity[0].sold.toLocaleString()} <span className="text-sm font-normal text-emerald-800">uds</span>
+                  </p>
+                  <p className="mt-1 text-[11px] text-emerald-700 font-bold">
+                    {activity[0].produced > 0 ? ((activity[0].sold / activity[0].produced) * 100).toFixed(1) : "0"}% colocado
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-red-200 bg-white p-4 shadow-2xs">
+                  <div className="flex items-center justify-between text-xs font-bold text-red-800">
+                    <span>MERMAS REGISTRADAS</span>
+                    <span className="h-2 w-2 rounded-full bg-red-600" />
+                  </div>
+                  <p className="mt-2 text-3xl font-bold text-red-600">
+                    {activity[0].waste.toLocaleString()} <span className="text-sm font-normal text-red-800">uds</span>
+                  </p>
+                  <p className="mt-1 text-[11px] text-red-600 font-bold">
+                    {activity[0].produced > 0 ? ((activity[0].waste / activity[0].produced) * 100).toFixed(1) : "0"}% desperdicio
+                  </p>
+                </div>
+              </div>
+
+              {/* Barra Comparativa Horizontal del Día */}
+              {activity[0].produced > 0 && (
+                <div className="pt-2">
+                  <div className="flex items-center justify-between text-xs font-bold text-[#2B170F] mb-1.5">
+                    <span>Distribución del Amasijo</span>
+                    <span className="text-[11px] font-normal text-[#6E5545]">Base de cálculo sobre unidades horneadas</span>
+                  </div>
+                  <div className="h-5 w-full rounded-full bg-[#DECDBB]/40 overflow-hidden flex shadow-inner">
+                    <div
+                      className="h-full bg-emerald-600 transition-all"
+                      style={{ width: `${Math.min(100, (activity[0].sold / activity[0].produced) * 100)}%` }}
+                      title={`Ventas: ${activity[0].sold} uds`}
+                    />
+                    <div
+                      className="h-full bg-red-500 transition-all"
+                      style={{ width: `${Math.min(100, (activity[0].waste / activity[0].produced) * 100)}%` }}
+                      title={`Mermas: ${activity[0].waste} uds`}
+                    />
+                  </div>
+                  <div className="mt-2 flex items-center justify-between text-[11px] text-[#6E5545]">
+                    <span className="inline-flex items-center gap-1 font-semibold text-emerald-700">
+                      <i className="h-2 w-2 rounded-full bg-emerald-600" />
+                      Vendido: {activity[0].sold} uds
+                    </span>
+                    <span className="inline-flex items-center gap-1 font-semibold text-red-600">
+                      <i className="h-2 w-2 rounded-full bg-red-600" />
+                      Merma: {activity[0].waste} uds
+                    </span>
+                    <span className="font-semibold text-[#8C522B]">
+                      Disponible: {Math.max(0, activity[0].produced - activity[0].sold - activity[0].waste)} uds
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : chartType === "bars" ? (
+            /* 1. MODO BARRAS DE ALTO CONTRASTE (Con espaciado dinámico y scroll) */
+            <div className="space-y-2">
+              {activity.length > 10 && (
+                <div className="flex items-center justify-between text-[11px] text-[#8C522B] px-1">
+                  <span>Mostrando {activity.length} días en el rango seleccionado</span>
+                  <span className="hidden sm:inline-flex items-center gap-1 text-[#D97706] font-semibold">
+                    ← Desliza horizontalmente para explorar el historial →
+                  </span>
+                </div>
+              )}
+              <div className="overflow-x-auto pb-3 scrollbar-thin scrollbar-thumb-[#DECDBB] hover:scrollbar-thumb-[#B45309]/50">
+                <div style={{ minWidth: `${Math.max(680, activity.length * (activity.length > 20 ? 50 : 64))}px` }}>
+                  <div className="flex h-56 items-end gap-1 sm:gap-2 border-b border-[#E8DCCB] pb-2 px-1">
+                    {activity.map((day, idx) => {
+                      const dateObj = new Date(`${day.date}T12:00:00`)
+                      const label = activity.length > 14
+                        ? dateObj.toLocaleDateString("es-GT", { month: "short" }).replace(".", "")
+                        : dateObj.toLocaleDateString("es-GT", { weekday: "short" }).replace(".", "")
+                      const dayNum = dateObj.getDate()
+                      const isHovered = hoveredIndex === idx
+
+                      return (
+                        <div
+                          key={day.date}
+                          onMouseEnter={() => setHoveredIndex(idx)}
+                          onMouseLeave={() => setHoveredIndex(null)}
+                          onClick={() => setHoveredIndex(hoveredIndex === idx ? null : idx)}
+                          className={`flex min-w-[46px] sm:min-w-[54px] flex-1 flex-col items-center justify-end gap-2 rounded-2xl transition-all p-1 cursor-pointer ${
+                            isHovered ? "bg-[#FAF0E6] shadow-2xs scale-[1.02]" : "hover:bg-[#FAF5EE]/70"
+                          }`}
+                          title={`${day.date}: ${day.produced} producidas, ${day.sold} vendidas, ${day.waste} mermas`}
+                        >
+                          <div className="flex h-40 w-full items-end justify-center gap-1">
+                            <span
+                              className="w-2.5 sm:w-3.5 rounded-t-md bg-blue-600 transition-all hover:bg-blue-700"
+                              style={{ height: `${Math.max(4, (day.produced / maxActivity) * 100)}%` }}
+                            />
+                            <span
+                              className="w-2.5 sm:w-3.5 rounded-t-md bg-emerald-600 transition-all hover:bg-emerald-700"
+                              style={{ height: `${Math.max(4, (day.sold / maxActivity) * 100)}%` }}
+                            />
+                            <span
+                              className="w-2.5 sm:w-3.5 rounded-t-md bg-red-500 transition-all hover:bg-red-600"
+                              style={{ height: `${Math.max(4, (day.waste / maxActivity) * 100)}%` }}
+                            />
+                          </div>
+                          <div className="text-center leading-tight">
+                            <span className="block text-xs font-bold text-[#2B170F]">{dayNum}</span>
+                            <span className="block text-[10px] font-semibold uppercase text-[#8C522B]">{label}</span>
+                          </div>
                         </div>
-                        <div className="text-center">
-                          <span className="block text-[11px] font-bold text-[#2B170F]">{dayNum}</span>
-                          <span className="block text-[10px] capitalize text-[#8C522B]">{label}</span>
-                        </div>
-                      </div>
-                    )
-                  })}
+                      )
+                    })}
+                  </div>
                 </div>
               </div>
             </div>
           ) : (
-            /* 2. MODO LÍNEAS / ÁREA SUAVE (SVG Vectorial con Paleta de Decisión) */
-            <div className="overflow-x-auto pb-2">
-              <div className="min-w-[500px]">
-                <div className="relative h-56 w-full">
-                  <svg
-                    viewBox={`0 0 ${svgMetrics.width} ${svgMetrics.height}`}
-                    className="h-full w-full overflow-visible"
-                  >
-                    <defs>
-                      {/* Gradiente Producción (Azul Cobalto) */}
-                      <linearGradient id="grad-prod" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#2563eb" stopOpacity="0.30" />
-                        <stop offset="100%" stopColor="#2563eb" stopOpacity="0.0" />
-                      </linearGradient>
-                      {/* Gradiente Ventas (Verde Esmeralda) */}
-                      <linearGradient id="grad-sold" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#059669" stopOpacity="0.30" />
-                        <stop offset="100%" stopColor="#059669" stopOpacity="0.0" />
-                      </linearGradient>
-                      {/* Gradiente Mermas (Rojo Carmesí) */}
-                      <linearGradient id="grad-waste" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#dc2626" stopOpacity="0.30" />
-                        <stop offset="100%" stopColor="#dc2626" stopOpacity="0.0" />
-                      </linearGradient>
-                    </defs>
+            /* 2. MODO LÍNEAS / ÁREA SUAVE (Con ancho dinámico y decimación de fechas) */
+            <div className="space-y-2">
+              {activity.length > 10 && (
+                <div className="flex items-center justify-between text-[11px] text-[#8C522B] px-1">
+                  <span>Mostrando {activity.length} días de actividad</span>
+                  <span className="hidden sm:inline-flex items-center gap-1 text-[#D97706] font-semibold">
+                    ← Desliza horizontalmente para explorar el historial →
+                  </span>
+                </div>
+              )}
+              <div className="overflow-x-auto pb-3 scrollbar-thin scrollbar-thumb-[#DECDBB] hover:scrollbar-thumb-[#B45309]/50">
+                <div style={{ minWidth: `${svgMetrics.width}px` }}>
+                  <div className="relative h-60 w-full">
+                    <svg
+                      viewBox={`0 0 ${svgMetrics.width} ${svgMetrics.height}`}
+                      className="h-full w-full overflow-visible"
+                    >
+                      <defs>
+                        {/* Gradiente Producción (Azul Cobalto) */}
+                        <linearGradient id="grad-prod" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#2563eb" stopOpacity="0.30" />
+                          <stop offset="100%" stopColor="#2563eb" stopOpacity="0.0" />
+                        </linearGradient>
+                        {/* Gradiente Ventas (Verde Esmeralda) */}
+                        <linearGradient id="grad-sold" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#059669" stopOpacity="0.30" />
+                          <stop offset="100%" stopColor="#059669" stopOpacity="0.0" />
+                        </linearGradient>
+                        {/* Gradiente Mermas (Rojo Carmesí) */}
+                        <linearGradient id="grad-waste" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#dc2626" stopOpacity="0.30" />
+                          <stop offset="100%" stopColor="#dc2626" stopOpacity="0.0" />
+                        </linearGradient>
+                      </defs>
 
-                    {/* Guías Horizontales */}
-                    {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
-                      const y = svgMetrics.paddingTop + svgMetrics.innerHeight * (1 - ratio)
-                      const val = Math.round(maxActivity * ratio)
-                      return (
-                        <g key={ratio}>
-                          <line
-                            x1={svgMetrics.paddingLeft}
-                            y1={y}
-                            x2={svgMetrics.width - 20}
-                            y2={y}
-                            stroke="#E8DCCB"
-                            strokeOpacity="0.8"
-                            strokeDasharray={ratio === 0 ? "none" : "3,3"}
-                          />
-                          <text
-                            x={svgMetrics.paddingLeft - 8}
-                            y={y + 3}
-                            textAnchor="end"
-                            fontSize="10"
-                            fontWeight="600"
-                            fill="#8C522B"
-                          >
-                            {val}
-                          </text>
-                        </g>
-                      )
-                    })}
-
-                    {/* Áreas Rellenas con Gradiente (si chartType === 'area') */}
-                    {chartType === "area" && (
-                      <>
-                        <path d={svgMetrics.areaProduced} fill="url(#grad-prod)" />
-                        <path d={svgMetrics.areaSold} fill="url(#grad-sold)" />
-                        <path d={svgMetrics.areaWaste} fill="url(#grad-waste)" />
-                      </>
-                    )}
-
-                    {/* Líneas de Tendencia de Alto Contraste */}
-                    <path
-                      d={svgMetrics.pathProduced}
-                      fill="none"
-                      stroke="#2563eb"
-                      strokeWidth="2.75"
-                      strokeLinecap="round"
-                    />
-                    <path
-                      d={svgMetrics.pathSold}
-                      fill="none"
-                      stroke="#059669"
-                      strokeWidth="2.75"
-                      strokeLinecap="round"
-                    />
-                    <path
-                      d={svgMetrics.pathWaste}
-                      fill="none"
-                      stroke="#dc2626"
-                      strokeWidth="2.75"
-                      strokeLinecap="round"
-                    />
-
-                    {/* Puntos y Etiquetas X */}
-                    {activity.map((item, idx) => {
-                      const ptProd = svgMetrics.pointsProduced[idx]
-                      const ptSold = svgMetrics.pointsSold[idx]
-                      const ptWaste = svgMetrics.pointsWaste[idx]
-                      const isHovered = hoveredIndex === idx
-
-                      const dateObj = new Date(`${item.date}T12:00:00`)
-                      const label = dateObj.toLocaleDateString("es-GT", { weekday: "short" }).replace(".", "")
-                      const dayNum = dateObj.getDate()
-
-                      return (
-                        <g
-                          key={item.date}
-                          onMouseEnter={() => setHoveredIndex(idx)}
-                          onMouseLeave={() => setHoveredIndex(null)}
-                          className="cursor-pointer"
-                        >
-                          {/* Línea vertical en hover */}
-                          {isHovered && (
+                      {/* Guías Horizontales con Escala */}
+                      {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
+                        const y = svgMetrics.paddingTop + svgMetrics.innerHeight * (1 - ratio)
+                        const val = Math.round(maxActivity * ratio)
+                        return (
+                          <g key={ratio}>
                             <line
-                              x1={ptProd.x}
-                              y1={svgMetrics.paddingTop}
-                              x2={ptProd.x}
-                              y2={svgMetrics.baselineY}
-                              stroke="#8C522B"
-                              strokeOpacity="0.35"
-                              strokeWidth="1.5"
-                              strokeDasharray="2,2"
+                              x1={svgMetrics.paddingLeft}
+                              y1={y}
+                              x2={svgMetrics.width - svgMetrics.paddingRight}
+                              y2={y}
+                              stroke="#E8DCCB"
+                              strokeOpacity="0.8"
+                              strokeDasharray={ratio === 0 ? "none" : "3,3"}
                             />
-                          )}
+                            <text
+                              x={svgMetrics.paddingLeft - 8}
+                              y={y + 3}
+                              textAnchor="end"
+                              fontSize="10"
+                              fontWeight="600"
+                              fill="#8C522B"
+                            >
+                              {val}
+                            </text>
+                          </g>
+                        )
+                      })}
 
-                          {/* Punto Producción (Azul) */}
-                          <circle
-                            cx={ptProd.x}
-                            cy={ptProd.y}
-                            r={isHovered ? "5.5" : "3.5"}
-                            fill="#2563eb"
-                            stroke="#ffffff"
-                            strokeWidth="2"
-                            className="transition-all"
-                          />
-                          {/* Punto Venta (Verde) */}
-                          <circle
-                            cx={ptSold.x}
-                            cy={ptSold.y}
-                            r={isHovered ? "5.5" : "3.5"}
-                            fill="#059669"
-                            stroke="#ffffff"
-                            strokeWidth="2"
-                            className="transition-all"
-                          />
-                          {/* Punto Merma (Rojo) */}
-                          <circle
-                            cx={ptWaste.x}
-                            cy={ptWaste.y}
-                            r={isHovered ? "5.5" : "3.5"}
-                            fill="#dc2626"
-                            stroke="#ffffff"
-                            strokeWidth="2"
-                            className="transition-all"
-                          />
+                      {/* Áreas Rellenas con Gradiente (si chartType === 'area') */}
+                      {chartType === "area" && (
+                        <>
+                          <path d={svgMetrics.areaProduced} fill="url(#grad-prod)" />
+                          <path d={svgMetrics.areaSold} fill="url(#grad-sold)" />
+                          <path d={svgMetrics.areaWaste} fill="url(#grad-waste)" />
+                        </>
+                      )}
 
-                          {/* Etiqueta Eje X */}
-                          <text
-                            x={ptProd.x}
-                            y={svgMetrics.baselineY + 15}
-                            textAnchor="middle"
-                            fontSize="10"
-                            fontWeight={isHovered ? "bold" : "600"}
-                            fill="#2B170F"
-                            opacity={isHovered ? "1" : "0.75"}
+                      {/* Líneas de Tendencia de Alto Contraste */}
+                      {svgMetrics.pathProduced && (
+                        <path
+                          d={svgMetrics.pathProduced}
+                          fill="none"
+                          stroke="#2563eb"
+                          strokeWidth="2.75"
+                          strokeLinecap="round"
+                        />
+                      )}
+                      {svgMetrics.pathSold && (
+                        <path
+                          d={svgMetrics.pathSold}
+                          fill="none"
+                          stroke="#059669"
+                          strokeWidth="2.75"
+                          strokeLinecap="round"
+                        />
+                      )}
+                      {svgMetrics.pathWaste && (
+                        <path
+                          d={svgMetrics.pathWaste}
+                          fill="none"
+                          stroke="#dc2626"
+                          strokeWidth="2.75"
+                          strokeLinecap="round"
+                        />
+                      )}
+
+                      {/* Puntos y Etiquetas X con Decimación Inteligente */}
+                      {activity.map((item, idx) => {
+                        const ptProd = svgMetrics.pointsProduced[idx]
+                        const ptSold = svgMetrics.pointsSold[idx]
+                        const ptWaste = svgMetrics.pointsWaste[idx]
+                        const isHovered = hoveredIndex === idx
+
+                        const dateObj = new Date(`${item.date}T12:00:00`)
+                        const label = activity.length > 14
+                          ? dateObj.toLocaleDateString("es-GT", { month: "short" }).replace(".", "")
+                          : dateObj.toLocaleDateString("es-GT", { weekday: "short" }).replace(".", "")
+                        const dayNum = dateObj.getDate()
+
+                        // Decimación inteligente para evitar solapamiento en rangos grandes
+                        const stepTick = activity.length > 24 ? 3 : activity.length > 14 ? 2 : 1
+                        const showTick = idx === 0 || idx === activity.length - 1 || idx % stepTick === 0
+
+                        return (
+                          <g
+                            key={item.date}
+                            onMouseEnter={() => setHoveredIndex(idx)}
+                            onMouseLeave={() => setHoveredIndex(null)}
+                            onClick={() => setHoveredIndex(hoveredIndex === idx ? null : idx)}
+                            className="cursor-pointer"
                           >
-                            {dayNum} {label}
-                          </text>
-                        </g>
-                      )
-                    })}
-                  </svg>
+                            {/* Línea vertical en hover */}
+                            {isHovered && (
+                              <line
+                                x1={ptProd.x}
+                                y1={svgMetrics.paddingTop}
+                                x2={ptProd.x}
+                                y2={svgMetrics.baselineY}
+                                stroke="#8C522B"
+                                strokeOpacity="0.4"
+                                strokeWidth="1.5"
+                                strokeDasharray="2,2"
+                              />
+                            )}
+
+                            {/* Punto Producción (Azul) */}
+                            <circle
+                              cx={ptProd.x}
+                              cy={ptProd.y}
+                              r={isHovered ? "6" : "3.5"}
+                              fill="#2563eb"
+                              stroke="#ffffff"
+                              strokeWidth="2"
+                              className="transition-all"
+                            />
+                            {/* Punto Venta (Verde) */}
+                            <circle
+                              cx={ptSold.x}
+                              cy={ptSold.y}
+                              r={isHovered ? "6" : "3.5"}
+                              fill="#059669"
+                              stroke="#ffffff"
+                              strokeWidth="2"
+                              className="transition-all"
+                            />
+                            {/* Punto Merma (Rojo) */}
+                            <circle
+                              cx={ptWaste.x}
+                              cy={ptWaste.y}
+                              r={isHovered ? "6" : "3.5"}
+                              fill="#dc2626"
+                              stroke="#ffffff"
+                              strokeWidth="2"
+                              className="transition-all"
+                            />
+
+                            {/* Etiqueta Eje X (Solo si showTick es true o en hover) */}
+                            {(showTick || isHovered) && (
+                              <text
+                                x={ptProd.x}
+                                y={svgMetrics.baselineY + 16}
+                                textAnchor="middle"
+                                fontSize="10"
+                                fontWeight={isHovered ? "bold" : "600"}
+                                fill={isHovered ? "#D97706" : "#2B170F"}
+                                opacity={isHovered ? "1" : "0.75"}
+                              >
+                                {dayNum} {label}
+                              </text>
+                            )}
+                          </g>
+                        )
+                      })}
+                    </svg>
+                  </div>
                 </div>
               </div>
             </div>
           )}
         </div>
 
-        {/* Tarjeta de Detalle en Hover */}
+        {/* Tarjeta de Detalle en Hover / Selección */}
         {hoveredIndex !== null && activity[hoveredIndex] && (
-          <div className="rounded-2xl border border-[#DECDBB] bg-[#FAF5EE] p-3 text-xs flex flex-wrap items-center justify-between gap-3 animate-in fade-in">
-            <span className="font-bold text-[#2B170F]">
-              {new Date(`${activity[hoveredIndex].date}T12:00:00`).toLocaleDateString("es-GT", {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-              })}
-            </span>
-            <div className="flex items-center gap-4">
+          <div className="rounded-2xl border border-[#DECDBB] bg-[#FAF5EE] p-3.5 text-xs flex flex-wrap items-center justify-between gap-3 animate-in fade-in shadow-2xs">
+            <div className="flex items-center gap-2">
+              <CalendarDays className="h-4 w-4 text-[#D97706]" />
+              <span className="font-bold text-[#2B170F]">
+                {new Date(`${activity[hoveredIndex].date}T12:00:00`).toLocaleDateString("es-GT", {
+                  weekday: "long",
+                  day: "numeric",
+                  month: "long",
+                })}
+              </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-4">
               <span className="inline-flex items-center gap-1.5 font-bold text-blue-700">
                 <i className="h-2.5 w-2.5 rounded-full bg-blue-600" />
-                Producción: <strong>{activity[hoveredIndex].produced}</strong> uds
+                Producción: <strong>{activity[hoveredIndex].produced.toLocaleString()}</strong> uds
               </span>
               <span className="inline-flex items-center gap-1.5 font-bold text-emerald-700">
                 <i className="h-2.5 w-2.5 rounded-full bg-emerald-600" />
-                Ventas: <strong>{activity[hoveredIndex].sold}</strong> uds
+                Ventas: <strong>{activity[hoveredIndex].sold.toLocaleString()}</strong> uds
               </span>
               <span className="inline-flex items-center gap-1.5 font-bold text-red-600">
                 <i className="h-2.5 w-2.5 rounded-full bg-red-600" />
-                Mermas: <strong>{activity[hoveredIndex].waste}</strong> uds
+                Mermas: <strong>{activity[hoveredIndex].waste.toLocaleString()}</strong> uds
               </span>
             </div>
           </div>

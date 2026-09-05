@@ -7,7 +7,6 @@ import Image from "next/image"
 import { useAuth } from "@/context/AuthContext"
 import { ToastProvider } from "@/components/ui/toast"
 import { LayoutDashboard, Package, ShoppingCart, Users, Settings, LogOut, ChevronLeft, ChevronRight, Menu, Bell, User, Warehouse, Tag, Building2, X, Factory as History, Flame, BookOpen, ChartBar as BarChart3, ArrowRightLeft, ChevronDown, ClipboardCheck, CalendarClock } from "lucide-react"
-import { GlobalSearch } from "@/components/ui/global-search"
 import NotificationBell from "@/components/layout/NotificationBell"
 
 const OPERATIONAL_ROLES = ['ADMIN', 'MANAGER', 'BAKER']
@@ -388,11 +387,6 @@ export default function AdminLayout({
                 />
               </div>
             </Link>
-            
-            {/* Global Search - Ctrl+K */}
-            <div className="hidden sm:flex items-center">
-              <GlobalSearch />
-            </div>
           </div>
 
           {/* Right: Notifications + User Badge */}

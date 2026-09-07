@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Plus, Search, CreditCard as Edit, Trash2, ChevronLeft, ChevronRight, Image as ImageIcon, X, Eye, EyeOff } from "lucide-react"
+import { Plus, Search, Edit2, Trash2, ChevronLeft, ChevronRight, Image as ImageIcon, X, Eye, EyeOff, Package } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { ProductThumbnail } from "@/components/ui/product-image"
@@ -12,6 +12,9 @@ import { useAuth } from "@/context/AuthContext"
 import { productsService, adminService } from "@/lib/api"
 import type { ApiProduct } from "@/lib/api/types"
 import { formatPrice } from "@/lib/utils"
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader"
+import { AdminSearchBar } from "@/components/admin/AdminSearchBar"
+import { AdminEntityCard } from "@/components/admin/AdminEntityCard"
 
 export default function AdminProductosPage() {
   const router = useRouter()
@@ -128,7 +131,7 @@ export default function AdminProductosPage() {
       loadProducts(currentPage, searchQuery, statusFilter)
     } catch (error) {
       console.error("Error deleting product:", error)
-      showToast("Error al eliminar el producto. Puede que esté referenciado en órdenes.", "error")
+      showToast("No se puede eliminar porque este producto tiene ventas registradas en el historial. Puedes ocultarlo de la tienda web para darlo de baja de forma segura.", "error")
     } finally {
       setIsDeleting(false)
     }
@@ -136,83 +139,52 @@ export default function AdminProductosPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="font-display text-2xl sm:text-3xl font-bold text-[#2B170F]">Productos</h1>
-          <p className="text-xs sm:text-sm text-[#6E5545] mt-1">Gestión del catálogo, precios y disponibilidad</p>
-        </div>
-        {canManageCatalog && (
-          <Link href="/admin/productos/nuevo">
-            <Button className="bg-[#D97706] hover:bg-[#B45309] text-white font-bold rounded-xl shadow-xs w-full sm:w-auto">
-              <Plus className="h-4 w-4 mr-2" />
-              Nuevo Producto
-            </Button>
-          </Link>
-        )}
-      </div>
+      {/* Header Estandarizado */}
+      <AdminPageHeader
+        title="Productos"
+        description="Gestión del catálogo, precios de venta y visibilidad en la tienda e-commerce"
+        icon={Package}
+        action={
+          canManageCatalog
+            ? {
+                label: "Nuevo Producto",
+                href: "/admin/productos/nuevo",
+                icon: Plus,
+              }
+            : undefined
+        }
+      />
 
-      {/* Search and Filters */}
-      <div className="bg-white rounded-2xl shadow-xs border border-[#E8DCCB] p-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <form onSubmit={handleSearch} className="flex-1 flex gap-2 w-full">
-          <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8C522B]" />
-            <input
-              type="text"
-              placeholder="Buscar productos por nombre..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-10 py-2 text-xs sm:text-sm bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] placeholder:text-[#8C522B]/60 focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={handleClearSearch}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8C522B] hover:text-[#2B170F] transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-          <Button type="submit" variant="outline" disabled={isLoading} className="border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] rounded-xl text-xs font-bold">
-            Buscar
-          </Button>
-        </form>
-
-        {/* State filters tabs */}
-        <div className="flex bg-[#FAF5EE] p-1 rounded-xl border border-[#DECDBB] w-full sm:w-auto justify-center sm:justify-start">
-          <button
-            onClick={() => setStatusFilter('all')}
-            className={`flex-1 sm:flex-initial px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all ${
-              statusFilter === 'all'
-                ? 'bg-white text-[#D97706] shadow-2xs'
-                : 'text-[#6E5545] hover:text-[#2B170F]'
-            }`}
-          >
-            Todos
-          </button>
-          <button
-            onClick={() => setStatusFilter('active')}
-            className={`flex-1 sm:flex-initial px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all ${
-              statusFilter === 'active'
-                ? 'bg-white text-[#D97706] shadow-2xs'
-                : 'text-[#6E5545] hover:text-[#2B170F]'
-            }`}
-          >
-            Activos
-          </button>
-          <button
-            onClick={() => setStatusFilter('inactive')}
-            className={`flex-1 sm:flex-initial px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all ${
-              statusFilter === 'inactive'
-                ? 'bg-white text-[#D97706] shadow-2xs'
-                : 'text-[#6E5545] hover:text-[#2B170F]'
-            }`}
-          >
-            Ocultos
-          </button>
-        </div>
-      </div>
+      {/* Búsqueda y Filtros Táctiles Estandarizados */}
+      <AdminSearchBar
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        onSearchSubmit={handleSearch}
+        placeholder="Buscar productos por nombre..."
+        chips={[
+          {
+            id: "all",
+            label: "Todos",
+            active: statusFilter === "all",
+            onClick: () => setStatusFilter("all"),
+          },
+          {
+            id: "active",
+            label: "Activos en Web",
+            active: statusFilter === "active",
+            onClick: () => setStatusFilter("active"),
+          },
+          {
+            id: "inactive",
+            label: "Ocultos de la Web",
+            active: statusFilter === "inactive",
+            onClick: () => setStatusFilter("inactive"),
+          },
+        ]}
+        filteredCount={products.length}
+        entityName="productos en esta página"
+        isLoading={isLoading}
+      />
 
       {/* Products Table Container */}
       <div className="bg-white rounded-2xl shadow-xs border border-[#E8DCCB] overflow-hidden">
@@ -253,71 +225,108 @@ export default function AdminProductosPage() {
           </div>
         ) : (
           <>
-            {/* Mobile Card Layout */}
-            <div className="md:hidden divide-y divide-[#E8DCCB]">
+            {/* Mobile Card Layout Estandarizado */}
+            <div className="md:hidden p-4 space-y-3">
               {products.map((product) => (
-                <div key={product.id} className="p-4 hover:bg-[#FAF5EE]/40 transition-colors">
-                  <div className="flex items-start gap-3">
+                <AdminEntityCard
+                  key={product.id}
+                  dimmed={!product.isActive}
+                  image={
                     <ProductThumbnail
                       src={product.images?.[0]?.url}
                       alt={product.name}
                       category={product.categorySlug || product.category}
                       size={56}
                     />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <p className="font-bold text-xs text-[#2B170F] truncate max-w-[130px]">{product.name}</p>
-                        {!product.isActive && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-red-700 border border-red-200">
-                            Oculto
-                          </span>
-                        )}
-                        {product.isNew && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-[#9E4D1A] border border-amber-200">
-                            Nuevo
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[11px] text-[#8C522B] mt-0.5 font-medium">{product.category}</p>
-                      <div className="flex items-center gap-3 mt-2">
-                        <span className="font-bold text-[#2B170F] text-xs">{formatPrice(product.basePrice)}</span>
-                        <span className={`text-[11px] font-bold ${
-                          (product.available || 0) > 10 ? "text-emerald-700" : 
-                          (product.available || 0) > 0 ? "text-[#D97706]" : "text-red-700"
-                        }`}>
-                          Stock: {product.available || 0}
+                  }
+                  title={product.name}
+                  subtitle={
+                    <span>
+                      {product.category}
+                      {product.origin && (
+                        <span className="text-[#8C522B]"> · {product.origin === "PRODUCIDO" ? "Panadería" : "Reventa"}</span>
+                      )}
+                    </span>
+                  }
+                  badges={
+                    <>
+                      {!product.isActive ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-red-700 border border-red-200">
+                          Oculto en Web
                         </span>
-                      </div>
-                    </div>
-                    {canManageCatalog && (
-                      <div className="flex items-center gap-1 shrink-0">
-                        <Link href={`/admin/productos/${product.id}/editar`}>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-[#6E5545] hover:text-[#2B170F] hover:bg-[#FAF5EE]" title="Editar">
-                            <Edit className="h-3.5 w-3.5" />
-                          </Button>
+                      ) : !product.isAvailable ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-[#9E4D1A] border border-amber-200">
+                          No disponible
+                        </span>
+                      ) : product.isNew ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-[#9E4D1A] border border-amber-200">
+                          Nuevo
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          Activo en Web
+                        </span>
+                      )}
+                    </>
+                  }
+                  meta={[
+                    {
+                      label: "Precio Base",
+                      value: formatPrice(product.basePrice),
+                    },
+                    {
+                      label: "Stock Vendible",
+                      value: `${product.available || 0} uds`,
+                      highlight: (product.available || 0) > 0,
+                      alert: (product.available || 0) === 0,
+                    },
+                  ]}
+                  actions={
+                    canManageCatalog && (
+                      <div className="flex flex-wrap items-center gap-2 w-full">
+                        <Link href={`/admin/productos/${product.id}/editar`} className="flex-1 min-w-[90px]">
+                          <button
+                            type="button"
+                            className="w-full h-10 px-3 bg-white border border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] rounded-xl font-bold text-xs shadow-2xs inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                          >
+                            <Edit2 className="h-3.5 w-3.5 text-[#8C522B]" />
+                            <span>Editar</span>
+                          </button>
                         </Link>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className={`h-8 w-8 ${product.isActive ? 'text-[#8C522B] hover:text-[#2B170F]' : 'text-[#D97706] hover:bg-[#FAF0E6]'}`}
+                        <button
+                          type="button"
                           onClick={() => handleToggleActive(product)}
-                          title={product.isActive ? 'Ocultar producto' : 'Mostrar producto'}
+                          className={`flex-1 min-w-[110px] h-10 px-3 border rounded-xl font-bold text-xs shadow-2xs inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                            product.isActive
+                              ? "bg-white border-[#DECDBB] text-[#6E5545] hover:bg-[#FAF5EE] hover:text-[#2B170F]"
+                              : "bg-[#FAF0E6] border-[#DECDBB] text-[#D97706] hover:bg-amber-100"
+                          }`}
                         >
-                          {product.isActive ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          {product.isActive ? (
+                            <>
+                              <EyeOff className="h-3.5 w-3.5 text-[#8C522B]" />
+                              <span>Ocultar Web</span>
+                            </>
+                          ) : (
+                            <>
+                              <Eye className="h-3.5 w-3.5 text-[#D97706]" />
+                              <span>Mostrar Web</span>
+                            </>
+                          )}
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => openDeleteModal(product)}
-                          title="Eliminar"
+                          className="h-10 px-3 bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 rounded-xl font-bold text-xs inline-flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                          title="Eliminar producto"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                          <span>Eliminar</span>
+                        </button>
                       </div>
-                    )}
-                  </div>
-                </div>
+                    )
+                  }
+                />
               ))}
             </div>
 
@@ -391,29 +400,50 @@ export default function AdminProductosPage() {
                       </td>
                       <td className="px-6 py-3.5 text-right">
                         {canManageCatalog && (
-                          <div className="flex items-center justify-end gap-1">
+                          <div className="flex items-center justify-end gap-1.5 whitespace-nowrap">
                             <Link href={`/admin/productos/${product.id}/editar`}>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-[#6E5545] hover:text-[#2B170F] hover:bg-[#FAF5EE]" title="Editar producto">
-                                <Edit className="h-4 w-4" />
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 px-2.5 border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] text-xs font-bold"
+                                title="Editar producto"
+                              >
+                                <Edit2 className="h-3.5 w-3.5 mr-1 text-[#8C522B]" />
+                                Editar
                               </Button>
                             </Link>
                             <Button
-                              variant="ghost"
+                              variant="outline"
                               size="sm"
-                              className={`h-8 w-8 p-0 ${product.isActive ? 'text-[#8C522B] hover:text-[#2B170F]' : 'text-[#D97706] hover:bg-[#FAF0E6]'}`}
+                              className={`h-8 px-2.5 text-xs font-bold ${
+                                product.isActive
+                                  ? "border-[#DECDBB] text-[#6E5545] hover:bg-[#FAF5EE] hover:text-[#2B170F]"
+                                  : "border-amber-200 bg-[#FAF0E6] text-[#D97706] hover:bg-amber-100"
+                              }`}
                               onClick={() => handleToggleActive(product)}
-                              title={product.isActive ? 'Ocultar producto' : 'Mostrar producto'}
+                              title={product.isActive ? "Ocultar producto de la tienda web" : "Mostrar producto en la tienda web"}
                             >
-                              {product.isActive ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              {product.isActive ? (
+                                <>
+                                  <EyeOff className="h-3.5 w-3.5 mr-1 text-[#8C522B]" />
+                                  Ocultar
+                                </>
+                              ) : (
+                                <>
+                                  <Eye className="h-3.5 w-3.5 mr-1 text-[#D97706]" />
+                                  Mostrar
+                                </>
+                              )}
                             </Button>
                             <Button
-                              variant="ghost"
+                              variant="outline"
                               size="sm"
-                              className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              className="h-8 px-2.5 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 text-xs font-bold"
                               onClick={() => openDeleteModal(product)}
                               title="Eliminar producto"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-3.5 w-3.5 mr-1" />
+                              Eliminar
                             </Button>
                           </div>
                         )}

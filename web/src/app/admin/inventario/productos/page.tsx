@@ -2,21 +2,35 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react"
 import Link from "next/link"
-import { Package, RefreshCw, Plus, Search, TriangleAlert as AlertTriangle, ChevronLeft, ChevronRight, Warehouse } from "lucide-react"
+import { 
+  Package, 
+  RefreshCw, 
+  Plus, 
+  ChevronLeft, 
+  ChevronRight, 
+  Trash2,
+  ArrowLeftRight,
+  AlertTriangle
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { 
   inventoryService, 
-  branchesService,
-  type InventoryItem
+  branchesService, 
+  type InventoryItem 
 } from "@/lib/api"
 import { formatDateString } from "@/lib/utils"
 import { useToast } from "@/components/ui/toast"
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader"
+import { AdminSearchBar, type FilterChip } from "@/components/admin/AdminSearchBar"
+import { AdminEntityCard } from "@/components/admin/AdminEntityCard"
 
 interface Branch {
   id: number
   name: string
   slug: string
 }
+
+type StockFilter = "all" | "low" | "out"
 
 export default function ProductosInventarioPage() {
   const [inventory, setInventory] = useState<InventoryItem[]>([])
@@ -27,7 +41,7 @@ export default function ProductosInventarioPage() {
   // Filtros
   const [selectedBranch, setSelectedBranch] = useState<string>("all")
   const [searchQuery, setSearchQuery] = useState("")
-  const [showLowStock, setShowLowStock] = useState(false)
+  const [stockFilter, setStockFilter] = useState<StockFilter>("all")
 
   // Paginación
   const ITEMS_PER_PAGE = 10
@@ -56,334 +70,385 @@ export default function ProductosInventarioPage() {
   }, [showToast])
 
   useEffect(() => {
-    // This effect starts the asynchronous inventory load on mount.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadData()
   }, [loadData])
 
   // Filtrar inventario
-  const filteredInventory = useMemo(() => inventory.filter(item => {
-    if (selectedBranch !== "all" && item.branch.slug !== selectedBranch) {
-      return false
-    }
-    if (showLowStock && item.available >= 10) {
-      return false
-    }
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase()
-      return item.product.name.toLowerCase().includes(query) ||
-             item.branch.name.toLowerCase().includes(query)
-    }
-    return true
-  }), [inventory, selectedBranch, showLowStock, searchQuery])
+  const filteredInventory = useMemo(() => {
+    return inventory.filter(item => {
+      if (selectedBranch !== "all" && item.branch.slug !== selectedBranch) {
+        return false
+      }
+      if (stockFilter === "low" && (item.available >= 10 || item.available === 0)) {
+        return false
+      }
+      if (stockFilter === "out" && item.available > 0) {
+        return false
+      }
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase()
+        return item.product.name.toLowerCase().includes(query) ||
+               item.branch.name.toLowerCase().includes(query) ||
+               item.product.slug.toLowerCase().includes(query)
+      }
+      return true
+    })
+  }, [inventory, selectedBranch, stockFilter, searchQuery])
 
   // Resetear página al cambiar filtros
   useEffect(() => {
-    // Reset pagination after a filter change.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentPage(1)
-  }, [selectedBranch, searchQuery, showLowStock])
+  }, [selectedBranch, searchQuery, stockFilter])
 
   // Paginación del inventario
-  const totalPages = Math.ceil(filteredInventory.length / ITEMS_PER_PAGE)
-  const paginatedInventory = filteredInventory.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  )
+  const totalPages = Math.max(1, Math.ceil(filteredInventory.length / ITEMS_PER_PAGE))
+  const paginatedInventory = useMemo(() => {
+    return filteredInventory.slice(
+      (currentPage - 1) * ITEMS_PER_PAGE,
+      currentPage * ITEMS_PER_PAGE
+    )
+  }, [filteredInventory, currentPage])
+
+  // Contadores para chips
+  const lowStockCount = useMemo(() => {
+    return inventory.filter(i => i.available > 0 && i.available < 10).length
+  }, [inventory])
+
+  const outOfStockCount = useMemo(() => {
+    return inventory.filter(i => i.available === 0).length
+  }, [inventory])
+
+  const filterChips: FilterChip[] = useMemo(() => {
+    const chips: FilterChip[] = [
+      {
+        id: "all",
+        label: "Todos",
+        count: inventory.length,
+        active: stockFilter === "all",
+        onClick: () => setStockFilter("all"),
+      },
+    ]
+
+    if (lowStockCount > 0) {
+      chips.push({
+        id: "low",
+        label: "Stock Bajo",
+        count: lowStockCount,
+        active: stockFilter === "low",
+        onClick: () => setStockFilter("low"),
+      })
+    }
+
+    if (outOfStockCount > 0) {
+      chips.push({
+        id: "out",
+        label: "Agotados",
+        count: outOfStockCount,
+        active: stockFilter === "out",
+        onClick: () => setStockFilter("out"),
+      })
+    }
+
+    return chips
+  }, [inventory.length, lowStockCount, outOfStockCount, stockFilter])
 
   const formatDate = (dateStr: string) => formatDateString(dateStr, {
     day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
   })
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 bg-cream min-h-screen">
-      {/* Breadcrumb & Header */}
-      <div className="mb-6">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-          <Link href="/admin/inventario" className="hover:text-primary transition-colors flex items-center gap-1">
-            <Warehouse className="h-3.5 w-3.5" />
-            Inventario
-          </Link>
-          <span>/</span>
-          <span className="text-foreground font-medium">Productos</span>
-        </div>
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-3">
-              <Package className="h-7 w-7 sm:h-8 sm:w-8 text-primary" />
-              Productos Terminados
-            </h1>
-            <p className="text-muted-foreground mt-1">Detalle de existencias de pan y repostería por sucursal</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={loadData}
-              disabled={isLoading}
-              className="flex items-center gap-2 px-4 py-2 bg-card border border-border rounded-lg text-foreground hover:bg-cream disabled:opacity-50 w-full sm:w-auto justify-center shadow-sm text-sm font-medium"
-            >
-              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-              Actualizar
-            </button>
-            <Link
-              href="/admin/inventario/movimiento"
-              className="flex items-center gap-2 px-4 py-2 bg-accent0 hover:bg-primary text-white rounded-lg transition-colors w-full sm:w-auto justify-center shadow-sm text-sm font-bold"
-            >
-              <Plus className="h-4 w-4" />
-              Nuevo Movimiento
-            </Link>
-          </div>
-        </div>
-      </div>
+    <div className="space-y-6 max-w-7xl mx-auto pb-16">
+      {/* ── Header Estandarizado ── */}
+      <AdminPageHeader
+        title="Productos Terminados"
+        description="Existencias en tiempo real de panes, pasteles y repostería por sucursal"
+        icon={<Package className="h-6 w-6 text-[#D97706]" />}
+        breadcrumbs={[
+          { label: "Inventario", href: "/admin/inventario" },
+          { label: "Productos" },
+        ]}
+        primaryAction={{
+          label: "Nuevo Movimiento",
+          href: "/admin/inventario/movimiento",
+          icon: <Plus className="h-4 w-4 mr-1.5" />,
+        }}
+        secondaryAction={{
+          label: "Actualizar",
+          onClick: () => void loadData(),
+          icon: <RefreshCw className={`h-4 w-4 mr-1.5 ${isLoading ? "animate-spin" : ""}`} />,
+        }}
+      />
 
       {error && (
-        <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive flex items-center gap-2">
-          <AlertTriangle className="h-5 w-5" />
-          {error}
+        <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-2xl text-destructive text-sm flex items-center gap-2 font-medium">
+          <AlertTriangle className="h-5 w-5 shrink-0" />
+          <span>{error}</span>
         </div>
       )}
 
-      {/* Tabla e info */}
-      <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
-        {/* Filtros */}
-        <div className="p-4 bg-cream/50 border-b border-border">
-          <div className="flex flex-wrap items-center gap-4">
-            {/* Búsqueda */}
-            <div className="relative flex-1 min-w-[240px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
-              <input
-                type="text"
-                placeholder="Buscar producto por nombre..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-card text-sm"
-              />
-            </div>
-
-            {/* Filtro por sucursal */}
-            <select
-              value={selectedBranch}
-              onChange={(e) => setSelectedBranch(e.target.value)}
-              className="border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary bg-card text-sm"
-            >
-              <option value="all">Todas las sucursales</option>
-              {branches.map(branch => (
-                <option key={branch.id} value={branch.slug}>{branch.name}</option>
-              ))}
-            </select>
-
-            {/* Toggle stock bajo */}
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={showLowStock}
-                onChange={(e) => setShowLowStock(e.target.checked)}
-                className="w-4 h-4 text-primary rounded focus:ring-primary"
-              />
-              <span className="text-sm text-muted-foreground">
-                Solo stock bajo
-              </span>
-            </label>
-
-            {/* Contador */}
-            <div className="text-sm text-muted-foreground ml-auto font-medium">
-              {filteredInventory.length} de {inventory.length} registros
-            </div>
-          </div>
+      {/* ── Buscador y Filtros Estandarizados ── */}
+      <AdminSearchBar
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        placeholder="Buscar producto por nombre o sucursal..."
+        chips={filterChips}
+        totalCount={inventory.length}
+        filteredCount={filteredInventory.length}
+        entityName="productos"
+        isLoading={isLoading}
+      >
+        {/* Selector de Sucursal */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-[#8C522B] uppercase tracking-wider hidden sm:inline">
+            Sucursal:
+          </span>
+          <select
+            value={selectedBranch}
+            onChange={(e) => setSelectedBranch(e.target.value)}
+            className="h-10 px-3 text-xs sm:text-sm bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] font-medium focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
+          >
+            <option value="all">Todas las sucursales</option>
+            {branches.map(branch => (
+              <option key={branch.id} value={branch.slug}>{branch.name}</option>
+            ))}
+          </select>
         </div>
+      </AdminSearchBar>
 
-        {isLoading ? (
-          <div className="py-20 text-center text-muted-foreground/60">
-            <RefreshCw className="h-10 w-10 animate-spin text-primary mx-auto mb-3" />
-            <p>Cargando inventario de productos...</p>
+      {/* ── Contenido ── */}
+      {isLoading ? (
+        <div className="py-20 text-center text-[#8C522B]">
+          <RefreshCw className="h-8 w-8 animate-spin text-[#D97706] mx-auto mb-3" />
+          <p className="text-sm font-semibold">Cargando existencias de productos...</p>
+        </div>
+      ) : filteredInventory.length === 0 ? (
+        <div className="bg-white rounded-2xl shadow-xs border border-[#E8DCCB] p-12 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FAF0E6] text-[#D97706] mx-auto mb-4">
+            <Package className="h-7 w-7" />
           </div>
-        ) : (
-          <>
-            {/* Vista Mobile Cards */}
-            <div className="md:hidden divide-y divide-gray-100">
-              {paginatedInventory.length === 0 ? (
-                <div className="py-12 text-center text-muted-foreground/60">
-                  <Package className="h-12 w-12 mx-auto mb-3 text-muted-foreground/40" />
-                  <p>No se encontraron registros de inventario</p>
-                </div>
-              ) : (
-                paginatedInventory.map((item) => {
-                  const isLowStock = item.available < 10
-                  const isOutOfStock = item.available === 0
-                  return (
-                    <div key={`m-${item.product.id}-${item.branch.id}`} className="p-4 hover:bg-cream">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <Package className="h-5 w-5 text-primary" />
+          <h3 className="text-base font-bold text-[#2B170F] mb-1">
+            No se encontraron existencias
+          </h3>
+          <p className="text-xs text-[#6E5545] max-w-sm mx-auto mb-6">
+            Ajusta los filtros o registra una entrada de producción / movimiento de inventario.
+          </p>
+          <Link href="/admin/inventario/movimiento">
+            <Button className="bg-[#D97706] hover:bg-[#B45309] text-white font-bold rounded-xl shadow-xs text-xs h-11 px-5">
+              <Plus className="h-4 w-4 mr-2" />
+              Nuevo Movimiento
+            </Button>
+          </Link>
+        </div>
+      ) : (
+        <>
+          {/* ── Vista Móvil: Tarjetas Estandarizadas ── */}
+          <div className="md:hidden space-y-4">
+            {paginatedInventory.map((item) => {
+              const isOutOfStock = item.available === 0
+              const isLowStock = item.available > 0 && item.available < 10
+
+              return (
+                <AdminEntityCard
+                  key={`m-${item.product.id}-${item.branch.id}`}
+                  image={
+                    <div className="h-11 w-11 bg-[#FAF0E6] text-[#D97706] rounded-xl flex items-center justify-center shrink-0">
+                      <Package className="h-5 w-5" />
+                    </div>
+                  }
+                  title={item.product.name}
+                  subtitle={item.branch.name}
+                  badges={
+                    isOutOfStock ? (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-red-100 text-red-800 border border-red-200">
+                        Agotado
+                      </span>
+                    ) : isLowStock ? (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                        <AlertTriangle className="h-3 w-3 mr-1" />
+                        Stock Bajo
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        En Stock
+                      </span>
+                    )
+                  }
+                  meta={[
+                    {
+                      label: "Disponible",
+                      value: `${item.available} unidades`,
+                      alert: isOutOfStock || isLowStock,
+                      highlight: !isOutOfStock && !isLowStock,
+                    },
+                    {
+                      label: "Total / Reservado",
+                      value: `${item.quantity} (Res: ${item.reserved})`,
+                    },
+                  ]}
+                  actions={
+                    <>
+                      <Link
+                        href={`/admin/inventario/movimiento?producto=${item.product.slug}&sucursal=${item.branch.slug}`}
+                        className="flex-1"
+                      >
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="w-full h-10 px-3.5 border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] font-bold text-xs"
+                        >
+                          <ArrowLeftRight className="h-4 w-4 mr-1.5 text-[#8C522B]" />
+                          Movimiento
+                        </Button>
+                      </Link>
+
+                      {item.expiredQuantity ? (
+                        <Link
+                          href={`/admin/inventario/movimiento?producto=${item.product.slug}&sucursal=${item.branch.slug}&tipo=MERMA`}
+                          className="flex-1"
+                        >
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="w-full h-10 px-3.5 border-red-300 text-red-600 hover:bg-red-50 font-bold text-xs"
+                          >
+                            <Trash2 className="h-4 w-4 mr-1.5" />
+                            Merma ({item.expiredQuantity})
+                          </Button>
+                        </Link>
+                      ) : null}
+                    </>
+                  }
+                />
+              )
+            })}
+          </div>
+
+          {/* ── Vista Desktop: Tabla Limpia ── */}
+          <div className="hidden md:block bg-white rounded-2xl shadow-xs border border-[#E8DCCB] overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="bg-[#FAF5EE] border-b border-[#E8DCCB]">
+                  <tr>
+                    <th className="py-3.5 px-5 text-xs font-bold text-[#8C522B] uppercase tracking-wider">Producto</th>
+                    <th className="py-3.5 px-5 text-xs font-bold text-[#8C522B] uppercase tracking-wider">Sucursal</th>
+                    <th className="py-3.5 px-5 text-center text-xs font-bold text-[#8C522B] uppercase tracking-wider">Total</th>
+                    <th className="py-3.5 px-5 text-center text-xs font-bold text-[#8C522B] uppercase tracking-wider hidden lg:table-cell">Reservado</th>
+                    <th className="py-3.5 px-5 text-center text-xs font-bold text-[#8C522B] uppercase tracking-wider">Disponible</th>
+                    <th className="py-3.5 px-5 text-left text-xs font-bold text-[#8C522B] uppercase tracking-wider hidden xl:table-cell">Actualizado</th>
+                    <th className="py-3.5 px-5 text-right text-xs font-bold text-[#8C522B] uppercase tracking-wider">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#E8DCCB]/60">
+                  {paginatedInventory.map((item, index) => {
+                    const isOutOfStock = item.available === 0
+                    const isLowStock = item.available > 0 && item.available < 10
+
+                    return (
+                      <tr
+                        key={`${item.product.id}-${item.branch.id}`}
+                        className={`hover:bg-[#FAF5EE]/50 transition-colors ${
+                          index % 2 === 1 ? "bg-[#FAF5EE]/20" : ""
+                        }`}
+                      >
+                        <td className="py-3.5 px-5">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 bg-[#FAF0E6] text-[#D97706] rounded-xl flex items-center justify-center shrink-0">
+                              <Package className="h-5 w-5" />
+                            </div>
+                            <div>
+                              <p className="font-bold text-sm text-[#2B170F]">{item.product.name}</p>
+                              <p className="text-xs text-[#8C522B] font-mono">{item.product.slug}</p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-medium text-foreground">{item.product.name}</p>
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-chart-3/10 text-chart-3 mt-1">
-                              {item.branch.name}
-                            </span>
-                          </div>
-                        </div>
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-sm font-bold ${
-                          isOutOfStock 
-                            ? 'bg-destructive/10 text-destructive' 
-                            : isLowStock 
-                              ? 'bg-warning/10 text-warning'
-                              : 'bg-success/10 text-success'
-                        }`}>
-                          {item.available} disp.
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between mt-3">
-                        <div className="flex gap-4 text-sm text-muted-foreground">
-                          <span>Cant: <strong className="text-foreground">{item.quantity}</strong></span>
-                          <span>Res: <strong className="text-foreground">{item.reserved}</strong></span>
-                        </div>
-                        <div className="flex flex-col items-end gap-1">
+                        </td>
+                        <td className="py-3.5 px-5 text-sm font-medium text-[#2B170F]">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-bold bg-[#FAF0E6] text-[#D97706] border border-[#E8DCCB]">
+                            {item.branch.name}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-5 text-center font-mono font-medium text-sm text-[#2B170F]">
+                          {item.quantity}
+                        </td>
+                        <td className="py-3.5 px-5 text-center text-sm font-mono text-[#8C522B] hidden lg:table-cell">
+                          {item.reserved}
+                        </td>
+                        <td className="py-3.5 px-5 text-center">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold ${
+                            isOutOfStock
+                              ? "bg-red-100 text-red-800 border border-red-200"
+                              : isLowStock
+                              ? "bg-amber-100 text-amber-800 border border-amber-300"
+                              : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                          }`}>
+                            {item.available} disp.
+                          </span>
                           {item.expiredQuantity ? (
                             <Link
                               href={`/admin/inventario/movimiento?producto=${item.product.slug}&sucursal=${item.branch.slug}&tipo=MERMA`}
-                              className="text-[11px] font-semibold text-destructive hover:underline"
+                              className="mt-1 block text-[10px] font-bold text-red-600 hover:underline"
                             >
-                              {item.expiredQuantity} vencidas · Registrar merma
+                              {item.expiredQuantity} vencidas · merma
                             </Link>
                           ) : null}
+                        </td>
+                        <td className="py-3.5 px-5 text-xs text-[#6E5545] font-mono hidden xl:table-cell">
+                          {formatDate(item.updatedAt)}
+                        </td>
+                        <td className="py-3.5 px-5 text-right whitespace-nowrap">
                           <Link
                             href={`/admin/inventario/movimiento?producto=${item.product.slug}&sucursal=${item.branch.slug}`}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-accent text-primary rounded-lg hover:bg-primary/10 transition-colors font-medium text-xs"
                           >
-                            <Plus className="h-3.5 w-3.5" />
-                            Movimiento
-                          </Link>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })
-              )}
-            </div>
-
-            {/* Vista Desktop Tabla */}
-            <div className="overflow-x-auto hidden md:block">
-              <table className="w-full">
-                <thead className="bg-cream border-b border-border">
-                  <tr>
-                    <th className="text-left py-4 px-6 font-semibold text-muted-foreground text-sm">Producto</th>
-                    <th className="text-left py-4 px-6 font-semibold text-muted-foreground text-sm">Sucursal</th>
-                    <th className="text-center py-4 px-6 font-semibold text-muted-foreground text-sm">Cantidad</th>
-                    <th className="text-center py-4 px-6 font-semibold text-muted-foreground text-sm hidden lg:table-cell">Reservado</th>
-                    <th className="text-center py-4 px-6 font-semibold text-muted-foreground text-sm">Disponible</th>
-                    <th className="text-left py-4 px-6 font-semibold text-muted-foreground text-sm hidden xl:table-cell">Actualizado</th>
-                    <th className="text-center py-4 px-6 font-semibold text-muted-foreground text-sm">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedInventory.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} className="py-12 text-center text-muted-foreground/60">
-                        <Package className="h-12 w-12 mx-auto mb-3 text-muted-foreground/40" />
-                        <p>No se encontraron registros de inventario</p>
-                      </td>
-                    </tr>
-                  ) : (
-                    paginatedInventory.map((item, index) => {
-                      const isLowStock = item.available < 10
-                      const isOutOfStock = item.available === 0
-                      
-                      return (
-                        <tr 
-                          key={`${item.product.id}-${item.branch.id}`}
-                          className={`border-b border-border hover:bg-cream ${index % 2 === 0 ? '' : 'bg-cream/50'}`}
-                        >
-                          <td className="py-4 px-6">
-                            <div className="flex items-center gap-3">
-                              <div className="h-10 w-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                                <Package className="h-5 w-5 text-primary" />
-                              </div>
-                              <div>
-                                <p className="font-medium text-foreground">{item.product.name}</p>
-                                <p className="text-xs text-muted-foreground/60">{item.product.slug}</p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-4 px-6">
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-chart-3/10 text-chart-3">
-                              {item.branch.name}
-                            </span>
-                          </td>
-                          <td className="py-4 px-6 text-center font-medium text-foreground">
-                            {item.quantity}
-                          </td>
-                          <td className="py-4 px-6 text-center text-muted-foreground hidden lg:table-cell">
-                            {item.reserved}
-                          </td>
-                          <td className="py-4 px-6 text-center">
-                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-sm font-bold ${
-                              isOutOfStock 
-                                ? 'bg-destructive/10 text-destructive' 
-                                : isLowStock 
-                                  ? 'bg-warning/10 text-warning'
-                                  : 'bg-success/10 text-success'
-                            }`}>
-                              {item.available}
-                            </span>
-                            {item.expiredQuantity ? (
-                              <Link
-                                href={`/admin/inventario/movimiento?producto=${item.product.slug}&sucursal=${item.branch.slug}&tipo=MERMA`}
-                                className="mt-1 block text-[11px] font-semibold text-destructive hover:underline"
-                              >
-                                {item.expiredQuantity} vencidas · merma
-                              </Link>
-                            ) : null}
-                          </td>
-                          <td className="py-4 px-6 text-sm text-muted-foreground hidden xl:table-cell">
-                            {formatDate(item.updatedAt)}
-                          </td>
-                          <td className="py-4 px-6 text-center">
-                            <Link
-                              href={`/admin/inventario/movimiento?producto=${item.product.slug}&sucursal=${item.branch.slug}`}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-accent text-primary rounded-lg hover:bg-primary/10 transition-colors font-medium text-sm"
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-9 px-3 border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] font-bold text-xs"
                             >
-                              <Plus className="h-4 w-4" />
+                              <ArrowLeftRight className="h-3.5 w-3.5 mr-1 text-[#8C522B]" />
                               Movimiento
-                            </Link>
-                          </td>
-                        </tr>
-                      )
-                    })
-                  )}
+                            </Button>
+                          </Link>
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
+          </div>
 
-            {/* Paginación */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-t border-border">
-                <p className="text-sm text-muted-foreground">
-                  Página {currentPage} de {totalPages} ({filteredInventory.length} registros)
-                </p>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={currentPage <= 1}
-                    onClick={() => setCurrentPage(prev => prev - 1)}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={currentPage >= totalPages}
-                    onClick={() => setCurrentPage(prev => prev + 1)}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
+          {/* ── Paginación Estandarizada ── */}
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white rounded-2xl shadow-xs border border-[#E8DCCB] px-6 py-4">
+              <p className="text-xs font-semibold text-[#8C522B]">
+                Página {currentPage} de {totalPages} ({filteredInventory.length} registros)
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage <= 1}
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  className="border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] rounded-xl h-9 px-3 text-xs font-bold"
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  className="border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] rounded-xl h-9 px-3 text-xs font-bold"
+                >
+                  Siguiente <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
               </div>
-            )}
-          </>
-        )}
-      </div>
+            </div>
+          )}
+        </>
+      )}
     </div>
   )
 }

@@ -122,7 +122,7 @@ export default function ProduccionPage() {
       })
 
       showToast(
-        `🔥 ${result.message}`,
+        result.message,
         'success'
       )
 

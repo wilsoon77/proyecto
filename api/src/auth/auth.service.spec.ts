@@ -22,6 +22,8 @@ describe('AuthService OAuth callback', () => {
   const tokenService = {
     signAccessToken: jest.fn().mockReturnValue('app-access-token'),
     createRefreshToken: jest.fn().mockResolvedValue('app-refresh-token'),
+    validateRefreshToken: jest.fn(),
+    revokeToken: jest.fn(),
   };
   const passwordService: Record<string, any> = { compare: jest.fn(), hash: jest.fn() };
   const sessionService: Record<string, any> = { requiresCaptcha: jest.fn(), recordLoginAttempt: jest.fn(), upsertTrustedDevice: jest.fn() };
@@ -107,4 +109,42 @@ describe('AuthService OAuth callback', () => {
     expect(tokenService.signAccessToken).toHaveBeenCalledWith(adminUser.id, adminUser.role);
     expect(result.user.email).toBe('admin@panaderia.com');
   });
+
+  it('creates 30-day refresh token in OAuth callback when rememberMe is true', async () => {
+    supabase.getUser.mockResolvedValue({
+      id: user.id,
+      email: user.email,
+      user_metadata: { full_name: 'Cliente Ejemplo' },
+      app_metadata: { provider: 'google' },
+    });
+    prisma.user.findUnique.mockResolvedValue(user);
+
+    const metadata = { ip: '203.0.113.10', userAgent: 'jest' };
+    await service.handleOAuthCallback('verified-supabase-access-token', metadata, true);
+
+    expect(tokenService.createRefreshToken).toHaveBeenCalledWith(user.id, metadata, 30);
+  });
+
+  it('preserves 30-day sliding duration upon token refresh', async () => {
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const valid30DayToken = {
+      id: 'token-123',
+      userId: user.id,
+      user: { id: user.id, role: user.role, isActive: true },
+      createdAt: now,
+      expiresAt: expiresAt,
+      revokedAt: null,
+    };
+
+    tokenService.validateRefreshToken = jest.fn().mockResolvedValue(valid30DayToken);
+    tokenService.revokeToken = jest.fn().mockResolvedValue(undefined);
+
+    const metadata = { ip: '127.0.0.1', userAgent: 'jest-refresh' };
+    await service.refresh('raw-refresh-token', metadata);
+
+    expect(tokenService.revokeToken).toHaveBeenCalledWith('token-123');
+    expect(tokenService.createRefreshToken).toHaveBeenCalledWith(user.id, metadata, 30);
+  });
 });
+

@@ -33,7 +33,7 @@ function LoginForm() {
   const [oauthLoading, setOauthLoading] = useState<"google" | null>(null)
   const [captchaToken, setCaptchaToken] = useState<string | null>(null)
   const captchaRef = useRef<HCaptcha>(null)
-  const [rememberMe, setRememberMe] = useState(false)
+  const [rememberMe, setRememberMe] = useState(true)
   const [deviceId, setDeviceId] = useState("")
   const [requiresCaptcha, setRequiresCaptcha] = useState(false)
   const [checkingCaptcha, setCheckingCaptcha] = useState(false)
@@ -88,6 +88,9 @@ function LoginForm() {
     setError(null)
     setOauthLoading("google")
     try {
+      if (typeof document !== "undefined") {
+        document.cookie = `panaderia_remember_oauth=${rememberMe ? "1" : "0"}; path=/; max-age=600; SameSite=Lax`
+      }
       await signInWithOAuth("google", returnUrl)
     } catch (oauthLoginError: unknown) {
       const message = oauthLoginError instanceof Error ? oauthLoginError.message : "No fue posible iniciar sesión con Google."

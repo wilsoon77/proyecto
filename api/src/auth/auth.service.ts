@@ -245,9 +245,16 @@ export class AuthService {
     // Revocar token anterior (rotación)
     await this.tokenService.revokeToken(validToken.id);
 
+    // Preservar la vigencia del token previo (Sliding Session)
+    // Si fue emitido para 30 días (o >= 20 días), el nuevo token rota manteniendo 30 días.
+    const durationDays = Math.round(
+      (validToken.expiresAt.getTime() - validToken.createdAt.getTime()) / (1000 * 60 * 60 * 24),
+    );
+    const expirationDays = durationDays >= 20 ? 30 : 7;
+
     // Crear nuevos tokens
     const newAccessToken = this.tokenService.signAccessToken(validToken.user.id, validToken.user.role);
-    const newRefreshToken = await this.tokenService.createRefreshToken(validToken.user.id, metadata);
+    const newRefreshToken = await this.tokenService.createRefreshToken(validToken.user.id, metadata, expirationDays);
 
     return { token: newAccessToken, refreshToken: newRefreshToken };
   }
@@ -322,6 +329,7 @@ export class AuthService {
   async handleOAuthCallback(
     supabaseAccessToken: string,
     metadata?: { userAgent?: string; ip?: string },
+    rememberMe = false,
   ) {
     const supabaseUser = await this.supabase.getUser(supabaseAccessToken);
     const email = supabaseUser.email;
@@ -388,7 +396,7 @@ export class AuthService {
     if (!user.isActive) throw new UnauthorizedException('Usuario desactivado');
 
     const accessToken = this.tokenService.signAccessToken(user.id, user.role);
-    const refreshToken = await this.tokenService.createRefreshToken(user.id, metadata);
+    const refreshToken = await this.tokenService.createRefreshToken(user.id, metadata, rememberMe ? 30 : 7);
 
     this.logger.info('Login OAuth exitoso', { userId: user.id, email: user.email, provider: input.provider, ip: metadata?.ip });
 

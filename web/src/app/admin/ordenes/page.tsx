@@ -1,13 +1,27 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-import { ShoppingCart, Search, Loader as Loader2, Eye, Clock, CircleCheck as CheckCircle, Circle as XCircle, Package, ChefHat, ListFilter as Filter, RefreshCw, Globe } from "lucide-react"
+import { 
+  ShoppingCart, 
+  Loader as Loader2, 
+  Eye, 
+  Clock, 
+  CircleCheck as CheckCircle, 
+  Circle as XCircle, 
+  Package, 
+  ChefHat, 
+  RefreshCw, 
+  Globe 
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { ordersService, branchesService, type OrderStatus } from "@/lib/api"
 import { formatCurrency, formatDateString } from "@/lib/utils"
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader"
+import { AdminSearchBar, type FilterChip } from "@/components/admin/AdminSearchBar"
+import { AdminEntityCard } from "@/components/admin/AdminEntityCard"
 
 interface Order {
   id: number
@@ -112,7 +126,8 @@ export default function OrdenesPage() {
       setIsLoading(false)
     }
   }
-  const handleStatusChange = async (orderId: number, newStatus: OrderStatus) => {
+
+  const handleStatusChange = async (orderId: number, newStatus: OrderStatus) => {
     setProcessingId(orderId)
     try {
       const updated = newStatus === 'CANCELLED'
@@ -140,126 +155,111 @@ export default function OrdenesPage() {
   const getStatusOptions = (status: OrderStatus) => [status, ...STATUS_FLOW[status]]
 
   // Filtro de búsqueda local
-  const filteredOrders = orders.filter(order => {
-    if (!searchTerm) return true
+  const filteredOrders = useMemo(() => {
+    if (!searchTerm) return orders
     const term = searchTerm.toLowerCase()
-    return (
-      order.orderNumber.toLowerCase().includes(term) ||
-      order.items.some(item => item.productName.toLowerCase().includes(term))
-    )
-  })
+    return orders.filter(order => {
+      return (
+        order.orderNumber.toLowerCase().includes(term) ||
+        order.items.some(item => item.productName.toLowerCase().includes(term))
+      )
+    })
+  }, [orders, searchTerm])
+
+  const filterChips: FilterChip[] = useMemo(() => {
+    const chips: FilterChip[] = [
+      {
+        id: "ALL",
+        label: "Todas",
+        active: statusFilter === "ALL",
+        onClick: () => { setStatusFilter("ALL"); setPage(1) },
+      },
+      {
+        id: "PENDING",
+        label: "Pendientes",
+        active: statusFilter === "PENDING",
+        onClick: () => { setStatusFilter("PENDING"); setPage(1) },
+      },
+      {
+        id: "CONFIRMED",
+        label: "Confirmadas",
+        active: statusFilter === "CONFIRMED",
+        onClick: () => { setStatusFilter("CONFIRMED"); setPage(1) },
+      },
+      {
+        id: "PREPARING",
+        label: "En Preparación",
+        active: statusFilter === "PREPARING",
+        onClick: () => { setStatusFilter("PREPARING"); setPage(1) },
+      },
+      {
+        id: "READY",
+        label: "Listas para recoger",
+        active: statusFilter === "READY",
+        onClick: () => { setStatusFilter("READY"); setPage(1) },
+      },
+      {
+        id: "PICKED_UP",
+        label: "Entregadas",
+        active: statusFilter === "PICKED_UP",
+        onClick: () => { setStatusFilter("PICKED_UP"); setPage(1) },
+      },
+    ]
+
+    return chips
+  }, [statusFilter])
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="font-display text-2xl sm:text-3xl font-bold text-[#2B170F] flex items-center gap-3">
-            <ShoppingCart className="h-7 w-7 text-[#D97706]" />
-            Gestión de Órdenes
-          </h1>
-          <p className="text-xs sm:text-sm text-[#6E5545] mt-1">Administra los pedidos y estados de entrega</p>
-        </div>
-        <Button 
-          variant="outline" 
-          onClick={loadOrders}
-          disabled={isLoading}
-          className="border-[#DECDBB] bg-white text-[#2B170F] hover:bg-[#FAF5EE] rounded-xl text-xs font-bold shadow-xs w-full sm:w-auto"
-        >
-          <RefreshCw className={`h-4 w-4 mr-2 text-[#D97706] ${isLoading ? 'animate-spin' : ''}`} />
-          Actualizar
-        </Button>
-      </div>
+    <div className="space-y-6 max-w-7xl mx-auto pb-16">
+      {/* ── Header Estandarizado ── */}
+      <AdminPageHeader
+        title="Gestión de Pedidos"
+        description="Supervisión en tiempo real y flujo operativo de pedidos web por sucursal"
+        icon={<ShoppingCart className="h-6 w-6 text-[#D97706]" />}
+        breadcrumbs={[{ label: "Pedidos" }]}
+        primaryAction={{
+          label: "Actualizar",
+          onClick: () => void loadOrders(),
+          icon: <RefreshCw className={`h-4 w-4 mr-1.5 ${isLoading ? "animate-spin" : ""}`} />,
+        }}
+      />
 
-      {/* Filters */}
-      <div className="bg-white rounded-2xl shadow-xs border border-[#E8DCCB] p-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8C522B]" />
-            <input
-              type="text"
-              placeholder="Buscar por # orden o cliente..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] placeholder:text-[#8C522B]/60 focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
-            />
-          </div>
-          
-          {/* Status filter */}
-          <select
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value as OrderStatus | "ALL")
-              setPage(1)
-            }}
-            className="px-3.5 py-2 text-xs sm:text-sm bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] font-semibold focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706] cursor-pointer"
-          >
-            <option value="ALL">Todos los estados</option>
-            {STATUS_OPTIONS.map(s => (
-              <option key={s.value} value={s.value}>{s.label}</option>
-            ))}
-          </select>
-          
-          {/* Branch filter */}
+      {/* ── Buscador y Filtros Estandarizados ── */}
+      <AdminSearchBar
+        searchQuery={searchTerm}
+        onSearchChange={setSearchTerm}
+        placeholder="Buscar por número de orden (#ORD-...) o producto..."
+        chips={filterChips}
+        totalCount={total}
+        filteredCount={filteredOrders.length}
+        entityName="órdenes"
+        isLoading={isLoading}
+      >
+        {/* Selector de Sucursal */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-[#8C522B] uppercase tracking-wider hidden sm:inline">
+            Sucursal:
+          </span>
           <select
             value={branchFilter}
             onChange={(e) => {
               setBranchFilter(e.target.value)
               setPage(1)
             }}
-            className="px-3.5 py-2 text-xs sm:text-sm bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] font-semibold focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706] cursor-pointer"
+            className="h-10 px-3 text-xs sm:text-sm bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] font-medium focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
           >
             <option value="ALL">Todas las sucursales</option>
             {branches.map(b => (
               <option key={b.id} value={b.slug}>{b.name}</option>
             ))}
           </select>
-
-          {/* Stats summary */}
-          <div className="flex items-center justify-end gap-2 text-xs font-semibold text-[#8C522B] px-2">
-            <Filter className="h-4 w-4 text-[#D97706]" />
-            <span>{total} órdenes registradas</span>
-          </div>
         </div>
-      </div>
+      </AdminSearchBar>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {['PENDING', 'CONFIRMED', 'PREPARING', 'READY'].map(status => {
-          const config = STATUS_MAP[status as OrderStatus]
-          const StatusIcon = config.icon
-          return (
-            <button
-              key={status}
-              onClick={() => {
-                setStatusFilter(status as OrderStatus)
-                setPage(1)
-              }}
-              className={`bg-white rounded-2xl p-4 border text-left transition-all duration-200 shadow-xs ${
-                statusFilter === status 
-                  ? 'border-[#D97706] ring-2 ring-[#D97706]/30 bg-[#FAF0E6]/40' 
-                  : 'border-[#E8DCCB] hover:border-[#DECDBB] hover:bg-[#FAF5EE]/40'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <div className={`h-9 w-9 rounded-xl flex items-center justify-center ${config.color.split(' ')[0]}`}>
-                  <StatusIcon className={`h-4.5 w-4.5 ${config.color.split(' ')[1]}`} />
-                </div>
-                <div>
-                  <span className="text-xs font-bold text-[#2B170F] block">{config.label}</span>
-                  <span className="text-[10px] text-[#8C522B] font-medium">Filtrar estado</span>
-                </div>
-              </div>
-            </button>
-          )
-        })}
-      </div>
-
-      {/* Orders Table */}
+      {/* ── Listado de Órdenes ── */}
       <div className="bg-white rounded-2xl shadow-xs border border-[#E8DCCB] overflow-hidden">
         {isLoading ? (
-          <div className="flex items-center justify-center py-16">
+          <div className="flex items-center justify-center py-20">
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-2 border-[#D97706] border-t-transparent mx-auto"></div>
               <p className="mt-3 text-xs font-semibold text-[#8C522B]">Cargando órdenes...</p>
@@ -274,8 +274,8 @@ export default function OrdenesPage() {
           </div>
         ) : (
           <>
-            {/* Mobile Card Layout */}
-            <div className="md:hidden divide-y divide-[#E8DCCB]">
+            {/* ── Vista Móvil: Tarjetas Estandarizadas ── */}
+            <div className="md:hidden p-4 space-y-4">
               {filteredOrders.map((order) => {
                 const statusConfig = STATUS_MAP[order.status] || {
                   value: order.status,
@@ -284,53 +284,88 @@ export default function OrdenesPage() {
                   color: "bg-muted text-foreground"
                 }
                 const totalItems = order.items.reduce((sum, i) => sum + (i.presentationQuantity ?? i.quantity), 0)
+                const availableOptions = getStatusOptions(order.status)
                 
                 return (
-                  <div key={order.id} className="p-4 hover:bg-[#FAF5EE]/40 transition-colors">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="font-bold text-xs text-[#2B170F]">{order.orderNumber}</p>
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-200">
-                            <Globe className="h-3 w-3" /> Web
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-[#8C522B] mt-0.5">{formatDate(order.createdAt)}</p>
+                  <AdminEntityCard
+                    key={order.id}
+                    title={
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-sm text-[#2B170F]">{order.orderNumber}</span>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-200">
+                          <Globe className="h-3 w-3" /> Web
+                        </span>
                       </div>
-                      <Link href={`/admin/ordenes/${order.id}`}>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-[#6E5545] hover:text-[#2B170F] hover:bg-[#FAF5EE]">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </Link>
-                    </div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <p className="text-xs text-[#6E5545]">{totalItems} producto{totalItems !== 1 ? 's' : ''}</p>
-                      <span className="text-[#DECDBB]">·</span>
-                      <p className="font-bold text-xs text-[#2B170F]">{formatCurrency(order.total)}</p>
-                    </div>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs text-[#8C522B] font-medium">{order.branch?.name || "Sin asignar"}</span>
-                      {processingId === order.id ? (
-                        <Loader2 className="h-4 w-4 text-[#D97706] animate-spin" />
-                      ) : (
-                        <select
-                          value={order.status}
-                          onChange={(e) => handleStatusChange(order.id, e.target.value as OrderStatus)}
-                          className={`text-xs font-bold px-2.5 py-1 rounded-full border border-current focus:ring-2 focus:ring-[#D97706]/30 cursor-pointer ${statusConfig.color}`}
-                          disabled={getStatusOptions(order.status).length === 1}
-                        >
-                          {getStatusOptions(order.status).map(status => (
-                            <option key={status} value={status}>{STATUS_MAP[status].label}</option>
-                          ))}
-                        </select>
-                      )}
-                    </div>
-                  </div>
+                    }
+                    subtitle={`${formatDate(order.createdAt)} · ${order.branch?.name || "Sin asignar"}`}
+                    badges={
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${statusConfig.color}`}>
+                        {statusConfig.label}
+                      </span>
+                    }
+                    meta={[
+                      {
+                        label: "Total Pedido",
+                        value: formatCurrency(order.total),
+                        highlight: true,
+                      },
+                      {
+                        label: "Artículos",
+                        value: `${totalItems} producto${totalItems !== 1 ? 's' : ''}`,
+                      },
+                    ]}
+                    actions={
+                      <div className="w-full flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                        {/* Selector de Estado Touch-Friendly (Mínimo 44px) */}
+                        <div className="flex-1 flex items-center gap-2">
+                          <span className="text-[11px] font-bold text-[#8C522B] uppercase tracking-wider shrink-0">
+                            Estado:
+                          </span>
+                          {processingId === order.id ? (
+                            <div className="flex items-center gap-2 h-11 px-3 bg-[#FAF5EE] rounded-xl text-xs font-bold text-[#8C522B]">
+                              <Loader2 className="h-4 w-4 animate-spin text-[#D97706]" />
+                              Actualizando...
+                            </div>
+                          ) : (
+                            <select
+                              value={order.status}
+                              onChange={(e) => handleStatusChange(order.id, e.target.value as OrderStatus)}
+                              className={`flex-1 h-11 text-xs font-bold px-3 rounded-xl border border-[#DECDBB] focus:ring-2 focus:ring-[#D97706]/30 cursor-pointer ${statusConfig.color}`}
+                              disabled={availableOptions.length === 1}
+                            >
+                              {availableOptions.map(status => (
+                                <option key={status} value={status}>{STATUS_MAP[status].label}</option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
+
+                        {/* Botón Ver Pedido */}
+                        <Link href={`/admin/ordenes/${order.id}`} className="shrink-0">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="w-full sm:w-auto h-11 px-4 border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] font-bold text-xs"
+                          >
+                            <Eye className="h-4 w-4 mr-1.5 text-[#8C522B]" />
+                            Ver Pedido
+                          </Button>
+                        </Link>
+                      </div>
+                    }
+                  >
+                    {order.customerNotes && (
+                      <p className="text-xs text-[#6E5545] bg-[#FAF5EE] p-2.5 rounded-xl border border-[#E8DCCB]/60 italic line-clamp-2">
+                        &quot;{order.customerNotes}&quot;
+                      </p>
+                    )}
+                  </AdminEntityCard>
                 )
               })}
             </div>
 
-            {/* Desktop Table Layout */}
+            {/* ── Vista Desktop: Tabla Limpia ── */}
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left">
                 <thead className="bg-[#FAF5EE] border-b border-[#E8DCCB]">
@@ -363,7 +398,7 @@ export default function OrdenesPage() {
                               <Globe className="h-3 w-3" /> Web
                             </span>
                           </div>
-                          <p className="text-[11px] text-[#8C522B] font-mono">ID: {order.id}</p>
+                          <p className="text-[11px] text-[#8C522B] font-mono">ID: #{order.id}</p>
                         </td>
                         <td className="px-6 py-3.5">
                           <p className="text-xs font-semibold text-[#2B170F]">{totalItems} producto{totalItems !== 1 ? 's' : ''}</p>
@@ -388,7 +423,7 @@ export default function OrdenesPage() {
                             <select
                               value={order.status}
                               onChange={(e) => handleStatusChange(order.id, e.target.value as OrderStatus)}
-                              className={`text-xs font-bold px-2.5 py-1 rounded-full border border-current focus:ring-2 focus:ring-[#D97706]/30 cursor-pointer ${statusConfig.color}`}
+                              className={`text-xs font-bold px-2.5 py-1.5 rounded-full border border-current focus:ring-2 focus:ring-[#D97706]/30 cursor-pointer ${statusConfig.color}`}
                               disabled={getStatusOptions(order.status).length === 1}
                             >
                               {getStatusOptions(order.status).map(status => (
@@ -402,8 +437,8 @@ export default function OrdenesPage() {
                         </td>
                         <td className="px-6 py-3.5 whitespace-nowrap text-right">
                           <Link href={`/admin/ordenes/${order.id}`}>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-[#6E5545] hover:text-[#2B170F] hover:bg-[#FAF5EE]" title="Ver detalle">
-                              <Eye className="h-4 w-4" />
+                            <Button variant="outline" size="sm" className="h-8 px-2.5 border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] text-xs font-bold">
+                              <Eye className="h-3.5 w-3.5 mr-1 text-[#8C522B]" /> Ver
                             </Button>
                           </Link>
                         </td>
@@ -414,11 +449,11 @@ export default function OrdenesPage() {
               </table>
             </div>
             
-            {/* Pagination */}
+            {/* ── Paginación ── */}
             {totalPages > 1 && (
               <div className="px-6 py-3.5 border-t border-[#E8DCCB] bg-[#FAF5EE]/30 flex items-center justify-between">
                 <p className="text-xs font-semibold text-[#8C522B]">
-                  Página {page} de {totalPages}
+                  Página {page} de {totalPages} ({total} órdenes)
                 </p>
                 <div className="flex gap-2">
                   <Button 

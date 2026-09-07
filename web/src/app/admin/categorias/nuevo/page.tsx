@@ -2,11 +2,11 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
-import { ArrowLeft, Save, Loader as Loader2, Tag } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Tag } from "lucide-react"
 import { useToast } from "@/components/ui/toast"
 import { categoriesService, ApiClientError } from "@/lib/api"
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader"
+import { AdminStickyFooter } from "@/components/admin/AdminStickyFooter"
 
 function generateSlug(name: string): string {
   return name
@@ -47,11 +47,11 @@ export default function NuevaCategoriaPage() {
     setError("")
 
     if (!name.trim()) {
-      setError("El nombre es requerido")
+      setError("El nombre de la categoría es requerido")
       return
     }
     if (!slug.trim()) {
-      setError("El slug es requerido")
+      setError("El slug URL es requerido")
       return
     }
 
@@ -63,13 +63,13 @@ export default function NuevaCategoriaPage() {
         slug: slug.trim(),
         description: description.trim() || undefined,
       })
-      showToast(`Categoría "${name.trim()}" creada correctamente`, "success")
+      showToast(`Categoría "${name.trim()}" creada con éxito`, "success")
       router.push("/admin/categorias")
     } catch (err) {
       if (err instanceof ApiClientError) {
         setError(err.message)
       } else {
-        setError("Error al crear la categoría")
+        setError("Error al crear la categoría. Verifica que el slug no esté repetido.")
       }
     } finally {
       setIsLoading(false)
@@ -77,56 +77,62 @@ export default function NuevaCategoriaPage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-2xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-8">
-        <Link href="/admin/categorias">
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Volver
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-foreground">Nueva Categoría</h1>
-          <p className="text-muted-foreground">Crea una nueva categoría de productos</p>
-        </div>
-      </div>
+    <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto pb-24">
+      {/* Header Estandarizado */}
+      <AdminPageHeader
+        title="Nueva Categoría"
+        description="Crea una categoría para clasificar panes, pasteles y postres en el catálogo"
+        breadcrumbs={[
+          { label: "Categorías", href: "/admin/categorias" },
+          { label: "Nueva Categoría" },
+        ]}
+      />
 
-      {/* Form */}
-      <form onSubmit={handleSubmit}>
-        <div className="bg-card rounded-xl shadow-sm border border-border p-6 space-y-6">
+      {/* Formulario */}
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="bg-white rounded-2xl shadow-xs border border-[#E8DCCB] p-6 sm:p-8 space-y-6">
           {error && (
-            <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg">
+            <div className="bg-destructive/10 border border-destructive/20 text-destructive text-sm px-4 py-3 rounded-xl font-medium">
               {error}
             </div>
           )}
 
-          {/* Icon Preview */}
-          <div className="flex justify-center">
-            <div className="h-20 w-20 bg-primary/10 rounded-2xl flex items-center justify-center">
-              <Tag className="h-10 w-10 text-primary" />
+          {/* Icon Badge Preview */}
+          <div className="flex items-center gap-4 p-4 rounded-xl bg-[#FAF5EE] border border-[#DECDBB]/60">
+            <div className="h-14 w-14 bg-[#FAF0E6] text-[#D97706] rounded-2xl flex items-center justify-center shrink-0 border border-[#E8DCCB]">
+              <Tag className="h-7 w-7" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-[#2B170F]">
+                {name || "Nombre de la categoría"}
+              </p>
+              <p className="text-xs text-[#8C522B] font-mono mt-0.5">
+                /{slug || "slug-automatico"}
+              </p>
             </div>
           </div>
 
           {/* Name */}
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-foreground mb-2">
-              Nombre *
+            <label htmlFor="name" className="block text-xs font-bold text-[#2B170F] uppercase tracking-wider mb-2">
+              Nombre de la categoría *
             </label>
             <input
               id="name"
               type="text"
               value={name}
               onChange={(e) => handleNameChange(e.target.value)}
-              placeholder="Ej: Panes Dulces"
-              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="Ej: Panes Dulces, Galletas, Repostería Fina"
+              className="w-full px-4 py-2.5 text-sm bg-white border border-[#DECDBB] rounded-xl text-[#2B170F] placeholder:text-[#8C522B]/50 focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
             />
           </div>
 
           {/* Slug */}
           <div>
-            <label htmlFor="slug" className="block text-sm font-medium text-foreground mb-2">
-              Slug (URL) *
+            <div className="flex items-center justify-between mb-2">
+              <label htmlFor="slug" className="text-xs font-bold text-[#2B170F] uppercase tracking-wider">
+                Slug (URL limpia) *
+              </label>
               {slugManuallyEdited && (
                 <button
                   type="button"
@@ -134,66 +140,48 @@ export default function NuevaCategoriaPage() {
                     setSlugManuallyEdited(false)
                     setSlug(generateSlug(name))
                   }}
-                  className="ml-2 text-xs text-primary hover:text-primary"
+                  className="text-xs text-[#D97706] hover:underline font-medium"
                 >
-                  Regenerar
+                  Regenerar desde nombre
                 </button>
               )}
-            </label>
+            </div>
             <input
               id="slug"
               type="text"
               value={slug}
               onChange={(e) => handleSlugChange(e.target.value)}
               placeholder="ej: panes-dulces"
-              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              className="w-full px-4 py-2.5 text-sm bg-[#FAF5EE]/50 border border-[#DECDBB] rounded-xl text-[#2B170F] font-mono placeholder:text-[#8C522B]/50 focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
             />
-            <p className="text-xs text-muted-foreground mt-1">
-              Se usa en la URL: /productos?categoria={slug || "slug"}
+            <p className="text-[11px] text-[#8C522B] mt-1.5">
+              Se mostrará en la tienda web como enlace de filtro directo.
             </p>
           </div>
 
           {/* Description */}
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-foreground mb-2">
-              Descripción
+            <label htmlFor="description" className="block text-xs font-bold text-[#2B170F] uppercase tracking-wider mb-2">
+              Descripción (Opcional)
             </label>
             <textarea
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Descripción de la categoría..."
+              placeholder="Breve detalle sobre los productos agrupados aquí..."
               rows={3}
-              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
+              className="w-full px-4 py-2.5 text-sm bg-white border border-[#DECDBB] rounded-xl text-[#2B170F] placeholder:text-[#8C522B]/50 focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706] resize-none"
             />
           </div>
-
-          {/* Actions */}
-          <div className="flex gap-3 pt-4 border-t border-border">
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="flex-1 bg-primary hover:bg-primary/90"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Creando...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  Crear Categoría
-                </>
-              )}
-            </Button>
-            <Link href="/admin/categorias">
-              <Button type="button" variant="outline">
-                Cancelar
-              </Button>
-            </Link>
-          </div>
         </div>
+
+        {/* Barra Fija Inferior */}
+        <AdminStickyFooter
+          primaryLabel="Crear Categoría"
+          isPrimarySubmitting={isLoading}
+          secondaryLabel="Cancelar"
+          secondaryHref="/admin/categorias"
+        />
       </form>
     </div>
   )

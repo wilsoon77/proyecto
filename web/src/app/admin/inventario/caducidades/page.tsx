@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import {
   AlertTriangle,
-  ArrowLeft,
   Bell,
   BellRing,
   Calendar,
@@ -13,7 +12,6 @@ import {
   Clock,
   Package,
   RefreshCw,
-  Search,
   SlidersHorizontal,
   Trash2,
   X,
@@ -21,6 +19,9 @@ import {
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { branchesService, inventoryService, type ExpirationLot } from "@/lib/api"
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader"
+import { AdminSearchBar, type FilterChip } from "@/components/admin/AdminSearchBar"
+import { AdminEntityCard } from "@/components/admin/AdminEntityCard"
 
 type StatusFilter = "all" | "expired" | "expiring" | "no-date"
 
@@ -263,73 +264,102 @@ export default function CaducidadesPage() {
     return [...new Set([...configured, 1, 2, 3, 5, 7, 10, 14, 15, 30, 45, 60])].sort((a, b) => a - b)
   }, [selectedLotForEdit])
 
+  // Chips para AdminSearchBar
+  const filterChips: FilterChip[] = useMemo(() => {
+    return [
+      {
+        id: "all",
+        label: "Todos",
+        count: lots.length,
+        active: status === "all",
+        onClick: () => setStatus("all"),
+      },
+      {
+        id: "expired",
+        label: "Vencidos",
+        count: summary.expired,
+        active: status === "expired",
+        onClick: () => setStatus("expired"),
+      },
+      {
+        id: "expiring",
+        label: "Próximos a Vencer",
+        count: summary.expiring,
+        active: status === "expiring",
+        onClick: () => setStatus("expiring"),
+      },
+      {
+        id: "no-date",
+        label: "Sin Fecha",
+        count: summary.noDate,
+        active: status === "no-date",
+        onClick: () => setStatus("no-date"),
+      },
+    ]
+  }, [lots.length, summary, status])
+
   return (
-    <div className="p-4 sm:p-6 lg:p-8 bg-cream min-h-screen space-y-6">
-      {/* Header Principal */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <Link
-            href="/admin/inventario"
-            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-2"
-          >
-            <ArrowLeft className="h-4 w-4" /> Volver al inventario
-          </Link>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-3">
-            <CalendarClock className="h-7 w-7 text-primary" /> Caducidades y Alertas
-          </h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Control de productos comprados con fecha de vencimiento y recordatorios configurables.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" onClick={() => void loadData()} disabled={isLoading} className="gap-2">
-            <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} /> Actualizar
-          </Button>
-          <Button onClick={() => void checkNow()} disabled={isChecking} className="gap-2">
-            <BellRing className={`h-4 w-4 ${isChecking ? "animate-bounce" : ""}`} /> Revisar alertas
-          </Button>
-        </div>
-      </div>
+    <div className="space-y-6 max-w-7xl mx-auto pb-16">
+      {/* ── Header Estandarizado ── */}
+      <AdminPageHeader
+        title="Caducidades y Alertas"
+        description="Control de productos comprados con fecha de vencimiento y recordatorios configurables"
+        icon={<CalendarClock className="h-6 w-6 text-[#D97706]" />}
+        breadcrumbs={[
+          { label: "Inventario", href: "/admin/inventario" },
+          { label: "Caducidades" },
+        ]}
+        primaryAction={{
+          label: isChecking ? "Revisando..." : "Revisar Alertas",
+          onClick: () => void checkNow(),
+          icon: <BellRing className={`h-4 w-4 mr-1.5 ${isChecking ? "animate-bounce" : ""}`} />,
+        }}
+        secondaryAction={{
+          label: "Actualizar",
+          onClick: () => void loadData(),
+          icon: <RefreshCw className={`h-4 w-4 mr-1.5 ${isLoading ? "animate-spin" : ""}`} />,
+        }}
+      />
 
-      {/* Tarjetas KPI de Resumen */}
+      {/* ── Tarjetas KPI de Resumen Estandarizadas ── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-card rounded-xl border border-destructive/20 p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Vencidos con existencia</p>
-          <p className="text-3xl font-bold text-destructive mt-1.5">{summary.expired}</p>
-          <p className="text-xs text-destructive/80 mt-1">Requieren retiro o registro de merma</p>
+        <div className="bg-white rounded-2xl border border-red-200 p-5 shadow-xs">
+          <p className="text-xs font-bold uppercase tracking-wider text-red-700">Vencidos con existencia</p>
+          <p className="text-3xl font-bold text-red-600 mt-1.5 font-mono">{summary.expired}</p>
+          <p className="text-xs text-red-600/80 mt-1 font-medium">Requieren retiro físico o registrar merma</p>
         </div>
-        <div className="bg-card rounded-xl border border-warning/30 p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Próximos a vencer</p>
-          <p className="text-3xl font-bold text-warning mt-1.5">{summary.expiring}</p>
-          <p className="text-xs text-warning/80 mt-1">Con alerta activa o programada</p>
+        <div className="bg-white rounded-2xl border border-amber-200 p-5 shadow-xs">
+          <p className="text-xs font-bold uppercase tracking-wider text-amber-800">Próximos a vencer (30 días)</p>
+          <p className="text-3xl font-bold text-[#D97706] mt-1.5 font-mono">{summary.expiring}</p>
+          <p className="text-xs text-amber-700/80 mt-1 font-medium">Con alerta programada o activa</p>
         </div>
-        <div className="bg-card rounded-xl border border-border p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Sin fecha registrada</p>
-          <p className="text-3xl font-bold text-foreground mt-1.5">{summary.noDate}</p>
-          <p className="text-xs text-muted-foreground mt-1">Lotes pendientes de registrar fecha</p>
+        <div className="bg-white rounded-2xl border border-[#E8DCCB] p-5 shadow-xs">
+          <p className="text-xs font-bold uppercase tracking-wider text-[#8C522B]">Sin fecha registrada</p>
+          <p className="text-3xl font-bold text-[#2B170F] mt-1.5 font-mono">{summary.noDate}</p>
+          <p className="text-xs text-[#6E5545] mt-1 font-medium">Lotes pendientes de registrar caducidad</p>
         </div>
       </div>
 
-      {/* Barra de Filtros y Búsqueda */}
-      <div className="bg-card rounded-xl border border-border p-4 shadow-sm flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
-        <div className="flex flex-1 flex-col sm:flex-row gap-3">
-          {/* Búsqueda por texto */}
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Buscar por producto o lote..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-sm bg-background border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-            />
-          </div>
-
-          {/* Selector de Sucursal */}
+      {/* ── Buscador y Filtros Estandarizados ── */}
+      <AdminSearchBar
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        placeholder="Buscar por producto, sucursal o # lote..."
+        chips={filterChips}
+        totalCount={lots.length}
+        filteredCount={filteredLots.length}
+        entityName="lotes"
+        isLoading={isLoading}
+      >
+        {/* Selector de Sucursal */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-[#8C522B] uppercase tracking-wider hidden sm:inline">
+            Sucursal:
+          </span>
           <select
             value={branch}
             onChange={(event) => setBranch(event.target.value)}
-            className="px-3 py-2 border border-border rounded-lg bg-background text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+            className="h-10 px-3 text-xs sm:text-sm bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] font-medium focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
           >
             <option value="">Todas las sucursales</option>
             {branches.map((item) => (
@@ -338,173 +368,244 @@ export default function CaducidadesPage() {
               </option>
             ))}
           </select>
-
-          {/* Selector de Estado */}
-          <select
-            value={status}
-            onChange={(event) => setStatus(event.target.value as StatusFilter)}
-            className="px-3 py-2 border border-border rounded-lg bg-background text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
-          >
-            <option value="all">Todos los estados</option>
-            <option value="expiring">Próximos a vencer</option>
-            <option value="expired">Vencidos</option>
-            <option value="no-date">Sin fecha</option>
-          </select>
         </div>
+      </AdminSearchBar>
 
-        <div className="text-xs text-muted-foreground text-right sm:text-left shrink-0">
-          {filteredLots.length} {filteredLots.length === 1 ? "lote encontrado" : "lotes encontrados"}
+      {/* ── Contenedor Principal: Tabla Desktop + Tarjetas Móviles ── */}
+      {isLoading ? (
+        <div className="py-20 text-center text-[#8C522B]">
+          <RefreshCw className="h-8 w-8 animate-spin text-[#D97706] mx-auto mb-3" />
+          <p className="text-sm font-semibold">Cargando lotes y estado de alertas...</p>
         </div>
-      </div>
+      ) : filteredLots.length === 0 ? (
+        <div className="bg-white rounded-2xl shadow-xs border border-[#E8DCCB] p-12 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 mx-auto mb-4 border border-emerald-200">
+            <Check className="h-7 w-7" />
+          </div>
+          <h3 className="text-base font-bold text-[#2B170F] mb-1">
+            No hay lotes con estos filtros
+          </h3>
+          <p className="text-xs text-[#6E5545] max-w-md mx-auto">
+            Los productos producidos diariamente no generan lote de vencimiento. Los productos comprados aparecerán aquí cuando tengan inventario activo.
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* ── Vista Móvil: Tarjetas Estandarizadas ── */}
+          <div className="md:hidden space-y-4">
+            {filteredLots.map((lot) => {
+              const isExpired = lot.status === "EXPIRED"
+              const hasNotified = Boolean(lot.lastNotifiedAt)
 
-      {/* Contenedor Principal: Tabla Desktop + Tarjetas Móviles */}
-      <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
-        {isLoading ? (
-          <div className="p-12 text-center text-sm text-muted-foreground flex flex-col items-center justify-center gap-3">
-            <RefreshCw className="h-6 w-6 animate-spin text-primary" />
-            Cargando lotes y estado de alertas...
+              return (
+                <AdminEntityCard
+                  key={`m-lot-${lot.id}`}
+                  dimmed={isExpired}
+                  image={
+                    <div className="h-11 w-11 bg-[#FAF0E6] text-[#D97706] rounded-xl flex items-center justify-center shrink-0">
+                      <Package className="h-5 w-5" />
+                    </div>
+                  }
+                  title={lot.product.name}
+                  subtitle={`Lote #${lot.id} · ${lot.branch.name}`}
+                  badges={
+                    isExpired ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-red-100 text-red-800 border border-red-200">
+                        <AlertTriangle className="h-3 w-3" /> Vencido
+                      </span>
+                    ) : hasNotified ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                        <BellRing className="h-3 w-3 text-emerald-600" /> Notificada
+                      </span>
+                    ) : lot.effectiveAlertDate ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                        <Clock className="h-3 w-3 text-amber-600" /> Aviso: {formatDatePretty(lot.effectiveAlertDate)}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-muted text-muted-foreground">
+                        Sin Alerta
+                      </span>
+                    )
+                  }
+                  meta={[
+                    {
+                      label: "Existencia",
+                      value: `${lot.availableQuantity} uds`,
+                      alert: isExpired,
+                      highlight: !isExpired,
+                    },
+                    {
+                      label: "Fecha Caducidad",
+                      value: (
+                        <div>
+                          <span>{formatDatePretty(lot.expiresAt)}</span>
+                          {lot.daysLeft !== null && (
+                            <span className={`block text-[10px] font-bold mt-0.5 ${
+                              lot.daysLeft < 0 ? "text-red-600" : lot.daysLeft <= 3 ? "text-amber-600" : "text-[#8C522B]"
+                            }`}>
+                              {lot.daysLeft < 0 ? `Venció hace ${Math.abs(lot.daysLeft)}d` : lot.daysLeft === 0 ? "¡Vence hoy!" : `en ${lot.daysLeft} días`}
+                            </span>
+                          )}
+                        </div>
+                      ),
+                      alert: isExpired || (lot.daysLeft !== null && lot.daysLeft <= 3),
+                    },
+                  ]}
+                  actions={
+                    <>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleOpenEditModal(lot)}
+                        className="flex-1 h-10 px-3 border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] font-bold text-xs"
+                      >
+                        <SlidersHorizontal className="h-4 w-4 mr-1 text-[#8C522B]" />
+                        Ajustar Alerta
+                      </Button>
+                      {isExpired && (
+                        <Link
+                          href={`/admin/inventario/movimiento?producto=${lot.product.slug}&sucursal=${lot.branch.slug}&tipo=MERMA&cantidad=${lot.availableQuantity}&lote=${lot.id}&caducidad=${lot.expiresAt || ""}&referencia=${encodeURIComponent(`LOTE-${lot.id}`)}&nota=${encodeURIComponent(`Merma por lote vencido #${lot.id} (${lot.product.name})`)}`}
+                          className="flex-1"
+                        >
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="w-full h-10 px-3 border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 font-bold text-xs"
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Registrar Merma
+                          </Button>
+                        </Link>
+                      )}
+                    </>
+                  }
+                />
+              )
+            })}
           </div>
-        ) : filteredLots.length === 0 ? (
-          <div className="p-12 text-center">
-            <Check className="h-10 w-10 text-success mx-auto mb-3" />
-            <p className="font-semibold text-foreground text-base">No hay lotes que coincidan con los filtros</p>
-            <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
-              Los productos producidos no requieren fecha de caducidad. Los productos comprados aparecerán aquí cuando tengan existencias activas.
-            </p>
-          </div>
-        ) : (
-          <>
-            {/* VISTA TABLA (Pantallas Medianas y Grandes: sm+) */}
-            <div className="hidden sm:block overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/50 text-left border-b border-border">
+
+          {/* ── Vista Desktop: Tabla Limpia ── */}
+          <div className="hidden md:block bg-white rounded-2xl shadow-xs border border-[#E8DCCB] overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="bg-[#FAF5EE] border-b border-[#E8DCCB]">
                   <tr>
-                    <th className="px-4 py-3.5 font-semibold text-foreground">Producto / Lote</th>
-                    <th className="px-4 py-3.5 font-semibold text-foreground">Sucursal</th>
-                    <th className="px-4 py-3.5 font-semibold text-foreground text-right">Existencia</th>
-                    <th className="px-4 py-3.5 font-semibold text-foreground">Fecha Caducidad</th>
-                    <th className="px-4 py-3.5 font-semibold text-foreground">Estado de Alerta</th>
-                    <th className="px-4 py-3.5 font-semibold text-foreground text-right">Acciones</th>
+                    <th className="py-3.5 px-5 text-xs font-bold text-[#8C522B] uppercase tracking-wider">Producto / Lote</th>
+                    <th className="py-3.5 px-5 text-xs font-bold text-[#8C522B] uppercase tracking-wider">Sucursal</th>
+                    <th className="py-3.5 px-5 text-center text-xs font-bold text-[#8C522B] uppercase tracking-wider">Existencia</th>
+                    <th className="py-3.5 px-5 text-left text-xs font-bold text-[#8C522B] uppercase tracking-wider">Fecha Caducidad</th>
+                    <th className="py-3.5 px-5 text-left text-xs font-bold text-[#8C522B] uppercase tracking-wider">Estado de Alerta</th>
+                    <th className="py-3.5 px-5 text-right text-xs font-bold text-[#8C522B] uppercase tracking-wider">Acciones</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border">
+                <tbody className="divide-y divide-[#E8DCCB]/60">
                   {filteredLots.map((lot) => {
                     const isExpired = lot.status === "EXPIRED"
                     const hasNotified = Boolean(lot.lastNotifiedAt)
                     const hasCustomAlert = Boolean(lot.isCustomAlert)
 
                     return (
-                      <tr key={lot.id} className="hover:bg-muted/30 transition-colors">
-                        {/* Producto / Lote */}
-                        <td className="px-4 py-3.5">
-                          <div className="flex items-center gap-2">
-                            <Package className="h-4 w-4 text-primary shrink-0" />
+                      <tr
+                        key={lot.id}
+                        className={`hover:bg-[#FAF5EE]/50 transition-colors ${
+                          isExpired ? "bg-red-50/30" : ""
+                        }`}
+                      >
+                        <td className="py-3.5 px-5">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 bg-[#FAF0E6] text-[#D97706] rounded-xl flex items-center justify-center shrink-0">
+                              <Package className="h-5 w-5" />
+                            </div>
                             <div>
-                              <p className="font-semibold text-foreground">{lot.product.name}</p>
-                              <p className="text-xs text-muted-foreground">
+                              <p className="font-bold text-sm text-[#2B170F]">{lot.product.name}</p>
+                              <p className="text-xs text-[#8C522B] font-mono">
                                 Lote #{lot.id} · {lot.sourceType === "COMPRA" ? "Comprado" : lot.sourceType}
                               </p>
                             </div>
                           </div>
                         </td>
-
-                        {/* Sucursal */}
-                        <td className="px-4 py-3.5 text-muted-foreground font-medium">
-                          {lot.branch.name}
+                        <td className="py-3.5 px-5 text-sm font-medium text-[#2B170F]">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-bold bg-[#FAF0E6] text-[#D97706] border border-[#E8DCCB]">
+                            {lot.branch.name}
+                          </span>
                         </td>
-
-                        {/* Existencia */}
-                        <td className="px-4 py-3.5 text-right font-bold text-foreground">
-                          {lot.availableQuantity} <span className="text-xs font-normal text-muted-foreground">uds</span>
+                        <td className="py-3.5 px-5 text-center font-mono font-bold text-sm text-[#2B170F]">
+                          {lot.availableQuantity} <span className="text-xs font-normal text-[#8C522B]">uds</span>
                         </td>
-
-                        {/* Fecha Caducidad */}
-                        <td className="px-4 py-3.5">
+                        <td className="py-3.5 px-5 text-xs">
                           {lot.expiresAt ? (
                             <div>
-                              <span className="font-medium text-foreground">{formatDatePretty(lot.expiresAt)}</span>
+                              <span className="font-bold text-[#2B170F]">{formatDatePretty(lot.expiresAt)}</span>
                               {lot.daysLeft !== null && (
-                                <span
-                                  className={`block text-xs font-semibold mt-0.5 ${
-                                    lot.daysLeft < 0
-                                      ? "text-destructive"
-                                      : lot.daysLeft <= 3
-                                      ? "text-warning"
-                                      : "text-muted-foreground"
-                                  }`}
-                                >
-                                  {lot.daysLeft < 0
-                                    ? `Vencido hace ${Math.abs(lot.daysLeft)} día(s)`
-                                    : lot.daysLeft === 0
-                                    ? "¡Vence hoy!"
-                                    : `en ${lot.daysLeft} día(s)`}
+                                <span className={`block text-[11px] font-bold mt-0.5 ${
+                                  lot.daysLeft < 0 ? "text-red-600" : lot.daysLeft <= 3 ? "text-amber-700" : "text-[#8C522B]"
+                                }`}>
+                                  {lot.daysLeft < 0 ? `Vencido hace ${Math.abs(lot.daysLeft)}d` : lot.daysLeft === 0 ? "¡Vence hoy!" : `en ${lot.daysLeft} días`}
                                 </span>
                               )}
                             </div>
                           ) : (
-                            <span className="text-xs text-muted-foreground italic">Sin fecha registrada</span>
+                            <span className="text-[#8C522B] italic">Sin fecha</span>
                           )}
                         </td>
-
-                        {/* Estado de Alerta */}
-                        <td className="px-4 py-3.5">
+                        <td className="py-3.5 px-5 text-xs">
                           {isExpired ? (
-                            <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold bg-destructive/10 text-destructive">
-                              <AlertTriangle className="h-3.5 w-3.5" />
-                              Vencido
+                            <span className="inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-bold bg-red-100 text-red-800 border border-red-200">
+                              <AlertTriangle className="h-3.5 w-3.5" /> Vencido
                             </span>
                           ) : hasNotified ? (
-                            <div className="space-y-0.5">
-                              <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                                <BellRing className="h-3.5 w-3.5 text-emerald-600" />
-                                Alerta Notificada
+                            <div>
+                              <span className="inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                <BellRing className="h-3.5 w-3.5 text-emerald-600" /> Notificada
                               </span>
-                              <p className="text-[11px] text-muted-foreground">
-                                Última: {formatDateTimePretty(lot.lastNotifiedAt)}
+                              <p className="text-[10px] text-[#8C522B] mt-0.5 font-mono">
+                                {formatDateTimePretty(lot.lastNotifiedAt)}
                               </p>
                             </div>
                           ) : lot.effectiveAlertDate ? (
-                            <div className="space-y-0.5">
-                              <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold bg-amber-50 text-amber-900 border border-amber-200">
-                                <Clock className="h-3.5 w-3.5 text-amber-600" />
-                                Próxima alerta: {formatDatePretty(lot.effectiveAlertDate)}
+                            <div>
+                              <span className="inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-bold bg-amber-50 text-amber-900 border border-amber-200">
+                                <Clock className="h-3.5 w-3.5 text-[#D97706]" />
+                                Aviso: {formatDatePretty(lot.effectiveAlertDate)}
                               </span>
-                              <p className="text-[11px] text-muted-foreground">
-                                {hasCustomAlert
-                                  ? "Fecha personalizada"
-                                  : `${lot.defaultDaysBefore ?? 3} días antes de vencer`}
-                                {lot.daysUntilAlert !== null && lot.daysUntilAlert !== undefined && (
-                                  <span> ({lot.daysUntilAlert > 0 ? `en ${lot.daysUntilAlert}d` : "hoy"})</span>
-                                )}
+                              <p className="text-[10px] text-[#8C522B] mt-0.5">
+                                {hasCustomAlert ? "Personalizado" : `${lot.defaultDaysBefore ?? 3}d antes`}
                               </p>
                             </div>
                           ) : (
-                            <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs text-muted-foreground bg-muted">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium text-muted-foreground bg-muted">
                               Sin alerta
                             </span>
                           )}
                         </td>
-
-                        {/* Acciones */}
-                        <td className="px-4 py-3.5 text-right">
-                          <div className="inline-flex items-center gap-2 justify-end">
-                            <button
+                        <td className="py-3.5 px-5 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <Button
                               type="button"
+                              variant="outline"
+                              size="sm"
                               onClick={() => handleOpenEditModal(lot)}
-                              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-semibold text-foreground hover:bg-muted transition"
-                              title="Configurar cuándo recibir la alerta"
+                              className="h-9 px-2.5 border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] font-bold text-xs"
                             >
-                              <SlidersHorizontal className="h-3.5 w-3.5 text-primary" />
-                              Ajustar alerta
-                            </button>
+                              <SlidersHorizontal className="h-3.5 w-3.5 mr-1 text-[#8C522B]" />
+                              Ajustar Alerta
+                            </Button>
 
                             {isExpired && (
                               <Link
                                 href={`/admin/inventario/movimiento?producto=${lot.product.slug}&sucursal=${lot.branch.slug}&tipo=MERMA&cantidad=${lot.availableQuantity}&lote=${lot.id}&caducidad=${lot.expiresAt || ""}&referencia=${encodeURIComponent(`LOTE-${lot.id}`)}&nota=${encodeURIComponent(`Merma por lote vencido #${lot.id} (${lot.product.name})`)}`}
-                                className="inline-flex items-center gap-1 rounded-lg bg-destructive/10 border border-destructive/20 px-2.5 py-1.5 text-xs font-semibold text-destructive hover:bg-destructive/20 transition"
-                                title="Registrar salida por merma de este lote"
                               >
-                                <Trash2 className="h-3.5 w-3.5" /> Merma
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-9 px-2.5 border-red-300 text-red-600 hover:bg-red-50 font-bold text-xs"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5 mr-1" />
+                                  Merma
+                                </Button>
                               </Link>
                             )}
                           </div>
@@ -515,116 +616,42 @@ export default function CaducidadesPage() {
                 </tbody>
               </table>
             </div>
+          </div>
+        </>
+      )}
 
-            {/* VISTA TARJETAS MÓVILES (Pantallas Pequeñas: < sm) */}
-            <div className="sm:hidden divide-y divide-border">
-              {filteredLots.map((lot) => {
-                const isExpired = lot.status === "EXPIRED"
-                const hasNotified = Boolean(lot.lastNotifiedAt)
-                return (
-                  <div key={lot.id} className="p-4 space-y-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <p className="font-semibold text-foreground text-sm">{lot.product.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          Lote #{lot.id} · {lot.branch.name}
-                        </p>
-                      </div>
-                      <span className="font-bold text-sm bg-muted px-2.5 py-1 rounded-md text-foreground">
-                        {lot.availableQuantity} uds
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 text-xs bg-muted/40 p-2.5 rounded-lg border border-border/60">
-                      <div>
-                        <span className="text-muted-foreground block text-[10px] uppercase font-semibold">Caducidad</span>
-                        <span className="font-medium text-foreground">{formatDatePretty(lot.expiresAt)}</span>
-                        {lot.daysLeft !== null && (
-                          <span
-                            className={`block text-[11px] font-semibold ${
-                              lot.daysLeft < 0 ? "text-destructive" : lot.daysLeft <= 3 ? "text-warning" : "text-muted-foreground"
-                            }`}
-                          >
-                            {lot.daysLeft < 0 ? `Vencido (${Math.abs(lot.daysLeft)}d)` : `en ${lot.daysLeft} días`}
-                          </span>
-                        )}
-                      </div>
-
-                      <div>
-                        <span className="text-muted-foreground block text-[10px] uppercase font-semibold">Alerta</span>
-                        {isExpired ? (
-                          <span className="text-destructive font-semibold">Vencido</span>
-                        ) : hasNotified ? (
-                          <span className="text-emerald-700 font-semibold">Notificada</span>
-                        ) : lot.effectiveAlertDate ? (
-                          <span className="text-amber-800 font-semibold">
-                            {formatDatePretty(lot.effectiveAlertDate)}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground italic">Sin alerta</span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-end gap-2 pt-1">
-                      <button
-                        type="button"
-                        onClick={() => handleOpenEditModal(lot)}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted transition"
-                      >
-                        <SlidersHorizontal className="h-3.5 w-3.5 text-primary" />
-                        Ajustar alerta
-                      </button>
-
-                      {isExpired && (
-                        <Link
-                          href={`/admin/inventario/movimiento?producto=${lot.product.slug}&sucursal=${lot.branch.slug}&tipo=MERMA&cantidad=${lot.availableQuantity}&lote=${lot.id}&caducidad=${lot.expiresAt || ""}&referencia=${encodeURIComponent(`LOTE-${lot.id}`)}&nota=${encodeURIComponent(`Merma por lote vencido #${lot.id} (${lot.product.name})`)}`}
-                          className="inline-flex items-center gap-1 rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2 text-xs font-semibold text-destructive hover:bg-destructive/20 transition"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" /> Registrar merma
-                        </Link>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* MODAL PARA AJUSTAR ALERTA DE CADUCIDAD */}
+      {/* ── MODAL PARA AJUSTAR ALERTA DE CADUCIDAD ── */}
       {selectedLotForEdit && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs animate-in fade-in">
-          <div className="w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-xl space-y-5 animate-in zoom-in-95">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs animate-fadeIn">
+          <div className="w-full max-w-lg rounded-2xl border border-[#E8DCCB] bg-white p-6 shadow-xl space-y-5">
             {/* Header del Modal */}
-            <div className="flex items-start justify-between gap-4 border-b border-border pb-3">
+            <div className="flex items-start justify-between gap-4 border-b border-[#E8DCCB] pb-3">
               <div>
-                <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
-                  <SlidersHorizontal className="h-5 w-5 text-primary" /> Ajustar Alertas de Caducidad
+                <h3 className="text-lg font-bold text-[#2B170F] flex items-center gap-2">
+                  <SlidersHorizontal className="h-5 w-5 text-[#D97706]" /> Ajustar Alertas de Caducidad
                 </h3>
-                <p className="text-xs text-muted-foreground mt-0.5">
+                <p className="text-xs text-[#8C522B] mt-0.5">
                   Lote #{selectedLotForEdit.id} · {selectedLotForEdit.product.name} ({selectedLotForEdit.branch.name})
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedLotForEdit(null)}
-                className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition"
+                className="rounded-lg p-1.5 text-[#8C522B] hover:bg-[#FAF5EE] transition"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             {/* Información del Lote */}
-            <div className="grid grid-cols-2 gap-3 bg-muted/40 p-3 rounded-xl border border-border/80 text-xs">
+            <div className="grid grid-cols-2 gap-3 bg-[#FAF5EE] p-3.5 rounded-xl border border-[#DECDBB]/60 text-xs">
               <div>
-                <span className="text-muted-foreground block font-medium">Existencia Actual</span>
-                <span className="font-bold text-foreground text-sm">{selectedLotForEdit.availableQuantity} unidades</span>
+                <span className="text-[#8C522B] block font-bold uppercase text-[10px] tracking-wider">Existencia</span>
+                <span className="font-bold text-[#2B170F] text-sm">{selectedLotForEdit.availableQuantity} unidades</span>
               </div>
               <div>
-                <span className="text-muted-foreground block font-medium">Fecha de Caducidad</span>
-                <span className="font-bold text-foreground text-sm">
+                <span className="text-[#8C522B] block font-bold uppercase text-[10px] tracking-wider">Fecha de Caducidad</span>
+                <span className="font-bold text-[#2B170F] text-sm">
                   {formatDatePretty(editCustomExpiresAt || selectedLotForEdit.expiresAt)}
                 </span>
               </div>
@@ -633,26 +660,23 @@ export default function CaducidadesPage() {
             {/* Opciones de Modo: Días de anticipación vs Fecha exacta */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                <label className="text-xs font-bold uppercase tracking-wider text-[#8C522B]">
                   Programación de Avisos
                 </label>
                 <button
                   type="button"
                   onClick={() => setIsCustomDateMode(!isCustomDateMode)}
-                  className="text-xs font-semibold text-primary hover:underline"
+                  className="text-xs font-semibold text-[#D97706] hover:underline"
                 >
-                  {isCustomDateMode ? "Usar días de anticipación (múltiples)" : "Elegir fecha exacta en calendario"}
+                  {isCustomDateMode ? "Usar días de anticipación" : "Elegir fecha exacta"}
                 </button>
               </div>
 
               {!isCustomDateMode ? (
-                /* Modo 1: Selección Múltiple de Días de Anticipación */
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-muted-foreground">
-                      Selecciona <strong>uno o varios días de anticipación</strong> para recibir recordatorios escalonados:
-                    </p>
-                  </div>
+                  <p className="text-xs text-[#6E5545]">
+                    Selecciona <strong>días de anticipación</strong> para recibir recordatorios:
+                  </p>
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                     {quickReminderDays.map((d) => {
                       const isSelected = editReminderDays.includes(d)
@@ -661,10 +685,10 @@ export default function CaducidadesPage() {
                           key={d}
                           type="button"
                           onClick={() => toggleReminderDay(d)}
-                          className={`py-2 px-2.5 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition ${
+                          className={`py-2 px-2.5 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 transition ${
                             isSelected
-                              ? "bg-primary text-primary-foreground border-primary shadow-xs ring-1 ring-primary/30"
-                              : "bg-background border-border text-foreground hover:bg-muted"
+                              ? "bg-[#D97706] text-white border-[#D97706] shadow-xs"
+                              : "bg-white border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE]"
                           }`}
                         >
                           {isSelected && <Check className="h-3.5 w-3.5" />}
@@ -675,39 +699,38 @@ export default function CaducidadesPage() {
                   </div>
                 </div>
               ) : (
-                /* Modo 2: Fecha Específica */
                 <div className="space-y-2">
-                  <label className="text-xs font-medium text-foreground block">
-                    Fecha exacta en que se enviará la notificación:
+                  <label className="text-xs font-bold uppercase tracking-wider text-[#2B170F] block">
+                    Fecha exacta para enviar notificación:
                   </label>
                   <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8C522B]" />
                     <input
                       type="date"
                       value={editCustomAlertAt}
                       onChange={(e) => setEditCustomAlertAt(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2 text-sm bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                      className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-[#DECDBB] rounded-xl text-[#2B170F] focus:outline-none focus:ring-2 focus:ring-[#D97706]/30"
                     />
                   </div>
                 </div>
               )}
 
-              {/* Vista Previa de Todas las Fechas Resultantes */}
+              {/* Vista Previa */}
               {previewAlertDates.length > 0 && (
-                <div className="rounded-xl bg-amber-50/90 border border-amber-200/80 p-3.5 space-y-2 text-xs text-amber-950">
+                <div className="rounded-xl bg-amber-50 border border-amber-200 p-3.5 space-y-2 text-xs text-amber-950">
                   <div className="flex items-center gap-2 font-bold text-amber-900">
-                    <Bell className="h-4 w-4 text-amber-600 shrink-0" />
+                    <Bell className="h-4 w-4 text-[#D97706] shrink-0" />
                     <span>
                       {previewAlertDates.length === 1
-                        ? "Se enviará 1 notificación programada:"
-                        : `Se enviarán ${previewAlertDates.length} notificaciones escalonadas:`}
+                        ? "1 notificación programada:"
+                        : `${previewAlertDates.length} notificaciones programadas:`}
                     </span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-0.5">
                     {previewAlertDates.map((item, idx) => (
                       <div
                         key={item.date + idx}
-                        className="flex items-center justify-between bg-white/80 px-2.5 py-1.5 rounded-lg border border-amber-200/60 font-medium"
+                        className="flex items-center justify-between bg-white px-2.5 py-1.5 rounded-lg border border-amber-200/60 font-medium"
                       >
                         <span className="text-amber-800 text-[11px]">
                           {isCustomDateMode ? "Alerta:" : `Aviso (${item.label}):`}
@@ -720,51 +743,52 @@ export default function CaducidadesPage() {
               )}
 
               {/* Corrección de Caducidad (Opcional) */}
-              <div className="pt-2 border-t border-border space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                  <CalendarClock className="h-3.5 w-3.5 text-muted-foreground" />
+              <div className="pt-2 border-t border-[#E8DCCB] space-y-1.5">
+                <label className="text-xs font-medium text-[#6E5545] flex items-center gap-1.5">
+                  <CalendarClock className="h-3.5 w-3.5 text-[#8C522B]" />
                   Corregir fecha de caducidad del lote (opcional):
                 </label>
                 <input
                   type="date"
                   value={editCustomExpiresAt}
                   onChange={(e) => setEditCustomExpiresAt(e.target.value)}
-                  className="w-full px-3 py-2 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                  className="w-full px-3 py-2 text-xs bg-white border border-[#DECDBB] rounded-xl text-[#2B170F] focus:outline-none focus:ring-2 focus:ring-[#D97706]/30"
                 />
               </div>
             </div>
 
             {/* Footer con Botones */}
-            <div className="flex items-center justify-between gap-2 border-t border-border pt-4">
+            <div className="flex items-center justify-between gap-2 border-t border-[#E8DCCB] pt-4">
               {selectedLotForEdit.isCustomAlert ? (
                 <Button
                   variant="outline"
                   type="button"
                   onClick={() => void handleRestoreProductAlerts()}
                   disabled={isSavingAlert}
-                  className="text-xs"
+                  className="text-xs h-10 px-3 border-[#DECDBB]"
                 >
-                  Restaurar recordatorios
+                  Restaurar
                 </Button>
               ) : <span />}
               <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                type="button"
-                onClick={() => setSelectedLotForEdit(null)}
-                disabled={isSavingAlert}
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="button"
-                onClick={() => void handleSaveAlertConfig()}
-                disabled={isSavingAlert}
-                className="gap-2 font-semibold"
-              >
-                {isSavingAlert && <RefreshCw className="h-4 w-4 animate-spin" />}
-                Guardar alertas
-              </Button>
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={() => setSelectedLotForEdit(null)}
+                  disabled={isSavingAlert}
+                  className="h-10 px-4 border-[#DECDBB]"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => void handleSaveAlertConfig()}
+                  disabled={isSavingAlert}
+                  className="h-10 px-5 bg-[#D97706] hover:bg-[#B45309] text-white font-bold rounded-xl shadow-xs"
+                >
+                  {isSavingAlert && <RefreshCw className="h-4 w-4 mr-1.5 animate-spin" />}
+                  Guardar Alertas
+                </Button>
               </div>
             </div>
           </div>

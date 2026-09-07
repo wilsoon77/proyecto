@@ -303,14 +303,45 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
   }, [isLoggedIn, refreshHistory])
 
-  // Remove automatic permission request on login. 
-  // It should only be requested on explicit user gesture (e.g. clicking the bell or a button)
+  // Sincronización automática de suscripción push al iniciar sesión
+  // Si el navegador ya tiene permisos ('granted'), vincula inmediatamente la suscripción con el usuario actual
   useEffect(() => {
-    if (isLoggedIn && !isLoading && Notification.permission === 'granted' && !isSubscribed) {
-      // If browser already has permission but no subscription, auto subscribe
-      subscribeUser()
+    if (!isLoggedIn || isLoading || typeof window === 'undefined') return
+
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
+
+    if (Notification.permission === 'granted') {
+      const syncActiveSubscription = async () => {
+        try {
+          const reg = swRegistrationRef.current || (await navigator.serviceWorker.ready)
+          if (!reg) return
+
+          const subscription = await reg.pushManager.getSubscription()
+          if (subscription) {
+            const subJson = subscription.toJSON()
+            if (subJson.endpoint && subJson.keys?.p256dh && subJson.keys?.auth) {
+              await notificationsService.subscribe({
+                endpoint: subJson.endpoint,
+                keys: {
+                  p256dh: subJson.keys.p256dh,
+                  auth: subJson.keys.auth,
+                },
+              })
+              setIsSubscribed(true)
+              return
+            }
+          }
+
+          // Si tiene permisos pero no hay suscripción activa en PushManager, suscribir de forma transparente
+          await subscribeUser()
+        } catch (err) {
+          console.warn('Error al resincronizar suscripción push con el usuario:', err)
+        }
+      }
+
+      syncActiveSubscription()
     }
-  }, [isLoggedIn, isLoading, isSubscribed, subscribeUser])
+  }, [isLoggedIn, isLoading, subscribeUser])
 
   return (
     <NotificationContext.Provider

@@ -58,6 +58,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL('/login?error=oauth_failed', request.url))
     }
 
+    const rememberMeCookie = cookieStore.get('panaderia_remember_oauth')?.value
+    const rememberMe = rememberMeCookie !== undefined ? rememberMeCookie === '1' : true
+
     // Add timeout to backend fetch (especially useful for free tier Render cold starts)
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 25000) // 25s timeout
@@ -68,7 +71,9 @@ export async function GET(request: NextRequest) {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${data.session.access_token}`,
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ rememberMe }),
         signal: controller.signal
       })
       clearTimeout(timeoutId)
@@ -92,7 +97,8 @@ export async function GET(request: NextRequest) {
 
     // Los tokens de la aplicación quedan solo en cookies HttpOnly. El cliente
     // carga el perfil desde /api/auth/session sin recibir secretos.
-    setSessionCookies(response, authData)
+    setSessionCookies(response, authData, rememberMe)
+    response.cookies.set('panaderia_remember_oauth', '', { path: '/', maxAge: 0 })
 
     return response
   } catch (err) {

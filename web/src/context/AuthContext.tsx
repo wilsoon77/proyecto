@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from "react"
 import { authService, ensureCsrfToken } from "@/lib/api"
+import { notificationsService } from "@/lib/api/notifications"
 import type { ApiUser, LoginDto, RegisterDto, UpdateMeDto } from "@/lib/api/types"
 
 interface AuthContextType {
@@ -64,6 +65,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     setIsLoading(true)
     try {
+      if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+        try {
+          const reg = await navigator.serviceWorker.ready
+          const subscription = await reg.pushManager.getSubscription()
+          if (subscription?.endpoint) {
+            await notificationsService.unsubscribe(subscription.endpoint).catch(() => {})
+          }
+        } catch {
+          // Si falla la desvinculación push, continuar con el logout de sesión
+        }
+      }
       await authService.logout()
     } catch (error) {
       console.error('Error en logout:', error)

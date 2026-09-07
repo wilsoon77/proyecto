@@ -110,3 +110,11 @@ export class ResetPasswordDto {
   @MinLength(8)
   newPassword!: string;
 }
+
+export class OAuthCallbackDto {
+  @ApiProperty({ example: true, required: false, description: 'Mantener sesión iniciada por 30 días' })
+  @IsOptional()
+  @IsBoolean()
+  rememberMe?: boolean;
+}
+

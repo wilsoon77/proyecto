@@ -3,7 +3,7 @@ import { ApiTags, ApiBearerAuth, ApiResponse, ApiBadRequestResponse, ApiUnauthor
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service.js';
 import { JwtAuthGuard } from './jwt-auth.guard.js';
-import { RegisterDto, LoginDto, UpdateMeDto, AuthResponseDto, UserDto, RefreshDto, ResetPasswordDto } from './dto/auth.dto.js';
+import { RegisterDto, LoginDto, UpdateMeDto, AuthResponseDto, UserDto, RefreshDto, ResetPasswordDto, OAuthCallbackDto } from './dto/auth.dto.js';
 import { ErrorResponseDto } from '../common/dto/error-response.dto.js';
 
 @Controller('auth')
@@ -95,7 +95,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'OAuth exitoso', type: AuthResponseDto })
   @ApiUnauthorizedResponse({ description: 'Access token de Supabase inválido o ausente', type: ErrorResponseDto })
   @ApiBadRequestResponse({ description: 'Error en OAuth', type: ErrorResponseDto })
-  oauthCallback(@Req() req: any) {
+  oauthCallback(@Req() req: any, @Body() body?: OAuthCallbackDto) {
     const authorization = String(req.headers?.authorization || '');
     if (!authorization.toLowerCase().startsWith('bearer ')) {
       throw new UnauthorizedException('Access token de Supabase requerido');
@@ -107,7 +107,7 @@ export class AuthController {
     }
 
     const metadata = { userAgent: req.headers['user-agent'], ip: req.ip };
-    return this.auth.handleOAuthCallback(supabaseAccessToken, metadata);
+    return this.auth.handleOAuthCallback(supabaseAccessToken, metadata, body?.rememberMe === true);
   }
 
   @Post('reset-password')

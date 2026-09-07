@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
-import { ArrowLeft, Loader as Loader2, Save, Eye, EyeOff, Building2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Eye, EyeOff, Building2, UserPlus } from "lucide-react"
 import { useToast } from "@/components/ui/toast"
 import { usersService, branchesService, type UserRole, ApiClientError } from "@/lib/api"
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader"
+import { AdminStickyFooter } from "@/components/admin/AdminStickyFooter"
 
 interface Branch {
   id: number
@@ -76,7 +76,7 @@ export default function NuevoUsuarioPage() {
       return
     }
     if (['MANAGER', 'BAKER'].includes(role) && !branchId) {
-      setError("Debe seleccionar una sucursal para el empleado")
+      setError("Los gerentes y panaderos deben tener una sucursal asignada")
       return
     }
 
@@ -87,19 +87,19 @@ export default function NuevoUsuarioPage() {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         email: email.trim().toLowerCase(),
-        phone: phone.trim() || undefined,
         password,
+        phone: phone.trim() || undefined,
         role,
         branchId: ['MANAGER', 'BAKER'].includes(role) ? branchId : undefined,
       })
 
-      showToast(`Usuario "${firstName} ${lastName}" creado correctamente`, "success")
+      showToast(`Usuario "${firstName.trim()} ${lastName.trim()}" creado correctamente`, "success")
       router.push("/admin/usuarios")
     } catch (err) {
       if (err instanceof ApiClientError) {
         setError(err.message)
       } else {
-        setError("Error al crear el usuario")
+        setError("Error al crear el usuario. Verifica que el correo no esté ya registrado.")
       }
     } finally {
       setIsLoading(false)
@@ -107,35 +107,45 @@ export default function NuevoUsuarioPage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-2xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-8">
-        <Link href="/admin/usuarios">
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Volver
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Nuevo Usuario</h1>
-          <p className="text-muted-foreground">Completa la información del usuario</p>
-        </div>
-      </div>
+    <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto pb-24">
+      {/* ── Header Estandarizado ── */}
+      <AdminPageHeader
+        title="Nuevo Usuario"
+        description="Crea una cuenta para administradores, empleados, panaderos o clientes"
+        breadcrumbs={[
+          { label: "Usuarios", href: "/admin/usuarios" },
+          { label: "Nuevo Usuario" },
+        ]}
+      />
 
-      {/* Form */}
-      <form onSubmit={handleSubmit}>
-        <div className="bg-card rounded-xl shadow-sm border border-border p-6 space-y-6">
-          {/* Error Message */}
+      {/* ── Formulario ── */}
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="bg-white rounded-2xl shadow-xs border border-[#E8DCCB] p-6 sm:p-8 space-y-6">
           {error && (
-            <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg">
+            <div className="bg-destructive/10 border border-destructive/20 text-destructive text-sm px-4 py-3 rounded-xl font-medium">
               {error}
             </div>
           )}
 
-          {/* Name Row */}
-          <div className="grid grid-cols-2 gap-4">
+          {/* Icon Badge Preview */}
+          <div className="flex items-center gap-4 p-4 rounded-xl bg-[#FAF5EE] border border-[#DECDBB]/60">
+            <div className="h-14 w-14 bg-[#FAF0E6] text-[#D97706] rounded-2xl flex items-center justify-center shrink-0 border border-[#E8DCCB]">
+              <UserPlus className="h-7 w-7" />
+            </div>
             <div>
-              <label htmlFor="firstName" className="block text-sm font-medium text-foreground mb-2">
+              <p className="text-sm font-bold text-[#2B170F]">
+                {firstName || lastName ? `${firstName} ${lastName}`.trim() : "Nombre completo"}
+              </p>
+              <p className="text-xs text-[#8C522B] font-mono mt-0.5">
+                {email || "correo@ejemplo.com"}
+              </p>
+            </div>
+          </div>
+
+          {/* Name Row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="firstName" className="block text-xs font-bold text-[#2B170F] uppercase tracking-wider mb-2">
                 Nombre *
               </label>
               <input
@@ -144,11 +154,11 @@ export default function NuevoUsuarioPage() {
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 placeholder="Juan"
-                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="w-full px-4 py-2.5 text-sm bg-white border border-[#DECDBB] rounded-xl text-[#2B170F] placeholder:text-[#8C522B]/50 focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
               />
             </div>
             <div>
-              <label htmlFor="lastName" className="block text-sm font-medium text-foreground mb-2">
+              <label htmlFor="lastName" className="block text-xs font-bold text-[#2B170F] uppercase tracking-wider mb-2">
                 Apellido *
               </label>
               <input
@@ -157,14 +167,14 @@ export default function NuevoUsuarioPage() {
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 placeholder="Pérez"
-                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="w-full px-4 py-2.5 text-sm bg-white border border-[#DECDBB] rounded-xl text-[#2B170F] placeholder:text-[#8C522B]/50 focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
               />
             </div>
           </div>
 
           {/* Email */}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">
+            <label htmlFor="email" className="block text-xs font-bold text-[#2B170F] uppercase tracking-wider mb-2">
               Email *
             </label>
             <input
@@ -173,14 +183,14 @@ export default function NuevoUsuarioPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="usuario@ejemplo.com"
-              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              className="w-full px-4 py-2.5 text-sm bg-white border border-[#DECDBB] rounded-xl text-[#2B170F] placeholder:text-[#8C522B]/50 focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
             />
           </div>
 
           {/* Phone */}
           <div>
-            <label htmlFor="phone" className="block text-sm font-medium text-foreground mb-2">
-              Teléfono
+            <label htmlFor="phone" className="block text-xs font-bold text-[#2B170F] uppercase tracking-wider mb-2">
+              Teléfono (Opcional)
             </label>
             <input
               id="phone"
@@ -188,14 +198,14 @@ export default function NuevoUsuarioPage() {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="+502 1234-5678"
-              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              className="w-full px-4 py-2.5 text-sm bg-white border border-[#DECDBB] rounded-xl text-[#2B170F] placeholder:text-[#8C522B]/50 focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
             />
           </div>
 
           {/* Role */}
           <div>
-            <label htmlFor="role" className="block text-sm font-medium text-foreground mb-2">
-              Rol *
+            <label htmlFor="role" className="block text-xs font-bold text-[#2B170F] uppercase tracking-wider mb-2">
+              Rol de Acceso *
             </label>
             <select
               id="role"
@@ -206,48 +216,49 @@ export default function NuevoUsuarioPage() {
                   setBranchId(undefined)
                 }
               }}
-              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card"
+              className="w-full px-4 py-2.5 text-sm bg-white border border-[#DECDBB] rounded-xl text-[#2B170F] focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
             >
               <option value="CUSTOMER">Cliente</option>
               <option value="MANAGER">Gerente</option>
               <option value="BAKER">Panadero</option>
               <option value="ADMIN">Administrador</option>
             </select>
-            <p className="text-xs text-muted-foreground mt-1">
-              {role === 'CUSTOMER' && 'Puede ver productos y realizar pedidos'}
-              {role === 'MANAGER' && 'Acceso total a operaciones de su sucursal'}
-              {role === 'BAKER' && 'Solo ve producción y materia prima'}
-              {role === 'ADMIN' && 'Acceso completo al sistema'}
+            <p className="text-[11px] text-[#8C522B] mt-1.5">
+              {role === 'CUSTOMER' && 'Puede ver productos y realizar pedidos en línea.'}
+              {role === 'MANAGER' && 'Acceso total a inventario y operaciones de su sucursal asignada.'}
+              {role === 'BAKER' && 'Acceso enfocado a hornadas, recetas y consumo de materia prima.'}
+              {role === 'ADMIN' && 'Control total de configuración, finanzas, usuarios y catálogo.'}
             </p>
           </div>
 
           {/* Branch (solo para roles operativos) */}
           {['MANAGER', 'BAKER'].includes(role) && (
             <div>
-              <label htmlFor="branch" className="block text-sm font-medium text-foreground mb-2">
-                <Building2 className="inline-block h-4 w-4 mr-1" />
+              <label htmlFor="branch" className="block text-xs font-bold text-[#2B170F] uppercase tracking-wider mb-2">
+                <Building2 className="inline-block h-3.5 w-3.5 mr-1 text-[#D97706]" />
                 Sucursal Asignada *
               </label>
               <select
                 id="branch"
                 value={branchId || ""}
                 onChange={(e) => setBranchId(e.target.value ? Number(e.target.value) : undefined)}
-                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card"
+                className="w-full px-4 py-2.5 text-sm bg-white border border-[#DECDBB] rounded-xl text-[#2B170F] focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
+                required
               >
                 <option value="">Seleccionar sucursal...</option>
                 {branches.map(branch => (
                   <option key={branch.id} value={branch.id}>{branch.name}</option>
                 ))}
               </select>
-              <p className="text-xs text-muted-foreground mt-1">
-                El empleado solo podrá ver y gestionar el inventario de esta sucursal
+              <p className="text-[11px] text-[#8C522B] mt-1.5">
+                El empleado operará directamente sobre el inventario y hornadas de esta sucursal.
               </p>
             </div>
           )}
 
           {/* Password */}
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-foreground mb-2">
+            <label htmlFor="password" className="block text-xs font-bold text-[#2B170F] uppercase tracking-wider mb-2">
               Contraseña *
             </label>
             <div className="relative">
@@ -257,12 +268,12 @@ export default function NuevoUsuarioPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Mínimo 8 caracteres"
-                className="w-full px-4 py-2 pr-10 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="w-full px-4 py-2.5 pr-10 text-sm bg-white border border-[#DECDBB] rounded-xl text-[#2B170F] focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/60 hover:text-muted-foreground"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8C522B] hover:text-[#2B170F]"
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
@@ -271,7 +282,7 @@ export default function NuevoUsuarioPage() {
 
           {/* Confirm Password */}
           <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-foreground mb-2">
+            <label htmlFor="confirmPassword" className="block text-xs font-bold text-[#2B170F] uppercase tracking-wider mb-2">
               Confirmar Contraseña *
             </label>
             <input
@@ -280,36 +291,18 @@ export default function NuevoUsuarioPage() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Repite la contraseña"
-              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              className="w-full px-4 py-2.5 text-sm bg-white border border-[#DECDBB] rounded-xl text-[#2B170F] focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
             />
           </div>
         </div>
 
-        {/* Submit Button */}
-        <div className="flex justify-end gap-4 mt-6">
-          <Link href="/admin/usuarios">
-            <Button type="button" variant="outline">
-              Cancelar
-            </Button>
-          </Link>
-          <Button 
-            type="submit" 
-            className="bg-primary hover:bg-primary/90"
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Creando...
-              </>
-            ) : (
-              <>
-                <Save className="h-4 w-4 mr-2" />
-                Crear Usuario
-              </>
-            )}
-          </Button>
-        </div>
+        {/* ── Barra Fija de Acciones Inferior ── */}
+        <AdminStickyFooter
+          primaryLabel="Crear Usuario"
+          isPrimarySubmitting={isLoading}
+          secondaryLabel="Cancelar"
+          secondaryHref="/admin/usuarios"
+        />
       </form>
     </div>
   )

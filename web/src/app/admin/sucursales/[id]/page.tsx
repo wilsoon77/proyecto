@@ -3,10 +3,12 @@
 import { useState, useEffect, use } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Save, Loader as Loader2, MapPin } from "lucide-react"
+import { ArrowLeft, MapPin, Loader as Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { branchesService, ApiClientError } from "@/lib/api"
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader"
+import { AdminStickyFooter } from "@/components/admin/AdminStickyFooter"
 
 export default function EditarSucursalPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params)
@@ -65,7 +67,7 @@ export default function EditarSucursalPage({ params }: { params: Promise<{ id: s
     setError("")
 
     if (!name.trim()) {
-      setError("El nombre es requerido")
+      setError("El nombre de la sucursal es requerido")
       return
     }
     if (!address.trim()) {
@@ -73,7 +75,7 @@ export default function EditarSucursalPage({ params }: { params: Promise<{ id: s
       return
     }
     if (!slug.trim()) {
-      setError("El slug es requerido")
+      setError("El slug URL es requerido")
       return
     }
 
@@ -102,21 +104,24 @@ export default function EditarSucursalPage({ params }: { params: Promise<{ id: s
   if (isLoading) {
     return (
       <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-[50vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-[#D97706] mx-auto" />
+          <p className="mt-3 text-xs font-semibold text-[#8C522B]">Cargando sucursal...</p>
+        </div>
       </div>
     )
   }
 
   if (error && !name) {
     return (
-      <div className="p-4 sm:p-6 lg:p-8">
-        <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-2xl mx-auto">
+        <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-xl text-sm font-medium">
           {error}
         </div>
         <Link href="/admin/sucursales" className="mt-4 inline-block">
-          <Button variant="outline">
+          <Button variant="outline" className="border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE]">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Volver
+            Volver a sucursales
           </Button>
         </Link>
       </div>
@@ -124,41 +129,41 @@ export default function EditarSucursalPage({ params }: { params: Promise<{ id: s
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-2xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-8">
-        <Link href="/admin/sucursales">
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Volver
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-foreground">Editar Sucursal</h1>
-          <p className="text-muted-foreground">Modifica los datos de la sucursal</p>
-        </div>
-      </div>
+    <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto pb-24">
+      {/* ── Header Estandarizado ── */}
+      <AdminPageHeader
+        title={`Editar: ${name}`}
+        description="Modifica la información general, dirección y teléfono de la sucursal"
+        breadcrumbs={[
+          { label: "Sucursales", href: "/admin/sucursales" },
+          { label: `Editar #${branchId}` },
+        ]}
+      />
 
-      {/* Form */}
-      <form onSubmit={handleSubmit}>
-        <div className="bg-card rounded-xl shadow-sm border border-border p-6 space-y-6">
+      {/* ── Formulario ── */}
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="bg-white rounded-2xl shadow-xs border border-[#E8DCCB] p-6 sm:p-8 space-y-6">
           {error && (
-            <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg">
+            <div className="bg-destructive/10 border border-destructive/20 text-destructive text-sm px-4 py-3 rounded-xl font-medium">
               {error}
             </div>
           )}
 
-          {/* Icon Preview */}
-          <div className="flex justify-center">
-            <div className="h-20 w-20 bg-primary/10 rounded-2xl flex items-center justify-center">
-              <MapPin className="h-10 w-10 text-primary" />
+          {/* Icon Badge Preview */}
+          <div className="flex items-center gap-4 p-4 rounded-xl bg-[#FAF5EE] border border-[#DECDBB]/60">
+            <div className="h-14 w-14 bg-[#FAF0E6] text-[#D97706] rounded-2xl flex items-center justify-center shrink-0 border border-[#E8DCCB]">
+              <MapPin className="h-7 w-7" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-[#2B170F]">{name}</p>
+              <p className="text-xs text-[#8C522B] font-mono mt-0.5">/{slug}</p>
             </div>
           </div>
 
           {/* Name */}
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-foreground mb-2">
-              Nombre *
+            <label htmlFor="name" className="block text-xs font-bold text-[#2B170F] uppercase tracking-wider mb-2">
+              Nombre de la sucursal *
             </label>
             <input
               id="name"
@@ -166,36 +171,38 @@ export default function EditarSucursalPage({ params }: { params: Promise<{ id: s
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Ej: Sucursal Centro"
-              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              className="w-full px-4 py-2.5 text-sm bg-white border border-[#DECDBB] rounded-xl text-[#2B170F] placeholder:text-[#8C522B]/50 focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
             />
           </div>
 
           {/* Slug */}
           <div>
-            <label htmlFor="slug" className="block text-sm font-medium text-foreground mb-2">
-              Slug (URL) *
+            <div className="flex items-center justify-between mb-2">
+              <label htmlFor="slug" className="text-xs font-bold text-[#2B170F] uppercase tracking-wider">
+                Slug (URL) *
+              </label>
               <button
                 type="button"
                 onClick={() => setSlug(generateSlug(name))}
-                className="ml-2 text-xs text-primary hover:text-primary"
+                className="text-xs text-[#D97706] hover:underline font-medium"
               >
                 Regenerar desde nombre
               </button>
-            </label>
+            </div>
             <input
               id="slug"
               type="text"
               value={slug}
               onChange={(e) => setSlug(e.target.value)}
               placeholder="ej: sucursal-centro"
-              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              className="w-full px-4 py-2.5 text-sm bg-[#FAF5EE]/50 border border-[#DECDBB] rounded-xl text-[#2B170F] font-mono placeholder:text-[#8C522B]/50 focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
             />
           </div>
 
           {/* Address */}
           <div>
-            <label htmlFor="address" className="block text-sm font-medium text-foreground mb-2">
-              Dirección *
+            <label htmlFor="address" className="block text-xs font-bold text-[#2B170F] uppercase tracking-wider mb-2">
+              Dirección Física Completa *
             </label>
             <input
               id="address"
@@ -203,51 +210,33 @@ export default function EditarSucursalPage({ params }: { params: Promise<{ id: s
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               placeholder="Ej: Av. Principal #123, Centro"
-              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              className="w-full px-4 py-2.5 text-sm bg-white border border-[#DECDBB] rounded-xl text-[#2B170F] placeholder:text-[#8C522B]/50 focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
             />
           </div>
 
           {/* Phone */}
           <div>
-            <label htmlFor="phone" className="block text-sm font-medium text-foreground mb-2">
-              Teléfono
+            <label htmlFor="phone" className="block text-xs font-bold text-[#2B170F] uppercase tracking-wider mb-2">
+              Teléfono de Contacto (Opcional)
             </label>
             <input
               id="phone"
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="Ej: +52 123 456 7890"
-              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="Ej: +502 1234 5678"
+              className="w-full px-4 py-2.5 text-sm bg-white border border-[#DECDBB] rounded-xl text-[#2B170F] placeholder:text-[#8C522B]/50 focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
             />
           </div>
-
-          {/* Actions */}
-          <div className="flex gap-3 pt-4 border-t border-border">
-            <Button
-              type="submit"
-              disabled={isSaving}
-              className="flex-1 bg-primary hover:bg-primary/90"
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Guardando...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  Guardar Cambios
-                </>
-              )}
-            </Button>
-            <Link href="/admin/sucursales">
-              <Button type="button" variant="outline">
-                Cancelar
-              </Button>
-            </Link>
-          </div>
         </div>
+
+        {/* ── Barra Fija de Acciones Inferior ── */}
+        <AdminStickyFooter
+          primaryLabel="Guardar Cambios"
+          isPrimarySubmitting={isSaving}
+          secondaryLabel="Cancelar"
+          secondaryHref="/admin/sucursales"
+        />
       </form>
     </div>
   )

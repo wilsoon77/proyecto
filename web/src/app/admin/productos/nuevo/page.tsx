@@ -10,6 +10,8 @@ import { ProductPresentationsEditor } from "@/components/admin/ProductPresentati
 import type { ApiProductPresentationInput } from "@/lib/api/types"
 import { useToast } from "@/components/ui/toast"
 import { adminService, categoriesService, ApiClientError } from "@/lib/api"
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader"
+import { AdminStickyFooter } from "@/components/admin/AdminStickyFooter"
 
 interface Category {
   id: number
@@ -234,24 +236,20 @@ export default function NuevoProductoPage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-8">
-        <Link href="/admin/productos">
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Volver
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Nuevo Producto</h1>
-          <p className="text-muted-foreground">Completa la información del producto</p>
-        </div>
-      </div>
+    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-6">
+      {/* Header Estandarizado */}
+      <AdminPageHeader
+        title="Nuevo Producto"
+        description="Completa la información del producto, fotos y presentaciones de venta"
+        breadcrumbs={[
+          { label: "Productos", href: "/admin/productos" },
+          { label: "Nuevo Producto" },
+        ]}
+      />
 
-      {/* Form */}
-      <form onSubmit={handleSubmit}>
-        <div className="bg-card rounded-xl shadow-sm border border-border p-6 space-y-6">
+      {/* Formulario */}
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="bg-white rounded-2xl shadow-xs border border-[#E8DCCB] p-6 space-y-6">
           {/* Error Message */}
           {error && (
             <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg">
@@ -548,31 +546,13 @@ export default function NuevoProductoPage() {
           </div>
         </div>
 
-        {/* Submit Button */}
-        <div className="flex justify-end gap-4 mt-6">
-          <Link href="/admin/productos">
-            <Button type="button" variant="outline">
-              Cancelar
-            </Button>
-          </Link>
-          <Button 
-            type="submit" 
-            className="bg-primary hover:bg-primary/90"
-            disabled={isLoading || isUploading}
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Creando...
-              </>
-            ) : (
-              <>
-                <Save className="h-4 w-4 mr-2" />
-                Crear Producto
-              </>
-            )}
-          </Button>
-        </div>
+        {/* Barra Fija de Acciones Inferior */}
+        <AdminStickyFooter
+          primaryLabel="Crear Producto"
+          isPrimarySubmitting={isLoading || isUploading}
+          secondaryLabel="Cancelar"
+          secondaryHref="/admin/productos"
+        />
       </form>
     </div>
   )

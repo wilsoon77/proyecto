@@ -2,8 +2,22 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import { BookOpen, Plus, Search, CreditCard as Edit, Trash2, X, TriangleAlert as AlertTriangle, Layers, Sparkles, ClipboardList, Loader as Loader2, Trash, Zap } from "lucide-react"
+import { 
+  BookOpen, 
+  Plus, 
+  Edit2, 
+  Trash2, 
+  X, 
+  Layers, 
+  Sparkles, 
+  ClipboardList, 
+  Loader as Loader2, 
+  Trash, 
+  Zap,
+  PowerOff
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { useToast } from "@/components/ui/toast"
 import { useAuth } from "@/context/AuthContext"
 import { 
@@ -14,6 +28,9 @@ import {
   type RawMaterial
 } from "@/lib/api"
 import type { ApiProduct } from "@/lib/api/types"
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader"
+import { AdminSearchBar } from "@/components/admin/AdminSearchBar"
+import { AdminEntityCard } from "@/components/admin/AdminEntityCard"
 
 interface IngredientFormLine {
   rawMaterialId: number | ""
@@ -100,14 +117,11 @@ export default function RecipesAdminPage() {
   const handleOpenCreateModal = () => {
     setEditingRecipe(null)
     setFormName("")
-    if (products.length > 0) {
-      setFormProductId(products[0].id)
-    } else {
-      setFormProductId("")
-    }
+    setFormProductId(products.length > 0 ? products[0].id : "")
     setFormStandardTrays(1)
-    // Agregar un ingrediente inicial vacío
-    setFormIngredients([{ rawMaterialId: "", quantity: 1 }])
+    setFormIngredients([
+      { rawMaterialId: rawMaterials.length > 0 ? rawMaterials[0].id : "", quantity: 1 }
+    ])
     setShowFormModal(true)
   }
 
@@ -117,55 +131,77 @@ export default function RecipesAdminPage() {
     setFormName(recipe.name)
     setFormProductId(recipe.product.id)
     setFormStandardTrays(recipe.standardTrays)
-    
-    // Mapear ingredientes existentes
-    const mapped = recipe.ingredients.map(ing => ({
-      rawMaterialId: ing.rawMaterialId,
-      quantity: Number(ing.quantity)
-    }))
-    setFormIngredients(mapped.length > 0 ? mapped : [{ rawMaterialId: "", quantity: 1 }])
+    setFormIngredients(
+      recipe.ingredients.map(ing => ({
+        rawMaterialId: ing.rawMaterialId,
+        quantity: Number(ing.quantity)
+      }))
+    )
     setShowFormModal(true)
   }
 
-  // Manejar ingredientes dinámicos
+  // Agregar fila de ingrediente
   const handleAddIngredientLine = () => {
-    setFormIngredients(prev => [...prev, { rawMaterialId: "", quantity: 1 }])
+    setFormIngredients(prev => [
+      ...prev,
+      { rawMaterialId: rawMaterials.length > 0 ? rawMaterials[0].id : "", quantity: 1 }
+    ])
   }
 
-  const handleRemoveIngredientLine = (index: number) => {
+  // Actualizar fila de ingrediente
+  const handleUpdateIngredientLine = (index: number, field: keyof IngredientFormLine, value: any) => {
     setFormIngredients(prev => {
-      const copy = [...prev]
-      copy.splice(index, 1)
-      return copy.length > 0 ? copy : [{ rawMaterialId: "", quantity: 1 }]
+      const updated = [...prev]
+      updated[index] = { ...updated[index], [field]: value }
+      return updated
     })
   }
 
-  const handleUpdateIngredientLine = (index: number, field: keyof IngredientFormLine, value: any) => {
-    setFormIngredients(prev => prev.map((item, idx) => {
-      if (idx === index) {
-        return { ...item, [field]: value }
-      }
-      return item
-    }))
+  // Eliminar fila de ingrediente
+  const handleRemoveIngredientLine = (index: number) => {
+    if (formIngredients.length <= 1) {
+      showToast("La receta debe tener al menos un ingrediente", "info")
+      return
+    }
+    setFormIngredients(prev => prev.filter((_, i) => i !== index))
   }
 
-  // Guardar Receta
+  // Enviar formulario (Crear o Actualizar)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formName.trim() || !formProductId || formStandardTrays <= 0 || isSubmitting) return
+    if (isSubmitting) return
 
-    // Validar ingredientes
-    const validIngredients = formIngredients.filter(ing => ing.rawMaterialId !== "" && ing.quantity > 0)
-    if (validIngredients.length === 0) {
-      showToast("Debe agregar al menos un ingrediente válido con cantidad mayor a cero", "error")
+    if (!formName.trim()) {
+      showToast("El nombre de la receta es obligatorio", "error")
       return
     }
 
-    // Detectar duplicados de materias primas
-    const materialIds = validIngredients.map(ing => ing.rawMaterialId)
-    const hasDuplicates = new Set(materialIds).size !== materialIds.length
-    if (hasDuplicates) {
-      showToast("No puede agregar el mismo insumo/materia prima más de una vez en la receta", "error")
+    if (!formProductId) {
+      showToast("Debes vincular la receta a un producto terminado", "error")
+      return
+    }
+
+    if (formStandardTrays <= 0) {
+      showToast("El rendimiento en latas debe ser mayor a 0", "error")
+      return
+    }
+
+    // Validar ingredientes
+    for (const line of formIngredients) {
+      if (!line.rawMaterialId) {
+        showToast("Selecciona la materia prima para cada ingrediente", "error")
+        return
+      }
+      if (line.quantity <= 0) {
+        showToast("La cantidad de cada ingrediente debe ser mayor a 0", "error")
+        return
+      }
+    }
+
+    // Comprobar ingredientes duplicados
+    const materialIds = formIngredients.map(i => i.rawMaterialId)
+    if (new Set(materialIds).size !== materialIds.length) {
+      showToast("No puedes repetir la misma materia prima en la receta", "error")
       return
     }
 
@@ -175,25 +211,25 @@ export default function RecipesAdminPage() {
         name: formName.trim(),
         productId: Number(formProductId),
         standardTrays: Number(formStandardTrays),
-        ingredients: validIngredients.map(ing => ({
-          rawMaterialId: Number(ing.rawMaterialId),
-          quantity: Number(ing.quantity)
+        ingredients: formIngredients.map(line => ({
+          rawMaterialId: Number(line.rawMaterialId),
+          quantity: Number(line.quantity)
         }))
       }
 
       if (editingRecipe) {
         await productionService.updateRecipe(editingRecipe.id, payload)
-        showToast("Receta actualizada con éxito", "success")
+        showToast("Receta actualizada correctamente", "success")
       } else {
         await productionService.createRecipe(payload)
-        showToast("Receta creada con éxito", "success")
+        showToast("Receta creada correctamente", "success")
       }
 
       setShowFormModal(false)
       loadData()
     } catch (err: any) {
-      const msg = err.response?.data?.message || err.message || "Error al procesar la receta"
-      showToast(Array.isArray(msg) ? msg[0] : msg, "error")
+      const msg = err.response?.data?.message || err.message || "Error al guardar la receta"
+      showToast(msg, "error")
     } finally {
       setIsSubmitting(false)
     }
@@ -216,180 +252,183 @@ export default function RecipesAdminPage() {
     }
   }
 
-  // UI de Cargando
-  if (isLoading && recipes.length === 0) {
-    return (
-      <div className="p-4 sm:p-6 lg:p-8 bg-cream min-h-screen flex flex-col items-center justify-center">
-        <div className="text-center space-y-4">
-          <Loader2 className="h-12 w-12 text-primary animate-spin mx-auto" />
-          <p className="text-muted-foreground font-medium">Cargando recetas y amasijos...</p>
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div className="p-4 sm:p-6 lg:p-8 bg-cream min-h-screen">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-3">
-            <BookOpen className="h-7 w-7 sm:h-8 sm:w-8 text-primary" />
-            Recetas y Amasijos
-          </h1>
-          <p className="text-muted-foreground mt-1">Gestión de fórmulas dinámicas de producción para panadería</p>
-        </div>
-        <Button 
-          onClick={handleOpenCreateModal}
-          className="bg-primary hover:bg-primary/90 text-white font-bold w-full sm:w-auto shadow-md"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Nueva Receta
-        </Button>
-      </div>
+    <div className="space-y-6 max-w-7xl mx-auto pb-16">
+      {/* ── Header Estandarizado ── */}
+      <AdminPageHeader
+        title="Recetas y Fórmulas"
+        description="Fórmulas dinámicas de panadería, rendimiento de latas e ingredientes estándar"
+        icon={<BookOpen className="h-6 w-6 text-[#D97706]" />}
+        breadcrumbs={[
+          { label: "Producción", href: "/admin/produccion" },
+          { label: "Recetas" },
+        ]}
+        primaryAction={{
+          label: "Nueva Receta",
+          onClick: handleOpenCreateModal,
+          icon: <Plus className="h-4 w-4 mr-1.5" />,
+        }}
+      />
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-card rounded-xl shadow-sm border border-border p-5 flex items-center gap-4">
-          <div className="h-12 w-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
-            <BookOpen className="h-6 w-6 text-primary" />
+      {/* ── Tarjetas KPI de Resumen ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-white rounded-2xl border border-[#E8DCCB] p-5 shadow-xs flex items-center gap-4">
+          <div className="h-12 w-12 bg-[#FAF0E6] text-[#D97706] rounded-2xl flex items-center justify-center shrink-0 border border-[#E8DCCB]">
+            <BookOpen className="h-6 w-6" />
           </div>
           <div>
-            <p className="text-sm text-muted-foreground font-medium">Fórmulas Registradas</p>
-            <p className="text-2xl font-bold text-foreground mt-0.5">{recipes.filter(r => r.isActive).length}</p>
+            <p className="text-xs font-bold text-[#8C522B] uppercase tracking-wider">Fórmulas Activas</p>
+            <p className="text-2xl font-bold text-[#2B170F] font-mono mt-0.5">
+              {recipes.filter(r => r.isActive).length}
+            </p>
           </div>
         </div>
 
-        <div className="bg-card rounded-xl shadow-sm border border-border p-5 flex items-center gap-4">
-          <div className="h-12 w-12 bg-chart-3/10 rounded-xl flex items-center justify-center flex-shrink-0">
-            <Layers className="h-6 w-6 text-chart-3" />
+        <div className="bg-white rounded-2xl border border-[#E8DCCB] p-5 shadow-xs flex items-center gap-4">
+          <div className="h-12 w-12 bg-amber-50 text-amber-700 rounded-2xl flex items-center justify-center shrink-0 border border-amber-200">
+            <Layers className="h-6 w-6" />
           </div>
           <div>
-            <p className="text-sm text-muted-foreground font-medium">Insumos en Uso</p>
-            <p className="text-2xl font-bold text-foreground mt-0.5">
+            <p className="text-xs font-bold text-[#8C522B] uppercase tracking-wider">Insumos Utilizados</p>
+            <p className="text-2xl font-bold text-[#2B170F] font-mono mt-0.5">
               {new Set(recipes.filter(r => r.isActive).flatMap(r => r.ingredients.map(i => i.rawMaterialId))).size}
             </p>
           </div>
         </div>
 
-        <div className="bg-card rounded-xl shadow-sm border border-border p-5 flex items-center gap-4">
-          <div className="h-12 w-12 bg-chart-5/10 rounded-xl flex items-center justify-center flex-shrink-0">
-            <Sparkles className="h-6 w-6 text-chart-5" />
+        <div className="bg-white rounded-2xl border border-[#E8DCCB] p-5 shadow-xs flex items-center gap-4">
+          <div className="h-12 w-12 bg-emerald-50 text-emerald-700 rounded-2xl flex items-center justify-center shrink-0 border border-emerald-200">
+            <Sparkles className="h-6 w-6" />
           </div>
           <div>
-            <p className="text-sm text-muted-foreground font-medium">Rendimiento Promedio</p>
-            <p className="text-2xl font-bold text-foreground mt-0.5">
+            <p className="text-xs font-bold text-[#8C522B] uppercase tracking-wider">Rendimiento Promedio</p>
+            <p className="text-2xl font-bold text-[#2B170F] font-mono mt-0.5">
               {(recipes.filter(r => r.isActive).reduce((sum, r) => sum + r.standardTrays, 0) / (recipes.filter(r => r.isActive).length || 1)).toFixed(1)} latas
             </p>
           </div>
         </div>
       </div>
 
-      {/* Buscador */}
-      <div className="bg-card rounded-xl shadow-sm border border-border p-4 mb-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground/60" />
-          <input
-            type="text"
-            placeholder="Buscar recetas por nombre o producto..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-card"
-          />
-        </div>
-      </div>
+      {/* ── Buscador Estandarizado ── */}
+      <AdminSearchBar
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        placeholder="Buscar recetas por nombre o producto asociado..."
+        totalCount={recipes.filter(r => r.isActive).length}
+        filteredCount={filteredRecipes.length}
+        entityName="recetas"
+        isLoading={isLoading}
+      />
 
-      {/* Listado de Recetas Grid */}
-      {filteredRecipes.length === 0 ? (
-        <div className="bg-card rounded-xl shadow-sm border p-12 text-center">
-          <ClipboardList className="h-12 w-12 text-muted-foreground/40 mx-auto mb-3" />
-          <p className="text-muted-foreground/60 font-medium">No se encontraron recetas registradas</p>
-          {searchQuery && (
-            <button 
-              onClick={() => setSearchQuery("")} 
-              className="text-primary hover:text-primary font-bold mt-2 text-sm"
+      {/* ── Listado de Recetas Grid ── */}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 text-[#D97706] animate-spin mx-auto" />
+            <p className="mt-3 text-xs font-semibold text-[#8C522B]">Cargando fórmulas de producción...</p>
+          </div>
+        </div>
+      ) : filteredRecipes.length === 0 ? (
+        <div className="bg-white rounded-2xl shadow-xs border border-[#E8DCCB] p-12 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FAF0E6] text-[#D97706] mx-auto mb-4">
+            <ClipboardList className="h-7 w-7" />
+          </div>
+          <h3 className="text-base font-bold text-[#2B170F] mb-1">
+            No se encontraron recetas
+          </h3>
+          <p className="text-xs text-[#6E5545] mb-6 max-w-sm mx-auto">
+            {searchQuery 
+              ? "Prueba con otro término de búsqueda." 
+              : "Registra fórmulas para que los panaderos puedan calcular insumos automáticamente."}
+          </p>
+          {!searchQuery && (
+            <Button 
+              onClick={handleOpenCreateModal}
+              className="bg-[#D97706] hover:bg-[#B45309] text-white font-bold rounded-xl shadow-xs text-xs h-11 px-5"
             >
-              Limpiar búsqueda
-            </button>
+              <Plus className="h-4 w-4 mr-2" />
+              Nueva Receta
+            </Button>
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredRecipes.map((recipe) => (
-            <div 
-              key={recipe.id} 
-              className="bg-card rounded-xl border border-gray-150 shadow-sm hover:shadow-md hover:border-primary/20 transition-all flex flex-col relative overflow-hidden group"
+            <AdminEntityCard
+              key={recipe.id}
+              image={
+                <div className="h-11 w-11 bg-[#FAF0E6] text-[#D97706] rounded-xl flex items-center justify-center shrink-0">
+                  <BookOpen className="h-5 w-5" />
+                </div>
+              }
+              title={recipe.name}
+              subtitle={recipe.product.name}
+              badges={
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#FAF0E6] text-[#D97706] border border-[#E8DCCB]">
+                  <Zap className="h-3 w-3" />
+                  {recipe.standardTrays} {recipe.standardTrays === 1 ? "Lata" : "Latas"}
+                </span>
+              }
+              actions={
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleOpenEditModal(recipe)}
+                    className="flex-1 h-10 px-3.5 border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] font-bold text-xs"
+                  >
+                    <Edit2 className="h-4 w-4 mr-1.5 text-[#8C522B]" />
+                    Editar
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setRecipeToDelete(recipe)}
+                    className="h-10 px-3.5 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 font-bold text-xs"
+                  >
+                    <PowerOff className="h-4 w-4 mr-1.5" />
+                    Desactivar
+                  </Button>
+                </>
+              }
             >
-              {/* Badge superior de Latas */}
-              <div className="absolute top-3 right-3 bg-accent text-primary border border-primary/20 font-bold text-xs px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm">
-                <span className="flex items-center gap-1"><Zap className="h-3.5 w-3.5 text-primary" />{recipe.standardTrays} {recipe.standardTrays === 1 ? "Lata" : "Latas"}</span>
+              <div className="pt-1">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#8C522B] mb-1.5 border-b border-[#E8DCCB]/60 pb-1">
+                  Ingredientes del Amasijo ({recipe.ingredients.length}):
+                </p>
+                <ul className="space-y-1.5 max-h-[140px] overflow-y-auto pr-1">
+                  {recipe.ingredients.map((ing) => (
+                    <li 
+                      key={`${recipe.id}-${ing.rawMaterialId}`} 
+                      className="flex items-center justify-between text-xs py-0.5 border-b border-[#E8DCCB]/30 last:border-0"
+                    >
+                      <span className="text-[#2B170F] font-medium truncate mr-2">{ing.rawMaterial.name}</span>
+                      <span className="font-mono font-bold text-[#8C522B] bg-[#FAF5EE] px-2 py-0.5 rounded-md border border-[#DECDBB]/60 text-[11px] shrink-0">
+                        {Number(ing.quantity).toFixed(1)} {ing.rawMaterial.baseUnit}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-
-              {/* Contenido principal */}
-              <div className="p-6 flex-1 flex flex-col">
-                <div className="mb-4">
-                  <h3 className="font-bold text-lg text-foreground group-hover:text-primary transition-colors pr-16 truncate">
-                    {recipe.name}
-                  </h3>
-                  <span className="inline-block bg-chart-3/10 text-chart-3 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md mt-1.5">
-                    {recipe.product.name}
-                  </span>
-                </div>
-
-                <div className="flex-1 mt-2">
-                  <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5 border-b border-border pb-1.5">
-                    <span>Ingredientes Fijos (Amasijo):</span>
-                  </p>
-                  <ul className="space-y-2 mt-1 max-h-[160px] overflow-y-auto pr-1">
-                    {recipe.ingredients.map((ing) => (
-                      <li 
-                        key={`${recipe.id}-${ing.rawMaterialId}`} 
-                        className="flex items-center justify-between text-sm py-1 border-b border-border last:border-0"
-                      >
-                        <span className="text-foreground font-medium">{ing.rawMaterial.name}</span>
-                        <span className="font-bold text-foreground bg-cream px-2 py-0.5 rounded border border-border text-xs">
-                          {Number(ing.quantity).toFixed(1)} {ing.rawMaterial.baseUnit}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-
-              {/* Acciones */}
-              <div className="border-t border-border bg-cream/50 p-4 flex gap-3 justify-end">
-                <button
-                  onClick={() => handleOpenEditModal(recipe)}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-accent hover:bg-primary/10 text-primary rounded-lg transition-colors text-xs font-bold border border-amber-250 shadow-sm"
-                >
-                  <Edit className="h-3.5 w-3.5" />
-                  Editar
-                </button>
-                <button
-                  onClick={() => setRecipeToDelete(recipe)}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-destructive/10 hover:bg-destructive/10 text-destructive rounded-lg transition-colors text-xs font-bold border border-destructive/20 shadow-sm"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  Desactivar
-                </button>
-              </div>
-            </div>
+            </AdminEntityCard>
           ))}
         </div>
       )}
 
-      {/* FORM MODAL: Crear/Editar Receta */}
+      {/* ── FORM MODAL: Crear/Editar Receta ── */}
       {showFormModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
-          <div className="bg-card rounded-2xl shadow-xl border border-border max-w-lg w-full max-h-[90vh] flex flex-col relative overflow-hidden">
-            <div className="p-6 border-b border-border flex items-center justify-between flex-shrink-0 bg-cream/55">
-              <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
-                {editingRecipe ? <Edit className="h-5 w-5 text-primary" /> : <Plus className="h-5 w-5 text-primary" />}
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fadeIn">
+          <div className="bg-white rounded-2xl shadow-xl border border-[#E8DCCB] max-w-lg w-full max-h-[90vh] flex flex-col relative overflow-hidden">
+            <div className="p-6 border-b border-[#E8DCCB] flex items-center justify-between shrink-0 bg-[#FAF5EE]/70">
+              <h3 className="text-lg font-bold text-[#2B170F] flex items-center gap-2">
+                {editingRecipe ? <Edit2 className="h-5 w-5 text-[#D97706]" /> : <Plus className="h-5 w-5 text-[#D97706]" />}
                 {editingRecipe ? "Editar Receta de Amasijo" : "Nueva Receta de Amasijo"}
               </h3>
               <button 
                 onClick={() => setShowFormModal(false)}
-                className="p-1 text-muted-foreground/60 hover:text-muted-foreground rounded-full hover:bg-muted transition-all"
+                className="p-1 text-[#8C522B] hover:text-[#2B170F] rounded-lg hover:bg-[#FAF5EE] transition-all"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -398,21 +437,25 @@ export default function RecipesAdminPage() {
             <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs text-muted-foreground font-bold block mb-1">Nombre de la Receta / Fórmulas</label>
+                  <label className="text-xs text-[#2B170F] font-bold uppercase tracking-wider block mb-1.5">
+                    Nombre de la Fórmula *
+                  </label>
                   <input
-                    placeholder="Ej: Fino Navideño, Amasijo Especial..."
-                    className="w-full border border-border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-card h-10 px-3"
+                    placeholder="Ej: Fino Navideño, Especial..."
+                    className="w-full border border-[#DECDBB] rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 bg-white h-10 px-3"
                     value={formName}
                     onChange={(e) => setFormName(e.target.value)}
                     required
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground font-bold block mb-1">Rendimiento de Latas Estándar</label>
+                  <label className="text-xs text-[#2B170F] font-bold uppercase tracking-wider block mb-1.5">
+                    Rendimiento (Latas) *
+                  </label>
                   <input
                     type="number"
                     min="1"
-                    className="w-full border border-border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-card h-10 px-3"
+                    className="w-full border border-[#DECDBB] rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 bg-white h-10 px-3 font-mono"
                     value={formStandardTrays || ""}
                     onChange={(e) => setFormStandardTrays(Number(e.target.value))}
                     required
@@ -421,11 +464,13 @@ export default function RecipesAdminPage() {
               </div>
 
               <div>
-                <label className="text-xs text-muted-foreground font-bold block mb-1">Producto Terminado Generado</label>
+                <label className="text-xs text-[#2B170F] font-bold uppercase tracking-wider block mb-1.5">
+                  Producto Terminado Asociado *
+                </label>
                 <select
                   value={formProductId}
                   onChange={(e) => setFormProductId(Number(e.target.value))}
-                  className="w-full border border-border rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-card h-10"
+                  className="w-full border border-[#DECDBB] rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 bg-white h-10"
                   required
                 >
                   <option value="" disabled>Seleccione producto...</option>
@@ -436,17 +481,17 @@ export default function RecipesAdminPage() {
               </div>
 
               {/* Ingredientes dinámicos */}
-              <div className="border-t border-gray-150 pt-4">
+              <div className="border-t border-[#E8DCCB] pt-4">
                 <div className="flex items-center justify-between mb-3">
-                  <label className="text-sm text-foreground font-bold flex items-center gap-1.5">
-                    <span>Ingredientes Fijos (Materia Prima)</span>
+                  <label className="text-xs font-bold uppercase tracking-wider text-[#2B170F]">
+                    Ingredientes del Amasijo
                   </label>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={handleAddIngredientLine}
-                    className="h-8 border-primary text-primary hover:bg-accent font-bold"
+                    className="h-8 border-[#DECDBB] text-[#D97706] hover:bg-[#FAF5EE] font-bold text-xs"
                   >
                     <Plus className="h-3.5 w-3.5 mr-1" />
                     Añadir Insumo
@@ -457,13 +502,13 @@ export default function RecipesAdminPage() {
                   {formIngredients.map((line, index) => {
                     const selectedMaterial = rawMaterials.find(rm => rm.id === Number(line.rawMaterialId))
                     return (
-                      <div key={index} className="flex gap-3 items-end bg-cream/50 p-3 rounded-lg border border-border">
+                      <div key={index} className="flex gap-2.5 items-end bg-[#FAF5EE] p-3 rounded-xl border border-[#DECDBB]/70">
                         <div className="flex-1">
-                          <label className="text-[10px] text-muted-foreground/60 font-bold block mb-0.5">Materia Prima / Insumo</label>
+                          <label className="text-[10px] text-[#8C522B] font-bold block mb-1">Insumo</label>
                           <select
                             value={line.rawMaterialId}
                             onChange={(e) => handleUpdateIngredientLine(index, "rawMaterialId", e.target.value ? Number(e.target.value) : "")}
-                            className="w-full border border-border rounded-lg p-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary bg-card h-9"
+                            className="w-full border border-[#DECDBB] rounded-lg p-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 bg-white h-9"
                             required
                           >
                             <option value="" disabled>Seleccione...</option>
@@ -473,16 +518,16 @@ export default function RecipesAdminPage() {
                           </select>
                         </div>
                         
-                        <div className="w-[120px]">
-                          <label className="text-[10px] text-muted-foreground/60 font-bold block mb-0.5">
-                            Cantidad {selectedMaterial ? `(${selectedMaterial.baseUnit})` : ""}
+                        <div className="w-[110px]">
+                          <label className="text-[10px] text-[#8C522B] font-bold block mb-1">
+                            Cant {selectedMaterial ? `(${selectedMaterial.baseUnit})` : ""}
                           </label>
                           <input
                             type="number"
                             min="0.01"
                             step="0.01"
                             placeholder="0.00"
-                            className="w-full border border-border rounded-lg p-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary bg-card h-9 px-2.5 font-bold"
+                            className="w-full border border-[#DECDBB] rounded-lg p-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 bg-white h-9 px-2.5 font-bold font-mono"
                             value={line.quantity || ""}
                             onChange={(e) => handleUpdateIngredientLine(index, "quantity", Number(e.target.value))}
                             required
@@ -492,7 +537,7 @@ export default function RecipesAdminPage() {
                         <button
                           type="button"
                           onClick={() => handleRemoveIngredientLine(index)}
-                          className="h-9 w-9 bg-destructive/10 hover:bg-destructive/10 text-red-650 rounded-lg flex items-center justify-center border border-red-150 flex-shrink-0 transition-colors"
+                          className="h-9 w-9 bg-red-50 text-red-600 rounded-lg flex items-center justify-center border border-red-200 shrink-0 hover:bg-red-100 transition-colors"
                           title="Eliminar insumo"
                         >
                           <Trash className="h-4 w-4" />
@@ -504,18 +549,19 @@ export default function RecipesAdminPage() {
               </div>
 
               {/* Botones de acción */}
-              <div className="flex gap-3 justify-end pt-4 border-t border-border flex-shrink-0">
+              <div className="flex gap-3 justify-end pt-4 border-t border-[#E8DCCB] shrink-0">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setShowFormModal(false)}
                   disabled={isSubmitting}
+                  className="h-10 px-4 border-[#DECDBB]"
                 >
                   Cancelar
                 </Button>
                 <Button
                   type="submit"
-                  className="bg-primary hover:bg-primary/90 text-white font-bold"
+                  className="h-10 px-5 bg-[#D97706] hover:bg-[#B45309] text-white font-bold rounded-xl shadow-xs"
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? "Guardando..." : "Guardar Receta"}
@@ -526,39 +572,17 @@ export default function RecipesAdminPage() {
         </div>
       )}
 
-      {/* CONFIRM MODAL: Desactivar Receta */}
-      {recipeToDelete && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
-          <div className="bg-card rounded-2xl shadow-xl border border-border max-w-sm w-full p-6 relative overflow-hidden">
-            <div className="flex items-center gap-3 mb-4 text-red-650">
-              <AlertTriangle className="h-6 w-6" />
-              <h3 className="text-lg font-bold text-foreground">¿Desactivar esta receta?</h3>
-            </div>
-            
-            <p className="text-sm text-muted-foreground mb-6">
-              ¿Estás seguro de que quieres de-activar la receta de <strong>"{recipeToDelete.name}"</strong>?
-              Los panaderos no podrán registrar nuevos horneados utilizando esta receta en el módulo de producción.
-            </p>
-
-            <div className="flex gap-3 justify-end">
-              <Button
-                variant="outline"
-                onClick={() => setRecipeToDelete(null)}
-                disabled={isDeleting}
-              >
-                Cancelar
-              </Button>
-              <Button
-                onClick={handleDeleteRecipe}
-                className="bg-destructive hover:bg-destructive/90 text-white font-bold"
-                disabled={isDeleting}
-              >
-                {isDeleting ? "Desactivando..." : "Sí, Desactivar"}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ── Confirm Dialog: Desactivar Receta ── */}
+      <ConfirmDialog
+        isOpen={!!recipeToDelete}
+        onCancel={() => setRecipeToDelete(null)}
+        onConfirm={handleDeleteRecipe}
+        title="Desactivar Receta"
+        message={`¿Estás seguro de desactivar la receta "${recipeToDelete?.name}"? Los panaderos no podrán seleccionarla para nuevos registros de producción, pero todo el historial se conservará intacto.`}
+        confirmText="Desactivar"
+        isLoading={isDeleting}
+        variant="danger"
+      />
     </div>
   )
 }

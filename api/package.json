@@ -18,7 +18,9 @@
     "test": "jest -c jest.config.cjs",
     "test:watch": "jest -c jest.config.cjs --watch",
     "test:unit": "jest -c jest.config.cjs",
-    "test:e2e": "jest -c jest-e2e.config.cjs --runInBand"
+    "test:e2e": "jest -c jest-e2e.config.cjs --runInBand",
+    "db:backup": "node scripts/backup-database.mjs",
+    "db:restore": "node scripts/restore-database.mjs"
   },
   "engines": {
     "node": ">=20.0.0"

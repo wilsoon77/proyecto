@@ -1,0 +1,57 @@
+name: Database Backup (Diario 12:00 AM GT)
+
+on:
+  schedule:
+    # 00:00 horas (12:00 AM) hora de Guatemala (UTC-6) -> 06:00 UTC
+    - cron: '0 6 * * *'
+  workflow_dispatch: # Permite ejecución manual en cualquier momento desde GitHub Actions
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-backup
+  cancel-in-progress: false
+
+jobs:
+  backup-to-appwrite:
+    name: Generar Backup y Subir a Appwrite Storage
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: ./api
+
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v5
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: './api/package-lock.json'
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Generar Prisma Client
+        run: npm run prisma:generate
+
+      - name: Instalar cliente PostgreSQL (pg_dump)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client
+
+      - name: Ejecutar Respaldo de Base de Datos y Rotación (30 días)
+        env:
+          SUPABASE_BACKUP_URL: ${{ secrets.SUPABASE_BACKUP_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+          APPWRITE_ENDPOINT: ${{ secrets.APPWRITE_ENDPOINT || 'https://nyc.cloud.appwrite.io/v1' }}
+          APPWRITE_PROJECT_ID: ${{ secrets.APPWRITE_PROJECT_ID }}
+          APPWRITE_API_KEY: ${{ secrets.APPWRITE_API_KEY }}
+          APPWRITE_BACKUP_BUCKET_ID: ${{ secrets.APPWRITE_BACKUP_BUCKET_ID }}
+          BACKUP_RETENTION_DAYS: '30'
+        run: node scripts/backup-database.mjs

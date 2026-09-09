@@ -22,23 +22,78 @@ const APPWRITE_BACKUP_BUCKET_ID = process.env.APPWRITE_BACKUP_BUCKET_ID;
 const RETENTION_DAYS = Number.parseInt(process.env.BACKUP_RETENTION_DAYS || '30', 10);
 
 /**
- * Resuelve la URL de conexión para pg_dump.
- * Si DATABASE_URL usa el puerto 6543 (transaction pooler), lo convierte al Session Pooler (puerto 5432).
+ * Resuelve y sanea la URL de conexión para pg_dump.
+ * - Prioridad: SUPABASE_BACKUP_URL > DIRECT_URL > DATABASE_URL.
+ * - Si DATABASE_URL usa el puerto 6543 (transaction pooler), lo convierte al Session Pooler (puerto 5432).
+ * - Elimina rigurosamente cualquier query parameter que no sea reconocido por libpq/pg_dump
+ *   (como connection_limit, schema, pgbouncer, pool_timeout, etc.),
+ *   evitando el error "invalid URI query parameter: connection_limit".
  */
 function getBackupDatabaseUrl() {
-  const explicitUrl = process.env.SUPABASE_BACKUP_URL || process.env.DIRECT_URL;
-  if (explicitUrl) return explicitUrl;
+  const rawUrl = (
+    process.env.SUPABASE_BACKUP_URL ||
+    process.env.DIRECT_URL ||
+    process.env.DATABASE_URL ||
+    ''
+  ).trim();
 
-  const dbUrl = process.env.DATABASE_URL || '';
-  if (dbUrl.includes(':6543')) {
-    console.log('ℹ️  Convirtiendo connection pooler (6543) a session pooler (5432) para pg_dump...');
-    return dbUrl
-      .replace(':6543', ':5432')
-      .replace('pgbouncer=true&', '')
-      .replace('?pgbouncer=true', '?')
-      .replace('&connection_limit=10', '');
+  if (!rawUrl) return '';
+
+  try {
+    const parsed = new URL(rawUrl);
+
+    // Si viene en el Transaction Pooler (puerto 6543), cambiar al Session Pooler (puerto 5432)
+    if (parsed.port === '6543') {
+      console.log('ℹ️  Convirtiendo connection pooler (6543) a session pooler (5432) para pg_dump...');
+      parsed.port = '5432';
+    }
+
+    // Parámetros soportados nativamente por libpq en cadenas de conexión URI:
+    const ALLOWED_LIBPQ_PARAMS = new Set([
+      'sslmode',
+      'sslrootcert',
+      'sslcert',
+      'sslkey',
+      'sslcrl',
+      'sslpassword',
+      'connect_timeout',
+      'application_name',
+      'fallback_application_name',
+      'keepalives',
+      'keepalives_idle',
+      'keepalives_interval',
+      'keepalives_count',
+      'tcp_user_timeout',
+      'options',
+      'gssencmode',
+      'krbsrvname',
+      'target_session_attrs',
+    ]);
+
+    // Eliminar cualquier parámetro ajeno a libpq (como connection_limit, schema, pgbouncer, pool_timeout)
+    for (const [key] of Array.from(parsed.searchParams.entries())) {
+      if (!ALLOWED_LIBPQ_PARAMS.has(key.toLowerCase())) {
+        parsed.searchParams.delete(key);
+      }
+    }
+
+    // Asegurar sslmode=require para conexiones seguras de Supabase
+    if (!parsed.searchParams.has('sslmode')) {
+      parsed.searchParams.set('sslmode', 'require');
+    }
+
+    return parsed.toString();
+  } catch (err) {
+    console.warn('⚠️  No se pudo parsear como URL estándar. Aplicando saneamiento manual:', err.message);
+    let sanitized = rawUrl.replace(':6543', ':5432');
+    sanitized = sanitized.replace(/[?&](pgbouncer|connection_limit|pool_timeout|schema)=[^&]*/gi, '');
+    if (!sanitized.includes('?')) {
+      sanitized += '?sslmode=require';
+    } else if (!sanitized.includes('sslmode=')) {
+      sanitized += '&sslmode=require';
+    }
+    return sanitized.replace(/\?&/, '?').replace(/\?$/, '');
   }
-  return dbUrl;
 }
 
 /**
@@ -62,13 +117,17 @@ function dumpWithPgDump(dbUrl, outputPath) {
   return new Promise((resolve, reject) => {
     console.log('📦 Ejecutando pg_dump nativo...');
 
-    // Excluir esquemas internos de extensiones de Supabase para evitar conflictos
+    // Excluir esquemas internos de extensiones y gestión de Supabase para evitar conflictos
     const args = [
       '--dbname=' + dbUrl,
       '--clean',
       '--if-exists',
       '--no-owner',
       '--no-privileges',
+      '--exclude-schema=auth',
+      '--exclude-schema=storage',
+      '--exclude-schema=realtime',
+      '--exclude-schema=pgbouncer',
       '--exclude-schema=extensions',
       '--exclude-schema=graphql',
       '--exclude-schema=graphql_public',
@@ -296,9 +355,21 @@ async function main() {
   const outputPath = path.join(tmpDir, fileName);
 
   try {
+    let dumpSuccess = false;
     if (isPgDumpAvailable()) {
-      await dumpWithPgDump(dbUrl, outputPath);
-    } else {
+      try {
+        await dumpWithPgDump(dbUrl, outputPath);
+        dumpSuccess = true;
+      } catch (dumpErr) {
+        console.warn(`⚠️  pg_dump nativo reportó un problema (${dumpErr.message}).`);
+        console.warn('🔄 Activando respaldo de seguridad con Prisma Client fallback...');
+        if (existsSync(outputPath)) {
+          try { unlinkSync(outputPath); } catch {}
+        }
+      }
+    }
+
+    if (!dumpSuccess) {
       await dumpWithPrismaFallback(outputPath);
     }
 

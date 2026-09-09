@@ -15,10 +15,10 @@ const __dirname = path.dirname(__filename);
 // CONFIGURACIÓN
 // ─────────────────────────────────────────────────────────────
 
-const APPWRITE_ENDPOINT = (process.env.APPWRITE_ENDPOINT || 'https://nyc.cloud.appwrite.io/v1').replace(/\/$/, '');
-const APPWRITE_PROJECT_ID = process.env.APPWRITE_PROJECT_ID;
-const APPWRITE_API_KEY = process.env.APPWRITE_API_KEY || '';
-const APPWRITE_BACKUP_BUCKET_ID = process.env.APPWRITE_BACKUP_BUCKET_ID;
+const APPWRITE_ENDPOINT = (process.env.APPWRITE_ENDPOINT || 'https://nyc.cloud.appwrite.io/v1').replace(/\/$/, '').trim();
+const APPWRITE_PROJECT_ID = (process.env.APPWRITE_PROJECT_ID || '').trim().replace(/^["']|["']$/g, '');
+const APPWRITE_API_KEY = (process.env.APPWRITE_API_KEY || '').trim().replace(/^["']|["']$/g, '');
+const APPWRITE_BACKUP_BUCKET_ID = (process.env.APPWRITE_BACKUP_BUCKET_ID || '').trim().replace(/^["']|["']$/g, '');
 const RETENTION_DAYS = Number.parseInt(process.env.BACKUP_RETENTION_DAYS || '30', 10);
 
 /**
@@ -246,6 +246,11 @@ async function uploadAndRotate(filePath, fileName) {
     throw new Error('Variables de entorno APPWRITE_API_KEY, APPWRITE_PROJECT_ID o APPWRITE_BACKUP_BUCKET_ID ausentes.');
   }
 
+  console.log(`ℹ️  Conectando a Appwrite Storage (${APPWRITE_ENDPOINT})...`);
+  console.log(`ℹ️  Project ID: ${APPWRITE_PROJECT_ID ? `${APPWRITE_PROJECT_ID.slice(0, 4)}... (longitud: ${APPWRITE_PROJECT_ID.length})` : 'VACÍO'}`);
+  console.log(`ℹ️  API Key: ${APPWRITE_API_KEY ? `Configurada (longitud: ${APPWRITE_API_KEY.length}, prefijo: ${APPWRITE_API_KEY.slice(0, 9)})` : 'VACÍA'}`);
+  console.log(`ℹ️  Bucket ID: ${APPWRITE_BACKUP_BUCKET_ID ? `${APPWRITE_BACKUP_BUCKET_ID.slice(0, 4)}... (longitud: ${APPWRITE_BACKUP_BUCKET_ID.length})` : 'VACÍO'}`);
+
   const buffer = readFileSync(filePath);
   const blob = new Blob([new Uint8Array(buffer)], { type: 'application/gzip' });
 
@@ -268,6 +273,12 @@ async function uploadAndRotate(filePath, fileName) {
 
   if (!uploadRes.ok) {
     const errorText = await uploadRes.text();
+    if (uploadRes.status === 401) {
+      throw new Error(
+        `Error al subir a Appwrite (401 No autorizado): ${errorText}\n` +
+        '👉 Solución: Revisa en GitHub Secrets que APPWRITE_API_KEY sea la clave de API generada en Appwrite Console con el permiso "Storage > files.write" y "files.read", sin espacios ni comillas.'
+      );
+    }
     throw new Error(`Error al subir a Appwrite (${uploadRes.status}): ${errorText}`);
   }
 

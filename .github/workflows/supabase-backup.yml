@@ -39,10 +39,14 @@ jobs:
       - name: Generar Prisma Client
         run: npm run prisma:generate
 
-      - name: Instalar cliente PostgreSQL (pg_dump)
+      - name: Instalar cliente PostgreSQL 17 (pg_dump)
         run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc --fail https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          sudo sh -c 'echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
           sudo apt-get update -qq
-          sudo apt-get install -y -qq postgresql-client
+          sudo apt-get install -y -qq postgresql-client-17
+          echo "/usr/lib/postgresql/17/bin" >> $GITHUB_PATH
 
       - name: Ejecutar Respaldo de Base de Datos y Rotación (30 días)
         env:

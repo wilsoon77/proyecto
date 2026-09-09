@@ -16,9 +16,9 @@ const __dirname = path.dirname(__filename);
 // ─────────────────────────────────────────────────────────────
 
 const APPWRITE_ENDPOINT = (process.env.APPWRITE_ENDPOINT || 'https://nyc.cloud.appwrite.io/v1').replace(/\/$/, '');
-const APPWRITE_PROJECT_ID = process.env.APPWRITE_PROJECT_ID || '692364a80019746432c8';
+const APPWRITE_PROJECT_ID = process.env.APPWRITE_PROJECT_ID;
 const APPWRITE_API_KEY = process.env.APPWRITE_API_KEY || '';
-const APPWRITE_BACKUP_BUCKET_ID = process.env.APPWRITE_BACKUP_BUCKET_ID || '6aa0e21c00040aa875f1';
+const APPWRITE_BACKUP_BUCKET_ID = process.env.APPWRITE_BACKUP_BUCKET_ID;
 const RETENTION_DAYS = Number.parseInt(process.env.BACKUP_RETENTION_DAYS || '30', 10);
 
 /**
@@ -183,8 +183,8 @@ async function dumpWithPrismaFallback(outputPath) {
  * Utiliza la API REST nativa de Appwrite para máxima confiabilidad y portabilidad.
  */
 async function uploadAndRotate(filePath, fileName) {
-  if (!APPWRITE_API_KEY || !APPWRITE_PROJECT_ID) {
-    throw new Error('Variables de entorno APPWRITE_API_KEY o APPWRITE_PROJECT_ID ausentes.');
+  if (!APPWRITE_API_KEY || !APPWRITE_PROJECT_ID || !APPWRITE_BACKUP_BUCKET_ID) {
+    throw new Error('Variables de entorno APPWRITE_API_KEY, APPWRITE_PROJECT_ID o APPWRITE_BACKUP_BUCKET_ID ausentes.');
   }
 
   const buffer = readFileSync(filePath);

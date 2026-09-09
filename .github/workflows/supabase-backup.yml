@@ -50,8 +50,8 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DIRECT_URL: ${{ secrets.DIRECT_URL }}
           APPWRITE_ENDPOINT: ${{ secrets.APPWRITE_ENDPOINT || 'https://nyc.cloud.appwrite.io/v1' }}
-          APPWRITE_PROJECT_ID: ${{ secrets.APPWRITE_PROJECT_ID || '692364a80019746432c8' }}
+          APPWRITE_PROJECT_ID: ${{ secrets.APPWRITE_PROJECT_ID }}
           APPWRITE_API_KEY: ${{ secrets.APPWRITE_API_KEY }}
-          APPWRITE_BACKUP_BUCKET_ID: ${{ secrets.APPWRITE_BACKUP_BUCKET_ID || '6aa0e21c00040aa875f1' }}
+          APPWRITE_BACKUP_BUCKET_ID: ${{ secrets.APPWRITE_BACKUP_BUCKET_ID }}
           BACKUP_RETENTION_DAYS: '30'
         run: node scripts/backup-database.mjs

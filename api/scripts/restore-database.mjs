@@ -10,9 +10,14 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const APPWRITE_ENDPOINT = (process.env.APPWRITE_ENDPOINT || 'https://nyc.cloud.appwrite.io/v1').replace(/\/$/, '');
-const APPWRITE_PROJECT_ID = process.env.APPWRITE_PROJECT_ID || '692364a80019746432c8';
+const APPWRITE_PROJECT_ID = process.env.APPWRITE_PROJECT_ID;
 const APPWRITE_API_KEY = process.env.APPWRITE_API_KEY || '';
-const APPWRITE_BACKUP_BUCKET_ID = process.env.APPWRITE_BACKUP_BUCKET_ID || '6aa0e21c00040aa875f1';
+const APPWRITE_BACKUP_BUCKET_ID = process.env.APPWRITE_BACKUP_BUCKET_ID;
+
+if (!APPWRITE_PROJECT_ID || !APPWRITE_BACKUP_BUCKET_ID || !APPWRITE_API_KEY) {
+  console.error('❌ Error: Variables de entorno requeridas ausentes: APPWRITE_PROJECT_ID, APPWRITE_BACKUP_BUCKET_ID, o APPWRITE_API_KEY.');
+  process.exit(1);
+}
 
 async function listBackups() {
   console.log(`📋 Consultando respaldos en Appwrite [Bucket: ${APPWRITE_BACKUP_BUCKET_ID}]...`);

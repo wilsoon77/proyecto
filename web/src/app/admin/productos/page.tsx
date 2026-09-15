@@ -9,8 +9,8 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { ProductThumbnail } from "@/components/ui/product-image"
 import { useToast } from "@/components/ui/toast"
 import { useAuth } from "@/context/AuthContext"
-import { productsService, adminService } from "@/lib/api"
-import type { ApiProduct } from "@/lib/api/types"
+import { productsService, adminService, categoriesService } from "@/lib/api"
+import type { ApiProduct, ApiCategory } from "@/lib/api/types"
 import { formatPrice } from "@/lib/utils"
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader"
 import { AdminSearchBar } from "@/components/admin/AdminSearchBar"
@@ -26,7 +26,11 @@ export default function AdminProductosPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
+  const [originFilter, setOriginFilter] = useState<'all' | 'PRODUCIDO' | 'COMPRADO'>('all')
+  const [categoryFilter, setCategoryFilter] = useState("")
+  const [categories, setCategories] = useState<ApiCategory[]>([])
   
   // Delete modal state
   const [deleteModal, setDeleteModal] = useState<{
@@ -40,30 +44,41 @@ export default function AdminProductosPage() {
   })
   const [isDeleting, setIsDeleting] = useState(false)
 
+  // Cargar categorías disponibles
+  useEffect(() => {
+    categoriesService.list().then(setCategories).catch(console.error)
+  }, [])
 
-  // Protección de rol - solo ADMIN puede acceder
+  // Protección de rol - solo ADMIN o MANAGER puede acceder
   useEffect(() => {
     if (currentUser && !['ADMIN', 'MANAGER'].includes(currentUser.role)) {
       router.push("/admin")
     }
   }, [currentUser, router])
 
-  const loadProducts = useCallback(async (page: number = 1, search: string = "", status: 'all' | 'active' | 'inactive' = 'all') => {
+  const loadProducts = useCallback(async (
+    page: number = 1,
+    search: string = "",
+    status: 'all' | 'active' | 'inactive' = 'all',
+    origin: 'all' | 'PRODUCIDO' | 'COMPRADO' = 'all',
+    category: string = ""
+  ) => {
     setIsLoading(true)
     try {
       const params: any = { 
         page, 
-        pageSize: 10,
+        pageSize: 12,
         status,
       }
-      if (search) {
-        params.search = search
-      }
+      if (search) params.search = search
+      if (origin !== 'all') params.origin = origin
+      if (category) params.category = category
       
       const response = await productsService.listAdmin(params)
       setProducts(response.data || [])
       setTotalPages(response.meta?.pageCount || 1)
       setCurrentPage(response.meta?.page || 1)
+      setTotalCount(response.meta?.total || 0)
     } catch (error) {
       console.error("Error loading products:", error)
       showToast("Error al cargar los productos", "error")
@@ -76,30 +91,25 @@ export default function AdminProductosPage() {
     try {
       await adminService.updateProduct(product.id, { isActive: !product.isActive })
       showToast(`Producto "${product.name}" ${product.isActive ? 'ocultado' : 'activado'}`, 'success')
-      loadProducts(currentPage, searchQuery, statusFilter)
+      loadProducts(currentPage, searchQuery, statusFilter, originFilter, categoryFilter)
     } catch (error) {
       console.error('Error toggling product:', error)
       showToast('Error al cambiar visibilidad', 'error')
     }
   }
 
-  // Initial load when filter changes
-  useEffect(() => {
-    loadProducts(1, searchQuery, statusFilter)
-  }, [statusFilter, loadProducts])
-
-  // Debounced search - auto search when user types (with 500ms delay)
+  // Debounced search y recarga al cambiar cualquier filtro
   useEffect(() => {
     const timer = setTimeout(() => {
-      loadProducts(1, searchQuery, statusFilter)
-    }, 500)
+      loadProducts(1, searchQuery, statusFilter, originFilter, categoryFilter)
+    }, 400)
 
     return () => clearTimeout(timer)
-  }, [searchQuery, statusFilter, loadProducts])
+  }, [searchQuery, statusFilter, originFilter, categoryFilter, loadProducts])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    loadProducts(1, searchQuery, statusFilter)
+    loadProducts(1, searchQuery, statusFilter, originFilter, categoryFilter)
   }
 
   const handleClearSearch = () => {
@@ -128,7 +138,7 @@ export default function AdminProductosPage() {
       await adminService.deleteProduct(deleteModal.productId)
       showToast(`Producto "${deleteModal.productName}" eliminado correctamente`, "success")
       setDeleteModal({ isOpen: false, productId: null, productName: "" })
-      loadProducts(currentPage, searchQuery, statusFilter)
+      loadProducts(currentPage, searchQuery, statusFilter, originFilter, categoryFilter)
     } catch (error) {
       console.error("Error deleting product:", error)
       showToast("No se puede eliminar porque este producto tiene ventas registradas en el historial. Puedes ocultarlo de la tienda web para darlo de baja de forma segura.", "error")
@@ -160,31 +170,71 @@ export default function AdminProductosPage() {
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         onSearchSubmit={handleSearch}
-        placeholder="Buscar productos por nombre..."
+        placeholder="Buscar por nombre o SKU..."
         chips={[
           {
-            id: "all",
+            id: "all-origin",
             label: "Todos",
-            active: statusFilter === "all",
-            onClick: () => setStatusFilter("all"),
+            active: originFilter === "all",
+            onClick: () => setOriginFilter("all"),
           },
           {
-            id: "active",
-            label: "Activos en Web",
-            active: statusFilter === "active",
-            onClick: () => setStatusFilter("active"),
+            id: "producido",
+            label: "🥖 Panadería (Producidos)",
+            active: originFilter === "PRODUCIDO",
+            onClick: () => setOriginFilter("PRODUCIDO"),
           },
           {
-            id: "inactive",
-            label: "Ocultos de la Web",
-            active: statusFilter === "inactive",
-            onClick: () => setStatusFilter("inactive"),
+            id: "comprado",
+            label: "🛒 Reventa / Abarrotes",
+            active: originFilter === "COMPRADO",
+            onClick: () => setOriginFilter("COMPRADO"),
           },
         ]}
+        totalCount={totalCount}
         filteredCount={products.length}
-        entityName="productos en esta página"
+        entityName="productos"
         isLoading={isLoading}
-      />
+      >
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Selector de Categoría */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-bold text-[#8C522B] uppercase tracking-wider hidden sm:inline">
+              Categoría:
+            </span>
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="h-10 px-2.5 text-xs bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] font-semibold focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
+              aria-label="Filtrar por categoría"
+            >
+              <option value="">Todas las categorías</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.slug}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Selector de Estado / Visibilidad */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-bold text-[#8C522B] uppercase tracking-wider hidden sm:inline">
+              Estado:
+            </span>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as any)}
+              className="h-10 px-2.5 text-xs bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] font-semibold focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
+              aria-label="Filtrar por estado de visibilidad"
+            >
+              <option value="all">Todos los estados</option>
+              <option value="active">Activos en Web</option>
+              <option value="inactive">Ocultos de la Web</option>
+            </select>
+          </div>
+        </div>
+      </AdminSearchBar>
 
       {/* Products Table Container */}
       <div className="bg-white rounded-2xl shadow-xs border border-[#E8DCCB] overflow-hidden">
@@ -465,7 +515,7 @@ export default function AdminProductosPage() {
                     variant="outline"
                     size="sm"
                     disabled={currentPage <= 1 || isLoading}
-                    onClick={() => loadProducts(currentPage - 1, searchQuery, statusFilter)}
+                    onClick={() => loadProducts(currentPage - 1, searchQuery, statusFilter, originFilter, categoryFilter)}
                     className="border-[#DECDBB] text-[#2B170F] hover:bg-white rounded-lg h-8 px-2.5 text-xs font-bold"
                   >
                     <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Anterior
@@ -474,7 +524,7 @@ export default function AdminProductosPage() {
                     variant="outline"
                     size="sm"
                     disabled={currentPage >= totalPages || isLoading}
-                    onClick={() => loadProducts(currentPage + 1, searchQuery, statusFilter)}
+                    onClick={() => loadProducts(currentPage + 1, searchQuery, statusFilter, originFilter, categoryFilter)}
                     className="border-[#DECDBB] text-[#2B170F] hover:bg-white rounded-lg h-8 px-2.5 text-xs font-bold"
                   >
                     Siguiente <ChevronRight className="h-3.5 w-3.5 ml-1" />

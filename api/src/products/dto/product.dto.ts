@@ -64,6 +64,7 @@ export class ProductDto {
   @ApiProperty({ example: 36, nullable: true, description: 'Unidades por lata (solo PRODUCIDO)' }) unitsPerTray?: number;
   @ApiProperty({ example: false, description: 'Control de caducidad por lote; solo aplica a productos de origen COMPRADO' }) tracksExpiration?: boolean;
   @ApiProperty({ example: [30, 15, 3], type: [Number], description: 'Días de anticipación para generar avisos; solo aplica a productos COMPRADO' }) expirationAlertDays?: number[];
+  @ApiPropertyOptional({ example: '2026-12-31', description: 'Fecha de caducidad del lote activo más próximo' }) expirationDate?: string;
   @ApiProperty({ example: true, description: 'Muestra el producto en el e-commerce' }) isActive?: boolean;
   @ApiProperty({ example: true, description: 'Disponible para venta' }) isAvailable?: boolean;
   @ApiProperty({ example: 24 }) available?: number;
@@ -173,6 +174,9 @@ export class UpdateProductDto {
 
   @ApiProperty({ example: [30, 15, 3], type: [Number], required: false, description: 'Días de anticipación para cada aviso; solo aplica a productos COMPRADO' })
   @IsOptional() @IsArray() @ArrayMinSize(1) @IsInt({ each: true }) @Min(0, { each: true }) @Max(3650, { each: true }) expirationAlertDays?: number[];
+
+  @ApiPropertyOptional({ example: '2026-12-31', description: 'Fecha de caducidad para el lote del producto (formato YYYY-MM-DD)' })
+  @IsOptional() @IsString() expirationDate?: string;
 
   @ApiProperty({ example: 'https://example.com/image.jpg', required: false, description: 'URL de la imagen del producto' })
   @IsOptional() @IsString() imageUrl?: string;

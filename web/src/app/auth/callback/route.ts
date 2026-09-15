@@ -29,9 +29,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL('/login?error=oauth_failed', request.url))
     }
 
-    // We create a response object first so we can append cookies to it
-    const response = NextResponse.redirect(new URL(nextPath, request.url))
-
     const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
       cookies: {
         getAll() {
@@ -95,8 +92,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL('/login?error=oauth_failed', request.url))
     }
 
+    // Redirigir a /admin si es ADMIN/MANAGER y no se especificó otra ruta interna
+    const userRole = (authData.user as { role?: string })?.role
+    let destinationPath = nextPath
+    if (destinationPath === '/') {
+      if (userRole === 'ADMIN' || userRole === 'MANAGER') {
+        destinationPath = '/admin'
+      } else if (userRole === 'BAKER') {
+        destinationPath = '/admin/produccion'
+      }
+    }
+
     // Los tokens de la aplicación quedan solo en cookies HttpOnly. El cliente
     // carga el perfil desde /api/auth/session sin recibir secretos.
+    const response = NextResponse.redirect(new URL(destinationPath, request.url))
     setSessionCookies(response, authData, rememberMe)
     response.cookies.set('panaderia_remember_oauth', '', { path: '/', maxAge: 0 })
 

@@ -47,6 +47,7 @@ export class ProductsController {
   @ApiQuery({ name: 'branch', required: false })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'pageSize', required: false })
+  @ApiQuery({ name: 'origin', required: false, enum: ['PRODUCIDO', 'COMPRADO', 'all'] })
   findAll(
     @Req() req: any,
     @Res({ passthrough: true }) res: Response,
@@ -58,6 +59,7 @@ export class ProductsController {
     @Query('branch') branch?: string,
     @Query('page') page?: string,
     @Query('pageSize') pageSize?: string,
+    @Query('origin') origin?: string,
   ) {
     const result = this.productsService.findAll({
       search,
@@ -68,6 +70,7 @@ export class ProductsController {
       branch,
       page: page ? Number(page) : undefined,
       pageSize: pageSize ? Number(pageSize) : undefined,
+      origin,
     });
     // Set headers when promise resolves
     return Promise.resolve(result).then((r: any) => {
@@ -98,6 +101,7 @@ export class ProductsController {
   @ApiQuery({ name: 'pageSize', required: false })
   @ApiQuery({ name: 'all', required: false, type: Boolean, description: 'Incluye productos activos e inactivos' })
   @ApiQuery({ name: 'status', required: false, enum: ['active', 'inactive', 'all'] })
+  @ApiQuery({ name: 'origin', required: false, enum: ['PRODUCIDO', 'COMPRADO', 'all'] })
   @ApiResponse({ status: 200, description: 'Listado administrativo paginado', schema: { type: 'object', properties: { data: { type: 'array', items: { $ref: getSchemaPath(ProductDto) } }, meta: { $ref: getSchemaPath(PaginatedMetaDto) as any } } } })
   findAllAdmin(
     @Req() req: any,
@@ -112,6 +116,7 @@ export class ProductsController {
     @Query('pageSize') pageSize?: string,
     @Query('all') all?: string,
     @Query('status') status?: string,
+    @Query('origin') origin?: string,
   ) {
     const result = this.productsService.findAll({
       search,
@@ -124,6 +129,7 @@ export class ProductsController {
       pageSize: pageSize ? Number(pageSize) : undefined,
       all: all === 'true',
       status,
+      origin,
     }, 'admin');
     return Promise.resolve(result).then((r: any) => {
       setPaginationHeaders({

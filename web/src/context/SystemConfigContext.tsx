@@ -54,7 +54,7 @@ export function SystemConfigProvider({ children }: { children: React.ReactNode }
 
   const acceptsOrders = config['orders.accept_orders'] !== false && config['orders.accept_orders'] !== 'false'
   const isCatalogOnly = !acceptsOrders || config['orders.catalog_only'] === true || config['orders.catalog_only'] === 'true'
-  const canPurchase = !isLoading && !isCatalogOnly
+  const canPurchase = !isCatalogOnly
 
   return (
     <SystemConfigContext.Provider value={{ config, isLoading, canPurchase, isCatalogOnly, refresh: loadConfig }}>

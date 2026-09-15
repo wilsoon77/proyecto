@@ -74,6 +74,7 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
   const [origin, setOrigin] = useState<'PRODUCIDO' | 'COMPRADO'>('PRODUCIDO')
   const [tracksExpiration, setTracksExpiration] = useState(false)
   const [expirationAlertDays, setExpirationAlertDays] = useState("3")
+  const [expirationDate, setExpirationDate] = useState("")
   const [isActive, setIsActive] = useState(true)
   const [isAvailable, setIsAvailable] = useState(true)
   const [presentations, setPresentations] = useState<ApiProductPresentationInput[]>([])
@@ -122,6 +123,7 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
       setOrigin(data.origin === 'COMPRADO' ? 'COMPRADO' : 'PRODUCIDO')
       setTracksExpiration(data.origin === 'COMPRADO' && data.tracksExpiration === true)
       setExpirationAlertDays((data.expirationAlertDays ?? [3]).join(', '))
+      setExpirationDate(data.expirationDate || "")
       setPresentations((data.presentations ?? []).map((presentation) => ({
         id: presentation.id,
         name: presentation.name,
@@ -248,6 +250,7 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
         origin,
         tracksExpiration: origin === 'COMPRADO' && tracksExpiration,
         expirationAlertDays: origin === 'COMPRADO' ? parseExpirationAlertDays(expirationAlertDays) : [],
+        expirationDate: origin === 'COMPRADO' && tracksExpiration && expirationDate ? expirationDate : undefined,
         comboQuantity: comboQuantity ? parseInt(comboQuantity) : undefined,
         comboPrice: comboPrice ? parseFloat(comboPrice) : undefined,
         unitsPerTray: unitsPerTray ? parseInt(unitsPerTray) : undefined,
@@ -543,17 +546,45 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
             {origin === 'COMPRADO' && (
               <div className="border-t border-border pt-4 space-y-3">
                 <label className="flex items-center gap-3 cursor-pointer">
-                  <input type="checkbox" checked={tracksExpiration} onChange={(e) => setTracksExpiration(e.target.checked)} className="h-4 w-4 rounded border-input text-primary focus:ring-primary" />
+                  <input
+                    type="checkbox"
+                    checked={tracksExpiration}
+                    onChange={(e) => {
+                      const checked = e.target.checked
+                      setTracksExpiration(checked)
+                      if (!checked) setExpirationDate("")
+                    }}
+                    className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
+                  />
                   <span>
                     <span className="block text-sm font-medium text-foreground">Controlar fecha de caducidad</span>
                     <span className="block text-xs text-muted-foreground">El sistema avisará antes de que se venza el lote.</span>
                   </span>
                 </label>
                 {tracksExpiration && (
-                  <div className="max-w-xs">
-                    <label className="block text-xs font-medium text-muted-foreground mb-1">Días de anticipación para avisos</label>
-                    <input type="text" inputMode="numeric" value={expirationAlertDays} onChange={(e) => setExpirationAlertDays(e.target.value)} placeholder="30, 15, 3" className="w-full px-3 py-2 border border-border rounded-lg text-sm" />
-                    <p className="text-xs text-muted-foreground mt-1">Opcionalmente agrega varios separados por comas. Ejemplo: 30, 15 y 3 días antes.</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">Fecha de caducidad del lote</label>
+                      <input
+                        type="date"
+                        value={expirationDate}
+                        onChange={(e) => setExpirationDate(e.target.value)}
+                        className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-white"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">Fecha de vencimiento para el lote activo.</p>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">Días de anticipación para avisos</label>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={expirationAlertDays}
+                        onChange={(e) => setExpirationAlertDays(e.target.value)}
+                        placeholder="30, 15, 3"
+                        className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-white"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">Separados por comas. Ejemplo: 30, 15 y 3 días antes.</p>
+                    </div>
                   </div>
                 )}
               </div>

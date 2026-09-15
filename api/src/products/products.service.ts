@@ -216,7 +216,7 @@ export interface ProductDTO {
 export class ProductsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(query: { search?: string; category?: string; min?: number; max?: number; sort?: string; branch?: string; page?: number; pageSize?: number; all?: boolean; status?: string }, visibility: 'public' | 'admin' = 'public'): Promise<any> {
+  async findAll(query: { search?: string; category?: string; min?: number; max?: number; sort?: string; branch?: string; page?: number; pageSize?: number; all?: boolean; status?: string; origin?: string }, visibility: 'public' | 'admin' = 'public'): Promise<any> {
     const where: any = {};
     const isAdminListing = visibility === 'admin';
     const includeInactiveCategories = isAdminListing && (query.status === 'all' || query.all === true);
@@ -232,6 +232,13 @@ export class ProductsService {
     } else {
       // Default behavior (compatibility with public store)
       where.isActive = true;
+    }
+
+    if (query.origin && query.origin !== 'all') {
+      const normalizedOrigin = query.origin.toUpperCase();
+      if (normalizedOrigin === 'PRODUCIDO' || normalizedOrigin === 'COMPRADO') {
+        where.origin = normalizedOrigin;
+      }
     }
 
     if (query.category) {
@@ -328,10 +335,23 @@ export class ProductsService {
     if (!p) return null;
     
     const availability = await mapSellableAvailability(this.prisma, [p], branch);
-    return mapProduct(p, availability.get(p.id) ?? 0);
+    const mapped = mapProduct(p, availability.get(p.id) ?? 0);
+
+    let expirationDate: string | undefined;
+    if (p.origin === 'COMPRADO') {
+      const activeLot = await this.prisma.inventoryLot.findFirst({
+        where: { productId: id, availableQuantity: { gt: 0 } },
+        orderBy: [{ expiresAt: 'asc' }, { createdAt: 'desc' }],
+      });
+      if (activeLot?.expiresAt) {
+        expirationDate = activeLot.expiresAt.toISOString().slice(0, 10);
+      }
+    }
+
+    return { ...mapped, expirationDate };
   }
 
-  async updateById(id: number, data: { sku?: string; name?: string; slug?: string; description?: string; basePrice?: number; comboQuantity?: number; comboPrice?: number; unitsPerTray?: number; categorySlug?: string; origin?: string; isNew?: boolean; isActive?: boolean; isAvailable?: boolean; tracksExpiration?: boolean; expirationAlertDays?: number[]; stockUnitLabel?: string; presentations?: ProductPresentationInputDto[]; imageUrl?: string }) {
+  async updateById(id: number, data: { sku?: string; name?: string; slug?: string; description?: string; basePrice?: number; comboQuantity?: number; comboPrice?: number; unitsPerTray?: number; categorySlug?: string; origin?: string; isNew?: boolean; isActive?: boolean; isAvailable?: boolean; tracksExpiration?: boolean; expirationAlertDays?: number[]; expirationDate?: string; stockUnitLabel?: string; presentations?: ProductPresentationInputDto[]; imageUrl?: string }) {
     const prod = await this.prisma.product.findUnique({ where: { id } });
     if (!prod) throw new NotFoundException('Producto no encontrado');
     
@@ -396,6 +416,41 @@ export class ProductsService {
           await tx.productPresentation.createMany({ data: presentationData.map((presentation) => ({ productId: id, ...presentation })) });
         }
       }
+
+      if (data.expirationDate && tracksExpiration) {
+        const expDate = new Date(data.expirationDate);
+        if (!isNaN(expDate.getTime())) {
+          const existingLot = await tx.inventoryLot.findFirst({
+            where: { productId: id, availableQuantity: { gt: 0 } },
+            orderBy: [{ expiresAt: 'asc' }, { createdAt: 'desc' }],
+          });
+          if (existingLot) {
+            await tx.inventoryLot.update({
+              where: { id: existingLot.id },
+              data: { expiresAt: expDate },
+            });
+          } else {
+            const defaultBranch = await tx.branch.findFirst({ where: { isActive: true }, orderBy: { id: 'asc' } });
+            if (defaultBranch) {
+              const currentInv = await tx.inventory.findUnique({
+                where: { productId_branchId: { productId: id, branchId: defaultBranch.id } }
+              });
+              const qty = currentInv?.quantity || 1;
+              await tx.inventoryLot.create({
+                data: {
+                  productId: id,
+                  branchId: defaultBranch.id,
+                  sourceType: 'APERTURA',
+                  initialQuantity: qty,
+                  availableQuantity: qty,
+                  expiresAt: expDate,
+                }
+              });
+            }
+          }
+        }
+      }
+
       return product;
     });
     

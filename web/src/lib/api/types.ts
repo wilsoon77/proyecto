@@ -91,6 +91,7 @@ export interface ApiProduct {
   unitsPerTray?: number
   tracksExpiration: boolean
   expirationAlertDays: number[]
+  expirationDate?: string
   images: ApiProductImage[]
   available?: number // Stock disponible (si se incluye branch)
   createdAt: string
@@ -120,6 +121,7 @@ export interface CreateProductDto {
   isActive?: boolean
   tracksExpiration?: boolean
   expirationAlertDays?: number[]
+  expirationDate?: string
   stockUnitLabel?: string
   presentations?: ApiProductPresentationInput[]
 }
@@ -138,6 +140,7 @@ export interface UpdateProductDto {
   isAvailable?: boolean
   tracksExpiration?: boolean
   expirationAlertDays?: number[]
+  expirationDate?: string
   stockUnitLabel?: string
   presentations?: ApiProductPresentationInput[]
 }
@@ -261,6 +264,7 @@ export interface ProductFilters {
   pageSize?: number
   all?: boolean | string
   status?: 'active' | 'inactive' | 'all'
+  origin?: 'all' | 'PRODUCIDO' | 'COMPRADO' | string
 }
 
 export interface OrderFilters {

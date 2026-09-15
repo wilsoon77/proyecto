@@ -37,12 +37,12 @@ export function HeroShowcase() {
           {/* Action Buttons */}
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
             <Link href={ROUTES.products} className="w-full sm:w-auto">
-              <Button size="lg" className="touch-tactile public-focus h-13 w-full rounded-full bg-primary px-8 text-base font-bold text-primary-foreground shadow-[0_12px_28px_-10px_rgba(217,119,6,0.55)] transition-all hover:bg-primary/90 hover:shadow-[0_16px_32px_-10px_rgba(217,119,6,0.65)] sm:w-auto">
+              <Button size="lg" className="touch-tactile public-focus h-12 sm:h-14 w-full rounded-full bg-primary px-6 sm:px-8 py-3 text-sm sm:text-base font-bold text-primary-foreground shadow-[0_12px_28px_-10px_rgba(217,119,6,0.55)] transition-all hover:bg-primary/90 hover:shadow-[0_16px_32px_-10px_rgba(217,119,6,0.65)] sm:w-auto">
                 Ver catálogo completo
                 <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
               </Button>
             </Link>
-            <Link href="#como-comprar" className="public-focus inline-flex h-13 w-full items-center justify-center rounded-full border border-black/10 bg-white/80 px-7 text-sm font-bold text-foreground backdrop-blur-sm transition-colors hover:bg-white sm:w-auto">
+            <Link href="#como-comprar" className="public-focus inline-flex h-12 sm:h-14 w-full items-center justify-center rounded-full border border-[#D5C2B1] bg-white/90 px-6 sm:px-8 py-3 text-sm sm:text-base font-bold text-[#3B2314] shadow-xs backdrop-blur-sm transition-all hover:bg-white hover:border-[#B45309]/50 sm:w-auto">
               Cómo comprar
             </Link>
           </div>

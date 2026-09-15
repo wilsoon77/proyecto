@@ -71,6 +71,8 @@ export const ROUTES = {
   profile: '/perfil',
   login: '/login',
   register: '/registro',
+  admin: '/admin',
+  production: '/admin/produccion',
 } as const
 
 // Estados de pedidos

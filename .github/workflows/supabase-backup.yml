@@ -1,9 +1,10 @@
-name: Database Backup (Diario 12:00 AM GT)
+name: Database Backup (Diario 12:23 AM GT)
 
 on:
   schedule:
-    # 00:00 horas (12:00 AM) hora de Guatemala (UTC-6) -> 06:00 UTC
-    - cron: '0 6 * * *'
+    # 00:23 horas (12:23 AM) hora de Guatemala (UTC-6) -> 06:23 UTC
+    # Minuto no saturado para evitar los cuellos de botella de GitHub Actions en el minuto :00
+    - cron: '23 6 * * *'
   workflow_dispatch: # Permite ejecución manual en cualquier momento desde GitHub Actions
 
 permissions:

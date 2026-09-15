@@ -107,7 +107,7 @@ export default function NuevoUsuarioPage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto pb-24">
+    <div className="space-y-6 max-w-3xl mx-auto pb-12">
       {/* ── Header Estandarizado ── */}
       <AdminPageHeader
         title="Nuevo Usuario"
@@ -120,7 +120,7 @@ export default function NuevoUsuarioPage() {
 
       {/* ── Formulario ── */}
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="bg-white rounded-2xl shadow-xs border border-[#E8DCCB] p-6 sm:p-8 space-y-6">
+        <div className="bg-white rounded-2xl shadow-xs border border-[#E8DCCB] p-4 sm:p-6 lg:p-8 space-y-6">
           {error && (
             <div className="bg-destructive/10 border border-destructive/20 text-destructive text-sm px-4 py-3 rounded-xl font-medium">
               {error}

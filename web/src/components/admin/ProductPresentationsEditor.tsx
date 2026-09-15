@@ -32,14 +32,14 @@ export function ProductPresentationsEditor({ value, onChange }: ProductPresentat
 
   return (
     <div className="space-y-4 rounded-lg border border-primary/20 bg-primary/5 p-4">
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
         <div>
           <h3 className="text-sm font-semibold text-foreground">Presentaciones del producto</h3>
           <p className="mt-1 text-xs text-muted-foreground">
             Define cómo se vende o produce sin crear otro producto. El inventario se descuenta según las piezas equivalentes.
           </p>
         </div>
-        <Button type="button" variant="outline" size="sm" onClick={addPresentation}>
+        <Button type="button" variant="outline" size="sm" onClick={addPresentation} className="shrink-0 self-start sm:self-auto">
           <Plus className="mr-1 h-4 w-4" />Agregar
         </Button>
       </div>

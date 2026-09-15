@@ -412,7 +412,7 @@ export default function AdminLayout({
         </header>
 
         {/* Page Content with Warm Background and Smooth Scrolling */}
-        <main className="flex-1 min-w-0 overflow-y-auto bg-[#FAF5EE] p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden bg-[#FAF5EE] p-4 sm:p-6 lg:p-8">
           <ToastProvider>
             {children}
           </ToastProvider>

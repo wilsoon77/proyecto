@@ -6,6 +6,7 @@ import { Search, X } from "lucide-react"
 export interface FilterChip {
   id: string
   label: string
+  icon?: React.ComponentType<{ className?: string }>
   count?: number
   active: boolean
   onClick: () => void
@@ -100,6 +101,9 @@ export function AdminSearchBar({
                       : "bg-[#FAF5EE] text-[#6E5545] hover:bg-[#F3E9DC] hover:text-[#2B170F] border border-[#DECDBB]"
                   }`}
                 >
+                  {chip.icon && (
+                    <chip.icon className={`h-3.5 w-3.5 shrink-0 ${chip.active ? "text-white" : "text-[#8C522B]"}`} />
+                  )}
                   <span>{chip.label}</span>
                   {chip.count !== undefined && (
                     <span

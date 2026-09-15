@@ -273,7 +273,7 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
 
   if (isLoadingProduct) {
     return (
-      <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto">
+      <div className="space-y-6 max-w-3xl mx-auto">
         <div className="animate-pulse space-y-6">
           <div className="h-10 bg-border rounded w-1/3"></div>
           <div className="h-64 bg-border rounded-xl"></div>
@@ -284,7 +284,7 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
 
   if (!product) {
     return (
-      <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto">
+      <div className="space-y-6 max-w-3xl mx-auto">
         <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg">
           Producto no encontrado
         </div>
@@ -296,7 +296,7 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto pb-24">
+    <div className="space-y-6 max-w-4xl mx-auto pb-12">
       {/* Header Estandarizado */}
       <AdminPageHeader
         title={`Editar: ${product.name}`}
@@ -308,8 +308,8 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
       />
 
       {/* Form */}
-      <form onSubmit={handleSubmit}>
-        <div className="bg-card rounded-xl shadow-sm border border-border p-6 space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="bg-card rounded-2xl shadow-xs border border-border p-4 sm:p-6 lg:p-8 space-y-6">
           {/* Error Message */}
           {error && (
             <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg">
@@ -322,7 +322,7 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
             <label className="block text-sm font-medium text-foreground mb-2">
               Imagen del producto
             </label>
-            <div className="flex items-start gap-4">
+            <div className="flex flex-col sm:flex-row items-start gap-4">
               <div 
                 className={`relative h-40 w-40 border-2 border-dashed rounded-xl overflow-hidden transition-colors ${
                   imagePreview ? "border-primary/30 bg-accent" : "border-border hover:border-primary/40"
@@ -443,7 +443,7 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
           </div>
 
           {/* Price & Category */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label htmlFor="price" className="block text-sm font-medium text-foreground mb-2">
                 Precio *
@@ -531,7 +531,7 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
               <h3 className="text-sm font-semibold text-foreground">Cómo se abastece</h3>
               <p className="text-xs text-muted-foreground mt-1">Los panes producidos no solicitan fecha de caducidad.</p>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label className={`cursor-pointer rounded-lg border p-3 ${origin === 'PRODUCIDO' ? 'border-primary bg-primary/5' : 'border-border'}`}>
                 <input type="radio" name="origin" value="PRODUCIDO" checked={origin === 'PRODUCIDO'} onChange={() => { setOrigin('PRODUCIDO'); setTracksExpiration(false) }} className="mr-2" />
                 <span className="text-sm font-medium">Producido</span>
@@ -597,7 +597,7 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
           <div className="bg-accent rounded-lg p-4 space-y-4">
             <h3 className="text-sm font-semibold text-primary">Precio por Volumen (Combo)</h3>
             <p className="text-xs text-primary">Ej: "3 por Q1.25" — Si el cliente lleva la cantidad indicada, aplica el precio combo.</p>
-            <div className="grid grid-cols-3 gap-3">
+            <div className={`grid gap-3 ${origin === 'PRODUCIDO' ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2'}`}>
               <div>
                 <label className="block text-xs font-medium text-muted-foreground mb-1">Cantidad combo</label>
                 <input

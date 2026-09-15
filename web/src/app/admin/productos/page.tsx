@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Plus, Search, Edit2, Trash2, ChevronLeft, ChevronRight, Image as ImageIcon, X, Eye, EyeOff, Package } from "lucide-react"
+import { Plus, Search, Edit2, Trash2, ChevronLeft, ChevronRight, Image as ImageIcon, X, Eye, EyeOff, Package, Flame, ShoppingBag } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { ProductThumbnail } from "@/components/ui/product-image"
@@ -179,14 +179,16 @@ export default function AdminProductosPage() {
             onClick: () => setOriginFilter("all"),
           },
           {
-            id: "producido",
-            label: "🥖 Panadería (Producidos)",
+            id: "panaderia",
+            label: "Panadería (Producidos)",
+            icon: Flame,
             active: originFilter === "PRODUCIDO",
             onClick: () => setOriginFilter("PRODUCIDO"),
           },
           {
-            id: "comprado",
-            label: "🛒 Reventa / Abarrotes",
+            id: "reventa",
+            label: "Reventa / Abarrotes",
+            icon: ShoppingBag,
             active: originFilter === "COMPRADO",
             onClick: () => setOriginFilter("COMPRADO"),
           },

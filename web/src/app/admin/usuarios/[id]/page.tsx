@@ -163,7 +163,7 @@ export default function EditarUsuarioPage() {
 
   if (!user) {
     return (
-      <div className="p-4 sm:p-6 lg:p-8 max-w-2xl mx-auto">
+      <div className="space-y-6 max-w-2xl mx-auto">
         <p className="text-center text-[#8C522B]">Usuario no encontrado</p>
         <Link href="/admin/usuarios" className="mt-4 block text-center">
           <Button variant="outline" className="border-[#DECDBB]">Volver a usuarios</Button>
@@ -173,7 +173,7 @@ export default function EditarUsuarioPage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto pb-24">
+    <div className="space-y-6 max-w-3xl mx-auto pb-12">
       {/* ── Header Estandarizado ── */}
       <AdminPageHeader
         title={`Editar: ${user.firstName} ${user.lastName}`}
@@ -218,7 +218,7 @@ export default function EditarUsuarioPage() {
 
       {/* ── Formulario ── */}
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="bg-white rounded-2xl shadow-xs border border-[#E8DCCB] p-6 sm:p-8 space-y-6">
+        <div className="bg-white rounded-2xl shadow-xs border border-[#E8DCCB] p-4 sm:p-6 lg:p-8 space-y-6">
           {error && (
             <div className="bg-destructive/10 border border-destructive/20 text-destructive text-sm px-4 py-3 rounded-xl font-medium">
               {error}

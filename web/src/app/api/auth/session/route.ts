@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   const session = getSessionTokens(request)
-  if (!session.accessToken) {
+  if (!session.accessToken && !session.refreshToken) {
     return NextResponse.json({ user: null }, { headers: { 'Cache-Control': 'no-store' } })
   }
 
@@ -23,15 +23,21 @@ export async function GET(request: NextRequest) {
   })
 
   try {
-    let upstream = await getUser(session.accessToken)
+    let upstream: Response | null = null
     let refreshedSession: Awaited<ReturnType<typeof refreshSession>> = null
 
-    if (upstream.status === 401 && session.refreshToken) {
-      refreshedSession = await refreshSession(session.refreshToken)
-      if (refreshedSession) upstream = await getUser(refreshedSession.token)
+    if (session.accessToken) {
+      upstream = await getUser(session.accessToken)
     }
 
-    if (upstream.status === 401) {
+    if ((!upstream || upstream.status === 401) && session.refreshToken) {
+      refreshedSession = await refreshSession(session.refreshToken)
+      if (refreshedSession) {
+        upstream = await getUser(refreshedSession.token)
+      }
+    }
+
+    if (!upstream || upstream.status === 401) {
       const response = NextResponse.json({ user: null }, { headers: { 'Cache-Control': 'no-store' } })
       clearSessionCookies(response)
       return response

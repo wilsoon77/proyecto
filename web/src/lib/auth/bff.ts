@@ -31,6 +31,7 @@ function sessionCookieOptions(maxAge: number) {
   return {
     path: '/',
     maxAge,
+    expires: new Date(Date.now() + maxAge * 1000),
     httpOnly: true,
     secure: isProduction(),
     sameSite: 'lax' as const,
@@ -41,6 +42,7 @@ function csrfCookieOptions(maxAge: number) {
   return {
     path: '/',
     maxAge,
+    expires: new Date(Date.now() + maxAge * 1000),
     httpOnly: false,
     secure: isProduction(),
     sameSite: 'lax' as const,

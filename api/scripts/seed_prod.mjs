@@ -94,25 +94,25 @@ async function main() {
     });
     rawMaterialMap.set(raw.name, record.id);
 
-    // Inventario de materia prima por sucursal
-    for (const b of branches) {
-      await prisma.rawMaterialInventory.upsert({
-        where: {
-          rawMaterialId_branchId: {
-            rawMaterialId: record.id,
-            branchId: b.id,
-          },
-        },
-        update: {},
-        create: {
+    // Inventario de materia prima: exclusivo de la Sucursal Central
+    const centralBranch = branches.find(b => b.slug === 'central' || b.name.toLowerCase().includes('central')) || branches[0];
+    await prisma.rawMaterialInventory.upsert({
+      where: {
+        rawMaterialId_branchId: {
           rawMaterialId: record.id,
-          branchId: b.id,
-          quantity: 0,
+          branchId: centralBranch.id,
         },
-      });
-    }
+      },
+      update: {},
+      create: {
+        rawMaterialId: record.id,
+        branchId: centralBranch.id,
+        quantity: 0,
+      },
+    });
   }
-  console.log(`✅ ${rawMaterialsData.length} Materias Primas e Inventarios por sucursal asegurados.`);
+  const centralBranch = branches.find(b => b.slug === 'central' || b.name.toLowerCase().includes('central')) || branches[0];
+  console.log(`✅ ${rawMaterialsData.length} Materias Primas aseguradas exclusivamente para ${centralBranch.name} (id: ${centralBranch.id}).`);
 
   // 5. Productos Terminados (Producidos) y de Reventa (Comprados)
   const productsData = [

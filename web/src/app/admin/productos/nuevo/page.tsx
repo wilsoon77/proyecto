@@ -456,12 +456,12 @@ export default function NuevoProductoPage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <label className={`cursor-pointer rounded-lg border p-3 ${origin === 'PRODUCIDO' ? 'border-primary bg-primary/5' : 'border-border'}`}>
-                <input type="radio" name="origin" value="PRODUCIDO" checked={origin === 'PRODUCIDO'} onChange={() => { setOrigin('PRODUCIDO'); setTracksExpiration(false); setInitialExpirationDate("") }} className="mr-2" />
+                <input type="radio" name="origin" value="PRODUCIDO" checked={origin === 'PRODUCIDO'} onChange={() => { setOrigin('PRODUCIDO'); setTracksExpiration(false) }} className="mr-2" />
                 <span className="text-sm font-medium">Producido</span>
                 <span className="block text-xs text-muted-foreground mt-1">Usa receta y materia prima.</span>
               </label>
               <label className={`cursor-pointer rounded-lg border p-3 ${origin === 'COMPRADO' ? 'border-primary bg-primary/5' : 'border-border'}`}>
-                <input type="radio" name="origin" value="COMPRADO" checked={origin === 'COMPRADO'} onChange={() => { setOrigin('COMPRADO'); setUnitsPerTray('') }} className="mr-2" />
+                <input type="radio" name="origin" value="COMPRADO" checked={origin === 'COMPRADO'} onChange={() => { setOrigin('COMPRADO'); setUnitsPerTray(''); setTracksExpiration(true) }} className="mr-2" />
                 <span className="text-sm font-medium">Comprado</span>
                 <span className="block text-xs text-muted-foreground mt-1">Se ingresa desde un proveedor.</span>
               </label>

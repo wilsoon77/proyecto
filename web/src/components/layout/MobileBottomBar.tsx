@@ -27,7 +27,7 @@ export function MobileBottomBar() {
 
   return (
     <nav aria-label="Navegación móvil inferior" className="fixed inset-x-0 bottom-0 z-30 border-t border-black/[0.06] bg-white/95 backdrop-blur-md pb-safe md:hidden shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.04)]">
-      <div className="mx-auto grid h-[72px] max-w-md grid-cols-4 px-2">
+      <div className={`mx-auto grid h-[72px] max-w-md px-2 ${navItems.length === 3 ? 'grid-cols-3' : 'grid-cols-4'}`}>
         {navItems.map((item) => {
           const Icon = item.icon
           return (

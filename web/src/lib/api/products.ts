@@ -25,6 +25,7 @@ function buildQueryString(filters: ProductFilters): string {
   if (filters.pageSize !== undefined) params.set('pageSize', String(filters.pageSize))
   if (filters.all !== undefined) params.set('all', String(filters.all))
   if (filters.status) params.set('status', filters.status)
+  if (filters.origin && filters.origin !== 'all') params.set('origin', filters.origin)
   
   const queryString = params.toString()
   return queryString ? `?${queryString}` : ''

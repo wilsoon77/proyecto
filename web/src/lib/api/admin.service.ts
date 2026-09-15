@@ -16,6 +16,7 @@ export interface CreateProductData {
   origin?: 'PRODUCIDO' | 'COMPRADO'
   tracksExpiration?: boolean
   expirationAlertDays?: number[]
+  expirationDate?: string
   stockUnitLabel?: string
   presentations?: Array<Partial<ApiProductPresentation> & { name: string; unitsInStock: number }>
   imageUrl?: string
@@ -37,6 +38,7 @@ export interface UpdateProductData {
   origin?: 'PRODUCIDO' | 'COMPRADO'
   tracksExpiration?: boolean
   expirationAlertDays?: number[]
+  expirationDate?: string
   stockUnitLabel?: string
   presentations?: Array<Partial<ApiProductPresentation> & { name: string; unitsInStock: number }>
   imageUrl?: string
@@ -56,6 +58,7 @@ export interface ProductDetailResponse {
   origin: string
   tracksExpiration: boolean
   expirationAlertDays: number[]
+  expirationDate?: string
   isNew: boolean
   isActive: boolean
   isAvailable: boolean

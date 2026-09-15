@@ -10,7 +10,7 @@ interface AuthContextType {
   isLoading: boolean
   isLoggedIn: boolean
   isAuthenticated: boolean // Alias de isLoggedIn
-  login: (data: LoginDto) => Promise<void>
+  login: (data: LoginDto) => Promise<ApiUser>
   register: (data: RegisterDto) => Promise<void>
   logout: () => Promise<void>
   updateProfile: (data: UpdateMeDto) => Promise<void>
@@ -42,11 +42,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loadUser()
   }, [])
 
-  const login = useCallback(async (data: LoginDto) => {
+  const login = useCallback(async (data: LoginDto): Promise<ApiUser> => {
     setIsLoading(true)
     try {
       const response = await authService.login(data)
       setUser(response.user)
+      return response.user
     } finally {
       setIsLoading(false)
     }

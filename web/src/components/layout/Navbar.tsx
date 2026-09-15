@@ -145,11 +145,11 @@ export function Navbar() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button
-                        className="public-focus inline-flex h-9 sm:h-10 items-center gap-1 sm:gap-1.5 rounded-full border border-border bg-card px-2 sm:px-3 text-[11px] sm:text-xs font-semibold text-foreground transition-colors hover:border-primary/40 hover:bg-secondary"
+                        className="public-focus inline-flex h-9 sm:h-10 items-center gap-1.5 sm:gap-2 rounded-full border border-border bg-card px-3 sm:px-3.5 text-xs font-semibold text-foreground transition-colors hover:border-primary/40 hover:bg-secondary shadow-2xs"
                         aria-label="Elegir sucursal de retiro"
                       >
                         <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
-                        <span className="max-w-[62px] min-[360px]:max-w-[76px] min-[400px]:max-w-[110px] sm:max-w-[160px] md:max-w-[200px] truncate">
+                        <span className="max-w-[110px] min-[380px]:max-w-[140px] sm:max-w-[180px] md:max-w-[220px] truncate">
                           {selectedBranch?.name || "Sucursal"}
                         </span>
                         <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" aria-hidden="true" />
@@ -189,9 +189,9 @@ export function Navbar() {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 ) : (
-                  <div className="inline-flex h-9 sm:h-10 items-center gap-1.5 rounded-full border border-border bg-card px-2 sm:px-3 text-[11px] sm:text-xs font-semibold text-muted-foreground">
+                  <div className="inline-flex h-9 sm:h-10 items-center gap-1.5 sm:gap-2 rounded-full border border-border bg-card px-3 sm:px-3.5 text-xs font-semibold text-muted-foreground shadow-2xs">
                     <MapPin className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
-                    <span className="max-w-[70px] sm:max-w-[120px] truncate">{selectedBranch?.name || "Sucursal"}</span>
+                    <span className="max-w-[110px] sm:max-w-[180px] truncate">{selectedBranch?.name || "Sucursal"}</span>
                   </div>
                 )}
               </div>

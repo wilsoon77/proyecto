@@ -24,7 +24,7 @@ function LoginForm() {
   const searchParams = useSearchParams()
   const returnUrl = getSafeReturnUrl(searchParams.get("returnUrl"))
   const oauthError = searchParams.get("error")
-  const { login, isLoading } = useAuth()
+  const { user, isAuthenticated, login, isLoading } = useAuth()
   const { show } = useToast()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -37,6 +37,23 @@ function LoginForm() {
   const [deviceId, setDeviceId] = useState("")
   const [requiresCaptcha, setRequiresCaptcha] = useState(false)
   const [checkingCaptcha, setCheckingCaptcha] = useState(false)
+
+  // Si ya cuenta con sesión activa, redirigir automáticamente
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && user) {
+      if (returnUrl === ROUTES.home) {
+        if (user.role === "ADMIN" || user.role === "MANAGER") {
+          router.replace(ROUTES.admin)
+          return
+        }
+        if (user.role === "BAKER") {
+          router.replace(ROUTES.production)
+          return
+        }
+      }
+      router.replace(returnUrl)
+    }
+  }, [isLoading, isAuthenticated, user, returnUrl, router])
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDeviceId(getDeviceId()), 0)
@@ -71,8 +88,18 @@ function LoginForm() {
     }
 
     try {
-      await login({ email, password, captchaToken: captchaToken || undefined, rememberMe, deviceId: deviceId || undefined })
+      const loggedUser = await login({ email, password, captchaToken: captchaToken || undefined, rememberMe, deviceId: deviceId || undefined })
       show("Bienvenido de vuelta.", { variant: "success" })
+      if (returnUrl === ROUTES.home) {
+        if (loggedUser.role === "ADMIN" || loggedUser.role === "MANAGER") {
+          router.push(ROUTES.admin)
+          return
+        }
+        if (loggedUser.role === "BAKER") {
+          router.push(ROUTES.production)
+          return
+        }
+      }
       router.push(returnUrl)
     } catch (loginError: unknown) {
       const message = loginError instanceof Error ? loginError.message : "No fue posible iniciar sesión."

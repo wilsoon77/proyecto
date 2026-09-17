@@ -37,9 +37,9 @@ self.addEventListener('push', function (event) {
     const data = event.data.json();
     const origin = self.location.origin;
     
-    // Icono principal y badge con URL absoluta para evitar fallback de Android
-    const iconUrl = data.icon || `${origin}/images/icon-panaderia.svg`;
-    const badgeUrl = `${origin}/images/icons/notification-badge-72.png`;
+    // Icono principal y badge en formato PNG compatible con Android, Windows y iOS
+    const iconUrl = data.icon && !data.icon.endsWith('.svg') ? data.icon : `${origin}/icons/icon-192x192.png`;
+    const badgeUrl = `${origin}/icons/icon-192x192.png`;
 
     const options = {
       body: data.message || 'Nueva notificación de Panadería Svetlana',

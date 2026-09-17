@@ -180,12 +180,18 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   // Subscribe current browser to Web Push
   const subscribeUser = useCallback(async (): Promise<boolean> => {
-    if (!swRegistrationRef.current || !isLoggedIn) {
-      console.warn('No service worker registered or user not logged in.')
+    if (!isLoggedIn) {
+      console.warn('Usuario no logueado para suscribir a push.')
       return false
     }
 
     try {
+      const reg = swRegistrationRef.current || (typeof window !== 'undefined' && 'serviceWorker' in navigator ? await navigator.serviceWorker.ready : null)
+      if (!reg || !reg.pushManager) {
+        console.warn('No hay service worker activo o PushManager no está disponible.')
+        return false
+      }
+
       // Explicitly request permission first (required for some mobile browsers)
       if (Notification.permission === 'default') {
         const permission = await Notification.requestPermission()
@@ -205,7 +211,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       }
 
       const applicationServerKey = urlBase64ToUint8Array(publicKey)
-      const subscription = await swRegistrationRef.current.pushManager.subscribe({
+      const subscription = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey
       })
@@ -235,10 +241,11 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   // Unsubscribe current browser from Web Push
   const unsubscribeUser = useCallback(async (): Promise<boolean> => {
-    if (!swRegistrationRef.current) return false
-
     try {
-      const subscription = await swRegistrationRef.current.pushManager.getSubscription()
+      const reg = swRegistrationRef.current || (typeof window !== 'undefined' && 'serviceWorker' in navigator ? await navigator.serviceWorker.ready : null)
+      if (!reg || !reg.pushManager) return false
+
+      const subscription = await reg.pushManager.getSubscription()
       if (subscription) {
         await notificationsService.unsubscribe(subscription.endpoint)
         await subscription.unsubscribe()

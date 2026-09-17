@@ -10,6 +10,7 @@ import { QueryProvider } from "@/components/providers/query-provider";
 
 import { NotificationProvider } from "@/context/NotificationContext";
 import CookieConsent from "@/components/ui/CookieConsent";
+import { PwaInstallPrompt } from "@/components/pwa/PwaInstallPrompt";
 import { Analytics } from "@vercel/analytics/react";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -145,10 +146,18 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   icons: {
     icon: [
-      { url: "/images/icon-panaderia.svg", type: "image/svg+xml" },
-      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
+      { url: "/icon-panaderia.svg", type: "image/svg+xml" },
     ],
-    apple: "/images/icon-panaderia.svg",
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Panadería Svetlana",
   },
 };
 
@@ -176,6 +185,7 @@ export default function RootLayout({
                       {children}
                     </LayoutWrapper>
                     <CookieConsent />
+                    <PwaInstallPrompt />
                   </CartProvider>
                 </NotificationProvider>
               </AuthProvider>

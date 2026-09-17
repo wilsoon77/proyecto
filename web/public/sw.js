@@ -12,6 +12,20 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+// Listener de fetch para cumplir con los requisitos de instalación PWA
+self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
+
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(async () => {
+        const cached = await caches.match(event.request);
+        return cached || (await caches.match('/')) || Response.error();
+      })
+    );
+  }
+});
+
 self.addEventListener('push', function (event) {
   console.log('[SW] Evento push recibido');
   if (!event.data) {

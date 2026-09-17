@@ -255,21 +255,29 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-      console.warn('Las notificaciones push no están soportadas en este navegador.')
+    if (!('serviceWorker' in navigator)) {
       setPermissionState('unsupported')
       setIsLoading(false)
       return
     }
 
-    setPermissionState(Notification.permission)
-
     navigator.serviceWorker.register('/sw.js').then((reg) => {
       swRegistrationRef.current = reg
       
+      if (!('PushManager' in window)) {
+        console.warn('Las notificaciones push no están soportadas en este navegador.')
+        setPermissionState('unsupported')
+        setIsLoading(false)
+        return
+      }
+
+      setPermissionState(Notification.permission)
+
       // Check if user is already subscribed
       reg.pushManager.getSubscription().then((subscription) => {
         setIsSubscribed(!!subscription)
+        setIsLoading(false)
+      }).catch(() => {
         setIsLoading(false)
       })
     }).catch((err) => {

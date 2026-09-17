@@ -283,7 +283,7 @@ export class TelegramService implements OnModuleInit {
       } else if (command === '/vencimientos' || cleanLower.includes('vencimientos')) {
         question = '¿Qué productos están próximos a vencer en los siguientes 15 días?';
       } else if (command === '/inventario' || cleanLower === '📦 inventario' || cleanLower === 'inventario') {
-        question = 'Dame un resumen general del inventario disponible';
+        question = '¿Cuál es el inventario de productos?';
       } else if (command === '/produccion' || cleanLower.includes('producción hoy') || cleanLower.includes('produccion hoy')) {
         question = '¿Cuál es el reporte de producción registrado hoy?';
       }

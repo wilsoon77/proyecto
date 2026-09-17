@@ -48,6 +48,22 @@ describe('assistant query router', () => {
     });
   });
 
+  it('resuelve consultas de inventario general sin tomar palabras comunes como nombre de producto', () => {
+    expect(routeAssistantQuery('¿Cuál es el inventario de productos?', branches)).toMatchObject({
+      kind: 'inventory',
+      query: undefined,
+      prefer: 'product',
+    });
+    expect(routeAssistantQuery('Dame un resumen general del inventario disponible', branches)).toMatchObject({
+      kind: 'inventory',
+      query: undefined,
+    });
+    expect(routeAssistantQuery('inventario', branches)).toMatchObject({
+      kind: 'inventory',
+      query: undefined,
+    });
+  });
+
   it('no enruta solicitudes de escritura como consultas de lectura', () => {
     expect(routeAssistantQuery('Registra una compra de azúcar en Central', branches)).toBeNull();
   });

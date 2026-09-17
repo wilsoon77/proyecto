@@ -225,7 +225,7 @@ function extractInventoryQuery(prompt: string, branches: AssistantBranchLike[]):
 
   if (!match?.[1]) return undefined;
   const candidate = match[1]
-    .replace(/\b(materia prima|materias primas|insumo|insumos|producto|productos|inventario|stock|existencia|existencias)\b/giu, ' ')
+    .replace(/\b(materia prima|materias primas|insumo|insumos|producto|productos|inventario|stock|existencia|existencias|disponible|disponibles|general|resumen|actual|actuales|todo|todos|toda|todas|completo|total)\b/giu, ' ')
     .replace(/\s+/g, ' ')
     .trim();
   return candidate.length >= 2 ? candidate.slice(0, 80) : undefined;

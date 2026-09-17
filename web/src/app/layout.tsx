@@ -165,7 +165,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd).replace(/</g, "\\u003c") }}
         />
       </head>
-      <body className="antialiased font-sans bg-background text-foreground selection:bg-primary/20 selection:text-foreground">
+      <body className="antialiased font-sans bg-background text-foreground selection:bg-primary/20 selection:text-foreground overflow-x-hidden">
         <QueryProvider>
           <ToastProvider>
             <SystemConfigProvider>

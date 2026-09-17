@@ -8,8 +8,11 @@ import { GroqProvider } from './providers/groq.provider.js';
 import { MistralProvider } from './providers/mistral.provider.js';
 import { NvidiaProvider } from './providers/nvidia.provider.js';
 
+import { AssistantController } from './assistant.controller.js';
+
 @Module({
   imports: [PrismaModule],
+  controllers: [AssistantController],
   providers: [
     AssistantPolicyService,
     AssistantReadService,

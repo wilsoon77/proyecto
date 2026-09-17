@@ -11,7 +11,7 @@ export class SystemConfigService {
   /**
    * Obtiene una configuración por clave con caché en memoria.
    */
-  async get<T>(key: string): Promise<T> {
+  async get<T>(key: string, defaultValue?: T): Promise<T> {
     const cached = this.cache.get(key);
     const now = Date.now();
 
@@ -24,6 +24,9 @@ export class SystemConfigService {
     });
 
     if (!config) {
+      if (defaultValue !== undefined) {
+        return defaultValue;
+      }
       throw new NotFoundException(`Configuración con clave '${key}' no encontrada`);
     }
 
@@ -36,21 +39,30 @@ export class SystemConfigService {
   /**
    * Obtiene un boolean de la configuración.
    */
-  async getBool(key: string): Promise<boolean> {
-    const val = await this.get<any>(key);
-    return val === true || val === 'true' || val === 1 || val === '1';
+  async getBool(key: string, defaultValue = false): Promise<boolean> {
+    try {
+      const val = await this.get<any>(key, defaultValue);
+      return val === true || val === 'true' || val === 1 || val === '1';
+    } catch {
+      return defaultValue;
+    }
   }
 
   /**
    * Obtiene un number de la configuración.
    */
-  async getNumber(key: string): Promise<number> {
-    const val = await this.get<any>(key);
-    return Number(val);
+  async getNumber(key: string, defaultValue = 0): Promise<number> {
+    try {
+      const val = await this.get<any>(key, defaultValue);
+      return Number(val);
+    } catch {
+      return defaultValue;
+    }
   }
 
   /**
    * Actualiza el valor de una configuración e invalida el caché.
+   * Si no existe, la crea automáticamente.
    */
   async set(key: string, value: any): Promise<void> {
     const config = await this.prisma.systemConfig.findUnique({
@@ -58,7 +70,21 @@ export class SystemConfigService {
     });
 
     if (!config) {
-      throw new NotFoundException(`Configuración con clave '${key}' no encontrada`);
+      const type = typeof value === 'number' ? 'number' : typeof value === 'boolean' ? 'boolean' : 'string';
+      const category = key.startsWith('assistant.') ? 'ASSISTANT' : 'SYSTEM';
+      const isPublic = key === 'system.status_page_url';
+      await this.prisma.systemConfig.create({
+        data: {
+          key,
+          value,
+          type,
+          category,
+          label: key,
+          isPublic,
+        },
+      });
+      this.cache.set(key, { value, expiresAt: Date.now() + this.CACHE_TTL });
+      return;
     }
 
     if (config.isReadOnly) {
@@ -106,6 +132,10 @@ export class SystemConfigService {
     const publicConfigs: Record<string, any> = {};
     for (const config of configs) {
       publicConfigs[config.key] = config.value;
+    }
+
+    if (!publicConfigs['system.status_page_url']) {
+      publicConfigs['system.status_page_url'] = 'https://uptime.betterstack.com';
     }
 
     return publicConfigs;

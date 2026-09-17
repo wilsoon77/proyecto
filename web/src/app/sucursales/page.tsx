@@ -5,6 +5,7 @@ import { MapPin, Phone, Clock, Navigation, ExternalLink } from "lucide-react"
 import { branchesService } from "@/lib/api"
 import type { ApiBranch } from "@/lib/api/types"
 import { Button } from "@/components/ui/button"
+import { useSystemConfig } from "@/context/SystemConfigContext"
 
 // Centro por defecto: Guatemala City
 const DEFAULT_CENTER = { lat: 14.6349, lng: -90.5069 }
@@ -13,9 +14,14 @@ const DEFAULT_CENTER = { lat: 14.6349, lng: -90.5069 }
 const MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || ''
 
 export default function SucursalesPage() {
+  const { config } = useSystemConfig()
   const [branches, setBranches] = useState<ApiBranch[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [selectedBranch, setSelectedBranch] = useState<ApiBranch | null>(null)
+
+  const operatingHours = typeof config['store.operating_hours'] === 'string' && config['store.operating_hours'].trim()
+    ? config['store.operating_hours'].trim()
+    : null
 
   useEffect(() => {
     const loadBranches = async () => {
@@ -117,10 +123,20 @@ export default function SucursalesPage() {
                     <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
                     <span>{branch.address}</span>
                   </li>
-                  <li className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 flex-shrink-0 text-primary" />
-                    <span>Lunes a Sábado: 7:00 AM - 8:00 PM</span>
-                  </li>
+                  {branch.phone && branch.phone.trim() && (
+                    <li className="flex items-center gap-2">
+                      <Phone className="h-4 w-4 flex-shrink-0 text-primary" />
+                      <a href={`tel:${branch.phone.trim()}`} className="hover:underline text-foreground">
+                        {branch.phone.trim()}
+                      </a>
+                    </li>
+                  )}
+                  {operatingHours && (
+                    <li className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 flex-shrink-0 text-primary" />
+                      <span>{operatingHours}</span>
+                    </li>
+                  )}
                 </ul>
                 <div className="mt-4 flex gap-2">
                   <a 

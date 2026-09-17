@@ -21,7 +21,7 @@ import { ROUTES } from "@/lib/constants"
 import { useCart } from "@/context/CartContext"
 import { useAuth } from "@/context/AuthContext"
 import { useSystemConfig } from "@/context/SystemConfigContext"
-import { branchesService } from "@/lib/api"
+import { useBranches } from "@/hooks/use-branches"
 import type { ApiBranch } from "@/lib/api/types"
 import {
   DropdownMenu,
@@ -30,8 +30,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-
-let branchesCache: ApiBranch[] | null = null
 
 const navLinks = [
   { label: "Inicio", href: ROUTES.home },
@@ -50,31 +48,16 @@ export function Navbar() {
   const { user, isLoggedIn, logout } = useAuth()
   const { canPurchase } = useSystemConfig()
   const pathname = usePathname()
-  const [branches, setBranches] = useState<ApiBranch[]>(branchesCache || [])
+  const { branches } = useBranches()
   const [selectedBranch, setSelectedBranch] = useState<ApiBranch | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   useEffect(() => {
-    const applyBranch = (data: ApiBranch[]) => {
-      const savedSlug = typeof window !== "undefined" ? localStorage.getItem("selectedBranch") : null
-      const saved = savedSlug ? data.find((branch) => branch.slug === savedSlug) : null
-      setSelectedBranch(saved || data[0] || null)
-    }
-
-    if (branchesCache) {
-      applyBranch(branchesCache)
-      return
-    }
-
-    branchesService
-      .list()
-      .then((data) => {
-        branchesCache = data
-        setBranches(data)
-        applyBranch(data)
-      })
-      .catch((error) => console.error("Error cargando sucursales:", error))
-  }, [])
+    if (!branches.length) return
+    const savedSlug = typeof window !== "undefined" ? localStorage.getItem("selectedBranch") : null
+    const saved = savedSlug ? branches.find((branch) => branch.slug === savedSlug) : null
+    setSelectedBranch(saved || branches[0] || null)
+  }, [branches])
 
   useEffect(() => {
     document.body.style.overflow = mobileMenuOpen ? "hidden" : ""
@@ -140,16 +123,16 @@ export function Navbar() {
             </nav>
 
             <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-              <div className="flex items-center">
+              <div className="flex items-center min-w-0">
                 {branches.length > 1 ? (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button
-                        className="public-focus inline-flex h-9 sm:h-10 items-center gap-1.5 sm:gap-2 rounded-full border border-border bg-card px-3 sm:px-3.5 text-xs font-semibold text-foreground transition-colors hover:border-primary/40 hover:bg-secondary shadow-2xs"
+                        className="public-focus inline-flex h-9 sm:h-10 items-center gap-1.5 sm:gap-2 rounded-full border border-border bg-card px-2.5 sm:px-3.5 text-xs font-semibold text-foreground transition-colors hover:border-primary/40 hover:bg-secondary shadow-2xs min-w-0"
                         aria-label="Elegir sucursal de retiro"
                       >
                         <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
-                        <span className="max-w-[110px] min-[380px]:max-w-[140px] sm:max-w-[180px] md:max-w-[220px] truncate">
+                        <span className="max-w-[85px] min-[360px]:max-w-[110px] min-[400px]:max-w-[140px] sm:max-w-[180px] md:max-w-[220px] truncate">
                           {selectedBranch?.name || "Sucursal"}
                         </span>
                         <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" aria-hidden="true" />
@@ -189,9 +172,9 @@ export function Navbar() {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 ) : (
-                  <div className="inline-flex h-9 sm:h-10 items-center gap-1.5 sm:gap-2 rounded-full border border-border bg-card px-3 sm:px-3.5 text-xs font-semibold text-muted-foreground shadow-2xs">
-                    <MapPin className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
-                    <span className="max-w-[110px] sm:max-w-[180px] truncate">{selectedBranch?.name || "Sucursal"}</span>
+                  <div className="inline-flex h-9 sm:h-10 items-center gap-1.5 sm:gap-2 rounded-full border border-border bg-card px-2.5 sm:px-3.5 text-xs font-semibold text-muted-foreground shadow-2xs min-w-0">
+                    <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
+                    <span className="max-w-[85px] min-[360px]:max-w-[110px] sm:max-w-[180px] truncate">{selectedBranch?.name || "Sucursal"}</span>
                   </div>
                 )}
               </div>
@@ -200,11 +183,11 @@ export function Navbar() {
                 <Link
                   href={ROUTES.cart}
                   aria-label={`Carrito${itemCount ? `, ${itemCount} productos` : ""}`}
-                  className="public-focus relative inline-flex h-9 w-9 sm:h-10 sm:w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full border border-transparent text-foreground transition-colors hover:border-border hover:bg-secondary"
+                  className="public-focus relative hidden md:inline-flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full border border-transparent text-foreground transition-colors hover:border-border hover:bg-secondary"
                 >
                   <ShoppingCart className="h-[18px] w-[18px] sm:h-[19px] sm:w-[19px]" aria-hidden="true" />
                   {itemCount > 0 && (
-                    <span className="absolute -right-0.5 -top-0.5 sm:right-0.5 sm:top-0.5 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
+                    <span className="absolute right-0.5 top-0.5 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
                       {itemCount > 99 ? "99+" : itemCount}
                     </span>
                   )}
@@ -353,6 +336,27 @@ export function Navbar() {
                 Sucursales
                 <ChevronRight className="h-4 w-4" aria-hidden="true" />
               </Link>
+              {canPurchase && (
+                <Link
+                  href={ROUTES.cart}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`public-focus flex items-center justify-between rounded-xl px-3 py-3.5 text-base font-semibold transition-colors ${
+                    pathname === ROUTES.cart ? "bg-secondary text-foreground font-bold" : "text-muted-foreground hover:bg-secondary/70 hover:text-foreground"
+                  }`}
+                >
+                  <span className="flex items-center gap-2.5">
+                    <ShoppingCart className="h-4 w-4 text-primary" aria-hidden="true" />
+                    <span>Carrito de compras</span>
+                  </span>
+                  {itemCount > 0 ? (
+                    <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-bold text-primary-foreground">
+                      {itemCount}
+                    </span>
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                  )}
+                </Link>
+              )}
             </div>
           </nav>
 

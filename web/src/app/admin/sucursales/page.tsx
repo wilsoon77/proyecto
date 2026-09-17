@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { useToast } from "@/components/ui/toast"
 import { useAuth } from "@/context/AuthContext"
+import { useQueryClient } from "@tanstack/react-query"
 import { branchesService } from "@/lib/api"
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader"
 import { AdminSearchBar } from "@/components/admin/AdminSearchBar"
@@ -26,6 +27,7 @@ export default function SucursalesPage() {
   const router = useRouter()
   const { user: currentUser } = useAuth()
   const { showToast } = useToast()
+  const queryClient = useQueryClient()
   const [branches, setBranches] = useState<Branch[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
@@ -73,6 +75,7 @@ export default function SucursalesPage() {
     try {
       await branchesService.delete(deleteId)
       setBranches(branches.filter((b) => b.id !== deleteId))
+      queryClient.invalidateQueries({ queryKey: ['branches'] })
       showToast("Sucursal eliminada o desactivada correctamente", "success")
     } catch (error: any) {
       console.error("Error deleting branch:", error)

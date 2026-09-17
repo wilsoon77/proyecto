@@ -78,6 +78,15 @@ export class TelegramController {
     return this.telegram.registerWebhook();
   }
 
+  @Get('diagnostics')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'MANAGER')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Obtener diagnóstico del webhook de Telegram' })
+  getDiagnostics() {
+    return this.telegram.getWebhookDiagnostics();
+  }
+
   @Post('webhook')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Webhook privado de Telegram' })

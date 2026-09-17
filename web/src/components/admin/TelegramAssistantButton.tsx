@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import Link from "next/link"
 import { 
   MessageCircle, 
   ExternalLink, 
@@ -13,7 +14,8 @@ import {
   X, 
   Smartphone,
   Bot,
-  ArrowRight
+  ArrowRight,
+  Settings2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { telegramService, type TelegramLinkSession, type TelegramLinkStatus } from "@/lib/api/telegram"
@@ -359,9 +361,17 @@ export default function TelegramAssistantButton() {
               </div>
             )}
 
-            {/* Footer con ayuda */}
-            <div className="border-t border-stone-100 pt-3 text-center text-xs text-stone-400">
-              Solo los usuarios con rol de Administrador o Gerente pueden consultar información mediante Telegram.
+            {/* Footer con ayuda y enlace a configuración de IA */}
+            <div className="border-t border-stone-100 pt-3 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-stone-400">
+              <span>Solo Administradores y Gerentes pueden consultar el asistente.</span>
+              <Link
+                href="/admin/configuracion?tab=asistente"
+                onClick={() => setIsOpen(false)}
+                className="inline-flex items-center gap-1 text-primary hover:underline font-medium text-[11px] shrink-0"
+              >
+                <Settings2 className="h-3 w-3" />
+                <span>Diagnóstico y modelos IA</span>
+              </Link>
             </div>
           </div>
         </div>

@@ -1,5 +1,6 @@
-import { BadRequestException, Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, Optional, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { SystemConfigService } from '../system-config/system-config.service.js';
 import { AssistantPolicyService } from './assistant-policy.service.js';
 import type { AssistantContext } from './assistant-policy.service.js';
 import { formatAssistantResponse } from './assistant-response.js';
@@ -129,6 +130,7 @@ export class AssistantService {
     private readonly groqProvider: GroqProvider,
     private readonly mistralProvider: MistralProvider,
     private readonly nvidiaProvider: NvidiaProvider,
+    @Optional() private readonly systemConfig?: SystemConfigService,
   ) {}
 
   async answer(userId: string, prompt: string): Promise<string> {
@@ -155,7 +157,7 @@ export class AssistantService {
       }
     }
 
-    const providerChain = this.getProviderChain();
+    const providerChain = await this.getProviderChain();
     if (providerChain.length === 0) {
       throw new ServiceUnavailableException(
         'No hay ningún proveedor de IA configurado (configura GEMINI_API_KEY, GROQ_API_KEY, MISTRAL_API_KEY o NVIDIA_API_KEY)',
@@ -206,8 +208,102 @@ export class AssistantService {
     return 'La consulta necesitó demasiados pasos. Intenta hacerla de forma más específica.';
   }
 
-  private getProviderChain(): LlmProvider[] {
-    const requested = (this.config.get<string>('ASSISTANT_PROVIDER') || process.env.ASSISTANT_PROVIDER || 'auto').toLowerCase();
+  async getProviderDiagnostics() {
+    let activeProvider = 'auto';
+    if (this.systemConfig) {
+      try {
+        const dbProvider = await this.systemConfig.get<string>('assistant.provider');
+        if (dbProvider && typeof dbProvider === 'string' && dbProvider.trim().length > 0) {
+          activeProvider = dbProvider.toLowerCase().trim();
+        }
+      } catch {
+        // Ignored
+      }
+    }
+    if (activeProvider === 'auto') {
+      activeProvider = (this.config.get<string>('ASSISTANT_PROVIDER') || process.env.ASSISTANT_PROVIDER || 'auto').toLowerCase().trim();
+    }
+
+    const providers = [
+      {
+        name: 'gemini' as const,
+        displayName: 'Google Gemini',
+        instance: this.geminiProvider,
+        recommendedModels: ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.5-flash-lite', 'gemma-4-26b-a4b-it'],
+      },
+      {
+        name: 'groq' as const,
+        displayName: 'Groq Cloud',
+        instance: this.groqProvider,
+        recommendedModels: ['qwen/qwen3.8-27b', 'groq/compound-mini', 'openai/gpt-oss-120b', 'openai/gpt-oss-20b'],
+      },
+      {
+        name: 'mistral' as const,
+        displayName: 'Mistral AI',
+        instance: this.mistralProvider,
+        recommendedModels: ['mistral-small-latest', 'mistral-large-latest', 'open-mistral-nemo'],
+      },
+      {
+        name: 'nvidia' as const,
+        displayName: 'NVIDIA NIM',
+        instance: this.nvidiaProvider,
+        recommendedModels: ['deepseek-ai/deepseek-v4-flash-0731', '01-ai/yi-large', 'google/gemma-3-12b-it'],
+      },
+    ];
+
+    const providerList = await Promise.all(
+      providers.map(async (p) => {
+        const configured = p.instance.isConfigured();
+        const activeModel = await p.instance.getActiveModel();
+        const modelSource = await p.instance.getModelSource();
+        return {
+          name: p.name,
+          displayName: p.displayName,
+          configured,
+          activeModel,
+          modelSource,
+          recommendedModels: p.recommendedModels,
+          isPrimary: activeProvider === p.name,
+        };
+      }),
+    );
+
+    return {
+      activeProvider,
+      providers: providerList,
+    };
+  }
+
+  async testProvider(providerName: LlmProviderName, modelOverride?: string) {
+    const map: Record<LlmProviderName, LlmProvider> = {
+      gemini: this.geminiProvider,
+      groq: this.groqProvider,
+      mistral: this.mistralProvider,
+      nvidia: this.nvidiaProvider,
+    };
+    const provider = map[providerName];
+    if (!provider) {
+      throw new BadRequestException(`Proveedor "${providerName}" no válido`);
+    }
+    return provider.testConnection(modelOverride);
+  }
+
+  private async getProviderChain(): Promise<LlmProvider[]> {
+    let requested = 'auto';
+    if (this.systemConfig) {
+      try {
+        const dbProvider = await this.systemConfig.get<string>('assistant.provider');
+        if (dbProvider && typeof dbProvider === 'string' && dbProvider.trim().length > 0) {
+          requested = dbProvider.toLowerCase().trim();
+        }
+      } catch {
+        // Ignored
+      }
+    }
+    if (requested === 'auto') {
+      requested = (this.config.get<string>('ASSISTANT_PROVIDER') || process.env.ASSISTANT_PROVIDER || 'auto').toLowerCase().trim();
+    }
+
     const providersMap: Record<LlmProviderName, LlmProvider> = {
       gemini: this.geminiProvider,
       groq: this.groqProvider,

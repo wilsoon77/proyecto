@@ -1,13 +1,22 @@
+"use client"
+
 import Image from "next/image"
 import Link from "next/link"
 import { ArrowRight, CheckCircle2, Clock3, Flame, Heart, MapPin, Phone, ShieldCheck, Store, Wheat } from "lucide-react"
 import MultiBranchMap from "@/components/layout/MultiBranchMap"
 import { Button } from "@/components/ui/button"
-import { STATIC_BRANCHES } from "@/lib/branches"
 import { ROUTES } from "@/lib/constants"
 import { ArtisanMarquee } from "@/components/home/ArtisanMarquee"
+import { useBranches } from "@/hooks/use-branches"
+import { useSystemConfig } from "@/context/SystemConfigContext"
 
 export default function SobreNosotrosPage() {
+  const { branches } = useBranches()
+  const { config } = useSystemConfig()
+
+  const operatingHours = typeof config['store.operating_hours'] === 'string' && config['store.operating_hours'].trim()
+    ? config['store.operating_hours'].trim()
+    : null
   return (
     <div className="bg-background text-foreground">
       {/* Hero Section */}
@@ -200,37 +209,57 @@ export default function SobreNosotrosPage() {
               Ven a visitarnos
             </div>
             <h2 className="mt-3 font-display text-3xl font-semibold tracking-[-0.035em] text-[#24140D] sm:text-4xl">
-              Dos puntos para encontrarnos.
+              {branches.length > 1
+                ? `${branches.length} puntos para encontrarnos.`
+                : branches.length === 1
+                  ? "Nuestra sucursal para encontrarte."
+                  : "Nuestras sucursales para encontrarte."}
             </h2>
             <p className="mt-4 text-sm leading-relaxed text-[#6E5545]">
               Reserva en línea y selecciona dónde recoger, o pasa a saludarnos cuando estés cerca.
             </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
-            {STATIC_BRANCHES.map((branch) => (
-              <div key={branch.id} className="rounded-3xl border border-[#DECDBB] bg-[#F3E9DC] p-6 shadow-sm">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="font-display text-xl font-bold text-[#2B170F]">{branch.name}</h3>
-                    <p className="mt-1 text-xs font-bold uppercase tracking-[0.12em] text-[#D97706]">Chimaltenango</p>
+            {branches.map((branch) => {
+              const mapsUrl = branch.latitude && branch.longitude
+                ? `https://www.google.com/maps/search/?api=1&query=${branch.latitude},${branch.longitude}`
+                : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${branch.name}, ${branch.address}, Guatemala`)}`
+
+              return (
+                <div key={branch.id} className="rounded-3xl border border-[#DECDBB] bg-[#F3E9DC] p-6 shadow-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="font-display text-xl font-bold text-[#2B170F]">{branch.name}</h3>
+                      <p className="mt-1 text-xs font-bold uppercase tracking-[0.12em] text-[#D97706]">Chimaltenango</p>
+                    </div>
+                    <Store className="h-5 w-5 shrink-0 text-[#D97706]" aria-hidden="true" />
                   </div>
-                  <Store className="h-5 w-5 shrink-0 text-[#D97706]" aria-hidden="true" />
+                  <div className="mt-5 space-y-2.5 text-xs text-[#5C3D2E]">
+                    {branch.address && (
+                      <p className="flex items-start gap-2">
+                        <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#D97706]" aria-hidden="true" />
+                        <span>{branch.address}</span>
+                      </p>
+                    )}
+                    {branch.phone && branch.phone.trim() && (
+                      <a href={`tel:${branch.phone.trim()}`} className="flex items-center gap-2 hover:text-[#D97706] transition-colors">
+                        <Phone className="h-4 w-4 shrink-0 text-[#D97706]" aria-hidden="true" />
+                        <span>{branch.phone.trim()}</span>
+                      </a>
+                    )}
+                    {operatingHours && (
+                      <p className="flex items-center gap-2">
+                        <Clock3 className="h-4 w-4 shrink-0 text-[#D97706]" aria-hidden="true" />
+                        <span>{operatingHours}</span>
+                      </p>
+                    )}
+                  </div>
+                  <a href={mapsUrl} target="_blank" rel="noreferrer" className="public-focus mt-5 inline-flex items-center gap-2 text-xs font-bold text-[#D97706] hover:text-[#A25514]">
+                    Abrir ubicación en Maps <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                  </a>
                 </div>
-                <div className="mt-5 space-y-2.5 text-xs text-[#5C3D2E]">
-                  <p className="flex items-start gap-2">
-                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#D97706]" aria-hidden="true" />
-                    {branch.address}
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <Clock3 className="h-4 w-4 shrink-0 text-[#D97706]" aria-hidden="true" />
-                    {branch.schedule}
-                  </p>
-                </div>
-                <a href={branch.mapsUrl} target="_blank" rel="noreferrer" className="public-focus mt-5 inline-flex items-center gap-2 text-xs font-bold text-[#D97706] hover:text-[#A25514]">
-                  Abrir ubicación en Maps <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-                </a>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
         <div className="mt-10 overflow-hidden rounded-3xl border border-[#DECDBB] bg-white p-3 shadow-sm">

@@ -1,15 +1,22 @@
 "use client"
 
 import { useState } from "react"
-import { Clock3, HelpCircle, Mail, MapPin, Navigation, Send, Store } from "lucide-react"
+import { Clock3, HelpCircle, Mail, MapPin, Navigation, Phone, Send, Store } from "lucide-react"
 import MultiBranchMap from "@/components/layout/MultiBranchMap"
-import { STATIC_BRANCHES } from "@/lib/branches"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { useBranches } from "@/hooks/use-branches"
+import { useSystemConfig } from "@/context/SystemConfigContext"
 
 const fieldClass = "public-focus h-12 rounded-xl border-input bg-background text-sm placeholder:text-muted-foreground/80"
 
 export default function ContactoPage() {
+  const { branches } = useBranches()
+  const { config } = useSystemConfig()
+
+  const operatingHours = typeof config['store.operating_hours'] === 'string' && config['store.operating_hours'].trim()
+    ? config['store.operating_hours'].trim()
+    : null
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [subject, setSubject] = useState("")
@@ -76,8 +83,8 @@ export default function ContactoPage() {
               <Clock3 className="h-5 w-5" aria-hidden="true" />
             </div>
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#8C522B]">Horarios de atención</p>
-            <p className="mt-2 font-display text-xl font-bold text-[#2B170F]">Lunes a Sábado: 5:00 AM – 8:30 PM</p>
-            <p className="mt-2 text-xs leading-relaxed text-[#5C3D2E]">2 hornadas diarias a las 5:00 AM y 2:00 PM para pan siempre fresco.</p>
+            <p className="mt-2 font-display text-xl font-bold text-[#2B170F]">{operatingHours || "Lunes a Sábado: 6:00 AM – 8:00 PM"}</p>
+            <p className="mt-2 text-xs leading-relaxed text-[#5C3D2E]">Pan fresco y recién salido del horno listo para ti.</p>
           </div>
 
           {/* Channel 3: Locations (Amber Card) */}
@@ -86,7 +93,9 @@ export default function ContactoPage() {
               <MapPin className="h-5 w-5" aria-hidden="true" />
             </div>
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#9E4D1A]">Ubicaciones</p>
-            <p className="mt-2 font-display text-xl font-bold text-[#2B170F]">2 Sucursales en Chimaltenango</p>
+            <p className="mt-2 font-display text-xl font-bold text-[#2B170F]">
+              {branches.length > 0 ? `${branches.length} ${branches.length === 1 ? 'Sucursal' : 'Sucursales'} en Chimaltenango` : "Sucursales en Chimaltenango"}
+            </p>
             <p className="mt-2 text-xs leading-relaxed text-[#5C3D2E]">Reserva en línea en cualquier momento y retira directamente en sucursal.</p>
           </div>
 
@@ -176,35 +185,51 @@ export default function ContactoPage() {
               Pasa por pan recién horneado.
             </h2>
             <p className="mt-3 text-sm leading-relaxed text-[#6E5545] sm:text-base">
-              Tenemos dos ubicaciones en Chimaltenango para que recoger tu pedido sea cómodo y rápido.
+              Tenemos {branches.length > 0 ? `${branches.length} ${branches.length === 1 ? 'ubicación' : 'ubicaciones'}` : 'sucursales'} en Chimaltenango para que recoger tu pedido sea cómodo y rápido.
             </p>
           </div>
           <div className="mt-8 grid gap-4 md:grid-cols-2">
-            {STATIC_BRANCHES.map((branch) => (
-              <div key={branch.id} className="rounded-3xl border border-[#DECDBB] bg-[#F3E9DC] p-6 shadow-sm">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <h3 className="font-display text-2xl font-bold text-[#2B170F]">{branch.name}</h3>
-                    <p className="mt-1 text-xs font-bold uppercase tracking-[0.14em] text-[#D97706]">Chimaltenango</p>
+            {branches.map((branch) => {
+              const mapsUrl = branch.latitude && branch.longitude
+                ? `https://www.google.com/maps/search/?api=1&query=${branch.latitude},${branch.longitude}`
+                : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${branch.name}, ${branch.address}, Guatemala`)}`
+
+              return (
+                <div key={branch.id} className="rounded-3xl border border-[#DECDBB] bg-[#F3E9DC] p-6 shadow-sm">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h3 className="font-display text-2xl font-bold text-[#2B170F]">{branch.name}</h3>
+                      <p className="mt-1 text-xs font-bold uppercase tracking-[0.14em] text-[#D97706]">Chimaltenango</p>
+                    </div>
+                    <Store className="h-6 w-6 text-[#D97706]" aria-hidden="true" />
                   </div>
-                  <Store className="h-6 w-6 text-[#D97706]" aria-hidden="true" />
+                  <div className="mt-6 grid gap-2.5 text-xs text-[#5C3D2E]">
+                    {branch.address && (
+                      <p className="flex items-start gap-2">
+                        <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#D97706]" aria-hidden="true" />
+                        <span>{branch.address}</span>
+                      </p>
+                    )}
+                    {branch.phone && branch.phone.trim() && (
+                      <a href={`tel:${branch.phone.trim()}`} className="flex items-center gap-2 hover:text-[#D97706] transition-colors">
+                        <Phone className="h-4 w-4 shrink-0 text-[#D97706]" aria-hidden="true" />
+                        <span>{branch.phone.trim()}</span>
+                      </a>
+                    )}
+                    {operatingHours && (
+                      <p className="flex items-center gap-2">
+                        <Clock3 className="h-4 w-4 shrink-0 text-[#D97706]" aria-hidden="true" />
+                        <span>{operatingHours}</span>
+                      </p>
+                    )}
+                  </div>
+                  <a href={mapsUrl} target="_blank" rel="noreferrer" className="public-focus mt-6 inline-flex items-center gap-2 text-xs font-bold text-[#D97706] hover:text-[#A25514]">
+                    <Navigation className="h-4 w-4" aria-hidden="true" />
+                    Abrir en Google Maps
+                  </a>
                 </div>
-                <div className="mt-6 grid gap-2.5 text-xs text-[#5C3D2E]">
-                  <p className="flex items-start gap-2">
-                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#D97706]" aria-hidden="true" />
-                    {branch.address}
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <Clock3 className="h-4 w-4 shrink-0 text-[#D97706]" aria-hidden="true" />
-                    {branch.schedule}
-                  </p>
-                </div>
-                <a href={branch.mapsUrl} target="_blank" rel="noreferrer" className="public-focus mt-6 inline-flex items-center gap-2 text-xs font-bold text-[#D97706] hover:text-[#A25514]">
-                  <Navigation className="h-4 w-4" aria-hidden="true" />
-                  Abrir en Google Maps
-                </a>
-              </div>
-            ))}
+              )
+            })}
           </div>
           <div className="mt-8 overflow-hidden rounded-3xl border border-[#DECDBB] bg-white p-3 shadow-sm">
             <MultiBranchMap />

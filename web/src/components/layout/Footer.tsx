@@ -1,7 +1,11 @@
+"use client"
+
 import Image from "next/image"
 import Link from "next/link"
-import { Clock3, Mail, MapPin } from "lucide-react"
+import { Clock3, Mail, MapPin, Phone } from "lucide-react"
 import { ROUTES } from "@/lib/constants"
+import { useSystemConfig } from "@/context/SystemConfigContext"
+import { useBranches } from "@/hooks/use-branches"
 
 const footerLinks = [
   { label: "Productos", href: ROUTES.products },
@@ -11,6 +15,14 @@ const footerLinks = [
 ]
 
 export function Footer() {
+  const { config } = useSystemConfig()
+  const { branches } = useBranches()
+
+  const operatingHours = typeof config['store.operating_hours'] === 'string' && config['store.operating_hours'].trim()
+    ? config['store.operating_hours'].trim()
+    : null
+
+  const primaryPhone = branches.find((b) => b.phone && b.phone.trim())?.phone?.trim() || null
   return (
     <footer className="border-t border-[#E8DCCB] bg-[#FAF5EE] text-[#2B170F]">
       <div className="public-container py-12 sm:py-16">
@@ -56,16 +68,28 @@ export function Footer() {
             <div className="grid gap-3 text-sm text-[#5C3D2E]">
               <div className="flex items-start gap-3">
                 <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#D97706]" aria-hidden="true" />
-                <span>Chimaltenango, Guatemala</span>
+                <Link href={ROUTES.branches} className="public-focus hover:text-[#D97706] transition-colors">
+                  {branches.length > 0
+                    ? `${branches.length} ${branches.length === 1 ? 'sucursal' : 'sucursales'} en Chimaltenango`
+                    : "Chimaltenango, Guatemala"}
+                </Link>
               </div>
+              {primaryPhone && (
+                <a href={`tel:${primaryPhone}`} className="public-focus flex items-center gap-3 transition-colors hover:text-[#D97706]">
+                  <Phone className="h-4 w-4 shrink-0 text-[#D97706]" aria-hidden="true" />
+                  {primaryPhone}
+                </a>
+              )}
               <a href="mailto:panaderiasvetlana@gmail.com" className="public-focus flex items-center gap-3 transition-colors hover:text-[#D97706]">
                 <Mail className="h-4 w-4 shrink-0 text-[#D97706]" aria-hidden="true" />
                 panaderiasvetlana@gmail.com
               </a>
-              <div className="flex items-start gap-3">
-                <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-[#D97706]" aria-hidden="true" />
-                <span>Lunes a sábado, 5:00 AM – 8:30 PM</span>
-              </div>
+              {operatingHours && (
+                <div className="flex items-start gap-3">
+                  <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-[#D97706]" aria-hidden="true" />
+                  <span>{operatingHours}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

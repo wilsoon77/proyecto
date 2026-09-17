@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { MapPin } from "lucide-react"
+import { useQueryClient } from "@tanstack/react-query"
 import { useToast } from "@/components/ui/toast"
 import { branchesService, ApiClientError } from "@/lib/api"
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader"
@@ -11,6 +12,7 @@ import { AdminStickyFooter } from "@/components/admin/AdminStickyFooter"
 export default function NuevaSucursalPage() {
   const router = useRouter()
   const { showToast } = useToast()
+  const queryClient = useQueryClient()
   
   const [name, setName] = useState("")
   const [address, setAddress] = useState("")
@@ -64,6 +66,7 @@ export default function NuevaSucursalPage() {
         slug: slug.trim(),
         phone: phone.trim() || undefined,
       })
+      queryClient.invalidateQueries({ queryKey: ['branches'] })
       showToast(`Sucursal "${name.trim()}" creada correctamente`, "success")
       router.push("/admin/sucursales")
     } catch (err) {

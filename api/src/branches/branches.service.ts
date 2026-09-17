@@ -55,8 +55,13 @@ export class BranchesService {
       throw new BadRequestException(`Ya existe una sucursal con el slug "${createBranchDto.slug}"`);
     }
 
+    const dataToCreate: any = {
+      ...createBranchDto,
+      phone: createBranchDto.phone?.trim() ? createBranchDto.phone.trim() : null,
+    };
+
     return this.prisma.branch.create({
-      data: createBranchDto,
+      data: dataToCreate,
     });
   }
 
@@ -78,9 +83,14 @@ export class BranchesService {
       }
     }
 
+    const dataToUpdate: any = { ...updateBranchDto };
+    if ('phone' in updateBranchDto) {
+      dataToUpdate.phone = updateBranchDto.phone?.trim() ? updateBranchDto.phone.trim() : null;
+    }
+
     return this.prisma.branch.update({
       where: { id },
-      data: updateBranchDto,
+      data: dataToUpdate,
     });
   }
 

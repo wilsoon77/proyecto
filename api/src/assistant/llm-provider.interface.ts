@@ -35,8 +35,19 @@ export type LlmResponse = {
 
 export type LlmProviderName = 'gemini' | 'groq' | 'mistral' | 'nvidia';
 
+export interface LlmProviderTestResult {
+  ok: boolean;
+  latencyMs: number;
+  status: number;
+  model: string;
+  error?: string;
+}
+
 export interface LlmProvider {
   readonly name: LlmProviderName;
   isConfigured(): boolean;
-  call(messages: LlmMessage[], tools: LlmTool[]): Promise<LlmResponse>;
+  call(messages: LlmMessage[], tools: LlmTool[], modelOverride?: string): Promise<LlmResponse>;
+  getActiveModel(): Promise<string>;
+  getModelSource(): Promise<'database' | 'env' | 'default'>;
+  testConnection(modelOverride?: string): Promise<LlmProviderTestResult>;
 }

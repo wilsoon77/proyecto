@@ -35,7 +35,7 @@ export function MobileBottomBar() {
               key={item.href}
               href={item.href}
               aria-current={item.active ? "page" : undefined}
-              className={`public-focus relative flex flex-col items-center justify-center gap-1 rounded-xl text-[11px] font-semibold transition-colors ${
+              className={`public-focus relative flex flex-col items-center justify-center gap-1 rounded-xl text-[11px] font-semibold transition-colors min-w-0 ${
                 item.active ? "text-primary" : "text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -47,7 +47,7 @@ export function MobileBottomBar() {
                   </span>
                 ) : null}
               </span>
-              {item.label}
+              <span className="truncate max-w-full px-0.5">{item.label}</span>
             </Link>
           )
         })}

@@ -24,6 +24,8 @@ export type { AuditLog, AuditListFilters, AuditListResponse, AuditStats, AuditFi
 export { systemConfigService } from './system-config'
 export { notificationsService } from './notifications'
 export { telegramService } from './telegram'
+export { assistantService } from './assistant'
+export type { AssistantDiagnostics, ProviderDiagnostic, ProviderTestResult, TelegramDiagnostics } from './assistant'
 export type { SystemConfig, Notification, NotificationConfig, SubscribePushDto } from './types'
 export { dailyCloseService } from './daily-close'
 export type {

@@ -5,8 +5,9 @@ import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { useAuth } from "@/context/AuthContext"
+import { useSystemConfig } from "@/context/SystemConfigContext"
 import { ToastProvider } from "@/components/ui/toast"
-import { LayoutDashboard, Package, ShoppingCart, Users, Settings, LogOut, ChevronLeft, ChevronRight, Menu, Bell, User, Warehouse, Tag, Building2, X, Factory as History, Flame, BookOpen, ChartBar as BarChart3, ArrowRightLeft, ChevronDown, ClipboardCheck, CalendarClock } from "lucide-react"
+import { LayoutDashboard, Package, ShoppingCart, Users, Settings, LogOut, ChevronLeft, ChevronRight, Menu, Bell, User, Warehouse, Tag, Building2, X, Factory as History, Flame, BookOpen, ChartBar as BarChart3, ArrowRightLeft, ChevronDown, ClipboardCheck, CalendarClock, ExternalLink } from "lucide-react"
 import NotificationBell from "@/components/layout/NotificationBell"
 
 const OPERATIONAL_ROLES = ['ADMIN', 'MANAGER', 'BAKER']
@@ -62,6 +63,8 @@ export default function AdminLayout({
   const router = useRouter()
   const pathname = usePathname()
   const { user, isAuthenticated, isLoading, logout } = useAuth()
+  const { config } = useSystemConfig()
+  const statusPageUrl = config['system.status_page_url'] || 'https://uptime.betterstack.com'
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({})
@@ -389,8 +392,25 @@ export default function AdminLayout({
             </Link>
           </div>
 
-          {/* Right: Notifications + User Badge */}
-          <div className="flex items-center gap-3">
+          {/* Right: Status badge + Notifications + User Badge */}
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            {statusPageUrl && (
+              <a
+                href={statusPageUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100/80 border border-emerald-200/80 transition-all shadow-2xs hover:shadow-xs"
+                title="Página de estado de servicios (Better Stack)"
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span>Estado</span>
+                <ExternalLink className="h-3 w-3 opacity-60 ml-0.5" />
+              </a>
+            )}
+
             {/* Notifications */}
             <NotificationBell />
 

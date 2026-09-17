@@ -64,6 +64,64 @@ export class TelegramService implements OnModuleInit {
     return { ok: true, description: body.description };
   }
 
+  async getWebhookDiagnostics() {
+    const token = this.getToken();
+    const webhookUrl = this.getWebhookUrl() || '';
+    const botUsername = this.config.get<string>('TELEGRAM_BOT_USERNAME') || process.env.TELEGRAM_BOT_USERNAME || '';
+
+    if (!token) {
+      return {
+        configured: false,
+        botUsername,
+        webhookUrl,
+        error: 'TELEGRAM_BOT_TOKEN no está configurado en las variables de entorno',
+      };
+    }
+
+    try {
+      const res = await fetch(`https://api.telegram.org/bot${token}/getWebhookInfo`, {
+        signal: AbortSignal.timeout(10_000),
+      });
+      const data = (await res.json()) as any;
+      if (!res.ok || !data.ok) {
+        return {
+          configured: true,
+          botUsername,
+          webhookUrl,
+          error: data.description || `Telegram API HTTP ${res.status}`,
+        };
+      }
+
+      const result = data.result || {};
+      let lastErrorDate: string | undefined;
+      if (result.last_error_date) {
+        lastErrorDate = new Date(result.last_error_date * 1000).toISOString();
+      }
+
+      return {
+        configured: true,
+        botUsername,
+        webhookUrl,
+        webhookInfo: {
+          url: result.url || '',
+          hasCustomCertificate: Boolean(result.has_custom_certificate),
+          pendingUpdateCount: Number(result.pending_update_count || 0),
+          lastErrorDate,
+          lastErrorMessage: result.last_error_message,
+          ipAddress: result.ip_address,
+          maxConnections: result.max_connections,
+        },
+      };
+    } catch (err: any) {
+      return {
+        configured: true,
+        botUsername,
+        webhookUrl,
+        error: err?.message || 'Error al conectar con la API de Telegram',
+      };
+    }
+  }
+
   async receiveWebhook(body: unknown, providedSecret?: string) {
     const expectedSecret = this.getWebhookSecret();
     if (!expectedSecret || providedSecret !== expectedSecret) throw new UnauthorizedException('Webhook no autorizado');

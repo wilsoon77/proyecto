@@ -4,6 +4,7 @@ import { useState, useEffect, use } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, MapPin, Loader as Loader2 } from "lucide-react"
+import { useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { branchesService, ApiClientError } from "@/lib/api"
@@ -15,6 +16,7 @@ export default function EditarSucursalPage({ params }: { params: Promise<{ id: s
   const branchId = parseInt(resolvedParams.id, 10)
   const router = useRouter()
   const { showToast } = useToast()
+  const queryClient = useQueryClient()
   
   const [name, setName] = useState("")
   const [slug, setSlug] = useState("")
@@ -86,8 +88,9 @@ export default function EditarSucursalPage({ params }: { params: Promise<{ id: s
         name: name.trim(),
         slug: slug.trim(),
         address: address.trim(),
-        phone: phone.trim() || undefined,
+        phone: phone.trim(),
       })
+      queryClient.invalidateQueries({ queryKey: ['branches'] })
       showToast(`Sucursal "${name.trim()}" actualizada correctamente`, "success")
       router.push("/admin/sucursales")
     } catch (err) {
@@ -227,6 +230,9 @@ export default function EditarSucursalPage({ params }: { params: Promise<{ id: s
               placeholder="Ej: +502 1234 5678"
               className="w-full px-4 py-2.5 text-sm bg-white border border-[#DECDBB] rounded-xl text-[#2B170F] placeholder:text-[#8C522B]/50 focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
             />
+            <p className="mt-1 text-xs text-[#8C522B]/80">
+              Déjalo vacío si deseas quitar el teléfono de esta sucursal (desaparecerá automáticamente de la web).
+            </p>
           </div>
         </div>
 

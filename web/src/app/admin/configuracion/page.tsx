@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect, useCallback } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import Link from "next/link"
 import { 
   Settings,
   Store,
@@ -28,12 +29,28 @@ import {
   Settings2,
   Trash2,
   LogOut,
-  Activity
+  Activity,
+  Bot,
+  ExternalLink,
+  RefreshCw,
+  Cpu,
+  Zap,
+  Sparkles,
+  AlertCircle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { useAuth } from "@/context/AuthContext"
-import { branchesService, systemConfigService, notificationsService } from "@/lib/api"
+import { useSystemConfig } from "@/context/SystemConfigContext"
+import { 
+  branchesService, 
+  systemConfigService, 
+  notificationsService, 
+  assistantService,
+  type AssistantDiagnostics,
+  type TelegramDiagnostics,
+  type ProviderTestResult
+} from "@/lib/api"
 import { useNotifications } from "@/context/NotificationContext"
 import type { NotificationConfig } from "@/lib/api/types"
 
@@ -70,6 +87,7 @@ interface AppSettings {
   catalogOnly: boolean
   maintenanceMode: boolean
   operatingHours: string
+  statusPageUrl: string
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -87,17 +105,38 @@ const DEFAULT_SETTINGS: AppSettings = {
   catalogOnly: false,
   maintenanceMode: false,
   operatingHours: "Lunes a Sábado: 7:00 AM - 8:00 PM",
+  statusPageUrl: "https://uptime.betterstack.com",
 }
 
 export default function ConfiguracionPage() {
   const router = useRouter()
   const { user: currentUser } = useAuth()
   const { showToast } = useToast()
+  const { refresh: refreshSystemConfig } = useSystemConfig()
+  const searchParams = useSearchParams()
   const [branches, setBranches] = useState<Branch[]>([])
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
-  const [activeTab, setActiveTab] = useState<"general" | "pedidos" | "notificaciones" | "sucursales">("general")
+  const [activeTab, setActiveTab] = useState<"general" | "pedidos" | "notificaciones" | "sucursales" | "asistente">("general")
+
+  // Estado para pestaña de Asistente & Bot IA
+  const [assistantDiagnostics, setAssistantDiagnostics] = useState<AssistantDiagnostics | null>(null)
+  const [telegramDiagnostics, setTelegramDiagnostics] = useState<TelegramDiagnostics | null>(null)
+  const [isLoadingAssistant, setIsLoadingAssistant] = useState(false)
+  const [isTestingProvider, setIsTestingProvider] = useState<Record<string, boolean>>({})
+  const [testResults, setTestResults] = useState<Record<string, ProviderTestResult | null>>({})
+  const [providerModels, setProviderModels] = useState<Record<string, string>>({})
+  const [selectedPrimaryProvider, setSelectedPrimaryProvider] = useState<string>("auto")
+  const [isSavingAssistant, setIsSavingAssistant] = useState(false)
+  const [isSyncingWebhook, setIsSyncingWebhook] = useState(false)
+
+  useEffect(() => {
+    const tabParam = searchParams.get('tab')
+    if (tabParam && ['general', 'pedidos', 'notificaciones', 'sucursales', 'asistente'].includes(tabParam)) {
+      setActiveTab(tabParam as any)
+    }
+  }, [searchParams])
 
   const { 
     isSubscribed, 
@@ -217,6 +256,9 @@ export default function ConfiguracionPage() {
           case 'operations.maintenance_mode':
             newSettings.maintenanceMode = cfg.value === true || cfg.value === 'true'
             break
+          case 'system.status_page_url':
+            if (cfg.value) newSettings.statusPageUrl = cfg.value
+            break
         }
       })
       
@@ -254,10 +296,11 @@ export default function ConfiguracionPage() {
         systemConfigService.update('orders.accept_orders', settings.acceptOrders),
         systemConfigService.update('orders.catalog_only', settings.catalogOnly),
         systemConfigService.update('operations.maintenance_mode', settings.maintenanceMode),
+        systemConfigService.update('system.status_page_url', settings.statusPageUrl),
       ]
       
       await Promise.all(updates)
-
+      await refreshSystemConfig().catch(console.error)
 
       showToast("Configuración guardada correctamente", "success")
     } catch (error) {
@@ -272,11 +315,104 @@ export default function ConfiguracionPage() {
     setSettings(prev => ({ ...prev, [key]: value }))
   }
 
+  const loadAssistantData = useCallback(async () => {
+    setIsLoadingAssistant(true)
+    try {
+      const [astDiag, tgDiag] = await Promise.all([
+        assistantService.getDiagnostics().catch((e) => {
+          console.error("Error al obtener diagnóstico de asistente:", e)
+          return null
+        }),
+        assistantService.getTelegramDiagnostics().catch((e) => {
+          console.error("Error al obtener diagnóstico de telegram:", e)
+          return null
+        }),
+      ])
+      if (astDiag) {
+        setAssistantDiagnostics(astDiag)
+        setSelectedPrimaryProvider(astDiag.activeProvider || 'auto')
+        const initialModels: Record<string, string> = {}
+        astDiag.providers.forEach((p) => {
+          initialModels[p.name] = p.activeModel
+        })
+        setProviderModels(initialModels)
+      }
+      if (tgDiag) {
+        setTelegramDiagnostics(tgDiag)
+      }
+    } catch (err) {
+      console.error("Error cargando datos de asistente:", err)
+      showToast("Error al consultar estado de asistentes e IA", "error")
+    } finally {
+      setIsLoadingAssistant(false)
+    }
+  }, [showToast])
+
+  useEffect(() => {
+    if (activeTab === 'asistente' && !assistantDiagnostics) {
+      loadAssistantData()
+    }
+  }, [activeTab, assistantDiagnostics, loadAssistantData])
+
+  const handleTestProvider = async (providerName: string) => {
+    setIsTestingProvider((prev) => ({ ...prev, [providerName]: true }))
+    try {
+      const currentModel = providerModels[providerName]
+      const result = await assistantService.testProvider(providerName, currentModel)
+      setTestResults((prev) => ({ ...prev, [providerName]: result }))
+      if (result.ok) {
+        showToast(`${providerName.toUpperCase()}: Conexión exitosa (${result.latencyMs}ms)`, "success")
+      } else {
+        showToast(`${providerName.toUpperCase()}: ${result.error || 'Error al conectar'}`, "error")
+      }
+    } catch (err: any) {
+      const msg = err?.message || 'Error al conectar con el proveedor'
+      setTestResults((prev) => ({
+        ...prev,
+        [providerName]: { ok: false, latencyMs: 0, status: 500, model: providerModels[providerName] || '', error: msg }
+      }))
+      showToast(msg, "error")
+    } finally {
+      setIsTestingProvider((prev) => ({ ...prev, [providerName]: false }))
+    }
+  }
+
+  const handleSaveAssistantConfig = async () => {
+    setIsSavingAssistant(true)
+    try {
+      await assistantService.updateConfig({
+        provider: selectedPrimaryProvider,
+        models: providerModels,
+      })
+      showToast("Configuración de IA y Asistente guardada exitosamente", "success")
+      await loadAssistantData()
+    } catch (err: any) {
+      showToast(err?.message || "Error al guardar configuración de IA", "error")
+    } finally {
+      setIsSavingAssistant(false)
+    }
+  }
+
+  const handleSyncWebhook = async () => {
+    setIsSyncingWebhook(true)
+    try {
+      const res = await assistantService.registerTelegramWebhook()
+      showToast(res.description || "Webhook de Telegram registrado correctamente", "success")
+      const updatedTg = await assistantService.getTelegramDiagnostics()
+      setTelegramDiagnostics(updatedTg)
+    } catch (err: any) {
+      showToast(err?.message || "Error al sincronizar webhook de Telegram", "error")
+    } finally {
+      setIsSyncingWebhook(false)
+    }
+  }
+
   const tabs = [
     { id: "general", label: "General", icon: Store },
     { id: "pedidos", label: "Pedidos", icon: Package },
     { id: "notificaciones", label: "Notificaciones", icon: Bell },
     { id: "sucursales", label: "Sucursales", icon: Building2 },
+    { id: "asistente", label: "Asistente & Bot IA", icon: Bot },
   ] as const
 
   if (isLoading) {
@@ -389,6 +525,22 @@ export default function ConfiguracionPage() {
                   {settings.maintenanceMode ? 'Activo' : 'Normal'}
                 </span>
               </div>
+              <div className="flex items-center justify-between pt-2 border-t border-border/60">
+                <span className="text-sm text-muted-foreground">Monitor Uptime</span>
+                {settings.statusPageUrl ? (
+                  <a
+                    href={settings.statusPageUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100/80 px-2 py-0.5 rounded-full border border-emerald-200 transition-colors"
+                  >
+                    <span>En línea</span>
+                    <ExternalLink className="h-3 w-3 opacity-70" />
+                  </a>
+                ) : (
+                  <span className="text-xs text-muted-foreground">Sin configurar</span>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -473,6 +625,37 @@ export default function ConfiguracionPage() {
                         placeholder="06:00 - 20:00"
                         className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                       />
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-sm font-medium text-foreground">
+                          <Activity className="inline-block h-4 w-4 mr-1 text-primary" />
+                          URL de Status Page (Better Stack / Uptime)
+                        </label>
+                        {settings.statusPageUrl && (
+                          <a
+                            href={settings.statusPageUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+                          >
+                            <span>Abrir monitor</span>
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        )}
+                      </div>
+                      <input
+                        type="url"
+                        value={settings.statusPageUrl}
+                        onChange={(e) => updateSetting("statusPageUrl", e.target.value)}
+                        placeholder="https://uptime.betterstack.com"
+                        className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1.5 flex items-start sm:items-center gap-1.5">
+                        <Info className="h-3.5 w-3.5 flex-shrink-0 text-primary mt-0.5 sm:mt-0" />
+                        <span>Monitorea en Better Stack usando los endpoints: <code className="bg-cream px-1.5 py-0.5 rounded text-[11px] font-mono text-primary font-semibold">/health/live</code> (API), <code className="bg-cream px-1.5 py-0.5 rounded text-[11px] font-mono text-primary font-semibold">/health/db</code> (Base de Datos) y la URL del Frontend.</span>
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -973,13 +1156,18 @@ export default function ConfiguracionPage() {
             {activeTab === "sucursales" && (
               <div className="space-y-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                    <Building2 className="h-5 w-5 text-primary" />
-                    Sucursales
-                  </h2>
-                  <Button variant="outline" size="sm" disabled>
-                    + Agregar Sucursal
-                  </Button>
+                  <div>
+                    <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                      <Building2 className="h-5 w-5 text-primary" />
+                      Sucursales
+                    </h2>
+                    <p className="text-xs text-muted-foreground mt-0.5">Puntos de venta y retiro de pedidos.</p>
+                  </div>
+                  <Link href="/admin/sucursales/nuevo">
+                    <Button size="sm" className="bg-primary hover:bg-primary/90 text-white">
+                      + Agregar Sucursal
+                    </Button>
+                  </Link>
                 </div>
 
                 {branches.length === 0 ? (
@@ -992,36 +1180,391 @@ export default function ConfiguracionPage() {
                     {branches.map(branch => (
                       <div 
                         key={branch.id}
-                        className="flex items-center justify-between p-4 bg-cream rounded-lg hover:bg-muted transition-colors"
+                        className="flex items-center justify-between p-4 bg-cream rounded-lg hover:bg-muted transition-colors gap-3"
                       >
-                        <div className="flex items-center gap-4">
-                          <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                        <div className="flex items-center gap-4 min-w-0">
+                          <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
                             <Store className="h-6 w-6 text-primary" />
                           </div>
-                          <div>
-                            <p className="font-medium text-foreground">{branch.name}</p>
-                            <p className="text-sm text-muted-foreground">{branch.address}</p>
-                            {branch.phone && (
-                              <p className="text-xs text-muted-foreground/60">{branch.phone}</p>
+                          <div className="min-w-0">
+                            <p className="font-medium text-foreground truncate">{branch.name}</p>
+                            <p className="text-sm text-muted-foreground truncate">{branch.address}</p>
+                            {branch.phone && branch.phone.trim() ? (
+                              <p className="text-xs text-primary font-medium mt-0.5">Tel: {branch.phone.trim()}</p>
+                            ) : (
+                              <p className="text-xs text-muted-foreground/60 italic mt-0.5">Sin teléfono asignado (oculto en la web)</p>
                             )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-muted-foreground/60 font-mono">{branch.slug}</span>
-                          <Button variant="ghost" size="sm" disabled>
-                            Editar
-                          </Button>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-xs text-muted-foreground/60 font-mono hidden sm:inline">{branch.slug}</span>
+                          <Link href={`/admin/sucursales/${branch.id}`}>
+                            <Button variant="outline" size="sm">
+                              Editar
+                            </Button>
+                          </Link>
                         </div>
                       </div>
                     ))}
                   </div>
                 )}
 
-                <div className="bg-chart-3/10 border border-chart-3/20 rounded-lg p-4 mt-6">
-                  <p className="text-sm text-chart-3">
-                    <strong>Nota:</strong> La gestión completa de sucursales (crear, editar, eliminar) 
-                    estará disponible en una próxima actualización.
+                <div className="bg-accent/40 border border-primary/20 rounded-xl p-4 mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">Gestión detallada de sucursales</p>
+                    <p className="text-xs text-muted-foreground">Para administrar inventarios, direcciones o eliminar puntos de venta, usa el módulo principal.</p>
+                  </div>
+                  <Link href="/admin/sucursales">
+                    <Button variant="outline" size="sm" className="whitespace-nowrap border-primary/40 text-primary hover:bg-primary/10">
+                      Ir a Sucursales →
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            )}
+
+            {/* Tab: Asistente & Bot IA */}
+            {activeTab === "asistente" && (
+              <div className="space-y-6">
+                {/* Header Section */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-border">
+                  <div>
+                    <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                      <Bot className="h-5 w-5 text-primary" />
+                      Asistente & Bot IA
+                    </h2>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Diagnóstico en tiempo real del Webhook de Telegram y gestión dinámica de proveedores y modelos de Inteligencia Artificial.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={loadAssistantData}
+                      disabled={isLoadingAssistant}
+                      className="text-xs"
+                    >
+                      <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isLoadingAssistant ? 'animate-spin' : ''}`} />
+                      Actualizar Estado
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleSaveAssistantConfig}
+                      disabled={isSavingAssistant}
+                      className="bg-primary hover:bg-primary/90 text-white text-xs"
+                    >
+                      {isSavingAssistant ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                          Guardando...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-3.5 w-3.5 mr-1.5" />
+                          Guardar Cambios
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* 1. Telegram Webhook Health Card */}
+                <div className="bg-cream/50 rounded-xl border border-border p-4 sm:p-5 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="h-9 w-9 bg-primary/10 text-primary rounded-lg flex items-center justify-center shrink-0">
+                        <Bot className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                          <span>Bot de Telegram</span>
+                          {telegramDiagnostics?.configured ? (
+                            telegramDiagnostics?.webhookInfo?.lastErrorMessage ? (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-destructive/10 text-destructive border border-destructive/20">
+                                <AlertCircle className="h-3 w-3" />
+                                Error de entrega
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                <CheckCircle2 className="h-3 w-3" />
+                                Webhook Activo
+                              </span>
+                            )
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                              <AlertTriangle className="h-3 w-3" />
+                              Sin Token
+                            </span>
+                          )}
+                        </h3>
+                        <p className="text-xs text-muted-foreground">
+                          {telegramDiagnostics?.botUsername ? `@${telegramDiagnostics.botUsername}` : 'Bot no configurado en entorno'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSyncWebhook}
+                      disabled={isSyncingWebhook}
+                      className="text-xs shrink-0 self-start sm:self-auto"
+                    >
+                      <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isSyncingWebhook ? 'animate-spin' : ''}`} />
+                      Re-sincronizar Webhook
+                    </Button>
+                  </div>
+
+                  {/* Webhook details grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                    <div className="bg-card p-3 rounded-lg border border-border">
+                      <p className="text-[11px] font-medium text-muted-foreground">URL de Webhook Registrada</p>
+                      <p className="text-xs font-mono font-semibold text-foreground truncate mt-0.5" title={telegramDiagnostics?.webhookInfo?.url || 'No registrada'}>
+                        {telegramDiagnostics?.webhookInfo?.url || 'No registrada'}
+                      </p>
+                    </div>
+                    <div className="bg-card p-3 rounded-lg border border-border">
+                      <p className="text-[11px] font-medium text-muted-foreground">Mensajes en Cola (Telegram)</p>
+                      <p className="text-xs font-semibold text-foreground mt-0.5 flex items-center gap-1.5">
+                        <span className={`h-2 w-2 rounded-full ${telegramDiagnostics?.webhookInfo?.pendingUpdateCount === 0 ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
+                        <span>{telegramDiagnostics?.webhookInfo?.pendingUpdateCount ?? 0} pendientes</span>
+                      </p>
+                    </div>
+                    <div className="bg-card p-3 rounded-lg border border-border">
+                      <p className="text-[11px] font-medium text-muted-foreground">Certificado SSL / IP</p>
+                      <p className="text-xs font-mono text-muted-foreground truncate mt-0.5">
+                        {telegramDiagnostics?.webhookInfo?.ipAddress || 'Servidor Render'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* If last error exists from Telegram */}
+                  {telegramDiagnostics?.webhookInfo?.lastErrorMessage && (
+                    <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 text-xs text-destructive flex items-start gap-2.5">
+                      <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-semibold">Último error reportado por Telegram:</p>
+                        <p className="font-mono mt-0.5">{telegramDiagnostics.webhookInfo.lastErrorMessage}</p>
+                        {telegramDiagnostics.webhookInfo.lastErrorDate && (
+                          <p className="text-[11px] text-destructive/80 mt-1">
+                            Fecha del error: {new Date(telegramDiagnostics.webhookInfo.lastErrorDate).toLocaleString('es-GT')}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. Active Provider Selector Card */}
+                <div className="bg-card rounded-xl border border-border p-4 sm:p-5 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-primary" />
+                    <h3 className="text-sm font-bold text-foreground">Proveedor Principal de Inteligencia Artificial</h3>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Elige el proveedor preferido para atender consultas de inventario, recetas y reportes. En modo automático, si el proveedor gratuito falla o excede cuota, el sistema conmuta automáticamente al siguiente.
                   </p>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1">
+                    {[
+                      { id: 'auto', label: 'Automático', hint: 'Conmutación inteligente' },
+                      { id: 'gemini', label: 'Google Gemini', hint: 'Recomendado' },
+                      { id: 'groq', label: 'Groq Cloud', hint: 'Ultra rápido' },
+                      { id: 'mistral', label: 'Mistral AI', hint: 'Modelos europeos' },
+                      { id: 'nvidia', label: 'NVIDIA NIM', hint: 'Open weights' },
+                    ].map((prov) => {
+                      const isSelected = selectedPrimaryProvider === prov.id
+                      return (
+                        <button
+                          key={prov.id}
+                          type="button"
+                          onClick={() => setSelectedPrimaryProvider(prov.id)}
+                          className={`flex flex-col items-start p-3 rounded-xl border text-left transition-all ${
+                            isSelected
+                              ? 'border-primary bg-primary/5 shadow-2xs'
+                              : 'border-border bg-card hover:bg-cream/40'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between w-full">
+                            <span className={`text-xs font-bold ${isSelected ? 'text-primary' : 'text-foreground'}`}>
+                              {prov.label}
+                            </span>
+                            {isSelected && <Check className="h-3.5 w-3.5 text-primary" />}
+                          </div>
+                          <span className="text-[10px] text-muted-foreground mt-0.5">{prov.hint}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* 3. Provider Diagnostics and Model Matrix */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Cpu className="h-4 w-4 text-primary" />
+                      <h3 className="text-sm font-bold text-foreground">Modelos Configurados y Pruebas en Tiempo Real</h3>
+                    </div>
+                    <span className="text-[11px] text-muted-foreground hidden sm:inline">
+                      Prueba la conexión antes de guardar para verificar si el modelo sigue activo.
+                    </span>
+                  </div>
+
+                  {isLoadingAssistant ? (
+                    <div className="py-12 flex flex-col items-center justify-center text-muted-foreground">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+                      <p className="text-xs">Consultando proveedores y modelos de IA...</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      {assistantDiagnostics?.providers?.map((provider) => {
+                        const isTesting = Boolean(isTestingProvider[provider.name])
+                        const testResult = testResults[provider.name]
+                        const currentModelVal = providerModels[provider.name] ?? provider.activeModel
+
+                        return (
+                          <div
+                            key={provider.name}
+                            className="bg-card rounded-xl border border-border p-4 sm:p-5 flex flex-col justify-between space-y-4 shadow-2xs hover:border-border/80 transition-colors"
+                          >
+                            <div className="space-y-3">
+                              {/* Header */}
+                              <div className="flex items-center justify-between gap-2">
+                                <div>
+                                  <h4 className="text-sm font-bold text-foreground">{provider.displayName}</h4>
+                                  <span className="text-[10px] text-muted-foreground uppercase font-mono">
+                                    {provider.name}
+                                  </span>
+                                </div>
+                                <div>
+                                  {provider.configured ? (
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                      <CheckCircle2 className="h-3 w-3" />
+                                      API Key Activa
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                                      <AlertTriangle className="h-3 w-3" />
+                                      Sin API Key
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Model Input */}
+                              <div>
+                                <label className="block text-xs font-semibold text-foreground mb-1.5">
+                                  ID del Modelo
+                                </label>
+                                <input
+                                  type="text"
+                                  value={currentModelVal}
+                                  onChange={(e) =>
+                                    setProviderModels((prev) => ({ ...prev, [provider.name]: e.target.value }))
+                                  }
+                                  placeholder="Ej: gemini-2.5-flash"
+                                  className="w-full px-3 py-2 border border-border rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-primary bg-card"
+                                />
+                              </div>
+
+                              {/* Recommended Model Chips */}
+                              <div>
+                                <p className="text-[11px] font-medium text-muted-foreground mb-1.5">Modelos recomendados:</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {provider.recommendedModels?.map((recModel) => {
+                                    const isCurrent = currentModelVal === recModel
+                                    return (
+                                      <button
+                                        key={recModel}
+                                        type="button"
+                                        onClick={() =>
+                                          setProviderModels((prev) => ({ ...prev, [provider.name]: recModel }))
+                                        }
+                                        className={`text-[11px] font-mono px-2 py-1 rounded-md border transition-colors ${
+                                          isCurrent
+                                            ? 'bg-primary/10 text-primary border-primary/40 font-semibold'
+                                            : 'bg-cream text-foreground border-border hover:bg-muted'
+                                        }`}
+                                      >
+                                        {recModel}
+                                      </button>
+                                    )
+                                  })}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Test Connection Bar */}
+                            <div className="pt-3 border-t border-border/80 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleTestProvider(provider.name)}
+                                disabled={isTesting || !provider.configured}
+                                className="text-xs h-8 whitespace-nowrap"
+                              >
+                                {isTesting ? (
+                                  <>
+                                    <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />
+                                    Probando...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Sparkles className="h-3 w-3 mr-1.5 text-primary" />
+                                    Probar Conexión
+                                  </>
+                                )}
+                              </Button>
+
+                              {/* Test Result Indicator */}
+                              {testResult && (
+                                <div
+                                  className={`text-[11px] px-2.5 py-1 rounded-lg border font-medium flex items-center gap-1.5 truncate ${
+                                    testResult.ok
+                                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                      : 'bg-destructive/10 text-destructive border-destructive/20'
+                                  }`}
+                                  title={testResult.error || 'Conexión exitosa'}
+                                >
+                                  {testResult.ok ? (
+                                    <>
+                                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                                      <span>200 OK ({testResult.latencyMs}ms)</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <AlertCircle className="h-3.5 w-3.5 shrink-0 text-destructive" />
+                                      <span className="truncate max-w-[200px] sm:max-w-[260px]">{testResult.error || 'Error'}</span>
+                                    </>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Bottom Save Reminder */}
+                <div className="bg-accent/40 border border-primary/20 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold text-foreground">Guardado dinámico sin reinicio</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Cualquier modelo o proveedor que actualices aquí se aplica de inmediato al Bot de Telegram sin necesidad de modificar archivos ni reiniciar servidores.
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={handleSaveAssistantConfig}
+                    disabled={isSavingAssistant}
+                    className="bg-primary hover:bg-primary/90 text-white text-xs shrink-0"
+                  >
+                    <Save className="h-3.5 w-3.5 mr-1.5" />
+                    Guardar Configuración
+                  </Button>
                 </div>
               </div>
             )}

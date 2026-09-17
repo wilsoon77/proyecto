@@ -23,14 +23,44 @@ export function formatAssistantResponse(query: AssistantQuery, result: any): str
   }
 }
 
+function groupByBranch(items: any[]): Map<string, any[]> {
+  const map = new Map<string, any[]>();
+  for (const item of items || []) {
+    const branch = item?.branchName?.trim() || 'Sucursal Principal';
+    const list = map.get(branch);
+    if (list) {
+      list.push(item);
+    } else {
+      map.set(branch, [item]);
+    }
+  }
+  return map;
+}
+
 function formatLowRawMaterials(result: any): string {
   if (!result.items?.length) return '✅ Materias primas\nNo hay materias primas por debajo de su mínimo configurado.';
 
-  const lines = ['⚠️ MATERIAS PRIMAS BAJAS', ''];
-  for (const item of result.items) {
-    lines.push(`• ${item.materialName} — ${quantity(item.quantity, item.unit)} (mínimo ${quantity(item.minimum, item.unit)}) · ${item.branchName}`);
+  const groups = groupByBranch(result.items);
+  const lines: string[] = ['⚠️ MATERIAS PRIMAS BAJAS'];
+
+  if (groups.size === 1) {
+    const [branchName, items] = Array.from(groups.entries())[0];
+    lines.push(`📍 ${branchName}`, '');
+    for (const item of items) {
+      lines.push(`• ${item.materialName} — ${quantity(item.quantity, item.unit)} (mínimo ${quantity(item.minimum, item.unit)})`);
+    }
+  } else {
+    lines.push('');
+    for (const [branchName, items] of groups.entries()) {
+      lines.push(`📍 ${branchName}:`);
+      for (const item of items) {
+        lines.push(`• ${item.materialName} — ${quantity(item.quantity, item.unit)} (mínimo ${quantity(item.minimum, item.unit)})`);
+      }
+      lines.push('');
+    }
   }
-  return limit(lines.join('\n'));
+
+  return limit(lines.join('\n').trimEnd());
 }
 
 function formatInventory(result: any): string {
@@ -40,41 +70,88 @@ function formatInventory(result: any): string {
   }
 
   const isRaw = result.resourceType === 'rawMaterial';
-  const lines = [isRaw ? '📦 INVENTARIO DE MATERIAS PRIMAS' : '📦 INVENTARIO DE PRODUCTOS', ''];
-  if (result.query) lines.push(`Consulta: ${result.query}`, '');
+  const lines: string[] = [isRaw ? '📦 INVENTARIO DE MATERIAS PRIMAS' : '📦 INVENTARIO DE PRODUCTOS'];
+  if (result.query) lines.push(`Consulta: ${result.query}`);
 
-  for (const item of result.items) {
-    if (isRaw) {
-      const lowLabel = item.isLowStock ? ' · ⚠️ BAJO' : '';
-      lines.push(`• ${item.materialName}: ${quantity(item.quantity, item.unit)} (mínimo ${item.minimum === null ? 'sin configurar' : quantity(item.minimum, item.unit)})${lowLabel} · ${item.branchName}`);
-    } else {
-      const unit = item.stockUnitLabel || 'unidades';
-      const expiredLabel = item.expiredQuantity > 0 ? ` · ${number(item.expiredQuantity)} vencidas` : '';
-      lines.push(`• ${item.productName}: ${number(item.available)} ${unit} disponibles (físico ${number(item.quantity)}, reservadas ${number(item.reserved)})${expiredLabel} · ${item.branchName}`);
+  const groups = groupByBranch(result.items);
+
+  if (groups.size === 1) {
+    const [branchName, items] = Array.from(groups.entries())[0];
+    lines.push(`📍 ${branchName}`, '');
+    for (const item of items) {
+      if (isRaw) {
+        const lowLabel = item.isLowStock ? ' · ⚠️ BAJO' : '';
+        lines.push(`• ${item.materialName}: ${quantity(item.quantity, item.unit)} (mínimo ${item.minimum === null ? 'sin configurar' : quantity(item.minimum, item.unit)})${lowLabel}`);
+      } else {
+        const unit = item.stockUnitLabel || 'unidades';
+        const expiredLabel = item.expiredQuantity > 0 ? ` · ${number(item.expiredQuantity)} vencidas` : '';
+        lines.push(`• ${item.productName}: ${number(item.available)} ${unit} disponibles (físico ${number(item.quantity)}, reservadas ${number(item.reserved)})${expiredLabel}`);
+      }
+    }
+  } else {
+    lines.push('');
+    for (const [branchName, items] of groups.entries()) {
+      lines.push(`📍 ${branchName}:`);
+      for (const item of items) {
+        if (isRaw) {
+          const lowLabel = item.isLowStock ? ' · ⚠️ BAJO' : '';
+          lines.push(`• ${item.materialName}: ${quantity(item.quantity, item.unit)} (mínimo ${item.minimum === null ? 'sin configurar' : quantity(item.minimum, item.unit)})${lowLabel}`);
+        } else {
+          const unit = item.stockUnitLabel || 'unidades';
+          const expiredLabel = item.expiredQuantity > 0 ? ` · ${number(item.expiredQuantity)} vencidas` : '';
+          lines.push(`• ${item.productName}: ${number(item.available)} ${unit} disponibles (físico ${number(item.quantity)}, reservadas ${number(item.reserved)})${expiredLabel}`);
+        }
+      }
+      lines.push('');
     }
   }
-  return limit(lines.join('\n'));
+
+  return limit(lines.join('\n').trimEnd());
 }
 
 function formatExpirations(result: any): string {
   const title = result.includeExpired ? '⚠️ PRODUCTOS VENCIDOS' : '⏳ PRODUCTOS PRÓXIMOS A VENCER';
-  const lines = [title, `Periodo: ${date(result.fromDate)} al ${date(result.toDate)}`, ''];
+  const lines: string[] = [title, `Periodo: ${date(result.fromDate)} al ${date(result.toDate)}`];
   if (!result.items?.length) {
-    lines.push(result.includeExpired
-      ? '✅ No hay lotes vencidos con existencia registrada en el periodo consultado.'
-      : '✅ No hay productos próximos a vencer en el periodo consultado.');
+    lines.push(
+      '',
+      result.includeExpired
+        ? '✅ No hay lotes vencidos con existencia registrada en el periodo consultado.'
+        : '✅ No hay productos próximos a vencer en el periodo consultado.',
+    );
     return lines.join('\n');
   }
 
-  for (const item of result.items) {
-    const status = item.daysLeft < 0
-      ? `vencido hace ${number(Math.abs(item.daysLeft))} días`
-      : item.daysLeft === 0
-        ? 'vence hoy'
-        : `vence en ${number(item.daysLeft)} días`;
-    lines.push(`• ${item.productName} — ${number(item.quantity)} unidades · ${status} (${date(item.expiresAt)}) · ${item.branchName}`);
+  const groups = groupByBranch(result.items);
+
+  if (groups.size === 1) {
+    const [branchName, items] = Array.from(groups.entries())[0];
+    lines.push(`📍 ${branchName}`, '');
+    for (const item of items) {
+      const status = item.daysLeft < 0
+        ? `vencido hace ${number(Math.abs(item.daysLeft))} días`
+        : item.daysLeft === 0
+          ? 'vence hoy'
+          : `vence en ${number(item.daysLeft)} días`;
+      lines.push(`• ${item.productName} — ${number(item.quantity)} unidades · ${status} (${date(item.expiresAt)})`);
+    }
+  } else {
+    lines.push('');
+    for (const [branchName, items] of groups.entries()) {
+      lines.push(`📍 ${branchName}:`);
+      for (const item of items) {
+        const status = item.daysLeft < 0
+          ? `vencido hace ${number(Math.abs(item.daysLeft))} días`
+          : item.daysLeft === 0
+            ? 'vence hoy'
+            : `vence en ${number(item.daysLeft)} días`;
+        lines.push(`• ${item.productName} — ${number(item.quantity)} unidades · ${status} (${date(item.expiresAt)})`);
+      }
+      lines.push('');
+    }
   }
-  return limit(lines.join('\n'));
+
+  return limit(lines.join('\n').trimEnd());
 }
 
 function formatProduction(result: any): string {

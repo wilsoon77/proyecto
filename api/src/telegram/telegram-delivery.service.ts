@@ -2,6 +2,16 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service.js';
 
+export const TELEGRAM_ASSISTANT_KEYBOARD = {
+  keyboard: [
+    [{ text: '⚠️ Materias Bajas' }, { text: '⏳ Vencimientos' }],
+    [{ text: '📦 Inventario' }, { text: '🏭 Producción Hoy' }],
+    [{ text: '📋 Menú / Ayuda' }],
+  ],
+  resize_keyboard: true,
+  is_persistent: true,
+};
+
 @Injectable()
 export class TelegramDeliveryService {
   private readonly logger = new Logger(TelegramDeliveryService.name);
@@ -53,11 +63,19 @@ export class TelegramDeliveryService {
     return `${title}\n\n${message}`;
   }
 
-  async sendToChat(chatId: string, text: string, parseMode?: 'Markdown' | 'HTML'): Promise<void> {
+  async sendToChat(
+    chatId: string,
+    text: string,
+    parseMode?: 'Markdown' | 'HTML',
+    replyMarkup?: unknown,
+  ): Promise<void> {
     const token = this.config.get<string>('TELEGRAM_BOT_TOKEN') || process.env.TELEGRAM_BOT_TOKEN;
     if (!token) return;
 
-    for (const chunk of this.splitMessage(text)) {
+    const chunks = this.splitMessage(text);
+    for (let i = 0; i < chunks.length; i++) {
+      const chunk = chunks[i];
+      const markup = i === chunks.length - 1 ? replyMarkup : undefined;
       try {
         const sendRequest = async (message: string, mode?: 'Markdown' | 'HTML') => {
           const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
@@ -67,6 +85,7 @@ export class TelegramDeliveryService {
               chat_id: chatId,
               text: message,
               ...(mode ? { parse_mode: mode } : {}),
+              ...(markup ? { reply_markup: markup } : {}),
               disable_web_page_preview: true,
             }),
             signal: AbortSignal.timeout(15_000),

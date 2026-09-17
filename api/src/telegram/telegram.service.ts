@@ -2,7 +2,7 @@ import { HttpException, HttpStatus, Injectable, Logger, OnModuleInit, Unauthoriz
 import { ConfigService } from '@nestjs/config';
 import { AssistantPolicyService } from '../assistant/assistant-policy.service.js';
 import { AssistantService } from '../assistant/assistant.service.js';
-import { TelegramDeliveryService } from './telegram-delivery.service.js';
+import { TelegramDeliveryService, TELEGRAM_ASSISTANT_KEYBOARD } from './telegram-delivery.service.js';
 import { TelegramLinkService } from './telegram-link.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
@@ -37,6 +37,9 @@ export class TelegramService implements OnModuleInit {
       this.logger.warn('Telegram deshabilitado: TELEGRAM_BOT_TOKEN no está configurado.');
       return;
     }
+
+    void this.syncBotCommands().catch(() => {});
+
     if (!webhookUrl) {
       this.logger.warn('Telegram configurado sin TELEGRAM_WEBHOOK_URL; registra el webhook manualmente antes de producción.');
       return;
@@ -45,6 +48,40 @@ export class TelegramService implements OnModuleInit {
     void this.registerWebhook().catch((error) => {
       this.logger.error(`No se pudo registrar el webhook de Telegram: ${error instanceof Error ? error.message : 'error'}`);
     });
+  }
+
+  async syncBotCommands(): Promise<{ ok: boolean; description?: string }> {
+    const token = this.getToken();
+    if (!token) return { ok: false, description: 'Token no configurado' };
+
+    const commands = [
+      { command: 'menu', description: 'Abrir menú con botones rápidos' },
+      { command: 'materias_bajas', description: 'Materias primas con bajo stock' },
+      { command: 'vencimientos', description: 'Productos próximos a vencer' },
+      { command: 'inventario', description: 'Consultar inventario disponible' },
+      { command: 'produccion', description: 'Ver producción registrada hoy' },
+      { command: 'ayuda', description: 'Guía y ejemplos de preguntas' },
+      { command: 'desvincular', description: 'Desconectar este chat de Telegram' },
+    ];
+
+    try {
+      const response = await fetch(`https://api.telegram.org/bot${token}/setMyCommands`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ commands }),
+        signal: AbortSignal.timeout(10_000),
+      });
+      const body = (await response.json()) as { ok?: boolean; description?: string };
+      if (!response.ok || !body.ok) {
+        this.logger.warn(`setMyCommands error: ${body.description || response.status}`);
+        return { ok: false, description: body.description };
+      }
+      this.logger.log('Comandos de Telegram sincronizados exitosamente (botón ☰ activado)');
+      return { ok: true };
+    } catch (error) {
+      this.logger.error(`Error al sincronizar comandos de Telegram: ${error instanceof Error ? error.message : 'error'}`);
+      return { ok: false, description: error instanceof Error ? error.message : 'error' };
+    }
   }
 
   async registerWebhook(): Promise<{ ok: boolean; description?: string }> {
@@ -61,6 +98,8 @@ export class TelegramService implements OnModuleInit {
     });
     const body = (await response.json()) as { ok?: boolean; description?: string };
     if (!response.ok || !body.ok) throw new Error(body.description || `Telegram HTTP ${response.status}`);
+
+    void this.syncBotCommands().catch(() => {});
     return { ok: true, description: body.description };
   }
 
@@ -168,7 +207,9 @@ export class TelegramService implements OnModuleInit {
             const link = await this.links.consumeToken(token, chatId, username);
             await this.delivery.sendToChat(
               chatId,
-              `¡Cuenta vinculada exitosamente, ${link.firstName}! Ya puedes consultarme sobre inventario, materias primas, productos próximos a vencer, producción y cierres del día.\n\nEscribe /ayuda para ver ejemplos de preguntas.`,
+              `¡Cuenta vinculada exitosamente, ${link.firstName}! Ya puedes consultarme sobre inventario, materias primas, productos próximos a vencer, producción y cierres del día.\n\nPuedes usar los botones táctiles abajo, el menú ☰ o hacerme preguntas directas.`,
+              undefined,
+              TELEGRAM_ASSISTANT_KEYBOARD,
             );
           } catch (error) {
             let message = 'El enlace de vinculación no es válido o ya expiró. Genera uno nuevo desde la aplicación.';
@@ -186,7 +227,9 @@ export class TelegramService implements OnModuleInit {
           if (existing) {
             await this.delivery.sendToChat(
               chatId,
-              '¡Hola de nuevo! Tu cuenta ya está vinculada y activa con el asistente de la panadería. Puedes hacerme cualquier consulta operativa o escribir /ayuda para ver ejemplos.',
+              '¡Hola de nuevo! Tu cuenta ya está vinculada y activa con el asistente de la panadería. Puedes usar los botones táctiles abajo, el menú ☰ o hacerme cualquier consulta.',
+              undefined,
+              TELEGRAM_ASSISTANT_KEYBOARD,
             );
           } else {
             await this.delivery.sendToChat(
@@ -215,31 +258,49 @@ export class TelegramService implements OnModuleInit {
         await this.delivery.sendToChat(
           chatId,
           'Tu cuenta fue desvinculada exitosamente. Ya no enviaré información a este chat. Para volver a conectarte, genera un nuevo enlace desde el panel.',
+          undefined,
+          { remove_keyboard: true },
         );
         return;
       }
 
-      if (command === '/ayuda') {
+      const cleanLower = text.toLowerCase().trim();
+
+      if (command === '/menu' || command === '/ayuda' || cleanLower.includes('menú') || cleanLower.includes('menu') || cleanLower.includes('ayuda')) {
         await this.delivery.sendToChat(
           chatId,
-          'Puedes preguntarme, por ejemplo:\n• ¿Cuánta azúcar queda?\n• ¿Qué materia prima está baja en una sucursal específica?\n• ¿Qué productos vencen en los próximos 15 días?\n• ¿Qué se produjo del 10/08/2026 al 12/08/2026?\n• ¿Cómo cerró la sucursal Central ayer?\n\nTambién puedes usar “hoy”, “ayer”, “esta semana” o indicar una sucursal.',
+          '📋 ASISTENTE PANADERIA — ACCIONES RÁPIDAS\n\nPuedes tocar cualquiera de los botones abajo o preguntarme en lenguaje natural:\n\n• ⚠️ Materias Bajas: Revisa ingredientes bajo el mínimo.\n• ⏳ Vencimientos: Lotes próximos a vencer en los siguientes 15 días.\n• 📦 Inventario: Existencia de productos o materias primas.\n• 🏭 Producción Hoy: Unidades y latas horneadas hoy.\n\nTambién puedes especificar sucursal o fecha, por ejemplo:\n«¿Cuánta harina queda en Panaderia Buena Vista?»\n«¿Cómo cerró la sucursal ayer?»',
+          undefined,
+          TELEGRAM_ASSISTANT_KEYBOARD,
         );
         return;
       }
 
-      if (!text || text.length > 500) {
-        await this.delivery.sendToChat(chatId, 'La pregunta debe tener entre 1 y 500 caracteres.');
+      // Mapeo automático de comandos rápidos a consultas del asistente
+      let question = text;
+      if (command === '/materias_bajas' || cleanLower.includes('materias bajas')) {
+        question = '¿Qué materias primas tienen bajo stock?';
+      } else if (command === '/vencimientos' || cleanLower.includes('vencimientos')) {
+        question = '¿Qué productos están próximos a vencer en los siguientes 15 días?';
+      } else if (command === '/inventario' || cleanLower === '📦 inventario' || cleanLower === 'inventario') {
+        question = 'Dame un resumen general del inventario disponible';
+      } else if (command === '/produccion' || cleanLower.includes('producción hoy') || cleanLower.includes('produccion hoy')) {
+        question = '¿Cuál es el reporte de producción registrado hoy?';
+      }
+
+      if (!question || question.length > 500) {
+        await this.delivery.sendToChat(chatId, 'La pregunta debe tener entre 1 y 500 caracteres.', undefined, TELEGRAM_ASSISTANT_KEYBOARD);
         return;
       }
 
       const startedAt = Date.now();
       try {
-        const answer = await this.assistant.answer(link.userId, text);
-        await this.delivery.sendToChat(chatId, answer);
+        const answer = await this.assistant.answer(link.userId, question);
+        await this.delivery.sendToChat(chatId, answer, undefined, TELEGRAM_ASSISTANT_KEYBOARD);
         this.logger.log(`assistant_request chat=${chatId} user=${link.userId} durationMs=${Date.now() - startedAt} success=true`);
       } catch (error) {
         this.logger.error(`Error asistente/IA user=${link.userId} durationMs=${Date.now() - startedAt} success=false: ${error instanceof Error ? error.message : 'error'}`);
-        await this.delivery.sendToChat(chatId, 'No pude consultar esa información ahora. Intenta de nuevo más tarde.');
+        await this.delivery.sendToChat(chatId, 'No pude consultar esa información ahora. Intenta de nuevo más tarde.', undefined, TELEGRAM_ASSISTANT_KEYBOARD);
       }
     } finally {
       await this.markProcessed(update.update_id);

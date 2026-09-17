@@ -7,6 +7,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { IsIn, IsNotEmpty, IsObject, IsOptional, IsString } from 'class-validator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/roles.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
@@ -15,12 +16,24 @@ import { SystemConfigService } from '../system-config/system-config.service.js';
 import { LlmProviderName } from './llm-provider.interface.js';
 
 export class TestProviderDto {
+  @IsString()
+  @IsNotEmpty()
+  @IsIn(['gemini', 'groq', 'mistral', 'nvidia'])
   provider!: LlmProviderName;
+
+  @IsString()
+  @IsOptional()
   model?: string;
 }
 
 export class UpdateAssistantConfigDto {
+  @IsString()
+  @IsOptional()
+  @IsIn(['auto', 'gemini', 'groq', 'mistral', 'nvidia'])
   provider?: string;
+
+  @IsObject()
+  @IsOptional()
   models?: Record<string, string>;
 }
 

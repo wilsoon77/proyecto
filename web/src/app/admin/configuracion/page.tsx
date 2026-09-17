@@ -546,7 +546,7 @@ export default function ConfiguracionPage() {
         </div>
         {/* Contenido principal */}
         <div className="flex-1 min-w-0">
-          <div className="bg-card rounded-xl shadow-sm border border-border p-6">
+          <div className="bg-card rounded-xl shadow-sm border border-border p-4 sm:p-6">
             
             {/* Tab: General */}
             {activeTab === "general" && (
@@ -1227,23 +1227,23 @@ export default function ConfiguracionPage() {
             {activeTab === "asistente" && (
               <div className="space-y-6">
                 {/* Header Section */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-border">
-                  <div>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border">
+                  <div className="min-w-0">
                     <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                      <Bot className="h-5 w-5 text-primary" />
-                      Asistente & Bot IA
+                      <Bot className="h-5 w-5 text-primary shrink-0" />
+                      <span>Asistente & Bot IA</span>
                     </h2>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       Diagnóstico en tiempo real del Webhook de Telegram y gestión dinámica de proveedores y modelos de Inteligencia Artificial.
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto shrink-0">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={loadAssistantData}
                       disabled={isLoadingAssistant}
-                      className="text-xs"
+                      className="text-xs w-full sm:w-auto justify-center"
                     >
                       <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isLoadingAssistant ? 'animate-spin' : ''}`} />
                       Actualizar Estado
@@ -1252,7 +1252,7 @@ export default function ConfiguracionPage() {
                       size="sm"
                       onClick={handleSaveAssistantConfig}
                       disabled={isSavingAssistant}
-                      className="bg-primary hover:bg-primary/90 text-white text-xs"
+                      className="bg-primary hover:bg-primary/90 text-white text-xs w-full sm:w-auto justify-center"
                     >
                       {isSavingAssistant ? (
                         <>
@@ -1272,33 +1272,33 @@ export default function ConfiguracionPage() {
                 {/* 1. Telegram Webhook Health Card */}
                 <div className="bg-cream/50 rounded-xl border border-border p-4 sm:p-5 space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="flex items-center gap-2.5">
+                    <div className="flex items-center gap-2.5 min-w-0">
                       <div className="h-9 w-9 bg-primary/10 text-primary rounded-lg flex items-center justify-center shrink-0">
                         <Bot className="h-5 w-5" />
                       </div>
-                      <div>
-                        <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                          <span>Bot de Telegram</span>
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="text-sm font-bold text-foreground">Bot de Telegram</span>
                           {telegramDiagnostics?.configured ? (
                             telegramDiagnostics?.webhookInfo?.lastErrorMessage ? (
-                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-destructive/10 text-destructive border border-destructive/20">
+                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-destructive/10 text-destructive border border-destructive/20 whitespace-nowrap shrink-0">
                                 <AlertCircle className="h-3 w-3" />
                                 Error de entrega
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap shrink-0">
                                 <CheckCircle2 className="h-3 w-3" />
                                 Webhook Activo
                               </span>
                             )
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 whitespace-nowrap shrink-0">
                               <AlertTriangle className="h-3 w-3" />
                               Sin Token
                             </span>
                           )}
-                        </h3>
-                        <p className="text-xs text-muted-foreground">
+                        </div>
+                        <p className="text-xs text-muted-foreground truncate mt-0.5">
                           {telegramDiagnostics?.botUsername ? `@${telegramDiagnostics.botUsername}` : 'Bot no configurado en entorno'}
                         </p>
                       </div>
@@ -1309,7 +1309,7 @@ export default function ConfiguracionPage() {
                       size="sm"
                       onClick={handleSyncWebhook}
                       disabled={isSyncingWebhook}
-                      className="text-xs shrink-0 self-start sm:self-auto"
+                      className="text-xs w-full sm:w-auto shrink-0 justify-center"
                     >
                       <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isSyncingWebhook ? 'animate-spin' : ''}`} />
                       Re-sincronizar Webhook
@@ -1318,9 +1318,9 @@ export default function ConfiguracionPage() {
 
                   {/* Webhook details grid */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-                    <div className="bg-card p-3 rounded-lg border border-border">
+                    <div className="bg-card p-3 rounded-lg border border-border min-w-0">
                       <p className="text-[11px] font-medium text-muted-foreground">URL de Webhook Registrada</p>
-                      <p className="text-xs font-mono font-semibold text-foreground truncate mt-0.5" title={telegramDiagnostics?.webhookInfo?.url || 'No registrada'}>
+                      <p className="text-xs font-mono font-semibold text-foreground break-all mt-0.5 select-all" title={telegramDiagnostics?.webhookInfo?.url || 'No registrada'}>
                         {telegramDiagnostics?.webhookInfo?.url || 'No registrada'}
                       </p>
                     </div>
@@ -1331,9 +1331,9 @@ export default function ConfiguracionPage() {
                         <span>{telegramDiagnostics?.webhookInfo?.pendingUpdateCount ?? 0} pendientes</span>
                       </p>
                     </div>
-                    <div className="bg-card p-3 rounded-lg border border-border">
+                    <div className="bg-card p-3 rounded-lg border border-border min-w-0">
                       <p className="text-[11px] font-medium text-muted-foreground">Certificado SSL / IP</p>
-                      <p className="text-xs font-mono text-muted-foreground truncate mt-0.5">
+                      <p className="text-xs font-mono text-muted-foreground break-all mt-0.5">
                         {telegramDiagnostics?.webhookInfo?.ipAddress || 'Servidor Render'}
                       </p>
                     </div>
@@ -1345,7 +1345,7 @@ export default function ConfiguracionPage() {
                       <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
                       <div>
                         <p className="font-semibold">Último error reportado por Telegram:</p>
-                        <p className="font-mono mt-0.5">{telegramDiagnostics.webhookInfo.lastErrorMessage}</p>
+                        <p className="font-mono mt-0.5 break-all">{telegramDiagnostics.webhookInfo.lastErrorMessage}</p>
                         {telegramDiagnostics.webhookInfo.lastErrorDate && (
                           <p className="text-[11px] text-destructive/80 mt-1">
                             Fecha del error: {new Date(telegramDiagnostics.webhookInfo.lastErrorDate).toLocaleString('es-GT')}
@@ -1366,14 +1366,14 @@ export default function ConfiguracionPage() {
                     Elige el proveedor preferido para atender consultas de inventario, recetas y reportes. En modo automático, si el proveedor gratuito falla o excede cuota, el sistema conmuta automáticamente al siguiente.
                   </p>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 pt-1">
                     {[
                       { id: 'auto', label: 'Automático', hint: 'Conmutación inteligente' },
                       { id: 'gemini', label: 'Google Gemini', hint: 'Recomendado' },
                       { id: 'groq', label: 'Groq Cloud', hint: 'Ultra rápido' },
                       { id: 'mistral', label: 'Mistral AI', hint: 'Modelos europeos' },
                       { id: 'nvidia', label: 'NVIDIA NIM', hint: 'Open weights' },
-                    ].map((prov) => {
+                    ].map((prov, idx) => {
                       const isSelected = selectedPrimaryProvider === prov.id
                       return (
                         <button
@@ -1381,18 +1381,20 @@ export default function ConfiguracionPage() {
                           type="button"
                           onClick={() => setSelectedPrimaryProvider(prov.id)}
                           className={`flex flex-col items-start p-3 rounded-xl border text-left transition-all ${
+                            idx === 4 ? 'col-span-2 sm:col-span-1' : ''
+                          } ${
                             isSelected
                               ? 'border-primary bg-primary/5 shadow-2xs'
                               : 'border-border bg-card hover:bg-cream/40'
                           }`}
                         >
-                          <div className="flex items-center justify-between w-full">
-                            <span className={`text-xs font-bold ${isSelected ? 'text-primary' : 'text-foreground'}`}>
+                          <div className="flex items-center justify-between w-full gap-1">
+                            <span className={`text-xs font-bold truncate ${isSelected ? 'text-primary' : 'text-foreground'}`}>
                               {prov.label}
                             </span>
-                            {isSelected && <Check className="h-3.5 w-3.5 text-primary" />}
+                            {isSelected && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
                           </div>
-                          <span className="text-[10px] text-muted-foreground mt-0.5">{prov.hint}</span>
+                          <span className="text-[10px] text-muted-foreground mt-0.5 leading-tight">{prov.hint}</span>
                         </button>
                       )
                     })}
@@ -1401,12 +1403,12 @@ export default function ConfiguracionPage() {
 
                 {/* 3. Provider Diagnostics and Model Matrix */}
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                     <div className="flex items-center gap-2">
                       <Cpu className="h-4 w-4 text-primary" />
                       <h3 className="text-sm font-bold text-foreground">Modelos Configurados y Pruebas en Tiempo Real</h3>
                     </div>
-                    <span className="text-[11px] text-muted-foreground hidden sm:inline">
+                    <span className="text-[11px] text-muted-foreground">
                       Prueba la conexión antes de guardar para verificar si el modelo sigue activo.
                     </span>
                   </div>
@@ -1439,12 +1441,12 @@ export default function ConfiguracionPage() {
                                 </div>
                                 <div>
                                   {provider.configured ? (
-                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap shrink-0">
                                       <CheckCircle2 className="h-3 w-3" />
                                       API Key Activa
                                     </span>
                                   ) : (
-                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 whitespace-nowrap shrink-0">
                                       <AlertTriangle className="h-3 w-3" />
                                       Sin API Key
                                     </span>
@@ -1502,7 +1504,7 @@ export default function ConfiguracionPage() {
                                 size="sm"
                                 onClick={() => handleTestProvider(provider.name)}
                                 disabled={isTesting || !provider.configured}
-                                className="text-xs h-8 whitespace-nowrap"
+                                className="text-xs h-8 whitespace-nowrap w-full sm:w-auto justify-center shrink-0"
                               >
                                 {isTesting ? (
                                   <>
@@ -1520,7 +1522,7 @@ export default function ConfiguracionPage() {
                               {/* Test Result Indicator */}
                               {testResult && (
                                 <div
-                                  className={`text-[11px] px-2.5 py-1 rounded-lg border font-medium flex items-center gap-1.5 truncate ${
+                                  className={`text-[11px] px-2.5 py-1.5 rounded-lg border font-medium flex items-center gap-1.5 w-full sm:w-auto min-w-0 ${
                                     testResult.ok
                                       ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                       : 'bg-destructive/10 text-destructive border-destructive/20'
@@ -1530,12 +1532,12 @@ export default function ConfiguracionPage() {
                                   {testResult.ok ? (
                                     <>
                                       <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
-                                      <span>200 OK ({testResult.latencyMs}ms)</span>
+                                      <span className="font-mono truncate">200 OK ({testResult.latencyMs}ms)</span>
                                     </>
                                   ) : (
                                     <>
                                       <AlertCircle className="h-3.5 w-3.5 shrink-0 text-destructive" />
-                                      <span className="truncate max-w-[200px] sm:max-w-[260px]">{testResult.error || 'Error'}</span>
+                                      <span className="break-words text-[11px] leading-tight flex-1">{testResult.error || 'Error'}</span>
                                     </>
                                   )}
                                 </div>
@@ -1552,7 +1554,7 @@ export default function ConfiguracionPage() {
                 <div className="bg-accent/40 border border-primary/20 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <p className="text-xs font-semibold text-foreground">Guardado dinámico sin reinicio</p>
-                    <p className="text-[11px] text-muted-foreground">
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
                       Cualquier modelo o proveedor que actualices aquí se aplica de inmediato al Bot de Telegram sin necesidad de modificar archivos ni reiniciar servidores.
                     </p>
                   </div>
@@ -1560,7 +1562,7 @@ export default function ConfiguracionPage() {
                     size="sm"
                     onClick={handleSaveAssistantConfig}
                     disabled={isSavingAssistant}
-                    className="bg-primary hover:bg-primary/90 text-white text-xs shrink-0"
+                    className="bg-primary hover:bg-primary/90 text-white text-xs w-full sm:w-auto shrink-0 justify-center"
                   >
                     <Save className="h-3.5 w-3.5 mr-1.5" />
                     Guardar Configuración

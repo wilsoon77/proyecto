@@ -67,7 +67,10 @@ export class TelegramService implements OnModuleInit {
   async getWebhookDiagnostics() {
     const token = this.getToken();
     const webhookUrl = this.getWebhookUrl() || '';
-    const botUsername = this.config.get<string>('TELEGRAM_BOT_USERNAME') || process.env.TELEGRAM_BOT_USERNAME || '';
+    const botUsername = (this.config.get<string>('TELEGRAM_BOT_USERNAME') || process.env.TELEGRAM_BOT_USERNAME || '')
+      .trim()
+      .replace(/^@/, '')
+      .replace(/["']/g, '');
 
     if (!token) {
       return {

@@ -25,12 +25,16 @@ export class TelegramLinkService {
     private readonly policy: AssistantPolicyService,
   ) {}
 
-  async createLinkSession(userId: string) {
-    await this.policy.assertEligible(userId);
-    const username = (this.config.get<string>('TELEGRAM_BOT_USERNAME') || process.env.TELEGRAM_BOT_USERNAME || '')
+  private getBotUsername(): string {
+    return (this.config.get<string>('TELEGRAM_BOT_USERNAME') || process.env.TELEGRAM_BOT_USERNAME || '')
       .trim()
       .replace(/^@/, '')
       .replace(/["']/g, '');
+  }
+
+  async createLinkSession(userId: string) {
+    await this.policy.assertEligible(userId);
+    const username = this.getBotUsername();
     if (!username) throw new ServiceUnavailableException('Telegram no está configurado');
 
     const rawToken = randomBytes(16).toString('hex');
@@ -79,6 +83,7 @@ export class TelegramLinkService {
       where: { userId },
       select: { active: true, username: true, linkedAt: true, lastSeenAt: true, chatId: true },
     });
+    const botUsername = this.getBotUsername();
     return {
       configured: Boolean(this.config.get<string>('TELEGRAM_BOT_TOKEN') || process.env.TELEGRAM_BOT_TOKEN),
       linked: Boolean(link?.active),
@@ -86,6 +91,7 @@ export class TelegramLinkService {
       chatId: link?.active ? link.chatId : null,
       linkedAt: link?.active ? link.linkedAt : null,
       lastSeenAt: link?.active ? link.lastSeenAt : null,
+      botUsername: botUsername || null,
     };
   }
 

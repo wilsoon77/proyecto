@@ -19,6 +19,7 @@ export interface TelegramLinkStatus {
   chatId: string | null
   linkedAt: string | null
   lastSeenAt: string | null
+  botUsername?: string | null
 }
 
 export const telegramService = {

@@ -174,6 +174,9 @@ export default function TelegramAssistantButton() {
                     <span>Tu cuenta está vinculada y activa</span>
                   </div>
                   <div className="text-xs text-emerald-900/80 space-y-1 pl-7">
+                    {status.botUsername && (
+                      <p>Bot configurado: <strong className="text-emerald-950 font-mono">@{status.botUsername}</strong></p>
+                    )}
                     {status.username && (
                       <p>Usuario de Telegram: <strong className="text-emerald-950 font-mono">@{status.username}</strong></p>
                     )}
@@ -191,13 +194,17 @@ export default function TelegramAssistantButton() {
                   <Button
                     type="button"
                     onClick={() => {
-                      const botUser = session?.botUsername || "panaderia_bot"
+                      const botUser = status?.botUsername || session?.botUsername
+                      if (!botUser) {
+                        showToast("Nombre de usuario del bot no configurado en TELEGRAM_BOT_USERNAME", "error")
+                        return
+                      }
                       handleDirectOpenTelegram(`https://t.me/${botUser}`)
                     }}
                     className="w-full h-11 font-bold bg-sky-600 hover:bg-sky-700 text-white shadow-sm flex items-center justify-center gap-2"
                   >
                     <MessageCircle className="h-4 w-4" />
-                    Abrir Chat con el Asistente
+                    Abrir Chat con el Asistente {status?.botUsername ? `(@${status.botUsername})` : ''}
                     <ExternalLink className="h-3.5 w-3.5" />
                   </Button>
 

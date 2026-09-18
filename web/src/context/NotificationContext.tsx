@@ -287,11 +287,41 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       }).catch(() => {
         setIsLoading(false)
       })
+
+      // 🔔 Al ingresar por primera vez, solicitar el permiso del navegador
+      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+        const timer = setTimeout(() => {
+          Notification.requestPermission().then((perm) => {
+            setPermissionState(perm)
+            if (perm === 'granted' && isLoggedIn) {
+              subscribeUser()
+            }
+          }).catch((err) => {
+            console.warn('Error solicitando permiso de notificación inicial:', err)
+          })
+        }, 1200)
+
+        // Escuchar primera interacción por si el navegador exige gesto de usuario
+        const handleFirstGesture = () => {
+          if (Notification.permission === 'default') {
+            Notification.requestPermission().then((perm) => {
+              setPermissionState(perm)
+              if (perm === 'granted' && isLoggedIn) {
+                subscribeUser()
+              }
+            }).catch(() => {})
+          }
+          window.removeEventListener('click', handleFirstGesture)
+          window.removeEventListener('touchstart', handleFirstGesture)
+        }
+        window.addEventListener('click', handleFirstGesture, { once: true })
+        window.addEventListener('touchstart', handleFirstGesture, { once: true })
+      }
     }).catch((err) => {
       console.error('Service Worker registration failed:', err)
       setIsLoading(false)
     })
-  }, [])
+  }, [isLoggedIn, subscribeUser])
 
   // Auto poll notifications when user is logged in
   useEffect(() => {
@@ -319,13 +349,20 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   }, [isLoggedIn, refreshHistory])
 
   // Sincronización automática de suscripción push al iniciar sesión
-  // Si el navegador ya tiene permisos ('granted'), vincula inmediatamente la suscripción con el usuario actual
+  // Si el usuario ingresa logueado, solicita permiso si está pendiente o vincula inmediatamente la suscripción
   useEffect(() => {
     if (!isLoggedIn || isLoading || typeof window === 'undefined') return
 
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
 
-    if (Notification.permission === 'granted') {
+    if (Notification.permission === 'default') {
+      Notification.requestPermission().then((perm) => {
+        setPermissionState(perm)
+        if (perm === 'granted') {
+          subscribeUser()
+        }
+      }).catch(() => {})
+    } else if (Notification.permission === 'granted') {
       const syncActiveSubscription = async () => {
         try {
           const reg = swRegistrationRef.current || (await navigator.serviceWorker.ready)

@@ -154,7 +154,7 @@ export class NotificationsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Enviar notificación de prueba', description: 'Dispara una notificación simulada de materia prima baja o caducidad próxima. Requiere rol ADMIN.' })
+  @ApiOperation({ summary: 'Enviar notificación de prueba', description: 'Dispara una notificación simulada a todos los roles destinatarios configurados (ADMIN, MANAGER). Requiere rol ADMIN.' })
   @ApiResponse({ status: 200, description: 'Notificación de prueba enviada con éxito' })
   @ApiNotFoundResponse({ description: 'Configuración no encontrada' })
   async sendTestNotification(@Req() req: any, @Body() testDto: TestNotificationDto) {
@@ -168,12 +168,10 @@ export class NotificationsController {
       unit: 'LB',
       branchName: 'Sucursal Central',
       quantity: 5,
-      userId: req.user.userId, // Dirigido a sí mismo
     };
 
-    // Usamos sendToUser directamente en vez de sendByConfig para asegurar que llegue 
-    // al dispositivo del administrador que está probando, ignorando las reglas de roles.
-    await this.notificationsService.sendToUser(req.user.userId, key, placeholders, '/admin/historial', 'Bell');
+    // Despachar la notificación de prueba a todos los roles configurados (ADMIN, MANAGER)
+    await this.notificationsService.sendByConfig(key, placeholders, '/admin/historial', 'Bell');
     return { success: true, key };
   }
 }

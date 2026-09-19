@@ -1,5 +1,8 @@
 import { ProductOrigin } from '@prisma/client';
+import { validate } from 'class-validator';
+import { plainToInstance } from 'class-transformer';
 import { ProductsService } from './products.service.js';
+import { CreateProductDto, UpdateProductDto, PutProductDto } from './dto/product.dto.js';
 
 describe('ProductsService availability', () => {
   it('no publica como vendible la existencia de lotes vencidos', async () => {
@@ -50,5 +53,45 @@ describe('ProductsService availability', () => {
     const result = await service.findAll({ page: 1, pageSize: 10 });
 
     expect(result.data[0].available).toBe(3);
+  });
+
+  describe('Product DTO validation for expirationAlertDays', () => {
+    it('permite expirationAlertDays como array vacio para productos PRODUCIDO en CreateProductDto', async () => {
+      const dto = plainToInstance(CreateProductDto, {
+        sku: 'SKU-PAN-1',
+        name: 'Pan Dulce',
+        basePrice: 1.5,
+        categorySlug: 'pan-dulce',
+        origin: ProductOrigin.PRODUCIDO,
+        expirationAlertDays: [],
+      });
+      const errors = await validate(dto);
+      const alertErrors = errors.filter((e) => e.property === 'expirationAlertDays');
+      expect(alertErrors).toHaveLength(0);
+    });
+
+    it('permite expirationAlertDays como array vacio en UpdateProductDto', async () => {
+      const dto = plainToInstance(UpdateProductDto, {
+        name: 'Pan Dulce Editado',
+        origin: ProductOrigin.PRODUCIDO,
+        expirationAlertDays: [],
+      });
+      const errors = await validate(dto);
+      const alertErrors = errors.filter((e) => e.property === 'expirationAlertDays');
+      expect(alertErrors).toHaveLength(0);
+    });
+
+    it('permite expirationAlertDays como array vacio en PutProductDto', async () => {
+      const dto = plainToInstance(PutProductDto, {
+        name: 'Pan Dulce',
+        basePrice: 1.5,
+        categorySlug: 'pan-dulce',
+        origin: ProductOrigin.PRODUCIDO,
+        expirationAlertDays: [],
+      });
+      const errors = await validate(dto);
+      const alertErrors = errors.filter((e) => e.property === 'expirationAlertDays');
+      expect(alertErrors).toHaveLength(0);
+    });
   });
 });

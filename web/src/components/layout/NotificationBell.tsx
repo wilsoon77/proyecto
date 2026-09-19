@@ -125,7 +125,7 @@ export default function NotificationBell() {
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute right-0 mt-3 w-80 sm:w-96 bg-card rounded-xl shadow-xl border border-border py-1 z-50 animate-in fade-in slide-in-from-top-3 duration-200">
+        <div className="fixed sm:absolute left-3 right-3 sm:left-auto sm:right-0 top-[4.25rem] sm:top-full sm:mt-3 sm:w-96 bg-card rounded-2xl shadow-2xl border border-border py-1 z-50 animate-in fade-in slide-in-from-top-3 duration-200">
           
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-border">
@@ -154,7 +154,7 @@ export default function NotificationBell() {
           </div>
 
           {/* Notifications List */}
-          <div className="max-h-80 overflow-y-auto divide-y divide-gray-50">
+          <div className="max-h-[calc(100vh-14rem)] sm:max-h-80 overflow-y-auto divide-y divide-[#FAF0E6]">
             {notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
                 <div className="h-12 w-12 rounded-full bg-cream flex items-center justify-center mb-3">

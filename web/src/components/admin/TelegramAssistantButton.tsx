@@ -128,7 +128,7 @@ export default function TelegramAssistantButton() {
 
       {/* Modal Interactivo de Vinculación */}
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200">
           <div 
             className="relative w-full max-w-lg rounded-2xl border border-stone-200 bg-white p-5 sm:p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto"
             role="dialog"

@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ArrayMinSize, IsArray, IsBoolean, IsEnum, IsInt, IsNumber, IsOptional, IsString, Max, Min, MinLength, ValidateNested } from 'class-validator';
+import { IsArray, IsBoolean, IsEnum, IsInt, IsNumber, IsOptional, IsString, Max, Min, MinLength, ValidateNested } from 'class-validator';
 import { ProductOrigin } from '@prisma/client';
 import { Type } from 'class-transformer';
 import { ProductPresentationInputDto } from './presentation.dto.js';
@@ -119,7 +119,7 @@ export class CreateProductDto {
   @IsOptional() @IsBoolean() tracksExpiration?: boolean;
 
   @ApiProperty({ example: [30, 15, 3], type: [Number], required: false, description: 'Días de anticipación para cada aviso (ej. 30, 15, 3); solo aplica a productos COMPRADO' })
-  @IsOptional() @IsArray() @ArrayMinSize(1) @IsInt({ each: true }) @Min(0, { each: true }) @Max(3650, { each: true }) expirationAlertDays?: number[];
+  @IsOptional() @IsArray() @IsInt({ each: true }) @Min(0, { each: true }) @Max(3650, { each: true }) expirationAlertDays?: number[];
 
   @ApiProperty({ example: 'https://example.com/image.jpg', required: false, description: 'URL de la imagen del producto' })
   @IsOptional() @IsString() imageUrl?: string;
@@ -173,7 +173,7 @@ export class UpdateProductDto {
   @IsOptional() @IsBoolean() tracksExpiration?: boolean;
 
   @ApiProperty({ example: [30, 15, 3], type: [Number], required: false, description: 'Días de anticipación para cada aviso; solo aplica a productos COMPRADO' })
-  @IsOptional() @IsArray() @ArrayMinSize(1) @IsInt({ each: true }) @Min(0, { each: true }) @Max(3650, { each: true }) expirationAlertDays?: number[];
+  @IsOptional() @IsArray() @IsInt({ each: true }) @Min(0, { each: true }) @Max(3650, { each: true }) expirationAlertDays?: number[];
 
   @ApiPropertyOptional({ example: '2026-12-31', description: 'Fecha de caducidad para el lote del producto (formato YYYY-MM-DD)' })
   @IsOptional() @IsString() expirationDate?: string;
@@ -219,5 +219,5 @@ export class PutProductDto {
   @IsOptional() @IsBoolean() tracksExpiration?: boolean;
 
   @ApiProperty({ example: [30, 15, 3], type: [Number], required: false, description: 'Días de anticipación para cada aviso; solo aplica a productos COMPRADO' })
-  @IsOptional() @IsArray() @ArrayMinSize(1) @IsInt({ each: true }) @Min(0, { each: true }) @Max(3650, { each: true }) expirationAlertDays?: number[];
+  @IsOptional() @IsArray() @IsInt({ each: true }) @Min(0, { each: true }) @Max(3650, { each: true }) expirationAlertDays?: number[];
 }

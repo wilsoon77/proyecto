@@ -677,7 +677,7 @@ export default function MateriasPrimasPage() {
 
       {/* ── MODAL 1: Registrar Compra / Entrada Rápida de Insumo ── */}
       {showPurchaseModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fadeIn">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-[60] animate-fadeIn">
           <div className="bg-white rounded-2xl shadow-xl border border-[#E8DCCB] max-w-md w-full p-6 relative overflow-hidden">
             <h3 className="text-lg font-bold text-[#2B170F] mb-4 flex items-center gap-2">
               <Plus className="h-5 w-5 text-emerald-600" />
@@ -802,7 +802,7 @@ export default function MateriasPrimasPage() {
 
       {/* ── MODAL 2: Crear Nueva Materia Prima ── */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fadeIn">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-[60] animate-fadeIn">
           <div className="bg-white rounded-2xl shadow-xl border border-[#E8DCCB] max-w-md w-full p-6 relative overflow-hidden">
             <h3 className="text-lg font-bold text-[#2B170F] mb-4 flex items-center gap-2">
               <Package className="h-5 w-5 text-[#D97706]" />
@@ -912,7 +912,7 @@ export default function MateriasPrimasPage() {
 
       {/* ── MODAL 3: Editar Materia Prima ── */}
       {showEditModal && editingMaterial && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fadeIn">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-[60] animate-fadeIn">
           <div className="bg-white rounded-2xl shadow-xl border border-[#E8DCCB] max-w-md w-full p-6 relative overflow-hidden">
             <h3 className="text-lg font-bold text-[#2B170F] mb-4 flex items-center gap-2">
               <Edit2 className="h-5 w-5 text-[#D97706]" />

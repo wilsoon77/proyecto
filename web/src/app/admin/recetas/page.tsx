@@ -419,7 +419,7 @@ export default function RecipesAdminPage() {
 
       {/* ── FORM MODAL: Crear/Editar Receta ── */}
       {showFormModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fadeIn">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-[60] animate-fadeIn">
           <div className="bg-white rounded-2xl shadow-xl border border-[#E8DCCB] max-w-lg w-full max-h-[90vh] flex flex-col relative overflow-hidden">
             <div className="p-6 border-b border-[#E8DCCB] flex items-center justify-between shrink-0 bg-[#FAF5EE]/70">
               <h3 className="text-lg font-bold text-[#2B170F] flex items-center gap-2">

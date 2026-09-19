@@ -622,7 +622,7 @@ export default function CaducidadesPage() {
 
       {/* ── MODAL PARA AJUSTAR ALERTA DE CADUCIDAD ── */}
       {selectedLotForEdit && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs animate-fadeIn">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs animate-fadeIn">
           <div className="w-full max-w-lg rounded-2xl border border-[#E8DCCB] bg-white p-6 shadow-xl space-y-5">
             {/* Header del Modal */}
             <div className="flex items-start justify-between gap-4 border-b border-[#E8DCCB] pb-3">

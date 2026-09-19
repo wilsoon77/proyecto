@@ -139,7 +139,7 @@ export default function AdminLayout({
       {/* Sidebar */}
       <aside 
         className={`
-          fixed lg:static inset-y-0 left-0 z-50
+          fixed lg:relative lg:z-40 inset-y-0 left-0 z-50
           ${sidebarCollapsed ? 'w-20' : 'w-68'} 
           ${mobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'}
           bg-white border-r border-[#E8DCCB] flex flex-col
@@ -367,7 +367,7 @@ export default function AdminLayout({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top Header */}
-        <header className="h-16 bg-white/95 backdrop-blur-md border-b border-[#E8DCCB] flex items-center justify-between px-4 lg:px-6 shrink-0">
+        <header className="relative z-30 h-16 bg-white/95 backdrop-blur-md border-b border-[#E8DCCB] flex items-center justify-between px-4 lg:px-6 shrink-0">
           {/* Left: Mobile menu button + Logo (mobile) + Search (desktop) */}
           <div className="flex items-center gap-3">
             <button

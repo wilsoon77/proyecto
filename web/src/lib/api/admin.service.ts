@@ -7,9 +7,9 @@ export interface CreateProductData {
   slug?: string
   description?: string
   basePrice: number
-  comboQuantity?: number
-  comboPrice?: number
-  unitsPerTray?: number
+  comboQuantity?: number | null
+  comboPrice?: number | null
+  unitsPerTray?: number | null
   categorySlug: string
   isNew?: boolean
   isActive?: boolean
@@ -28,9 +28,9 @@ export interface UpdateProductData {
   slug?: string
   description?: string
   basePrice?: number
-  comboQuantity?: number
-  comboPrice?: number
-  unitsPerTray?: number
+  comboQuantity?: number | null
+  comboPrice?: number | null
+  unitsPerTray?: number | null
   categorySlug?: string
   isNew?: boolean
   isActive?: boolean

@@ -237,26 +237,30 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
     try {
       // Encontrar el slug de la categoría seleccionada
       const selectedCategory = categories.find(c => c.id.toString() === categoryId)
-      
-      await adminService.updateProduct(productId, {
-        name: name.trim(),
-        slug: slug.trim(),
-        description: description.trim() || undefined,
-        basePrice: parseFloat(price),
-        categorySlug: selectedCategory?.slug || '',
-        isNew,
-        isActive,
-        isAvailable,
-        origin,
-        tracksExpiration: origin === 'COMPRADO' && tracksExpiration,
-        expirationAlertDays: origin === 'COMPRADO' ? parseExpirationAlertDays(expirationAlertDays) : [],
-        expirationDate: origin === 'COMPRADO' && tracksExpiration && expirationDate ? expirationDate : undefined,
-        comboQuantity: comboQuantity ? parseInt(comboQuantity) : undefined,
-        comboPrice: comboPrice ? parseFloat(comboPrice) : undefined,
-        unitsPerTray: unitsPerTray ? parseInt(unitsPerTray) : undefined,
-        presentations,
-        imageUrl: imageUrl || undefined,
-      })
+
+      const parsedComboQty = comboQuantity ? parseInt(comboQuantity, 10) : null
+        const validComboQty = parsedComboQty && parsedComboQty >= 2 ? parsedComboQty : null
+        const validComboPrice = validComboQty && comboPrice ? parseFloat(comboPrice) : null
+
+        await adminService.updateProduct(productId, {
+          name: name.trim(),
+          slug: slug.trim(),
+          description: description.trim() || undefined,
+          basePrice: parseFloat(price),
+          categorySlug: selectedCategory?.slug || '',
+          isNew,
+          isActive,
+          isAvailable,
+          origin,
+          tracksExpiration: origin === 'COMPRADO' && tracksExpiration,
+          expirationAlertDays: origin === 'COMPRADO' ? parseExpirationAlertDays(expirationAlertDays) : [],
+          expirationDate: origin === 'COMPRADO' && tracksExpiration && expirationDate ? expirationDate : undefined,
+          comboQuantity: validComboQty,
+          comboPrice: validComboPrice,
+          unitsPerTray: unitsPerTray ? parseInt(unitsPerTray) : undefined,
+          presentations,
+          imageUrl: imageUrl || undefined,
+        })
 
       showToast(`Producto "${name.trim()}" actualizado correctamente`, "success")
       router.push("/admin/productos")
@@ -596,18 +600,19 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
           {/* Combo Pricing */}
           <div className="bg-accent rounded-lg p-4 space-y-4">
             <h3 className="text-sm font-semibold text-primary">Precio por Volumen (Combo)</h3>
-            <p className="text-xs text-primary">Ej: "3 por Q1.25" — Si el cliente lleva la cantidad indicada, aplica el precio combo.</p>
+            <p className="text-xs text-primary">Opcional. Ej: "3 por Q1.25" — Aplica precio especial al llevar esta cantidad o múltiplos. Déjalo en blanco si este pan se vende solo por unidad o en presentaciones.</p>
             <div className={`grid gap-3 ${origin === 'PRODUCIDO' ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2'}`}>
               <div>
                 <label className="block text-xs font-medium text-muted-foreground mb-1">Cantidad combo</label>
                 <input
                   type="number"
-                  min="0"
+                  min="2"
                   value={comboQuantity}
                   onChange={(e) => setComboQuantity(e.target.value)}
-                  placeholder="Ej: 3"
+                  placeholder="Ej: 3 (mínimo 2)"
                   className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                 />
+                <p className="text-[11px] text-muted-foreground mt-1">Mínimo 2 unidades (o déjalo vacío)</p>
               </div>
               <div>
                 <label className="block text-xs font-medium text-muted-foreground mb-1">Precio combo (Q)</label>
@@ -620,6 +625,7 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
                   placeholder="Ej: 1.25"
                   className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                 />
+                <p className="text-[11px] text-muted-foreground mt-1">Precio total por el combo</p>
               </div>
               {origin === 'PRODUCIDO' && (
                 <div>

@@ -192,14 +192,18 @@ export default function NuevoProductoPage() {
       // Encontrar el slug de la categoría seleccionada
       const selectedCategory = categories.find(c => c.id.toString() === categoryId)
       
+      const parsedComboQty = comboQuantity ? parseInt(comboQuantity, 10) : null
+      const validComboQty = parsedComboQty && parsedComboQty >= 2 ? parsedComboQty : undefined
+      const validComboPrice = validComboQty && comboPrice ? parseFloat(comboPrice) : undefined
+
       const createdProduct = await adminService.createProduct({
         sku: `SKU-${slug.trim().toUpperCase()}`,
         name: name.trim(),
         slug: slug.trim(),
         description: description.trim() || undefined,
         basePrice: parseFloat(price),
-        comboQuantity: comboQuantity ? parseInt(comboQuantity, 10) : undefined,
-        comboPrice: comboPrice ? parseFloat(comboPrice) : undefined,
+        comboQuantity: validComboQty,
+        comboPrice: validComboPrice,
         unitsPerTray: origin === 'PRODUCIDO' && unitsPerTray ? parseInt(unitsPerTray, 10) : undefined,
         categorySlug: selectedCategory?.slug || '',
         isNew,
@@ -504,18 +508,19 @@ export default function NuevoProductoPage() {
           {/* Combo Pricing */}
           <div className="bg-accent rounded-lg p-4 space-y-4">
             <h3 className="text-sm font-semibold text-primary">Precio por Volumen (Combo)</h3>
-            <p className="text-xs text-primary">Opcional. Ej: "3 por Q1.25"</p>
+            <p className="text-xs text-primary">Opcional. Ej: "3 por Q1.25" — Aplica precio especial al llevar esta cantidad o múltiplos. Déjalo en blanco si este pan se vende solo por unidad o en presentaciones.</p>
             <div className={`grid gap-3 ${origin === 'PRODUCIDO' ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2'}`}>
               <div>
                 <label className="block text-xs font-medium text-muted-foreground mb-1">Cantidad combo</label>
                 <input
                   type="number"
-                  min="0"
+                  min="2"
                   value={comboQuantity}
                   onChange={(e) => setComboQuantity(e.target.value)}
-                  placeholder="Ej: 3"
+                  placeholder="Ej: 3 (mínimo 2)"
                   className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                 />
+                <p className="text-[11px] text-muted-foreground mt-1">Mínimo 2 unidades (o déjalo vacío)</p>
               </div>
               <div>
                 <label className="block text-xs font-medium text-muted-foreground mb-1">Precio combo (Q)</label>
@@ -528,6 +533,7 @@ export default function NuevoProductoPage() {
                   placeholder="Ej: 1.25"
                   className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                 />
+                <p className="text-[11px] text-muted-foreground mt-1">Precio total por el combo</p>
               </div>
               {origin === 'PRODUCIDO' && (
                 <div>

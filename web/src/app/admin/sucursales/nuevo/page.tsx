@@ -1,18 +1,44 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { MapPin } from "lucide-react"
+import { useState, useEffect, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { MapPin, Loader as Loader2 } from "lucide-react"
 import { useQueryClient } from "@tanstack/react-query"
 import { useToast } from "@/components/ui/toast"
 import { branchesService, ApiClientError } from "@/lib/api"
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader"
 import { AdminStickyFooter } from "@/components/admin/AdminStickyFooter"
 
-export default function NuevaSucursalPage() {
+function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .trim()
+}
+
+function NuevaSucursalContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { showToast } = useToast()
   const queryClient = useQueryClient()
+
+  const returnUrlParam = searchParams.get("returnUrl")
+  const [returnUrl, setReturnUrl] = useState<string>("/admin/sucursales")
+
+  useEffect(() => {
+    if (returnUrlParam) {
+      setReturnUrl(returnUrlParam)
+    } else {
+      try {
+        const saved = sessionStorage.getItem("admin_sucursales_return_url")
+        if (saved) setReturnUrl(saved)
+      } catch {}
+    }
+  }, [returnUrlParam])
   
   const [name, setName] = useState("")
   const [address, setAddress] = useState("")
@@ -21,17 +47,6 @@ export default function NuevaSucursalPage() {
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
-
-  function generateSlug(name: string): string {
-    return name
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9\s-]/g, "")
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-")
-      .trim()
-  }
 
   const handleNameChange = (value: string) => {
     setName(value)
@@ -68,7 +83,7 @@ export default function NuevaSucursalPage() {
       })
       queryClient.invalidateQueries({ queryKey: ['branches'] })
       showToast(`Sucursal "${name.trim()}" creada correctamente`, "success")
-      router.push("/admin/sucursales")
+      router.push(returnUrl)
     } catch (err) {
       if (err instanceof ApiClientError) {
         setError(err.message)
@@ -87,7 +102,7 @@ export default function NuevaSucursalPage() {
         title="Nueva Sucursal"
         description="Registra una nueva tienda física o punto de venta e inventario"
         breadcrumbs={[
-          { label: "Sucursales", href: "/admin/sucursales" },
+          { label: "Sucursales", href: returnUrl },
           { label: "Nueva Sucursal" },
         ]}
       />
@@ -119,37 +134,23 @@ export default function NuevaSucursalPage() {
           {/* Name */}
           <div>
             <label htmlFor="name" className="block text-xs font-bold text-[#2B170F] uppercase tracking-wider mb-2">
-              Nombre de la sucursal *
+              Nombre de la Sucursal *
             </label>
             <input
               id="name"
               type="text"
               value={name}
               onChange={(e) => handleNameChange(e.target.value)}
-              placeholder="Ej: Sucursal Centro, Plaza Las Américas..."
+              placeholder="Ej: Sucursal Central"
               className="w-full px-4 py-2.5 text-sm bg-white border border-[#DECDBB] rounded-xl text-[#2B170F] placeholder:text-[#8C522B]/50 focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
             />
           </div>
 
           {/* Slug */}
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <label htmlFor="slug" className="text-xs font-bold text-[#2B170F] uppercase tracking-wider">
-                Slug (Identificador en URL) *
-              </label>
-              {slugManuallyEdited && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSlugManuallyEdited(false)
-                    setSlug(generateSlug(name))
-                  }}
-                  className="text-xs text-[#D97706] hover:underline font-medium"
-                >
-                  Regenerar desde nombre
-                </button>
-              )}
-            </div>
+            <label htmlFor="slug" className="block text-xs font-bold text-[#2B170F] uppercase tracking-wider mb-2">
+              Slug URL (identificador único) *
+            </label>
             <input
               id="slug"
               type="text"
@@ -158,9 +159,12 @@ export default function NuevaSucursalPage() {
                 setSlugManuallyEdited(true)
                 setSlug(e.target.value)
               }}
-              placeholder="ej: sucursal-centro"
-              className="w-full px-4 py-2.5 text-sm bg-[#FAF5EE]/50 border border-[#DECDBB] rounded-xl text-[#2B170F] font-mono placeholder:text-[#8C522B]/50 focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
+              placeholder="ej: sucursal-central"
+              className="w-full px-4 py-2.5 text-sm bg-white border border-[#DECDBB] rounded-xl text-[#2B170F] font-mono placeholder:text-[#8C522B]/50 focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
             />
+            <p className="mt-1 text-xs text-[#8C522B]/80">
+              Identificador único para la URL. Se genera automáticamente a partir del nombre.
+            </p>
           </div>
 
           {/* Address */}
@@ -199,9 +203,23 @@ export default function NuevaSucursalPage() {
           primaryLabel="Crear Sucursal"
           isPrimarySubmitting={isLoading}
           secondaryLabel="Cancelar"
-          secondaryHref="/admin/sucursales"
+          secondaryHref={returnUrl}
         />
       </form>
     </div>
+  )
+}
+
+export default function NuevaSucursalPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="w-8 h-8 animate-spin text-[#D97706]" />
+        </div>
+      }
+    >
+      <NuevaSucursalContent />
+    </Suspense>
   )
 }

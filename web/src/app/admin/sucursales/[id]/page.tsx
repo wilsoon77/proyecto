@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect, use } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect, use, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, MapPin, Loader as Loader2 } from "lucide-react"
 import { useQueryClient } from "@tanstack/react-query"
@@ -11,12 +11,27 @@ import { branchesService, ApiClientError } from "@/lib/api"
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader"
 import { AdminStickyFooter } from "@/components/admin/AdminStickyFooter"
 
-export default function EditarSucursalPage({ params }: { params: Promise<{ id: string }> }) {
+function EditarSucursalContent({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params)
   const branchId = parseInt(resolvedParams.id, 10)
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { showToast } = useToast()
   const queryClient = useQueryClient()
+
+  const returnUrlParam = searchParams.get("returnUrl")
+  const [returnUrl, setReturnUrl] = useState<string>("/admin/sucursales")
+
+  useEffect(() => {
+    if (returnUrlParam) {
+      setReturnUrl(returnUrlParam)
+    } else {
+      try {
+        const saved = sessionStorage.getItem("admin_sucursales_return_url")
+        if (saved) setReturnUrl(saved)
+      } catch {}
+    }
+  }, [returnUrlParam])
   
   const [name, setName] = useState("")
   const [slug, setSlug] = useState("")
@@ -92,7 +107,7 @@ export default function EditarSucursalPage({ params }: { params: Promise<{ id: s
       })
       queryClient.invalidateQueries({ queryKey: ['branches'] })
       showToast(`Sucursal "${name.trim()}" actualizada correctamente`, "success")
-      router.push("/admin/sucursales")
+      router.push(returnUrl)
     } catch (err) {
       if (err instanceof ApiClientError) {
         setError(err.message)
@@ -121,7 +136,7 @@ export default function EditarSucursalPage({ params }: { params: Promise<{ id: s
         <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-xl text-sm font-medium">
           {error}
         </div>
-        <Link href="/admin/sucursales" className="mt-4 inline-block">
+        <Link href={returnUrl} className="mt-4 inline-block">
           <Button variant="outline" className="border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE]">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Volver a sucursales
@@ -138,8 +153,8 @@ export default function EditarSucursalPage({ params }: { params: Promise<{ id: s
         title={`Editar: ${name}`}
         description="Modifica la información general, dirección y teléfono de la sucursal"
         breadcrumbs={[
-          { label: "Sucursales", href: "/admin/sucursales" },
-          { label: `Editar #${branchId}` },
+          { label: "Sucursales", href: returnUrl },
+          { label: `Editar ${name}` },
         ]}
       />
 
@@ -166,14 +181,16 @@ export default function EditarSucursalPage({ params }: { params: Promise<{ id: s
           {/* Name */}
           <div>
             <label htmlFor="name" className="block text-xs font-bold text-[#2B170F] uppercase tracking-wider mb-2">
-              Nombre de la sucursal *
+              Nombre de la Sucursal *
             </label>
             <input
               id="name"
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Ej: Sucursal Centro"
+              onChange={(e) => {
+                setName(e.target.value)
+              }}
+              placeholder="Ej: Sucursal Central"
               className="w-full px-4 py-2.5 text-sm bg-white border border-[#DECDBB] rounded-xl text-[#2B170F] placeholder:text-[#8C522B]/50 focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
             />
           </div>
@@ -181,8 +198,8 @@ export default function EditarSucursalPage({ params }: { params: Promise<{ id: s
           {/* Slug */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label htmlFor="slug" className="text-xs font-bold text-[#2B170F] uppercase tracking-wider">
-                Slug (URL) *
+              <label htmlFor="slug" className="block text-xs font-bold text-[#2B170F] uppercase tracking-wider">
+                Slug URL (Identificador) *
               </label>
               <button
                 type="button"
@@ -241,9 +258,23 @@ export default function EditarSucursalPage({ params }: { params: Promise<{ id: s
           primaryLabel="Guardar Cambios"
           isPrimarySubmitting={isSaving}
           secondaryLabel="Cancelar"
-          secondaryHref="/admin/sucursales"
+          secondaryHref={returnUrl}
         />
       </form>
     </div>
+  )
+}
+
+export default function EditarSucursalPage(props: { params: Promise<{ id: string }> }) {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="w-8 h-8 animate-spin text-[#D97706]" />
+        </div>
+      }
+    >
+      <EditarSucursalContent {...props} />
+    </Suspense>
   )
 }

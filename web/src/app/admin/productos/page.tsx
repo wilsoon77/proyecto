@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useState, useCallback, useRef, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Plus, Search, Edit2, Trash2, ChevronLeft, ChevronRight, Image as ImageIcon, X, Eye, EyeOff, Package, Flame, ShoppingBag } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -16,21 +16,60 @@ import { AdminPageHeader } from "@/components/admin/AdminPageHeader"
 import { AdminSearchBar } from "@/components/admin/AdminSearchBar"
 import { AdminEntityCard } from "@/components/admin/AdminEntityCard"
 
-export default function AdminProductosPage() {
+// Helper para construir la query string y persistir filtros
+function buildProductsQueryString(
+  page: number,
+  search: string,
+  status: 'all' | 'active' | 'inactive',
+  origin: 'all' | 'PRODUCIDO' | 'COMPRADO',
+  category: string
+): string {
+  const params = new URLSearchParams()
+  if (page > 1) params.set("page", String(page))
+  if (search.trim()) params.set("search", search.trim())
+  if (status !== "all") params.set("status", status)
+  if (origin !== "all") params.set("origin", origin)
+  if (category) params.set("category", category)
+  const qs = params.toString()
+  return qs ? `?${qs}` : ""
+}
+
+function AdminProductosContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user: currentUser } = useAuth()
   const { showToast } = useToast()
   const canManageCatalog = currentUser?.role === 'ADMIN'
+
+  // Inicializar estado desde la URL si existe
+  const initialPage = Number(searchParams.get("page")) || 1
+  const initialSearch = searchParams.get("search") || ""
+  const initialStatus = (searchParams.get("status") as 'all' | 'active' | 'inactive') || 'all'
+  const initialOrigin = (searchParams.get("origin") as 'all' | 'PRODUCIDO' | 'COMPRADO') || 'all'
+  const initialCategory = searchParams.get("category") || ""
+
   const [products, setProducts] = useState<ApiProduct[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [currentPage, setCurrentPage] = useState(1)
+  const [searchQuery, setSearchQuery] = useState(initialSearch)
+  const [currentPage, setCurrentPage] = useState(initialPage)
   const [totalPages, setTotalPages] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
-  const [originFilter, setOriginFilter] = useState<'all' | 'PRODUCIDO' | 'COMPRADO'>('all')
-  const [categoryFilter, setCategoryFilter] = useState("")
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>(initialStatus)
+  const [originFilter, setOriginFilter] = useState<'all' | 'PRODUCIDO' | 'COMPRADO'>(initialOrigin)
+  const [categoryFilter, setCategoryFilter] = useState(initialCategory)
   const [categories, setCategories] = useState<ApiCategory[]>([])
+  
+  // Ref para controlar que en la carga inicial se respete la página de la URL
+  const isInitialMount = useRef(true)
+
+  // URL actual con filtros para pasar como returnUrl a la pantalla de edición
+  const currentReturnUrl = `/admin/productos${buildProductsQueryString(
+    currentPage,
+    searchQuery,
+    statusFilter,
+    originFilter,
+    categoryFilter
+  )}`
   
   // Delete modal state
   const [deleteModal, setDeleteModal] = useState<{
@@ -77,8 +116,19 @@ export default function AdminProductosPage() {
       const response = await productsService.listAdmin(params)
       setProducts(response.data || [])
       setTotalPages(response.meta?.pageCount || 1)
-      setCurrentPage(response.meta?.page || 1)
+      const finalPage = response.meta?.page || page
+      setCurrentPage(finalPage)
       setTotalCount(response.meta?.total || 0)
+
+      // Sincronizar URL de manera transparente sin recargar ni alterar el historial de navegación
+      if (typeof window !== "undefined") {
+        const qs = buildProductsQueryString(finalPage, search, status, origin, category)
+        const fullUrl = `/admin/productos${qs}`
+        window.history.replaceState(null, "", fullUrl)
+        try {
+          sessionStorage.setItem("admin_productos_return_url", fullUrl)
+        } catch {}
+      }
     } catch (error) {
       console.error("Error loading products:", error)
       showToast("Error al cargar los productos", "error")
@@ -98,8 +148,14 @@ export default function AdminProductosPage() {
     }
   }
 
-  // Debounced search y recarga al cambiar cualquier filtro
+  // Carga inicial y debounced search al cambiar filtros
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      loadProducts(currentPage, searchQuery, statusFilter, originFilter, categoryFilter)
+      return
+    }
+
     const timer = setTimeout(() => {
       loadProducts(1, searchQuery, statusFilter, originFilter, categoryFilter)
     }, 400)
@@ -158,7 +214,7 @@ export default function AdminProductosPage() {
           canManageCatalog
             ? {
                 label: "Nuevo Producto",
-                href: "/admin/productos/nuevo",
+                href: `/admin/productos/nuevo?returnUrl=${encodeURIComponent(currentReturnUrl)}`,
                 icon: Plus,
               }
             : undefined
@@ -336,7 +392,7 @@ export default function AdminProductosPage() {
                   actions={
                     canManageCatalog && (
                       <div className="flex flex-wrap items-center gap-2 w-full">
-                        <Link href={`/admin/productos/${product.id}/editar`} className="flex-1 min-w-[90px]">
+                        <Link href={`/admin/productos/${product.id}/editar?returnUrl=${encodeURIComponent(currentReturnUrl)}`} className="flex-1 min-w-[90px]">
                           <button
                             type="button"
                             className="w-full h-10 px-3 bg-white border border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] rounded-xl font-bold text-xs shadow-2xs inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
@@ -453,7 +509,7 @@ export default function AdminProductosPage() {
                       <td className="px-6 py-3.5 text-right">
                         {canManageCatalog && (
                           <div className="flex items-center justify-end gap-1.5 whitespace-nowrap">
-                            <Link href={`/admin/productos/${product.id}/editar`}>
+                            <Link href={`/admin/productos/${product.id}/editar?returnUrl=${encodeURIComponent(currentReturnUrl)}`}>
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -551,5 +607,20 @@ export default function AdminProductosPage() {
         onCancel={closeDeleteModal}
       />
     </div>
+  )
+}
+
+export default function AdminProductosPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-12 text-center text-[#8C522B]">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#D97706] border-t-transparent mx-auto mb-3" />
+          <p className="text-xs font-semibold">Cargando catálogo...</p>
+        </div>
+      }
+    >
+      <AdminProductosContent />
+    </Suspense>
   )
 }

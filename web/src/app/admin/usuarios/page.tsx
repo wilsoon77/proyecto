@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useState, useMemo } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useState, useMemo, useRef, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { 
   Users as UsersIcon, 
@@ -39,21 +39,46 @@ const ROLE_COLORS: Record<UserRole, { bg: string; text: string }> = {
   CUSTOMER: { bg: "bg-[#FAF5EE] border-[#DECDBB]", text: "text-[#6E5545]" },
 }
 
-export default function UsuariosPage() {
+function buildUsersQueryString(
+  page: number,
+  search: string,
+  role: string,
+  status: string
+): string {
+  const params = new URLSearchParams()
+  if (page > 1) params.set("page", String(page))
+  if (search.trim()) params.set("search", search.trim())
+  if (role !== "ALL") params.set("role", role)
+  if (status !== "ALL") params.set("status", status)
+  const qs = params.toString()
+  return qs ? `?${qs}` : ""
+}
+
+function UsuariosContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user: currentUser } = useAuth()
   const { showToast } = useToast()
+
+  const initialPage = Number(searchParams.get("page")) || 1
+  const initialSearch = searchParams.get("search") || ""
+  const initialRole = (searchParams.get("role") as UserRole | "ALL") || "ALL"
+  const initialStatus = (searchParams.get("status") as "ALL" | "ACTIVE" | "INACTIVE") || "ALL"
+
   const [users, setUsers] = useState<User[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [roleFilter, setRoleFilter] = useState<UserRole | "ALL">("ALL")
-  const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL")
+  const [searchTerm, setSearchTerm] = useState(initialSearch)
+  const [roleFilter, setRoleFilter] = useState<UserRole | "ALL">(initialRole)
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "INACTIVE">(initialStatus)
   const [processingId, setProcessingId] = useState<string | null>(null)
   const [deactivateTarget, setDeactivateTarget] = useState<User | null>(null)
 
   // Paginación
   const ITEMS_PER_PAGE = 10
-  const [currentPage, setCurrentPage] = useState(1)
+  const [currentPage, setCurrentPage] = useState(initialPage)
+  const isInitialMount = useRef(true)
+
+  const currentReturnUrl = `/admin/usuarios${buildUsersQueryString(currentPage, searchTerm, roleFilter, statusFilter)}`
 
   // Protección de rol - solo ADMIN puede acceder
   useEffect(() => {
@@ -141,10 +166,26 @@ export default function UsuariosPage() {
     })
   }, [users, searchTerm, roleFilter, statusFilter])
 
-  // Reset de página al cambiar filtros
+  // Reset de página al cambiar filtros (excepto carga inicial)
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      return
+    }
     setCurrentPage(1)
   }, [searchTerm, roleFilter, statusFilter])
+
+  // Sincronizar URL y sessionStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const qs = buildUsersQueryString(currentPage, searchTerm, roleFilter, statusFilter)
+      const fullUrl = `/admin/usuarios${qs}`
+      window.history.replaceState(null, "", fullUrl)
+      try {
+        sessionStorage.setItem("admin_usuarios_return_url", fullUrl)
+      } catch {}
+    }
+  }, [currentPage, searchTerm, roleFilter, statusFilter])
 
   // Paginación
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / ITEMS_PER_PAGE))
@@ -209,7 +250,7 @@ export default function UsuariosPage() {
         breadcrumbs={[{ label: "Usuarios" }]}
         primaryAction={{
           label: "Nuevo Usuario",
-          href: "/admin/usuarios/nuevo",
+          href: `/admin/usuarios/nuevo?returnUrl=${encodeURIComponent(currentReturnUrl)}`,
           icon: <Plus className="h-4 w-4 mr-1.5" />,
         }}
       />
@@ -325,7 +366,7 @@ export default function UsuariosPage() {
                     ]}
                     actions={
                       <>
-                        <Link href={`/admin/usuarios/${user.id}`} className="flex-1">
+                        <Link href={`/admin/usuarios/${user.id}?returnUrl=${encodeURIComponent(currentReturnUrl)}`} className="flex-1">
                           <Button
                             variant="outline"
                             size="sm"
@@ -445,7 +486,7 @@ export default function UsuariosPage() {
                         </td>
                         <td className="px-6 py-3.5 whitespace-nowrap text-right">
                           <div className="flex items-center justify-end gap-1.5">
-                            <Link href={`/admin/usuarios/${user.id}`}>
+                            <Link href={`/admin/usuarios/${user.id}?returnUrl=${encodeURIComponent(currentReturnUrl)}`}>
                               <Button variant="outline" size="sm" className="h-8 px-2.5 border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] text-xs font-bold">
                                 <Edit2 className="h-3.5 w-3.5 mr-1 text-[#8C522B]" />
                                 Editar
@@ -535,5 +576,20 @@ export default function UsuariosPage() {
         variant="danger"
       />
     </div>
+  )
+}
+
+export default function UsuariosPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-12 text-center text-[#8C522B]">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#D97706] border-t-transparent mx-auto mb-3" />
+          <p className="text-xs font-semibold">Cargando usuarios...</p>
+        </div>
+      }
+    >
+      <UsuariosContent />
+    </Suspense>
   )
 }

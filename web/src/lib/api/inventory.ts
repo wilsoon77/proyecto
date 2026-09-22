@@ -20,6 +20,8 @@ export interface InventoryItem {
     id: number
     name: string
     slug: string
+    origin?: 'PRODUCIDO' | 'COMPRADO'
+    category?: { id: number; name: string; slug: string }
     stockUnitLabel?: string
     presentations?: Array<{
       id: number

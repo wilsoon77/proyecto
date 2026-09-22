@@ -41,6 +41,16 @@ function mapInventoryProduct(product: any, available = 0) {
       available: Math.max(0, Math.floor(available / presentation.unitsInStock)),
     }));
   }
+  if (Object.prototype.hasOwnProperty.call(product, 'origin')) {
+    (mapped as any).origin = product.origin;
+  }
+  if (Object.prototype.hasOwnProperty.call(product, 'category') && product.category) {
+    (mapped as any).category = {
+      id: product.category.id,
+      name: product.category.name,
+      slug: product.category.slug,
+    };
+  }
 
   return mapped;
 }
@@ -128,7 +138,12 @@ export class InventoryService {
     const inventories = await this.prisma.inventory.findMany({
       where,
       include: {
-        product: { include: { presentations: { where: { isActive: true }, orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] } } },
+        product: {
+          include: {
+            category: { select: { id: true, name: true, slug: true } },
+            presentations: { where: { isActive: true }, orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] },
+          },
+        },
         branch: true,
       },
     });
@@ -156,7 +171,12 @@ export class InventoryService {
     const inventory = await this.prisma.inventory.findUnique({
       where: { productId_branchId: { productId, branchId } },
       include: {
-        product: { include: { presentations: { where: { isActive: true }, orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] } } },
+        product: {
+          include: {
+            category: { select: { id: true, name: true, slug: true } },
+            presentations: { where: { isActive: true }, orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] },
+          },
+        },
         branch: true,
       },
     });

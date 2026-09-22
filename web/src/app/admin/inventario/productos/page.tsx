@@ -17,7 +17,9 @@ import { Button } from "@/components/ui/button"
 import { 
   inventoryService, 
   branchesService, 
-  type InventoryItem 
+  categoriesService,
+  type InventoryItem,
+  type ApiCategory
 } from "@/lib/api"
 import { formatDateString } from "@/lib/utils"
 import { useToast } from "@/components/ui/toast"
@@ -32,6 +34,7 @@ interface Branch {
 }
 
 type StockFilter = "all" | "low" | "out"
+type OriginFilter = "all" | "PRODUCIDO" | "COMPRADO"
 
 function ProductosInventarioContent() {
   const searchParams = useSearchParams()
@@ -40,9 +43,12 @@ function ProductosInventarioContent() {
   const initialBranch = searchParams.get("sucursal") || "all"
   const initialStock = (searchParams.get("stock") as StockFilter) || "all"
   const initialSearch = searchParams.get("search") || ""
+  const initialCategory = searchParams.get("cat") || "all"
+  const initialOrigin = (searchParams.get("origin") as OriginFilter) || "all"
 
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [branches, setBranches] = useState<Branch[]>([])
+  const [categories, setCategories] = useState<ApiCategory[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -50,6 +56,8 @@ function ProductosInventarioContent() {
   const [selectedBranch, setSelectedBranch] = useState<string>(initialBranch)
   const [searchQuery, setSearchQuery] = useState(initialSearch)
   const [stockFilter, setStockFilter] = useState<StockFilter>(initialStock)
+  const [categoryFilter, setCategoryFilter] = useState<string>(initialCategory)
+  const [originFilter, setOriginFilter] = useState<OriginFilter>(initialOrigin)
   const [currentPage, setCurrentPage] = useState(initialPage)
 
   // Paginación
@@ -58,27 +66,50 @@ function ProductosInventarioContent() {
   const { showToast } = useToast()
 
   // Sincronizar con URL y sessionStorage
-  const buildQueryString = (page: number, branch: string, stock: StockFilter, search: string) => {
+  const buildQueryString = (
+    page: number, 
+    branch: string, 
+    stock: StockFilter, 
+    search: string,
+    cat: string,
+    origin: OriginFilter
+  ) => {
     const params = new URLSearchParams()
     if (page > 1) params.set("page", String(page))
     if (branch !== "all") params.set("sucursal", branch)
     if (stock !== "all") params.set("stock", stock)
     if (search) params.set("search", search)
+    if (cat !== "all") params.set("cat", cat)
+    if (origin !== "all") params.set("origin", origin)
     const qs = params.toString()
     return qs ? `?${qs}` : ""
   }
 
   const currentReturnUrl = useMemo(() => {
-    return `/admin/inventario/productos${buildQueryString(currentPage, selectedBranch, stockFilter, searchQuery)}`
-  }, [currentPage, selectedBranch, stockFilter, searchQuery])
+    return `/admin/inventario/productos${buildQueryString(
+      currentPage, 
+      selectedBranch, 
+      stockFilter, 
+      searchQuery,
+      categoryFilter,
+      originFilter
+    )}`
+  }, [currentPage, selectedBranch, stockFilter, searchQuery, categoryFilter, originFilter])
 
   useEffect(() => {
-    const url = `/admin/inventario/productos${buildQueryString(currentPage, selectedBranch, stockFilter, searchQuery)}`
+    const url = `/admin/inventario/productos${buildQueryString(
+      currentPage, 
+      selectedBranch, 
+      stockFilter, 
+      searchQuery,
+      categoryFilter,
+      originFilter
+    )}`
     window.history.replaceState(null, "", url)
     try {
       sessionStorage.setItem("admin_inventario_productos_return_url", url)
     } catch {}
-  }, [currentPage, selectedBranch, stockFilter, searchQuery])
+  }, [currentPage, selectedBranch, stockFilter, searchQuery, categoryFilter, originFilter])
 
   const handleSearchChange = (query: string) => {
     setSearchQuery(query)
@@ -95,16 +126,28 @@ function ProductosInventarioContent() {
     setCurrentPage(1)
   }
 
+  const handleCategoryChange = (cat: string) => {
+    setCategoryFilter(cat)
+    setCurrentPage(1)
+  }
+
+  const handleOriginChange = (origin: OriginFilter) => {
+    setOriginFilter(origin)
+    setCurrentPage(1)
+  }
+
   // Cargar datos
   const loadData = useCallback(async () => {
     setIsLoading(true)
     try {
-      const [inventoryData, branchesData] = await Promise.all([
+      const [inventoryData, branchesData, categoriesData] = await Promise.all([
         inventoryService.list(),
-        branchesService.list()
+        branchesService.list(),
+        categoriesService.list(),
       ])
       setInventory(inventoryData)
       setBranches(branchesData)
+      setCategories(categoriesData)
       setError(null)
     } catch (err) {
       console.error("Error loading finished products:", err)
@@ -122,24 +165,38 @@ function ProductosInventarioContent() {
   // Filtrar inventario
   const filteredInventory = useMemo(() => {
     return inventory.filter(item => {
+      // Filtro por sucursal
       if (selectedBranch !== "all" && item.branch.slug !== selectedBranch) {
         return false
       }
+      // Filtro por stock
       if (stockFilter === "low" && (item.available >= 10 || item.available === 0)) {
         return false
       }
       if (stockFilter === "out" && item.available > 0) {
         return false
       }
+      // Filtro por categoría
+      if (categoryFilter !== "all" && item.product.category?.slug !== categoryFilter) {
+        return false
+      }
+      // Filtro por origen (PRODUCIDO vs COMPRADO)
+      if (originFilter !== "all" && item.product.origin !== originFilter) {
+        return false
+      }
+      // Búsqueda por texto
       if (searchQuery) {
         const query = searchQuery.toLowerCase()
-        return item.product.name.toLowerCase().includes(query) ||
-               item.branch.name.toLowerCase().includes(query) ||
-               item.product.slug.toLowerCase().includes(query)
+        return (
+          item.product.name.toLowerCase().includes(query) ||
+          item.branch.name.toLowerCase().includes(query) ||
+          item.product.slug.toLowerCase().includes(query) ||
+          (item.product.category?.name && item.product.category.name.toLowerCase().includes(query))
+        )
       }
       return true
     })
-  }, [inventory, selectedBranch, stockFilter, searchQuery])
+  }, [inventory, selectedBranch, stockFilter, categoryFilter, originFilter, searchQuery])
 
   // Paginación del inventario
   const totalPages = Math.max(1, Math.ceil(filteredInventory.length / ITEMS_PER_PAGE))
@@ -231,28 +288,63 @@ function ProductosInventarioContent() {
       <AdminSearchBar
         searchQuery={searchQuery}
         onSearchChange={handleSearchChange}
-        placeholder="Buscar producto por nombre o sucursal..."
+        placeholder="Buscar por producto, sucursal o categoría..."
         chips={filterChips}
         totalCount={inventory.length}
         filteredCount={filteredInventory.length}
         entityName="productos"
         isLoading={isLoading}
       >
-        {/* Selector de Sucursal */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-[#8C522B] uppercase tracking-wider hidden sm:inline">
-            Sucursal:
-          </span>
-          <select
-            value={selectedBranch}
-            onChange={(e) => handleBranchChange(e.target.value)}
-            className="h-10 px-3 text-xs sm:text-sm bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] font-medium focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
-          >
-            <option value="all">Todas las sucursales</option>
-            {branches.map(branch => (
-              <option key={branch.id} value={branch.slug}>{branch.name}</option>
-            ))}
-          </select>
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Selector de Sucursal */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-[#8C522B] uppercase tracking-wider hidden sm:inline">
+              Sucursal:
+            </span>
+            <select
+              value={selectedBranch}
+              onChange={(e) => handleBranchChange(e.target.value)}
+              className="h-10 px-3 text-xs sm:text-sm bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] font-medium focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
+            >
+              <option value="all">Todas las sucursales</option>
+              {branches.map(branch => (
+                <option key={branch.id} value={branch.slug}>{branch.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Selector de Categoría */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-[#8C522B] uppercase tracking-wider hidden sm:inline">
+              Categoría:
+            </span>
+            <select
+              value={categoryFilter}
+              onChange={(e) => handleCategoryChange(e.target.value)}
+              className="h-10 px-3 text-xs sm:text-sm bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] font-medium focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
+            >
+              <option value="all">Todas las categorías</option>
+              {categories.map(cat => (
+                <option key={cat.id} value={cat.slug}>{cat.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Selector de Origen (Producido vs Comprado) */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-[#8C522B] uppercase tracking-wider hidden sm:inline">
+              Origen:
+            </span>
+            <select
+              value={originFilter}
+              onChange={(e) => handleOriginChange(e.target.value as OriginFilter)}
+              className="h-10 px-3 text-xs sm:text-sm bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] font-medium focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
+            >
+              <option value="all">Todos los orígenes</option>
+              <option value="PRODUCIDO">Producido (Panadería)</option>
+              <option value="COMPRADO">Comprado (Reventa)</option>
+            </select>
+          </div>
         </div>
       </AdminSearchBar>
 
@@ -298,21 +390,36 @@ function ProductosInventarioContent() {
                     </div>
                   }
                   title={item.product.name}
-                  subtitle={item.branch.name}
+                  subtitle={`${item.branch.name}${item.product.category ? ` · ${item.product.category.name}` : ''}`}
                   badges={
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                      isOutOfStock
-                        ? "bg-red-100 text-red-800 border border-red-200"
-                        : isLowStock
-                        ? "bg-amber-100 text-amber-800 border border-amber-300"
-                        : "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                    }`}>
-                      {item.available} disp.
-                    </span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                        isOutOfStock
+                          ? "bg-red-100 text-red-800 border border-red-200"
+                          : isLowStock
+                          ? "bg-amber-100 text-amber-800 border border-amber-300"
+                          : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                      }`}>
+                        {item.available} disp.
+                      </span>
+                      {item.product.origin && (
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                          item.product.origin === 'COMPRADO'
+                            ? "bg-sky-50 text-sky-700 border border-sky-200"
+                            : "bg-[#FAF5EE] text-[#8C522B] border border-[#DECDBB]"
+                        }`}>
+                          {item.product.origin === 'COMPRADO' ? 'Comprado' : 'Producido'}
+                        </span>
+                      )}
+                    </div>
                   }
                   meta={[
                     { label: "En Mano", value: `${item.quantity} uds` },
                     { label: "Reservado", value: `${item.reserved} uds` },
+                    ...(item.product.category ? [{
+                      label: "Categoría",
+                      value: item.product.category.name,
+                    }] : []),
                     ...(item.expiredQuantity ? [{
                       label: "Vencidas",
                       value: `${item.expiredQuantity} uds`
@@ -346,6 +453,8 @@ function ProductosInventarioContent() {
                 <thead>
                   <tr className="border-b border-[#E8DCCB] bg-[#FAF5EE]/70">
                     <th className="py-3.5 px-5 text-xs font-bold text-[#2B170F] uppercase tracking-wider">Producto</th>
+                    <th className="py-3.5 px-5 text-xs font-bold text-[#2B170F] uppercase tracking-wider">Categoría</th>
+                    <th className="py-3.5 px-5 text-xs font-bold text-[#2B170F] uppercase tracking-wider">Origen</th>
                     <th className="py-3.5 px-5 text-xs font-bold text-[#2B170F] uppercase tracking-wider">Sucursal</th>
                     <th className="py-3.5 px-5 text-xs font-bold text-[#2B170F] uppercase tracking-wider text-right">En Mano</th>
                     <th className="py-3.5 px-5 text-xs font-bold text-[#2B170F] uppercase tracking-wider text-right">Reservado</th>
@@ -371,6 +480,26 @@ function ProductosInventarioContent() {
                               <p className="text-xs text-[#8C522B] font-mono leading-none mt-0.5">/{item.product.slug}</p>
                             </div>
                           </div>
+                        </td>
+                        <td className="py-3.5 px-5 text-xs font-medium text-[#2B170F]">
+                          {item.product.category?.name ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-[#FAF5EE] text-[#8C522B] border border-[#DECDBB]/60">
+                              {item.product.category.name}
+                            </span>
+                          ) : (
+                            <span className="text-[#8C522B]/60 text-xs italic">Sin categoría</span>
+                          )}
+                        </td>
+                        <td className="py-3.5 px-5 text-xs">
+                          {item.product.origin === 'COMPRADO' ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-sky-50 text-sky-700 border border-sky-200">
+                              Comprado
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                              Producido
+                            </span>
+                          )}
                         </td>
                         <td className="py-3.5 px-5 text-sm font-medium text-[#2B170F]">
                           {item.branch.name}

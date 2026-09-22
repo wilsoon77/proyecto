@@ -80,15 +80,15 @@ export default function SucursalesPage() {
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-1 space-y-4">
             {[1, 2, 3].map(i => (
-              <div key={i} className="animate-pulse rounded-lg border bg-card p-6">
-                <div className="h-6 w-3/4 rounded bg-border" />
-                <div className="mt-3 h-4 w-full rounded bg-border" />
-                <div className="mt-2 h-4 w-2/3 rounded bg-border" />
+              <div key={i} className="animate-pulse rounded-2xl border border-[#DECDBB] bg-white p-6">
+                <div className="h-6 w-3/4 rounded bg-[#FAF5EE]" />
+                <div className="mt-3 h-4 w-full rounded bg-[#FAF5EE]" />
+                <div className="mt-2 h-4 w-2/3 rounded bg-[#FAF5EE]" />
               </div>
             ))}
           </div>
           <div className="lg:col-span-2">
-            <div className="h-96 animate-pulse rounded-lg bg-border" />
+            <div className="h-96 animate-pulse rounded-2xl border border-[#DECDBB] bg-[#FAF5EE]" />
           </div>
         </div>
       </div>
@@ -97,13 +97,17 @@ export default function SucursalesPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      <h1 className="mb-2 text-3xl font-bold text-foreground">Nuestras sucursales</h1>
-      <p className="mb-8 text-muted-foreground">Encuentra la panadería más cercana y visítanos.</p>
+      <h1 className="mb-2 font-display text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-[-0.035em] text-[#24140D]">
+        Nuestras sucursales
+      </h1>
+      <p className="mb-8 text-sm sm:text-base text-[#6E5545]">
+        Encuentra la panadería más cercana y visítanos.
+      </p>
 
       {branches.length === 0 ? (
-        <div className="rounded-lg border bg-card p-8 text-center">
-          <MapPin className="mx-auto h-12 w-12 text-muted-foreground/60" />
-          <p className="mt-4 text-muted-foreground">No hay sucursales disponibles en este momento.</p>
+        <div className="rounded-2xl border border-[#DECDBB] bg-white p-12 text-center">
+          <MapPin className="mx-auto h-12 w-12 text-[#D97706]/60 mb-2" />
+          <p className="text-sm font-medium text-[#6E5545]">No hay sucursales disponibles en este momento.</p>
         </div>
       ) : (
         <div className="grid gap-6 lg:grid-cols-3">
@@ -112,49 +116,51 @@ export default function SucursalesPage() {
             {branches.map(branch => (
               <div 
                 key={branch.id} 
-                className={`cursor-pointer rounded-lg border bg-card p-5 transition-all hover:border-primary hover:shadow-md ${
-                  selectedBranch?.id === branch.id ? 'border-primary ring-2 ring-primary/20' : ''
+                className={`cursor-pointer rounded-2xl border p-5 transition-all shadow-xs ${
+                  selectedBranch?.id === branch.id 
+                    ? 'border-[#D97706] bg-[#FAF0E6] ring-2 ring-[#D97706]/20' 
+                    : 'border-[#DECDBB] bg-white hover:bg-[#FAF5EE] hover:border-[#D97706]/40'
                 }`}
                 onClick={() => setSelectedBranch(branch)}
               >
-                <h3 className="text-lg font-semibold text-foreground">{branch.name}</h3>
-                <ul className="mt-3 space-y-2 text-sm text-foreground">
+                <h3 className="font-display text-lg font-bold text-[#2B170F]">{branch.name}</h3>
+                <ul className="mt-3 space-y-2 text-sm text-[#5C3D2E]">
                   <li className="flex items-start gap-2">
-                    <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+                    <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#D97706]" />
                     <span>{branch.address}</span>
                   </li>
                   {branch.phone && branch.phone.trim() && (
                     <li className="flex items-center gap-2">
-                      <Phone className="h-4 w-4 flex-shrink-0 text-primary" />
-                      <a href={`tel:${branch.phone.trim()}`} className="hover:underline text-foreground">
+                      <Phone className="h-4 w-4 flex-shrink-0 text-[#D97706]" />
+                      <a href={`tel:${branch.phone.trim()}`} className="hover:underline text-[#2B170F] font-medium">
                         {branch.phone.trim()}
                       </a>
                     </li>
                   )}
                   {operatingHours && (
                     <li className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 flex-shrink-0 text-primary" />
+                      <Clock className="h-4 w-4 flex-shrink-0 text-[#D97706]" />
                       <span>{operatingHours}</span>
                     </li>
                   )}
                 </ul>
-                <div className="mt-4 flex gap-2">
+                <div className="mt-4 flex items-center gap-2 pt-3 border-t border-[#DECDBB]/40">
                   <a 
                     href={getGoogleMapsUrl(branch)} 
                     target="_blank" 
                     rel="noreferrer" 
-                    className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                    className="inline-flex items-center gap-1 text-xs font-bold text-[#D97706] hover:underline"
                     onClick={e => e.stopPropagation()}
                   >
                     <Navigation className="h-3.5 w-3.5" /> 
                     Cómo llegar
                   </a>
-                  <span className="text-muted-foreground/40">|</span>
+                  <span className="text-[#DECDBB]">|</span>
                   <a 
                     href={getGoogleMapsUrl(branch)} 
                     target="_blank" 
                     rel="noreferrer" 
-                    className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary"
+                    className="inline-flex items-center gap-1 text-xs font-medium text-[#8C522B] hover:text-[#2B170F]"
                     onClick={e => e.stopPropagation()}
                   >
                     <ExternalLink className="h-3.5 w-3.5" /> 
@@ -167,7 +173,7 @@ export default function SucursalesPage() {
 
           {/* Mapa */}
           <div className="lg:col-span-2">
-            <div className="sticky top-24 overflow-hidden rounded-lg border bg-muted shadow-sm">
+            <div className="sticky top-24 overflow-hidden rounded-2xl border border-[#DECDBB] bg-[#FAF5EE] shadow-sm">
               <iframe
                 src={mapEmbedUrl}
                 width="100%"
@@ -180,19 +186,19 @@ export default function SucursalesPage() {
                 className="w-full"
               />
               {selectedBranch && (
-                <div className="border-t bg-card p-4">
-                  <div className="flex items-center justify-between">
+                <div className="border-t border-[#DECDBB] bg-white p-4 sm:p-5">
+                  <div className="flex items-center justify-between gap-4">
                     <div>
-                      <h4 className="font-semibold text-foreground">{selectedBranch.name}</h4>
-                      <p className="text-sm text-muted-foreground">{selectedBranch.address}</p>
+                      <h4 className="font-display text-base sm:text-lg font-bold text-[#2B170F]">{selectedBranch.name}</h4>
+                      <p className="text-xs sm:text-sm text-[#6E5545]">{selectedBranch.address}</p>
                     </div>
                     <a 
                       href={getGoogleMapsUrl(selectedBranch)} 
                       target="_blank" 
                       rel="noreferrer"
                     >
-                      <Button size="sm">
-                        <Navigation className="mr-2 h-4 w-4" />
+                      <Button size="sm" className="bg-[#D97706] hover:bg-[#B45309] text-white font-bold rounded-xl text-xs h-9 px-4 shadow-xs">
+                        <Navigation className="mr-1.5 h-3.5 w-3.5" />
                         Ir ahora
                       </Button>
                     </a>

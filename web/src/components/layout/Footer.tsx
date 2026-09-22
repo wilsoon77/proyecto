@@ -60,6 +60,7 @@ export function Footer() {
               <Link href={ROUTES.profile} className="public-focus w-fit text-[#5C3D2E] transition-colors hover:text-[#D97706]">Mi cuenta</Link>
               <Link href={ROUTES.privacy} className="public-focus w-fit text-[#5C3D2E] transition-colors hover:text-[#D97706]">Privacidad</Link>
               <Link href={ROUTES.terms} className="public-focus w-fit text-[#5C3D2E] transition-colors hover:text-[#D97706]">Términos</Link>
+              <Link href={ROUTES.cookies} className="public-focus w-fit text-[#5C3D2E] transition-colors hover:text-[#D97706]">Cookies</Link>
             </nav>
           </div>
 

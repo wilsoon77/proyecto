@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useEffect, useState, Suspense } from "react"
+import { useParams, useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Loader as Loader2, Clock, CircleCheck as CheckCircle, Circle as XCircle, Package, ChefHat, Phone, FileText, Store, Calendar, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -58,11 +58,26 @@ const STATUS_FLOW: Record<OrderStatus, OrderStatus[]> = {
   CANCELLED: [],
 }
 
-export default function DetalleOrdenPage() {
+function DetalleOrdenContent() {
   const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
   const orderId = parseInt(params.id as string)
   const { showToast } = useToast()
+
+  const returnUrlParam = searchParams.get("returnUrl")
+  const [returnUrl, setReturnUrl] = useState<string>("/admin/ordenes")
+
+  useEffect(() => {
+    if (returnUrlParam) {
+      setReturnUrl(returnUrlParam)
+    } else {
+      try {
+        const saved = sessionStorage.getItem("admin_ordenes_return_url")
+        if (saved) setReturnUrl(saved)
+      } catch {}
+    }
+  }, [returnUrlParam])
   
   const [order, setOrder] = useState<OrderDetail | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -81,7 +96,7 @@ export default function DetalleOrdenPage() {
     } catch (error) {
       console.error("Error loading order:", error)
       showToast("Error al cargar la orden", "error")
-      router.push("/admin/ordenes")
+      router.push(returnUrl)
     } finally {
       setIsLoading(false)
     }
@@ -139,7 +154,7 @@ export default function DetalleOrdenPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div className="flex items-center gap-4">
-          <Link href="/admin/ordenes">
+          <Link href={returnUrl}>
             <Button variant="ghost" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Volver
@@ -351,5 +366,20 @@ export default function DetalleOrdenPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function DetalleOrdenPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-12 text-center text-[#8C522B]">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#D97706] border-t-transparent mx-auto mb-3" />
+          <p className="text-xs font-semibold">Cargando pedido...</p>
+        </div>
+      }
+    >
+      <DetalleOrdenContent />
+    </Suspense>
   )
 }

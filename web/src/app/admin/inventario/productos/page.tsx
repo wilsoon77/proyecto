@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useState, useCallback, useMemo } from "react"
+import { useEffect, useState, useCallback, useMemo, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { 
   Package, 
@@ -8,9 +9,9 @@ import {
   Plus, 
   ChevronLeft, 
   ChevronRight, 
-  Trash2,
   ArrowLeftRight,
-  AlertTriangle
+  AlertTriangle,
+  Loader as Loader2
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { 
@@ -32,22 +33,67 @@ interface Branch {
 
 type StockFilter = "all" | "low" | "out"
 
-export default function ProductosInventarioPage() {
+function ProductosInventarioContent() {
+  const searchParams = useSearchParams()
+
+  const initialPage = parseInt(searchParams.get("page") || "1", 10) || 1
+  const initialBranch = searchParams.get("sucursal") || "all"
+  const initialStock = (searchParams.get("stock") as StockFilter) || "all"
+  const initialSearch = searchParams.get("search") || ""
+
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [branches, setBranches] = useState<Branch[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   // Filtros
-  const [selectedBranch, setSelectedBranch] = useState<string>("all")
-  const [searchQuery, setSearchQuery] = useState("")
-  const [stockFilter, setStockFilter] = useState<StockFilter>("all")
+  const [selectedBranch, setSelectedBranch] = useState<string>(initialBranch)
+  const [searchQuery, setSearchQuery] = useState(initialSearch)
+  const [stockFilter, setStockFilter] = useState<StockFilter>(initialStock)
+  const [currentPage, setCurrentPage] = useState(initialPage)
 
   // Paginación
   const ITEMS_PER_PAGE = 10
-  const [currentPage, setCurrentPage] = useState(1)
 
   const { showToast } = useToast()
+
+  // Sincronizar con URL y sessionStorage
+  const buildQueryString = (page: number, branch: string, stock: StockFilter, search: string) => {
+    const params = new URLSearchParams()
+    if (page > 1) params.set("page", String(page))
+    if (branch !== "all") params.set("sucursal", branch)
+    if (stock !== "all") params.set("stock", stock)
+    if (search) params.set("search", search)
+    const qs = params.toString()
+    return qs ? `?${qs}` : ""
+  }
+
+  const currentReturnUrl = useMemo(() => {
+    return `/admin/inventario/productos${buildQueryString(currentPage, selectedBranch, stockFilter, searchQuery)}`
+  }, [currentPage, selectedBranch, stockFilter, searchQuery])
+
+  useEffect(() => {
+    const url = `/admin/inventario/productos${buildQueryString(currentPage, selectedBranch, stockFilter, searchQuery)}`
+    window.history.replaceState(null, "", url)
+    try {
+      sessionStorage.setItem("admin_inventario_productos_return_url", url)
+    } catch {}
+  }, [currentPage, selectedBranch, stockFilter, searchQuery])
+
+  const handleSearchChange = (query: string) => {
+    setSearchQuery(query)
+    setCurrentPage(1)
+  }
+
+  const handleBranchChange = (branch: string) => {
+    setSelectedBranch(branch)
+    setCurrentPage(1)
+  }
+
+  const handleStockFilterChange = (stock: StockFilter) => {
+    setStockFilter(stock)
+    setCurrentPage(1)
+  }
 
   // Cargar datos
   const loadData = useCallback(async () => {
@@ -95,11 +141,6 @@ export default function ProductosInventarioPage() {
     })
   }, [inventory, selectedBranch, stockFilter, searchQuery])
 
-  // Resetear página al cambiar filtros
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [selectedBranch, searchQuery, stockFilter])
-
   // Paginación del inventario
   const totalPages = Math.max(1, Math.ceil(filteredInventory.length / ITEMS_PER_PAGE))
   const paginatedInventory = useMemo(() => {
@@ -125,7 +166,7 @@ export default function ProductosInventarioPage() {
         label: "Todos",
         count: inventory.length,
         active: stockFilter === "all",
-        onClick: () => setStockFilter("all"),
+        onClick: () => handleStockFilterChange("all"),
       },
     ]
 
@@ -135,7 +176,7 @@ export default function ProductosInventarioPage() {
         label: "Stock Bajo",
         count: lowStockCount,
         active: stockFilter === "low",
-        onClick: () => setStockFilter("low"),
+        onClick: () => handleStockFilterChange("low"),
       })
     }
 
@@ -145,7 +186,7 @@ export default function ProductosInventarioPage() {
         label: "Agotados",
         count: outOfStockCount,
         active: stockFilter === "out",
-        onClick: () => setStockFilter("out"),
+        onClick: () => handleStockFilterChange("out"),
       })
     }
 
@@ -169,7 +210,7 @@ export default function ProductosInventarioPage() {
         ]}
         primaryAction={{
           label: "Nuevo Movimiento",
-          href: "/admin/inventario/movimiento",
+          href: `/admin/inventario/movimiento?returnUrl=${encodeURIComponent(currentReturnUrl)}`,
           icon: <Plus className="h-4 w-4 mr-1.5" />,
         }}
         secondaryAction={{
@@ -189,7 +230,7 @@ export default function ProductosInventarioPage() {
       {/* ── Buscador y Filtros Estandarizados ── */}
       <AdminSearchBar
         searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchChange={handleSearchChange}
         placeholder="Buscar producto por nombre o sucursal..."
         chips={filterChips}
         totalCount={inventory.length}
@@ -204,7 +245,7 @@ export default function ProductosInventarioPage() {
           </span>
           <select
             value={selectedBranch}
-            onChange={(e) => setSelectedBranch(e.target.value)}
+            onChange={(e) => handleBranchChange(e.target.value)}
             className="h-10 px-3 text-xs sm:text-sm bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] font-medium focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
           >
             <option value="all">Todas las sucursales</option>
@@ -232,7 +273,7 @@ export default function ProductosInventarioPage() {
           <p className="text-xs text-[#6E5545] max-w-sm mx-auto mb-6">
             Ajusta los filtros o registra una entrada de producción / movimiento de inventario.
           </p>
-          <Link href="/admin/inventario/movimiento">
+          <Link href={`/admin/inventario/movimiento?returnUrl=${encodeURIComponent(currentReturnUrl)}`}>
             <Button className="bg-[#D97706] hover:bg-[#B45309] text-white font-bold rounded-xl shadow-xs text-xs h-11 px-5">
               <Plus className="h-4 w-4 mr-2" />
               Nuevo Movimiento
@@ -241,141 +282,107 @@ export default function ProductosInventarioPage() {
         </div>
       ) : (
         <>
-          {/* ── Vista Móvil: Tarjetas Estandarizadas ── */}
-          <div className="md:hidden space-y-4">
+          {/* Vista Móvil: Tarjetas */}
+          <div className="md:hidden space-y-3">
             {paginatedInventory.map((item) => {
               const isOutOfStock = item.available === 0
               const isLowStock = item.available > 0 && item.available < 10
 
               return (
                 <AdminEntityCard
-                  key={`m-${item.product.id}-${item.branch.id}`}
+                  key={`${item.product.id}-${item.branch.id}`}
+                  dimmed={isOutOfStock}
                   image={
-                    <div className="h-11 w-11 bg-[#FAF0E6] text-[#D97706] rounded-xl flex items-center justify-center shrink-0">
-                      <Package className="h-5 w-5" />
+                    <div className="h-12 w-12 rounded-xl bg-[#FAF0E6] flex items-center justify-center text-[#D97706] shrink-0 border border-[#E8DCCB]">
+                      <Package className="h-6 w-6" />
                     </div>
                   }
                   title={item.product.name}
                   subtitle={item.branch.name}
                   badges={
-                    isOutOfStock ? (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-red-100 text-red-800 border border-red-200">
-                        Agotado
-                      </span>
-                    ) : isLowStock ? (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
-                        <AlertTriangle className="h-3 w-3 mr-1" />
-                        Stock Bajo
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        En Stock
-                      </span>
-                    )
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                      isOutOfStock
+                        ? "bg-red-100 text-red-800 border border-red-200"
+                        : isLowStock
+                        ? "bg-amber-100 text-amber-800 border border-amber-300"
+                        : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                    }`}>
+                      {item.available} disp.
+                    </span>
                   }
                   meta={[
-                    {
-                      label: "Disponible",
-                      value: `${item.available} unidades`,
-                      alert: isOutOfStock || isLowStock,
-                      highlight: !isOutOfStock && !isLowStock,
-                    },
-                    {
-                      label: "Total / Reservado",
-                      value: `${item.quantity} (Res: ${item.reserved})`,
-                    },
+                    { label: "En Mano", value: `${item.quantity} uds` },
+                    { label: "Reservado", value: `${item.reserved} uds` },
+                    ...(item.expiredQuantity ? [{
+                      label: "Vencidas",
+                      value: `${item.expiredQuantity} uds`
+                    }] : [])
                   ]}
                   actions={
-                    <>
-                      <Link
-                        href={`/admin/inventario/movimiento?producto=${item.product.slug}&sucursal=${item.branch.slug}`}
-                        className="flex-1"
+                    <Link
+                      href={`/admin/inventario/movimiento?producto=${item.product.slug}&sucursal=${item.branch.slug}&returnUrl=${encodeURIComponent(currentReturnUrl)}`}
+                      className="w-full"
+                    >
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="w-full h-10 border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] font-bold text-xs"
                       >
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="w-full h-10 px-3.5 border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] font-bold text-xs"
-                        >
-                          <ArrowLeftRight className="h-4 w-4 mr-1.5 text-[#8C522B]" />
-                          Movimiento
-                        </Button>
-                      </Link>
-
-                      {item.expiredQuantity ? (
-                        <Link
-                          href={`/admin/inventario/movimiento?producto=${item.product.slug}&sucursal=${item.branch.slug}&tipo=MERMA`}
-                          className="flex-1"
-                        >
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="w-full h-10 px-3.5 border-red-300 text-red-600 hover:bg-red-50 font-bold text-xs"
-                          >
-                            <Trash2 className="h-4 w-4 mr-1.5" />
-                            Merma ({item.expiredQuantity})
-                          </Button>
-                        </Link>
-                      ) : null}
-                    </>
+                        <ArrowLeftRight className="h-3.5 w-3.5 mr-1 text-[#8C522B]" />
+                        Movimiento
+                      </Button>
+                    </Link>
                   }
                 />
               )
             })}
           </div>
 
-          {/* ── Vista Desktop: Tabla Limpia ── */}
+          {/* Vista Escritorio: Tabla */}
           <div className="hidden md:block bg-white rounded-2xl shadow-xs border border-[#E8DCCB] overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead className="bg-[#FAF5EE] border-b border-[#E8DCCB]">
-                  <tr>
-                    <th className="py-3.5 px-5 text-xs font-bold text-[#8C522B] uppercase tracking-wider">Producto</th>
-                    <th className="py-3.5 px-5 text-xs font-bold text-[#8C522B] uppercase tracking-wider">Sucursal</th>
-                    <th className="py-3.5 px-5 text-center text-xs font-bold text-[#8C522B] uppercase tracking-wider">Total</th>
-                    <th className="py-3.5 px-5 text-center text-xs font-bold text-[#8C522B] uppercase tracking-wider hidden lg:table-cell">Reservado</th>
-                    <th className="py-3.5 px-5 text-center text-xs font-bold text-[#8C522B] uppercase tracking-wider">Disponible</th>
-                    <th className="py-3.5 px-5 text-left text-xs font-bold text-[#8C522B] uppercase tracking-wider hidden xl:table-cell">Actualizado</th>
-                    <th className="py-3.5 px-5 text-right text-xs font-bold text-[#8C522B] uppercase tracking-wider">Acciones</th>
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-[#E8DCCB] bg-[#FAF5EE]/70">
+                    <th className="py-3.5 px-5 text-xs font-bold text-[#2B170F] uppercase tracking-wider">Producto</th>
+                    <th className="py-3.5 px-5 text-xs font-bold text-[#2B170F] uppercase tracking-wider">Sucursal</th>
+                    <th className="py-3.5 px-5 text-xs font-bold text-[#2B170F] uppercase tracking-wider text-right">En Mano</th>
+                    <th className="py-3.5 px-5 text-xs font-bold text-[#2B170F] uppercase tracking-wider text-right">Reservado</th>
+                    <th className="py-3.5 px-5 text-xs font-bold text-[#2B170F] uppercase tracking-wider text-center">Disponible</th>
+                    <th className="py-3.5 px-5 text-xs font-bold text-[#2B170F] uppercase tracking-wider hidden xl:table-cell">Actualizado</th>
+                    <th className="py-3.5 px-5 text-xs font-bold text-[#2B170F] uppercase tracking-wider text-right">Acciones</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#E8DCCB]/60">
-                  {paginatedInventory.map((item, index) => {
+                <tbody className="divide-y divide-[#E8DCCB]">
+                  {paginatedInventory.map((item) => {
                     const isOutOfStock = item.available === 0
                     const isLowStock = item.available > 0 && item.available < 10
 
                     return (
-                      <tr
-                        key={`${item.product.id}-${item.branch.id}`}
-                        className={`hover:bg-[#FAF5EE]/50 transition-colors ${
-                          index % 2 === 1 ? "bg-[#FAF5EE]/20" : ""
-                        }`}
-                      >
+                      <tr key={`${item.product.id}-${item.branch.id}`} className="hover:bg-[#FAF5EE]/40 transition-colors">
                         <td className="py-3.5 px-5">
                           <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 bg-[#FAF0E6] text-[#D97706] rounded-xl flex items-center justify-center shrink-0">
-                              <Package className="h-5 w-5" />
+                            <div className="h-9 w-9 rounded-lg bg-[#FAF0E6] flex items-center justify-center text-[#D97706] shrink-0 border border-[#E8DCCB]">
+                              <Package className="h-4 w-4" />
                             </div>
                             <div>
-                              <p className="font-bold text-sm text-[#2B170F]">{item.product.name}</p>
-                              <p className="text-xs text-[#8C522B] font-mono">{item.product.slug}</p>
+                              <p className="text-sm font-bold text-[#2B170F] leading-snug">{item.product.name}</p>
+                              <p className="text-xs text-[#8C522B] font-mono leading-none mt-0.5">/{item.product.slug}</p>
                             </div>
                           </div>
                         </td>
                         <td className="py-3.5 px-5 text-sm font-medium text-[#2B170F]">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-bold bg-[#FAF0E6] text-[#D97706] border border-[#E8DCCB]">
-                            {item.branch.name}
-                          </span>
+                          {item.branch.name}
                         </td>
-                        <td className="py-3.5 px-5 text-center font-mono font-medium text-sm text-[#2B170F]">
+                        <td className="py-3.5 px-5 text-right font-mono font-bold text-sm text-[#2B170F]">
                           {item.quantity}
                         </td>
-                        <td className="py-3.5 px-5 text-center text-sm font-mono text-[#8C522B] hidden lg:table-cell">
+                        <td className="py-3.5 px-5 text-right font-mono text-sm text-[#8C522B]">
                           {item.reserved}
                         </td>
                         <td className="py-3.5 px-5 text-center">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold ${
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
                             isOutOfStock
                               ? "bg-red-100 text-red-800 border border-red-200"
                               : isLowStock
@@ -386,7 +393,7 @@ export default function ProductosInventarioPage() {
                           </span>
                           {item.expiredQuantity ? (
                             <Link
-                              href={`/admin/inventario/movimiento?producto=${item.product.slug}&sucursal=${item.branch.slug}&tipo=MERMA`}
+                              href={`/admin/inventario/movimiento?producto=${item.product.slug}&sucursal=${item.branch.slug}&tipo=MERMA&returnUrl=${encodeURIComponent(currentReturnUrl)}`}
                               className="mt-1 block text-[10px] font-bold text-red-600 hover:underline"
                             >
                               {item.expiredQuantity} vencidas · merma
@@ -398,7 +405,7 @@ export default function ProductosInventarioPage() {
                         </td>
                         <td className="py-3.5 px-5 text-right whitespace-nowrap">
                           <Link
-                            href={`/admin/inventario/movimiento?producto=${item.product.slug}&sucursal=${item.branch.slug}`}
+                            href={`/admin/inventario/movimiento?producto=${item.product.slug}&sucursal=${item.branch.slug}&returnUrl=${encodeURIComponent(currentReturnUrl)}`}
                           >
                             <Button
                               type="button"
@@ -450,5 +457,19 @@ export default function ProductosInventarioPage() {
         </>
       )}
     </div>
+  )
+}
+
+export default function ProductosInventarioPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="w-8 h-8 animate-spin text-[#D97706]" />
+        </div>
+      }
+    >
+      <ProductosInventarioContent />
+    </Suspense>
   )
 }

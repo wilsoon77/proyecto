@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useMemo } from "react"
+import { useEffect, useState, useMemo, Suspense } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { 
@@ -73,22 +73,42 @@ const STATUS_MAP = STATUS_OPTIONS.reduce((acc, s) => {
   return acc
 }, {} as Record<OrderStatus, typeof STATUS_OPTIONS[0]>)
 
-export default function OrdenesPage() {
+function buildOrdersQueryString(
+  page: number,
+  status: OrderStatus | "ALL",
+  branch: string,
+  search: string
+): string {
+  const params = new URLSearchParams()
+  if (page > 1) params.set("page", String(page))
+  if (status !== "ALL") params.set("status", status)
+  if (branch !== "ALL") params.set("branch", branch)
+  if (search.trim()) params.set("search", search.trim())
+  const qs = params.toString()
+  return qs ? `?${qs}` : ""
+}
+
+function OrdenesContent() {
   const { showToast } = useToast()
   const searchParams = useSearchParams()
   
+  const initialPage = Number(searchParams.get("page")) || 1
+  const initialStatus = (searchParams.get("status") as OrderStatus) || "ALL"
+  const initialBranch = searchParams.get("branch") || "ALL"
+  const initialSearch = searchParams.get("search") || ""
+
   const [orders, setOrders] = useState<Order[]>([])
   const [branches, setBranches] = useState<Branch[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState<OrderStatus | "ALL">(
-    (searchParams.get("status") as OrderStatus) || "ALL"
-  )
-  const [branchFilter, setBranchFilter] = useState<string>("ALL")
-  const [page, setPage] = useState(1)
+  const [searchTerm, setSearchTerm] = useState(initialSearch)
+  const [statusFilter, setStatusFilter] = useState<OrderStatus | "ALL">(initialStatus)
+  const [branchFilter, setBranchFilter] = useState<string>(initialBranch)
+  const [page, setPage] = useState(initialPage)
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
   const [processingId, setProcessingId] = useState<number | null>(null)
+
+  const currentReturnUrl = `/admin/ordenes${buildOrdersQueryString(page, statusFilter, branchFilter, searchTerm)}`
 
   useEffect(() => {
     loadBranches()
@@ -119,6 +139,16 @@ export default function OrdenesPage() {
       setOrders(response.data)
       setTotal(response.meta.total)
       setTotalPages(response.meta.pageCount)
+
+      // Sincronizar URL y sessionStorage
+      if (typeof window !== "undefined") {
+        const qs = buildOrdersQueryString(page, statusFilter, branchFilter, searchTerm)
+        const fullUrl = `/admin/ordenes${qs}`
+        window.history.replaceState(null, "", fullUrl)
+        try {
+          sessionStorage.setItem("admin_ordenes_return_url", fullUrl)
+        } catch {}
+      }
     } catch (error) {
       console.error("Error loading orders:", error)
       showToast("Error al cargar órdenes", "error")
@@ -341,9 +371,8 @@ export default function OrdenesPage() {
                         </div>
 
                         {/* Botón Ver Pedido */}
-                        <Link href={`/admin/ordenes/${order.id}`} className="shrink-0">
+                        <Link href={`/admin/ordenes/${order.id}?returnUrl=${encodeURIComponent(currentReturnUrl)}`} className="w-full sm:w-auto">
                           <Button
-                            type="button"
                             variant="outline"
                             size="sm"
                             className="w-full sm:w-auto h-11 px-4 border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] font-bold text-xs"
@@ -436,7 +465,7 @@ export default function OrdenesPage() {
                           {formatDate(order.createdAt)}
                         </td>
                         <td className="px-6 py-3.5 whitespace-nowrap text-right">
-                          <Link href={`/admin/ordenes/${order.id}`}>
+                          <Link href={`/admin/ordenes/${order.id}?returnUrl=${encodeURIComponent(currentReturnUrl)}`}>
                             <Button variant="outline" size="sm" className="h-8 px-2.5 border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] text-xs font-bold">
                               <Eye className="h-3.5 w-3.5 mr-1 text-[#8C522B]" /> Ver
                             </Button>
@@ -481,5 +510,20 @@ export default function OrdenesPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function OrdenesPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-12 text-center text-[#8C522B]">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#D97706] border-t-transparent mx-auto mb-3" />
+          <p className="text-xs font-semibold">Cargando pedidos...</p>
+        </div>
+      }
+    >
+      <OrdenesContent />
+    </Suspense>
   )
 }

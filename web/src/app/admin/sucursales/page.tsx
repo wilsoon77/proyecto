@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect, useMemo, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { Plus, MapPin, Edit2, Trash2, Loader as Loader2, Phone } from "lucide-react"
+import { Plus, MapPin, Edit2, Trash2, Loader as Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { useToast } from "@/components/ui/toast"
@@ -23,16 +23,40 @@ interface Branch {
   createdAt: string
 }
 
-export default function SucursalesPage() {
+function SucursalesContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user: currentUser } = useAuth()
   const { showToast } = useToast()
   const queryClient = useQueryClient()
+
+  const initialSearch = searchParams.get("search") || ""
+
   const [branches, setBranches] = useState<Branch[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState("")
+  const [searchTerm, setSearchTerm] = useState(initialSearch)
   const [deleteId, setDeleteId] = useState<number | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+
+  // Sincronizar búsqueda con URL y sessionStorage
+  const buildQueryString = (search: string) => {
+    const params = new URLSearchParams()
+    if (search) params.set("search", search)
+    const qs = params.toString()
+    return qs ? `?${qs}` : ""
+  }
+
+  const currentReturnUrl = useMemo(() => {
+    return `/admin/sucursales${buildQueryString(searchTerm)}`
+  }, [searchTerm])
+
+  useEffect(() => {
+    const url = `/admin/sucursales${buildQueryString(searchTerm)}`
+    window.history.replaceState(null, "", url)
+    try {
+      sessionStorage.setItem("admin_sucursales_return_url", url)
+    } catch {}
+  }, [searchTerm])
 
   // Protección de rol - solo ADMIN puede acceder
   useEffect(() => {
@@ -97,7 +121,7 @@ export default function SucursalesPage() {
         breadcrumbs={[{ label: "Sucursales" }]}
         primaryAction={{
           label: "Nueva Sucursal",
-          href: "/admin/sucursales/nuevo",
+          href: `/admin/sucursales/nuevo?returnUrl=${encodeURIComponent(currentReturnUrl)}`,
           icon: <Plus className="h-4 w-4 mr-1.5" />,
         }}
       />
@@ -135,7 +159,7 @@ export default function SucursalesPage() {
               : "Crea tu primera sucursal para comenzar la operación de venta e inventario."}
           </p>
           {!searchTerm && (
-            <Link href="/admin/sucursales/nuevo">
+            <Link href={`/admin/sucursales/nuevo?returnUrl=${encodeURIComponent(currentReturnUrl)}`}>
               <Button className="bg-[#D97706] hover:bg-[#B45309] text-white font-bold rounded-xl shadow-xs text-xs h-11 px-5">
                 <Plus className="h-4 w-4 mr-2" />
                 Nueva Sucursal
@@ -167,7 +191,10 @@ export default function SucursalesPage() {
               ]}
               actions={
                 <>
-                  <Link href={`/admin/sucursales/${branch.id}`} className="flex-1 sm:flex-none">
+                  <Link
+                    href={`/admin/sucursales/${branch.id}?returnUrl=${encodeURIComponent(currentReturnUrl)}`}
+                    className="flex-1 sm:flex-none"
+                  >
                     <Button
                       variant="outline"
                       size="sm"
@@ -205,5 +232,19 @@ export default function SucursalesPage() {
         variant="danger"
       />
     </div>
+  )
+}
+
+export default function SucursalesPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="w-8 h-8 animate-spin text-[#D97706]" />
+        </div>
+      }
+    >
+      <SucursalesContent />
+    </Suspense>
   )
 }

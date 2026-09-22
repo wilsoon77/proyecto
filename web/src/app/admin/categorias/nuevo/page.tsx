@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Tag } from "lucide-react"
+import { useState, useEffect, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { Tag, Loader as Loader2 } from "lucide-react"
 import { useToast } from "@/components/ui/toast"
 import { categoriesService, ApiClientError } from "@/lib/api"
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader"
@@ -19,9 +19,24 @@ function generateSlug(name: string): string {
     .trim()
 }
 
-export default function NuevaCategoriaPage() {
+function NuevaCategoriaContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { showToast } = useToast()
+
+  const returnUrlParam = searchParams.get("returnUrl")
+  const [returnUrl, setReturnUrl] = useState<string>("/admin/categorias")
+
+  useEffect(() => {
+    if (returnUrlParam) {
+      setReturnUrl(returnUrlParam)
+    } else {
+      try {
+        const saved = sessionStorage.getItem("admin_categorias_return_url")
+        if (saved) setReturnUrl(saved)
+      } catch {}
+    }
+  }, [returnUrlParam])
   
   const [name, setName] = useState("")
   const [slug, setSlug] = useState("")
@@ -64,7 +79,7 @@ export default function NuevaCategoriaPage() {
         description: description.trim() || undefined,
       })
       showToast(`Categoría "${name.trim()}" creada con éxito`, "success")
-      router.push("/admin/categorias")
+      router.push(returnUrl)
     } catch (err) {
       if (err instanceof ApiClientError) {
         setError(err.message)
@@ -83,7 +98,7 @@ export default function NuevaCategoriaPage() {
         title="Nueva Categoría"
         description="Crea una categoría para clasificar panes, pasteles y postres en el catálogo"
         breadcrumbs={[
-          { label: "Categorías", href: "/admin/categorias" },
+          { label: "Categorías", href: returnUrl },
           { label: "Nueva Categoría" },
         ]}
       />
@@ -122,40 +137,29 @@ export default function NuevaCategoriaPage() {
               type="text"
               value={name}
               onChange={(e) => handleNameChange(e.target.value)}
-              placeholder="Ej: Panes Dulces, Galletas, Repostería Fina"
-              className="w-full px-4 py-2.5 text-sm bg-white border border-[#DECDBB] rounded-xl text-[#2B170F] placeholder:text-[#8C522B]/50 focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
+              placeholder="Ej: Repostería Fina"
+              className="w-full px-4 py-2.5 text-sm bg-white border border-[#DECDBB] rounded-xl text-[#2B170F] focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
             />
           </div>
 
           {/* Slug */}
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <label htmlFor="slug" className="text-xs font-bold text-[#2B170F] uppercase tracking-wider">
-                Slug (URL limpia) *
-              </label>
-              {slugManuallyEdited && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSlugManuallyEdited(false)
-                    setSlug(generateSlug(name))
-                  }}
-                  className="text-xs text-[#D97706] hover:underline font-medium"
-                >
-                  Regenerar desde nombre
-                </button>
-              )}
+            <label htmlFor="slug" className="block text-xs font-bold text-[#2B170F] uppercase tracking-wider mb-2">
+              Slug URL (identificador único) *
+            </label>
+            <div className="flex items-center rounded-xl border border-[#DECDBB] bg-[#FAF5EE] px-3 focus-within:ring-2 focus-within:ring-[#D97706]/30 focus-within:border-[#D97706]">
+              <span className="text-xs text-[#8C522B] font-mono">/categorias/</span>
+              <input
+                id="slug"
+                type="text"
+                value={slug}
+                onChange={(e) => handleSlugChange(e.target.value)}
+                placeholder="reposteria-fina"
+                className="w-full py-2.5 px-1 text-sm bg-transparent font-mono text-[#2B170F] focus:outline-none"
+              />
             </div>
-            <input
-              id="slug"
-              type="text"
-              value={slug}
-              onChange={(e) => handleSlugChange(e.target.value)}
-              placeholder="ej: panes-dulces"
-              className="w-full px-4 py-2.5 text-sm bg-[#FAF5EE]/50 border border-[#DECDBB] rounded-xl text-[#2B170F] font-mono placeholder:text-[#8C522B]/50 focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
-            />
-            <p className="text-[11px] text-[#8C522B] mt-1.5">
-              Se mostrará en la tienda web como enlace de filtro directo.
+            <p className="text-xs text-[#6E5545] mt-1.5">
+              Identificador único usado en las direcciones web del catálogo. Se genera automáticamente.
             </p>
           </div>
 
@@ -180,9 +184,23 @@ export default function NuevaCategoriaPage() {
           primaryLabel="Crear Categoría"
           isPrimarySubmitting={isLoading}
           secondaryLabel="Cancelar"
-          secondaryHref="/admin/categorias"
+          secondaryHref={returnUrl}
         />
       </form>
     </div>
+  )
+}
+
+export default function NuevaCategoriaPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="w-8 h-8 animate-spin text-[#D97706]" />
+        </div>
+      }
+    >
+      <NuevaCategoriaContent />
+    </Suspense>
   )
 }

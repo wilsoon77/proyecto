@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useRouter, useParams } from "next/navigation"
+import { useEffect, useState, Suspense } from "react"
+import { useRouter, useParams, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Loader as Loader2, Eye, EyeOff, UserX, UserCheck, Building2, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -17,11 +17,26 @@ interface Branch {
   slug: string
 }
 
-export default function EditarUsuarioPage() {
+function EditarUsuarioContent() {
   const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
   const userId = params.id as string
   const { showToast } = useToast()
+
+  const returnUrlParam = searchParams.get("returnUrl")
+  const [returnUrl, setReturnUrl] = useState<string>("/admin/usuarios")
+
+  useEffect(() => {
+    if (returnUrlParam) {
+      setReturnUrl(returnUrlParam)
+    } else {
+      try {
+        const saved = sessionStorage.getItem("admin_usuarios_return_url")
+        if (saved) setReturnUrl(saved)
+      } catch {}
+    }
+  }, [returnUrlParam])
   
   const [user, setUser] = useState<ApiUser | null>(null)
   const [branches, setBranches] = useState<Branch[]>([])
@@ -123,7 +138,7 @@ export default function EditarUsuarioPage() {
       await usersService.update(userId, updateData)
 
       showToast(`Usuario "${firstName} ${lastName}" actualizado con éxito`, "success")
-      router.push("/admin/usuarios")
+      router.push(returnUrl)
     } catch (err) {
       if (err instanceof ApiClientError) {
         setError(err.message)
@@ -140,7 +155,7 @@ export default function EditarUsuarioPage() {
     try {
       await usersService.deactivate(userId)
       showToast("Usuario desactivado correctamente", "success")
-      router.push("/admin/usuarios")
+      router.push(returnUrl)
     } catch (error) {
       const message = error instanceof Error ? error.message : "Error al desactivar usuario"
       showToast(message, "error")
@@ -165,7 +180,7 @@ export default function EditarUsuarioPage() {
     return (
       <div className="space-y-6 max-w-2xl mx-auto">
         <p className="text-center text-[#8C522B]">Usuario no encontrado</p>
-        <Link href="/admin/usuarios" className="mt-4 block text-center">
+        <Link href={returnUrl} className="mt-4 block text-center">
           <Button variant="outline" className="border-[#DECDBB]">Volver a usuarios</Button>
         </Link>
       </div>
@@ -179,7 +194,7 @@ export default function EditarUsuarioPage() {
         title={`Editar: ${user.firstName} ${user.lastName}`}
         description={`Modifica rol, datos de contacto y sucursal de ${user.email}`}
         breadcrumbs={[
-          { label: "Usuarios", href: "/admin/usuarios" },
+          { label: "Usuarios", href: returnUrl },
           { label: `Editar #${user.id.slice(0, 8)}` },
         ]}
         secondaryAction={
@@ -399,7 +414,7 @@ export default function EditarUsuarioPage() {
           primaryLabel="Guardar Cambios"
           isPrimarySubmitting={isSaving}
           secondaryLabel="Cancelar"
-          secondaryHref="/admin/usuarios"
+          secondaryHref={returnUrl}
         />
       </form>
 
@@ -415,5 +430,19 @@ export default function EditarUsuarioPage() {
         isLoading={isDeactivating}
       />
     </div>
+  )
+}
+
+export default function EditarUsuarioPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="w-8 h-8 animate-spin text-[#8C522B]" />
+        </div>
+      }
+    >
+      <EditarUsuarioContent />
+    </Suspense>
   )
 }

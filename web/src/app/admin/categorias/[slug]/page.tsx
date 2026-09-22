@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useEffect, use } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect, use, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Tag, Loader as Loader2, AlertTriangle } from "lucide-react"
+import { ArrowLeft, Tag, Loader as Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { categoriesService, ApiClientError } from "@/lib/api"
@@ -21,10 +21,25 @@ function generateSlug(name: string): string {
     .trim()
 }
 
-export default function EditarCategoriaPage({ params }: { params: Promise<{ slug: string }> }) {
+function EditarCategoriaContent({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = use(params)
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { showToast } = useToast()
+
+  const returnUrlParam = searchParams.get("returnUrl")
+  const [returnUrl, setReturnUrl] = useState<string>("/admin/categorias")
+
+  useEffect(() => {
+    if (returnUrlParam) {
+      setReturnUrl(returnUrlParam)
+    } else {
+      try {
+        const saved = sessionStorage.getItem("admin_categorias_return_url")
+        if (saved) setReturnUrl(saved)
+      } catch {}
+    }
+  }, [returnUrlParam])
   
   const [name, setName] = useState("")
   const [slug, setSlug] = useState("")
@@ -78,7 +93,7 @@ export default function EditarCategoriaPage({ params }: { params: Promise<{ slug
         description: description.trim() || undefined,
       })
       showToast(`Categoría "${name.trim()}" actualizada con éxito`, "success")
-      router.push("/admin/categorias")
+      router.push(returnUrl)
     } catch (err) {
       if (err instanceof ApiClientError) {
         setError(err.message)
@@ -107,7 +122,7 @@ export default function EditarCategoriaPage({ params }: { params: Promise<{ slug
         <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-xl text-sm font-medium">
           {error}
         </div>
-        <Link href="/admin/categorias" className="mt-4 inline-block">
+        <Link href={returnUrl} className="mt-4 inline-block">
           <Button variant="outline" className="border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE]">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Volver a categorías
@@ -124,7 +139,7 @@ export default function EditarCategoriaPage({ params }: { params: Promise<{ slug
         title={`Editar: ${name}`}
         description="Modifica la información y ruta de navegación de esta categoría"
         breadcrumbs={[
-          { label: "Categorías", href: "/admin/categorias" },
+          { label: "Categorías", href: returnUrl },
           { label: `Editar ${name}` },
         ]}
       />
@@ -158,40 +173,33 @@ export default function EditarCategoriaPage({ params }: { params: Promise<{ slug
               id="name"
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Ej: Panes Dulces"
-              className="w-full px-4 py-2.5 text-sm bg-white border border-[#DECDBB] rounded-xl text-[#2B170F] placeholder:text-[#8C522B]/50 focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
+              onChange={(e) => {
+                setName(e.target.value)
+              }}
+              placeholder="Ej: Panadería Artesanal"
+              className="w-full px-4 py-2.5 text-sm bg-white border border-[#DECDBB] rounded-xl text-[#2B170F] focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
             />
           </div>
 
           {/* Slug */}
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <label htmlFor="slug" className="text-xs font-bold text-[#2B170F] uppercase tracking-wider">
-                Slug (URL limpia) *
-              </label>
-              <button
-                type="button"
-                onClick={() => setSlug(generateSlug(name))}
-                className="text-xs text-[#D97706] hover:underline font-medium"
-              >
-                Regenerar desde nombre
-              </button>
+            <label htmlFor="slug" className="block text-xs font-bold text-[#2B170F] uppercase tracking-wider mb-2">
+              Slug URL (identificador único) *
+            </label>
+            <div className="flex items-center rounded-xl border border-[#DECDBB] bg-[#FAF5EE] px-3 focus-within:ring-2 focus-within:ring-[#D97706]/30 focus-within:border-[#D97706]">
+              <span className="text-xs text-[#8C522B] font-mono">/categorias/</span>
+              <input
+                id="slug"
+                type="text"
+                value={slug}
+                onChange={(e) => setSlug(e.target.value)}
+                placeholder="panaderia-artesanal"
+                className="w-full py-2.5 px-1 text-sm bg-transparent font-mono text-[#2B170F] focus:outline-none"
+              />
             </div>
-            <input
-              id="slug"
-              type="text"
-              value={slug}
-              onChange={(e) => setSlug(e.target.value)}
-              placeholder="ej: panes-dulces"
-              className="w-full px-4 py-2.5 text-sm bg-[#FAF5EE]/50 border border-[#DECDBB] rounded-xl text-[#2B170F] font-mono placeholder:text-[#8C522B]/50 focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
-            />
-            {slug !== originalSlug && (
-              <p className="text-[11px] text-amber-700 font-medium mt-1.5 flex items-center gap-1.5">
-                <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                <span>Cambiar el slug puede afectar enlaces guardados previamente.</span>
-              </p>
-            )}
+            <p className="text-xs text-[#6E5545] mt-1.5">
+              Identificador único usado en las direcciones web del catálogo.
+            </p>
           </div>
 
           {/* Description */}
@@ -215,9 +223,23 @@ export default function EditarCategoriaPage({ params }: { params: Promise<{ slug
           primaryLabel="Guardar Cambios"
           isPrimarySubmitting={isSaving}
           secondaryLabel="Cancelar"
-          secondaryHref="/admin/categorias"
+          secondaryHref={returnUrl}
         />
       </form>
     </div>
+  )
+}
+
+export default function EditarCategoriaPage(props: { params: Promise<{ slug: string }> }) {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="w-8 h-8 animate-spin text-[#D97706]" />
+        </div>
+      }
+    >
+      <EditarCategoriaContent {...props} />
+    </Suspense>
   )
 }

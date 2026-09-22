@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useState, useRef, use } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useState, useRef, use, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { ArrowLeft, Upload, X, Loader as Loader2, Save, Image as ImageIcon } from "lucide-react"
@@ -42,12 +42,28 @@ function parseExpirationAlertDays(value: string): number[] {
   return normalized.length > 0 ? normalized : [3]
 }
 
-export default function EditarProductoPage({ params }: { params: Promise<{ id: string }> }) {
+function EditarProductoContent({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params)
   const productId = parseInt(resolvedParams.id) // Ahora usamos ID numérico
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { showToast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // URL de retorno para conservar filtros y paginación
+  const returnUrlParam = searchParams.get("returnUrl")
+  const [returnUrl, setReturnUrl] = useState<string>("/admin/productos")
+
+  useEffect(() => {
+    if (returnUrlParam) {
+      setReturnUrl(returnUrlParam)
+    } else {
+      try {
+        const saved = sessionStorage.getItem("admin_productos_return_url")
+        if (saved) setReturnUrl(saved)
+      } catch {}
+    }
+  }, [returnUrlParam])
   
   const [product, setProduct] = useState<ProductDetailResponse | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
@@ -263,7 +279,7 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
         })
 
       showToast(`Producto "${name.trim()}" actualizado correctamente`, "success")
-      router.push("/admin/productos")
+      router.push(returnUrl)
     } catch (err) {
       if (err instanceof ApiClientError) {
         setError(err.message)
@@ -292,7 +308,7 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
         <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg">
           Producto no encontrado
         </div>
-        <Link href="/admin/productos">
+        <Link href={returnUrl}>
           <Button className="mt-4">Volver a productos</Button>
         </Link>
       </div>
@@ -306,7 +322,7 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
         title={`Editar: ${product.name}`}
         description="Modifica la información general, precios y presentaciones de venta"
         breadcrumbs={[
-          { label: "Productos", href: "/admin/productos" },
+          { label: "Productos", href: returnUrl },
           { label: `Editar #${product.id}` },
         ]}
       />
@@ -649,9 +665,24 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
           primaryLabel="Guardar Cambios"
           isPrimarySubmitting={isLoading || isUploading}
           secondaryLabel="Cancelar"
-          secondaryHref="/admin/productos"
+          secondaryHref={returnUrl}
         />
       </form>
     </div>
+  )
+}
+
+export default function EditarProductoPage({ params }: { params: Promise<{ id: string }> }) {
+  return (
+    <Suspense
+      fallback={
+        <div className="space-y-6 max-w-3xl mx-auto p-8 text-center text-[#8C522B]">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#D97706] border-t-transparent mx-auto mb-3" />
+          <p className="text-xs font-semibold">Cargando producto...</p>
+        </div>
+      }
+    >
+      <EditarProductoContent params={params} />
+    </Suspense>
   )
 }

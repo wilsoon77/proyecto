@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Eye, EyeOff, Building2, UserPlus } from "lucide-react"
+import { useState, useEffect, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { Eye, EyeOff, Building2, UserPlus, Loader as Loader2 } from "lucide-react"
 import { useToast } from "@/components/ui/toast"
 import { usersService, branchesService, type UserRole, ApiClientError } from "@/lib/api"
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader"
@@ -14,9 +14,24 @@ interface Branch {
   slug: string
 }
 
-export default function NuevoUsuarioPage() {
+function NuevoUsuarioContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { showToast } = useToast()
+
+  const returnUrlParam = searchParams.get("returnUrl")
+  const [returnUrl, setReturnUrl] = useState<string>("/admin/usuarios")
+
+  useEffect(() => {
+    if (returnUrlParam) {
+      setReturnUrl(returnUrlParam)
+    } else {
+      try {
+        const saved = sessionStorage.getItem("admin_usuarios_return_url")
+        if (saved) setReturnUrl(saved)
+      } catch {}
+    }
+  }, [returnUrlParam])
   
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
@@ -94,7 +109,7 @@ export default function NuevoUsuarioPage() {
       })
 
       showToast(`Usuario "${firstName.trim()} ${lastName.trim()}" creado correctamente`, "success")
-      router.push("/admin/usuarios")
+      router.push(returnUrl)
     } catch (err) {
       if (err instanceof ApiClientError) {
         setError(err.message)
@@ -113,7 +128,7 @@ export default function NuevoUsuarioPage() {
         title="Nuevo Usuario"
         description="Crea una cuenta para administradores, empleados, panaderos o clientes"
         breadcrumbs={[
-          { label: "Usuarios", href: "/admin/usuarios" },
+          { label: "Usuarios", href: returnUrl },
           { label: "Nuevo Usuario" },
         ]}
       />
@@ -301,9 +316,23 @@ export default function NuevoUsuarioPage() {
           primaryLabel="Crear Usuario"
           isPrimarySubmitting={isLoading}
           secondaryLabel="Cancelar"
-          secondaryHref="/admin/usuarios"
+          secondaryHref={returnUrl}
         />
       </form>
     </div>
+  )
+}
+
+export default function NuevoUsuarioPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="w-8 h-8 animate-spin text-[#8C522B]" />
+        </div>
+      }
+    >
+      <NuevoUsuarioContent />
+    </Suspense>
   )
 }

@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useState, useMemo } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useState, useMemo, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Plus, Edit2, Trash2, Tag, Package, Loader as Loader2, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -16,20 +16,59 @@ import { AdminEntityCard } from "@/components/admin/AdminEntityCard"
 
 type StatusFilter = "all" | "active" | "inactive"
 
-export default function AdminCategoriasPage() {
+function AdminCategoriasContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user: currentUser } = useAuth()
   const { showToast } = useToast()
+
+  const initialPage = parseInt(searchParams.get("page") || "1", 10) || 1
+  const initialSearch = searchParams.get("search") || ""
+  const initialStatus = (searchParams.get("status") as StatusFilter) || "all"
+
   const [categories, setCategories] = useState<ApiCategory[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
+  const [searchTerm, setSearchTerm] = useState(initialSearch)
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(initialStatus)
+  const [currentPage, setCurrentPage] = useState(initialPage)
   const [deleteTarget, setDeleteTarget] = useState<ApiCategory | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
   // Paginación
   const ITEMS_PER_PAGE = 12
-  const [currentPage, setCurrentPage] = useState(1)
+
+  // Sincronizar filtros y página con la URL y sessionStorage
+  const buildQueryString = (page: number, search: string, status: StatusFilter) => {
+    const params = new URLSearchParams()
+    if (page > 1) params.set("page", String(page))
+    if (search) params.set("search", search)
+    if (status !== "all") params.set("status", status)
+    const qs = params.toString()
+    return qs ? `?${qs}` : ""
+  }
+
+  const currentReturnUrl = useMemo(() => {
+    return `/admin/categorias${buildQueryString(currentPage, searchTerm, statusFilter)}`
+  }, [currentPage, searchTerm, statusFilter])
+
+  useEffect(() => {
+    const url = `/admin/categorias${buildQueryString(currentPage, searchTerm, statusFilter)}`
+    window.history.replaceState(null, "", url)
+    try {
+      sessionStorage.setItem("admin_categorias_return_url", url)
+    } catch {}
+  }, [currentPage, searchTerm, statusFilter])
+
+  // Manejadores de cambios con reset controlado de página
+  const handleSearchChange = (term: string) => {
+    setSearchTerm(term)
+    setCurrentPage(1)
+  }
+
+  const handleStatusChange = (status: StatusFilter) => {
+    setStatusFilter(status)
+    setCurrentPage(1)
+  }
 
   // Protección de rol - solo ADMIN puede acceder
   useEffect(() => {
@@ -76,11 +115,6 @@ export default function AdminCategoriasPage() {
     })
   }, [categories, searchTerm, statusFilter])
 
-  // Reset de página al filtrar o buscar
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [searchTerm, statusFilter])
-
   // Paginación
   const totalPages = Math.max(1, Math.ceil(filteredCategories.length / ITEMS_PER_PAGE))
   const paginatedCategories = useMemo(() => {
@@ -101,42 +135,39 @@ export default function AdminCategoriasPage() {
         label: "Todas",
         count: categories.length,
         active: statusFilter === "all",
-        onClick: () => setStatusFilter("all"),
+        onClick: () => handleStatusChange("all"),
       },
       {
         id: "active",
         label: "Activas",
         count: activeCount,
         active: statusFilter === "active",
-        onClick: () => setStatusFilter("active"),
+        onClick: () => handleStatusChange("active"),
       },
-    ]
-
-    if (inactiveCount > 0) {
-      chips.push({
+      {
         id: "inactive",
         label: "Inactivas",
         count: inactiveCount,
         active: statusFilter === "inactive",
-        onClick: () => setStatusFilter("inactive"),
-      })
-    }
-
+        onClick: () => handleStatusChange("inactive"),
+      },
+    ]
     return chips
   }, [categories.length, activeCount, inactiveCount, statusFilter])
 
   const handleDelete = async () => {
     if (!deleteTarget) return
-
     setIsDeleting(true)
     try {
       await categoriesService.delete(deleteTarget.slug)
+      showToast(`Categoría "${deleteTarget.name}" eliminada correctamente`, "success")
       setCategories(prev => prev.filter(c => c.id !== deleteTarget.id))
-      showToast(`Categoría "${deleteTarget.name}" eliminada o desactivada correctamente`, "success")
     } catch (error: any) {
       console.error("Error deleting category:", error)
-      const msg = error?.message || "No se puede eliminar la categoría porque tiene productos vinculados. Desactívala en su lugar."
-      showToast(msg, "error")
+      showToast(
+        error?.message || "No se puede eliminar la categoría porque tiene productos asociados",
+        "error"
+      )
     } finally {
       setIsDeleting(false)
       setDeleteTarget(null)
@@ -153,7 +184,7 @@ export default function AdminCategoriasPage() {
         breadcrumbs={[{ label: "Categorías" }]}
         primaryAction={{
           label: "Nueva Categoría",
-          href: "/admin/categorias/nuevo",
+          href: `/admin/categorias/nuevo?returnUrl=${encodeURIComponent(currentReturnUrl)}`,
           icon: <Plus className="h-4 w-4 mr-1.5" />,
         }}
       />
@@ -161,7 +192,7 @@ export default function AdminCategoriasPage() {
       {/* ── Buscador y Filtros ── */}
       <AdminSearchBar
         searchQuery={searchTerm}
-        onSearchChange={setSearchTerm}
+        onSearchChange={handleSearchChange}
         placeholder="Buscar categorías por nombre o slug..."
         chips={filterChips}
         totalCount={categories.length}
@@ -193,7 +224,7 @@ export default function AdminCategoriasPage() {
             }
           </p>
           {!searchTerm && (
-            <Link href="/admin/categorias/nuevo">
+            <Link href={`/admin/categorias/nuevo?returnUrl=${encodeURIComponent(currentReturnUrl)}`}>
               <Button className="bg-[#D97706] hover:bg-[#B45309] text-white font-bold rounded-xl shadow-xs text-xs h-11 px-5">
                 <Plus className="h-4 w-4 mr-2" />
                 Nueva Categoría
@@ -238,7 +269,10 @@ export default function AdminCategoriasPage() {
                 ]}
                 actions={
                   <>
-                    <Link href={`/admin/categorias/${category.slug}`} className="flex-1 sm:flex-none">
+                    <Link
+                      href={`/admin/categorias/${category.slug}?returnUrl=${encodeURIComponent(currentReturnUrl)}`}
+                      className="flex-1 sm:flex-none"
+                    >
                       <Button
                         variant="outline"
                         size="sm"
@@ -306,5 +340,19 @@ export default function AdminCategoriasPage() {
         variant="danger"
       />
     </div>
+  )
+}
+
+export default function AdminCategoriasPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="w-8 h-8 animate-spin text-[#8C522B]" />
+        </div>
+      }
+    >
+      <AdminCategoriasContent />
+    </Suspense>
   )
 }

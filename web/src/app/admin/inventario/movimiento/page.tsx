@@ -149,6 +149,20 @@ function MovimientoForm() {
     ? requestedTypeParam as StockMovementType
     : null
   
+  const returnUrlParam = searchParams.get("returnUrl")
+  const [returnUrl, setReturnUrl] = useState<string>("/admin/inventario/productos")
+
+  useEffect(() => {
+    if (returnUrlParam) {
+      setReturnUrl(returnUrlParam)
+    } else {
+      try {
+        const saved = sessionStorage.getItem("admin_inventario_productos_return_url")
+        if (saved) setReturnUrl(saved)
+      } catch {}
+    }
+  }, [returnUrlParam])
+
   const { showToast } = useToast()
 
   // Si viene algún parámetro individual (como tipo MERMA, producto o lote), iniciar en INDIVIDUAL
@@ -484,7 +498,7 @@ function MovimientoForm() {
         {/* Encabezado Superior */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <Link href="/admin/inventario" className="mb-2 inline-flex items-center gap-1 text-xs sm:text-sm text-stone-500 hover:text-stone-900 transition-colors">
+            <Link href={returnUrl} className="mb-2 inline-flex items-center gap-1 text-xs sm:text-sm text-stone-500 hover:text-stone-900 transition-colors">
               <ArrowLeft className="h-3.5 w-3.5" />Volver al Inventario
             </Link>
             <h1 className="flex items-center gap-2.5 text-2xl sm:text-3xl font-extrabold text-gray-900 font-serif">

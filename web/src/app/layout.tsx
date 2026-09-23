@@ -12,6 +12,7 @@ import { NotificationProvider } from "@/context/NotificationContext";
 import CookieConsent from "@/components/ui/CookieConsent";
 import { PwaInstallPrompt } from "@/components/pwa/PwaInstallPrompt";
 import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -143,6 +144,9 @@ export const metadata: Metadata = {
       "max-video-preview": -1,
     },
   },
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined,
+  },
   manifest: "/manifest.json",
   icons: {
     icon: [
@@ -193,6 +197,7 @@ export default function RootLayout({
           </ToastProvider>
         </QueryProvider>
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

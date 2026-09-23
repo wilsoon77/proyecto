@@ -12,6 +12,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${siteUrl}/sucursales`, changeFrequency: "monthly", priority: 0.7 },
     { url: `${siteUrl}/sobre-nosotros`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${siteUrl}/contacto`, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${siteUrl}/privacidad`, changeFrequency: "monthly", priority: 0.3 },
+    { url: `${siteUrl}/terminos`, changeFrequency: "monthly", priority: 0.3 },
+    { url: `${siteUrl}/cookies`, changeFrequency: "monthly", priority: 0.3 },
   ];
 
   // Include every public product, not just the first static route set.

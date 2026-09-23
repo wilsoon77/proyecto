@@ -26,7 +26,7 @@ export function getSiteUrl(): string {
   }
 
   // 4. Fallback de producción por defecto
-  return 'https://panaderiasvetlana.vercel.app'
+  return 'https://panaderiasvetlana.app'
 }
 
 export const SITE_URL = getSiteUrl()

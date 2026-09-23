@@ -4,28 +4,22 @@
 
 // URL canónica de producción y resolución dinámica automática
 export function getSiteUrl(): string {
-  // 1. Prioridad Máxima: Variable de entorno configurada (cuando compres tu dominio propio ej. https://panaderiasvetlana.com)
+  // 1. Variable de entorno configurada explícitamente
   if (process.env.NEXT_PUBLIC_SITE_URL) {
     return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '')
   }
 
-  // 2. Detección automática de Vercel (toma el dominio asignado en el Dashboard de Vercel)
-  if (process.env.NEXT_PUBLIC_VERCEL_URL) {
-    return `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`.replace(/\/$/, '')
-  }
-  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
-    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`.replace(/\/$/, '')
-  }
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`.replace(/\/$/, '')
-  }
-
-  // 3. Entorno local de desarrollo
+  // 2. Entorno local de desarrollo
   if (process.env.NODE_ENV === 'development') {
     return 'http://localhost:3000'
   }
 
-  // 4. Fallback de producción por defecto
+  // 3. Entorno de Preview en Vercel (para PRs o ramas de prueba no productivas)
+  if (process.env.VERCEL_ENV === 'preview' && process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`.replace(/\/$/, '')
+  }
+
+  // 4. Dominio oficial de producción
   return 'https://panaderiasvetlana.app'
 }
 

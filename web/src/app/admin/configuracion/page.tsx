@@ -1088,19 +1088,24 @@ export default function ConfiguracionPage() {
                                 </div>
                               </div>
                             ) : (
-                              <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 sm:gap-4 w-full">
-                                <div className="space-y-2 flex-1 min-w-0 w-full">
-                                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 min-w-0">
+                              <div className="space-y-3 w-full">
+                                {/* Formato y Cuerpo de la Alerta */}
+                                <div className="space-y-1.5 w-full">
+                                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                                     <span className="text-xs font-semibold text-muted-foreground shrink-0">Formato:</span>
                                     <span className="text-xs font-bold text-foreground break-words">"{cfg.title}"</span>
                                   </div>
-                                  <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2 min-w-0">
+                                  <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2">
                                     <span className="text-xs font-semibold text-muted-foreground shrink-0">Cuerpo:</span>
                                     <span className="text-xs text-muted-foreground break-words leading-relaxed" title={cfg.message}>
                                       "{cfg.message}"
                                     </span>
                                   </div>
-                                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                                </div>
+
+                                {/* Metadatos: Destinatarios y Canales */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 pt-2 border-t border-border/30">
+                                  <div className="flex flex-wrap items-center gap-1.5">
                                     <span className="text-xs font-semibold text-muted-foreground shrink-0">Destinatarios:</span>
                                     {cfg.targetRoles.map(role => (
                                       <span key={role} className="text-[10px] font-bold bg-accent border border-primary/10 text-primary px-1.5 py-0.5 rounded shrink-0">
@@ -1111,7 +1116,7 @@ export default function ConfiguracionPage() {
                                       <span className="text-[10px] text-destructive font-medium">Nadie asignado</span>
                                     )}
                                   </div>
-                                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                                  <div className="flex flex-wrap items-center gap-1.5">
                                     <span className="text-xs font-semibold text-muted-foreground shrink-0">Canales:</span>
                                     {(cfg.channels ?? ['IN_APP', 'PUSH', 'TELEGRAM', 'WHATSAPP']).map((chId) => {
                                       const chLabels: Record<string, { label: string; color: string }> = {
@@ -1129,32 +1134,36 @@ export default function ConfiguracionPage() {
                                     })}
                                   </div>
                                 </div>
-                                <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2 w-full lg:w-auto pt-3 sm:pt-2 lg:pt-0 border-t sm:border-t-0 border-border/40 shrink-0">
-                                  <div className="flex items-center gap-1.5 border border-border rounded-lg px-2 py-1 bg-card shrink-0">
-                                    <span className="text-[10px] uppercase font-bold text-muted-foreground/70">
-                                      Sonido: {cfg.soundType}
-                                    </span>
-                                    <button 
-                                      type="button"
-                                      onClick={() => playNotificationSound(cfg.soundType)}
-                                      className="p-1 hover:bg-muted text-muted-foreground hover:text-primary rounded-md transition-colors"
-                                      title="Escuchar sonido"
-                                    >
-                                      <Volume2 className="h-3.5 w-3.5" />
-                                    </button>
+
+                                {/* Barra inferior de Acciones: Sonido/Umbral a la izquierda, Configurar/Probar a la derecha */}
+                                <div className="flex flex-wrap items-center justify-between gap-2.5 pt-3 border-t border-border/50">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <div className="flex items-center gap-1.5 border border-border rounded-lg px-2.5 py-1 bg-card shrink-0">
+                                      <span className="text-[10px] uppercase font-bold text-muted-foreground/70">
+                                        Sonido: {cfg.soundType}
+                                      </span>
+                                      <button 
+                                        type="button"
+                                        onClick={() => playNotificationSound(cfg.soundType)}
+                                        className="p-1 hover:bg-muted text-muted-foreground hover:text-primary rounded-md transition-colors"
+                                        title="Escuchar sonido"
+                                      >
+                                        <Volume2 className="h-3.5 w-3.5" />
+                                      </button>
+                                    </div>
+                                    
+                                    {cfg.thresholds && (
+                                      <div className="text-[10px] font-bold text-muted-foreground bg-muted px-2.5 py-1 rounded-lg border border-border/50 shrink-0">
+                                        Umbral: {cfg.thresholds.threshold} {cfg.thresholds.unit}
+                                      </div>
+                                    )}
                                   </div>
                                   
-                                  {cfg.thresholds && (
-                                    <div className="text-[10px] font-bold text-muted-foreground bg-muted px-2 py-1 rounded-lg border border-border/50 shrink-0">
-                                      Umbral: {cfg.thresholds.threshold} {cfg.thresholds.unit}
-                                    </div>
-                                  )}
-                                  
-                                  <div className="flex items-center gap-1.5 ml-auto sm:ml-0">
+                                  <div className="flex items-center gap-2 ml-auto sm:ml-0">
                                     <button
                                       type="button"
                                       onClick={() => handleStartEditConfig(cfg)}
-                                      className="px-3 py-1.5 bg-card border border-border hover:bg-accent text-foreground font-semibold rounded-lg text-xs shadow-xs transition-colors"
+                                      className="px-3.5 py-1.5 bg-card border border-border hover:bg-accent text-foreground font-semibold rounded-lg text-xs shadow-xs transition-colors"
                                     >
                                       Configurar
                                     </button>
@@ -1162,7 +1171,7 @@ export default function ConfiguracionPage() {
                                     <button
                                       type="button"
                                       onClick={() => handleTestConfig(cfg.key)}
-                                      className="px-3 py-1.5 bg-accent hover:bg-primary/10 text-primary font-semibold rounded-lg text-xs border border-primary/20 transition-colors"
+                                      className="px-3.5 py-1.5 bg-accent hover:bg-primary/10 text-primary font-semibold rounded-lg text-xs border border-primary/20 transition-colors"
                                       title="Probar Alerta"
                                     >
                                       Probar

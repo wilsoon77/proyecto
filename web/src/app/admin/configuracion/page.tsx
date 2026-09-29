@@ -156,6 +156,7 @@ export default function ConfiguracionPage() {
       title: cfg.title,
       message: cfg.message,
       targetRoles: [...cfg.targetRoles],
+      channels: cfg.channels ? [...cfg.channels] : ['IN_APP', 'PUSH', 'TELEGRAM', 'WHATSAPP'],
       soundType: cfg.soundType,
       thresholds: cfg.thresholds ? { ...cfg.thresholds } : null
     })
@@ -167,6 +168,7 @@ export default function ConfiguracionPage() {
         title: configForm.title,
         message: configForm.message,
         targetRoles: configForm.targetRoles,
+        channels: configForm.channels,
         soundType: configForm.soundType,
         thresholds: configForm.thresholds
       })
@@ -861,16 +863,16 @@ export default function ConfiguracionPage() {
                     return (
                       <div 
                         key={cfg.key} 
-                        className={`border rounded-xl transition-all duration-200 ${
+                        className={`border rounded-xl transition-all duration-200 overflow-hidden ${
                           cfg.isEnabled 
-                            ? 'bg-card border-border shadow-sm' 
+                            ? 'bg-card border-border shadow-xs' 
                             : 'bg-cream/50 border-border/60 opacity-80'
                         }`}
                       >
                         {/* Card Header */}
-                        <div className="p-4 sm:p-5 flex items-start justify-between gap-4">
-                          <div className="flex items-start gap-3">
-                            <div className={`mt-0.5 p-2 rounded-lg border flex items-center justify-center ${
+                        <div className="p-3.5 sm:p-5 flex items-start justify-between gap-3 sm:gap-4">
+                          <div className="flex items-start gap-2.5 sm:gap-3 flex-1 min-w-0">
+                            <div className={`mt-0.5 p-2 rounded-lg border flex items-center justify-center shrink-0 ${
                               cfg.isEnabled 
                                 ? 'bg-accent text-primary border-amber-100/50' 
                                 : 'bg-muted text-muted-foreground/60 border-border/50'
@@ -880,19 +882,19 @@ export default function ConfiguracionPage() {
                               {cfg.category === 'PRODUCTION' && <Flame className="h-4 w-4" />}
                               {cfg.category === 'SYSTEM' && <Shield className="h-4 w-4" />}
                             </div>
-                            <div>
-                              <h3 className="font-semibold text-foreground flex items-center gap-2">
-                                {cfg.name}
-                                <span className="text-[10px] uppercase tracking-wider font-bold bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-semibold text-foreground text-sm sm:text-base flex flex-wrap items-center gap-1.5 sm:gap-2 leading-snug">
+                                <span className="break-words">{cfg.name}</span>
+                                <span className="text-[10px] uppercase tracking-wider font-bold bg-muted text-muted-foreground px-1.5 py-0.5 rounded shrink-0">
                                   {cfg.category}
                                 </span>
                               </h3>
-                              <p className="text-xs text-muted-foreground mt-0.5">{cfg.description}</p>
+                              <p className="text-xs text-muted-foreground mt-1 break-words leading-relaxed">{cfg.description}</p>
                             </div>
                           </div>
                           
                           {/* Toggle Switch */}
-                          <div className="flex items-center">
+                          <div className="flex items-center shrink-0 ml-1 sm:ml-2 mt-0.5">
                             <label className="relative inline-flex items-center cursor-pointer">
                               <input
                                 type="checkbox"
@@ -907,7 +909,7 @@ export default function ConfiguracionPage() {
 
                         {/* Card Content */}
                         {cfg.isEnabled && (
-                          <div className="border-t border-border px-4 py-4 sm:px-5 bg-cream/20">
+                          <div className="border-t border-border px-3.5 py-4 sm:px-5 bg-cream/20 overflow-hidden">
                             {isEditing ? (
                               // Edit Mode Form
                               <div className="space-y-4">
@@ -1012,14 +1014,15 @@ export default function ConfiguracionPage() {
 
                                   {/* Channels Selection */}
                                   <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">Canales de Despacho</label>
+                                    <label className="block text-xs font-semibold text-foreground mb-1.5">Canales de Despacho</label>
                                     <div className="flex flex-wrap gap-1.5">
                                       {[
-                                        { id: 'IN_APP', label: 'In-App' },
-                                        { id: 'PUSH', label: 'Web Push' },
-                                        { id: 'TELEGRAM', label: 'Telegram' },
+                                        { id: 'IN_APP', label: 'In-App', activeClass: 'bg-amber-50 text-amber-900 border-amber-300' },
+                                        { id: 'PUSH', label: 'Web Push', activeClass: 'bg-blue-50 text-blue-900 border-blue-300' },
+                                        { id: 'TELEGRAM', label: 'Telegram', activeClass: 'bg-sky-50 text-sky-900 border-sky-300' },
+                                        { id: 'WHATSAPP', label: 'WhatsApp', activeClass: 'bg-emerald-50 text-emerald-900 border-emerald-300' },
                                       ].map((ch) => {
-                                        const currentChannels = configForm.channels ?? ['IN_APP', 'PUSH', 'TELEGRAM']
+                                        const currentChannels = configForm.channels ?? ['IN_APP', 'PUSH', 'TELEGRAM', 'WHATSAPP']
                                         const isChecked = currentChannels.includes(ch.id)
                                         return (
                                           <button
@@ -1031,13 +1034,13 @@ export default function ConfiguracionPage() {
                                                 : [...currentChannels, ch.id]
                                               setConfigForm(prev => ({ ...prev, channels: newChannels }))
                                             }}
-                                            className={`px-2 py-1 rounded-lg text-xs font-semibold border transition-all ${
+                                            className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
                                               isChecked
-                                                ? 'bg-sky-50 text-sky-800 border-sky-300'
-                                                : 'bg-white border-gray-200 text-gray-400 hover:border-gray-300'
+                                                ? `${ch.activeClass} shadow-xs`
+                                                : 'bg-card border-border text-muted-foreground hover:border-border/80'
                                             }`}
                                           >
-                                            {isChecked ? '✓ ' : ''}{ch.label}
+                                            {isChecked ? '✓ ' : '+ '}{ch.label}
                                           </button>
                                         )
                                       })}
@@ -1067,37 +1070,40 @@ export default function ConfiguracionPage() {
                                   )}
                                 </div>
 
-                                <div className="flex justify-end gap-2 pt-2 border-t border-border">
+                                <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 border-t border-border">
                                   <button
+                                    type="button"
                                     onClick={() => setEditingConfigKey(null)}
-                                    className="px-3 py-1.5 bg-muted hover:bg-border text-foreground font-semibold rounded-lg text-xs transition-colors"
+                                    className="w-full sm:w-auto px-4 py-2 bg-muted hover:bg-border text-foreground font-semibold rounded-lg text-xs transition-colors text-center"
                                   >
                                     Cancelar
                                   </button>
                                   <button
+                                    type="button"
                                     onClick={() => handleSaveConfig(cfg.key)}
-                                    className="px-3 py-1.5 bg-primary hover:bg-primary/90 text-white font-semibold rounded-lg text-xs transition-colors"
+                                    className="w-full sm:w-auto px-4 py-2 bg-primary hover:bg-primary/90 text-white font-semibold rounded-lg text-xs transition-colors shadow-xs text-center"
                                   >
                                     Guardar cambios
                                   </button>
                                 </div>
                               </div>
                             ) : (
-                              // Read-only View Mode Summary
-                              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                                <div className="space-y-1.5 flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 min-w-0 w-full">
+                              <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 sm:gap-4 w-full">
+                                <div className="space-y-2 flex-1 min-w-0 w-full">
+                                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 min-w-0">
                                     <span className="text-xs font-semibold text-muted-foreground shrink-0">Formato:</span>
-                                    <span className="text-xs font-bold text-foreground truncate">"{cfg.title}"</span>
+                                    <span className="text-xs font-bold text-foreground break-words">"{cfg.title}"</span>
                                   </div>
-                                  <div className="flex items-center gap-2 min-w-0 w-full">
+                                  <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2 min-w-0">
                                     <span className="text-xs font-semibold text-muted-foreground shrink-0">Cuerpo:</span>
-                                    <span className="text-xs text-muted-foreground truncate">"{cfg.message}"</span>
+                                    <span className="text-xs text-muted-foreground break-words leading-relaxed" title={cfg.message}>
+                                      "{cfg.message}"
+                                    </span>
                                   </div>
-                                  <div className="flex flex-wrap items-center gap-1.5">
-                                    <span className="text-xs font-semibold text-muted-foreground">Destinatarios:</span>
+                                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                                    <span className="text-xs font-semibold text-muted-foreground shrink-0">Destinatarios:</span>
                                     {cfg.targetRoles.map(role => (
-                                      <span key={role} className="text-[10px] font-bold bg-accent border border-primary/10 text-primary px-1.5 py-0.5 rounded">
+                                      <span key={role} className="text-[10px] font-bold bg-accent border border-primary/10 text-primary px-1.5 py-0.5 rounded shrink-0">
                                         {role}
                                       </span>
                                     ))}
@@ -1105,41 +1111,63 @@ export default function ConfiguracionPage() {
                                       <span className="text-[10px] text-destructive font-medium">Nadie asignado</span>
                                     )}
                                   </div>
+                                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                                    <span className="text-xs font-semibold text-muted-foreground shrink-0">Canales:</span>
+                                    {(cfg.channels ?? ['IN_APP', 'PUSH', 'TELEGRAM', 'WHATSAPP']).map((chId) => {
+                                      const chLabels: Record<string, { label: string; color: string }> = {
+                                        IN_APP: { label: 'In-App', color: 'bg-amber-50/70 text-amber-800 border-amber-200' },
+                                        PUSH: { label: 'Web Push', color: 'bg-blue-50 text-blue-700 border-blue-200' },
+                                        TELEGRAM: { label: 'Telegram', color: 'bg-sky-50 text-sky-700 border-sky-200' },
+                                        WHATSAPP: { label: 'WhatsApp', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+                                      };
+                                      const info = chLabels[chId] || { label: chId, color: 'bg-muted text-muted-foreground border-border' };
+                                      return (
+                                        <span key={chId} className={`text-[10px] font-bold px-1.5 py-0.5 rounded border shrink-0 ${info.color}`}>
+                                          {info.label}
+                                        </span>
+                                      );
+                                    })}
+                                  </div>
                                 </div>
-                                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end mt-2 sm:mt-0">
-                                  <div className="flex items-center gap-1 border border-border rounded-lg p-1 bg-card shrink-0">
-                                    <span className="text-[10px] uppercase font-bold text-muted-foreground/60 px-1">
+                                <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2 w-full lg:w-auto pt-3 sm:pt-2 lg:pt-0 border-t sm:border-t-0 border-border/40 shrink-0">
+                                  <div className="flex items-center gap-1.5 border border-border rounded-lg px-2 py-1 bg-card shrink-0">
+                                    <span className="text-[10px] uppercase font-bold text-muted-foreground/70">
                                       Sonido: {cfg.soundType}
                                     </span>
                                     <button 
+                                      type="button"
                                       onClick={() => playNotificationSound(cfg.soundType)}
                                       className="p-1 hover:bg-muted text-muted-foreground hover:text-primary rounded-md transition-colors"
-                                      title="Escuchar"
+                                      title="Escuchar sonido"
                                     >
                                       <Volume2 className="h-3.5 w-3.5" />
                                     </button>
                                   </div>
                                   
                                   {cfg.thresholds && (
-                                    <div className="text-[10px] font-bold text-muted-foreground bg-muted px-2 py-1.5 rounded-lg">
+                                    <div className="text-[10px] font-bold text-muted-foreground bg-muted px-2 py-1 rounded-lg border border-border/50 shrink-0">
                                       Umbral: {cfg.thresholds.threshold} {cfg.thresholds.unit}
                                     </div>
                                   )}
                                   
-                                  <button
-                                    onClick={() => handleStartEditConfig(cfg)}
-                                    className="px-2.5 py-1.5 bg-card border border-border hover:bg-cream text-foreground font-semibold rounded-lg text-xs shadow-sm transition-colors"
-                                  >
-                                    Configurar
-                                  </button>
-                                  
-                                  <button
-                                    onClick={() => handleTestConfig(cfg.key)}
-                                    className="px-2.5 py-1.5 bg-accent hover:bg-primary/10 text-primary font-semibold rounded-lg text-xs border border-primary/20/50 transition-colors"
-                                    title="Probar Alerta"
-                                  >
-                                    Probar
-                                  </button>
+                                  <div className="flex items-center gap-1.5 ml-auto sm:ml-0">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleStartEditConfig(cfg)}
+                                      className="px-3 py-1.5 bg-card border border-border hover:bg-accent text-foreground font-semibold rounded-lg text-xs shadow-xs transition-colors"
+                                    >
+                                      Configurar
+                                    </button>
+                                    
+                                    <button
+                                      type="button"
+                                      onClick={() => handleTestConfig(cfg.key)}
+                                      className="px-3 py-1.5 bg-accent hover:bg-primary/10 text-primary font-semibold rounded-lg text-xs border border-primary/20 transition-colors"
+                                      title="Probar Alerta"
+                                    >
+                                      Probar
+                                    </button>
+                                  </div>
                                 </div>
                               </div>
                             )}

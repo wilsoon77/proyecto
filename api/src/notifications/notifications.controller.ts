@@ -174,4 +174,34 @@ export class NotificationsController {
     await this.notificationsService.sendByConfig(key, placeholders, '/admin/historial', 'Bell');
     return { success: true, key };
   }
+
+  @Get('whatsapp-diagnostics')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Diagnóstico de WhatsApp Cloud API', description: 'Obtiene el estado de conexión y configuración de WhatsApp.' })
+  @ApiResponse({ status: 200, description: 'Estado de WhatsApp Cloud API' })
+  getWhatsAppDiagnostics() {
+    return this.notificationsService.getWhatsAppDiagnostics();
+  }
+
+  @Post('whatsapp-test')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Enviar mensaje de prueba por WhatsApp', description: 'Envía una plantilla de prueba al número especificado o al teléfono del usuario solicitante.' })
+  @ApiResponse({ status: 200, description: 'Resultado del envío de prueba por WhatsApp' })
+  async sendWhatsAppTest(
+    @Req() req: any,
+    @Body() body: { phone?: string; recipientName?: string; title?: string; message?: string }
+  ) {
+    const target = body.phone || req.user.userId;
+    return this.notificationsService.sendWhatsAppTest(
+      target,
+      body.recipientName,
+      body.title,
+      body.message
+    );
+  }
 }
+

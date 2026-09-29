@@ -72,6 +72,7 @@ export const notificationsService = {
       title?: string
       message?: string
       targetRoles?: string[]
+      channels?: string[] | null
       soundType?: string
       thresholds?: { threshold: number; unit?: string } | null
     }

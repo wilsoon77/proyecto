@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { SubscribePushDto } from './dto/subscribe-push.dto.js';
 import webpush from 'web-push';
 import { TelegramDeliveryService } from '../telegram/telegram-delivery.service.js';
+import { WhatsAppDeliveryService } from '../whatsapp/whatsapp-delivery.service.js';
 import { AlertType } from '@prisma/client';
 
 /**
@@ -26,6 +27,7 @@ export class NotificationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly telegram: TelegramDeliveryService,
+    private readonly whatsapp: WhatsAppDeliveryService,
   ) {
     // Configure VAPID details
     const subject = process.env.VAPID_SUBJECT || 'mailto:soporte@panaderiasvetlana.com';
@@ -248,9 +250,12 @@ export class NotificationsService {
     });
 
     const rawChannels = (config as any).channels;
+    const defaultChannels = this.whatsapp.isConfigured()
+      ? ['IN_APP', 'PUSH', 'TELEGRAM', 'WHATSAPP']
+      : ['IN_APP', 'PUSH', 'TELEGRAM'];
     const activeChannels = Array.isArray(rawChannels)
       ? (rawChannels as string[])
-      : ['IN_APP', 'PUSH', 'TELEGRAM'];
+      : defaultChannels;
 
     const promises: Promise<void>[] = [];
     if (activeChannels.includes('PUSH')) {
@@ -258,6 +263,9 @@ export class NotificationsService {
     }
     if (activeChannels.includes('TELEGRAM')) {
       promises.push(this.telegram.sendToUser(userId, formattedTitle, formattedMessage, configKey));
+    }
+    if (activeChannels.includes('WHATSAPP')) {
+      promises.push(this.whatsapp.sendToUser(userId, formattedTitle, formattedMessage, configKey));
     }
 
     const results = await Promise.allSettled(promises);
@@ -529,5 +537,46 @@ export class NotificationsService {
   private getDefaultIcon(configKey: string): string {
     if (configKey.startsWith('inventory.')) return 'AlertTriangle';
     return 'Bell';
+  }
+
+  /**
+   * Retorna el estado de configuración de WhatsApp Cloud API
+   */
+  getWhatsAppDiagnostics() {
+    return this.whatsapp.getDiagnostics();
+  }
+
+  /**
+   * Envía una notificación de prueba directa a un número de WhatsApp o al teléfono del usuario
+   */
+  async sendWhatsAppTest(
+    toPhoneOrUserId?: string,
+    recipientName?: string,
+    title?: string,
+    message?: string,
+  ) {
+    let phone = toPhoneOrUserId;
+    let name = recipientName || 'Administrador';
+
+    // Si parece un userId (cuid) y no un número puramente numérico, buscar el teléfono del usuario
+    if (toPhoneOrUserId && !/^\+?\d{8,15}$/.test(toPhoneOrUserId.trim())) {
+      const user = await this.prisma.user.findUnique({
+        where: { id: toPhoneOrUserId },
+        select: { phone: true, firstName: true },
+      });
+      if (user?.phone) phone = user.phone;
+      if (user?.firstName) name = user.firstName;
+    }
+
+    if (!phone) {
+      return { ok: false, error: 'No se encontró un número telefónico asignado para la prueba.' };
+    }
+
+    return this.whatsapp.sendTemplateAlert(
+      phone,
+      name,
+      title || 'Alerta de Prueba',
+      message || 'Esta es una notificación de prueba del sistema de Panadería Svetlana.',
+    );
   }
 }

@@ -6,19 +6,21 @@
 
 ## 📑 Documentación Académica para Memoria de Tesis
 
-1. 👉 **[DOCUMENTACION_CONTEXTO_SISTEMA_TESIS.md](DOCUMENTACION_CONTEXTO_SISTEMA_TESIS.md)**: Especificación formal del Diagrama de Contexto del Sistema (Nivel 0), frontera del software, matriz de flujos de entrada/salida y subsistemas internos.
-2. 👉 **[DOCUMENTACION_MODELO_ENTIDAD_RELACION_TESIS.md](DOCUMENTACION_MODELO_ENTIDAD_RELACION_TESIS.md)**: Especificación formal del Modelo Entidad-Relación (MER) del **Núcleo de Negocio (Core Transaccional)** con sus 18 tablas, cardinalidades y reglas operativas.
-3. 👉 **[DOCUMENTACION_SOPORTE_AUDITORIA_TESIS.md](DOCUMENTACION_SOPORTE_AUDITORIA_TESIS.md)**: Especificación formal del Diagrama Relacional de **Soporte, Seguridad, Auditoría y Notificaciones**, explicando la separación por capas y las 14 tablas de infraestructura.
-4. 👉 **[DOCUMENTACION_CASOS_DE_USO_TESIS.md](DOCUMENTACION_CASOS_DE_USO_TESIS.md)**: Especificación de los 6 procesos de casos de uso (CU-01 a CU-06), tablas técnicas de casos de uso, relaciones `«include»` / `«extend»`, reglas de negocio y figuras en formato APA 7.
-5. 👉 **[DOCUMENTACION_DIAGRAMAS_UML_TESIS.md](DOCUMENTACION_DIAGRAMAS_UML_TESIS.md)**: Especificación técnica y académica de los 6 Diagramas UML (Clases, Secuencia, Estados, Actividades, Colaboración y Componentes), principios SOLID, patrones transaccionales ACID y topología de IA.
+1. 👉 **[DOCUMENTACION_CONTEXTO_SISTEMA_ANTERIOR_TESIS.md](DOCUMENTACION_CONTEXTO_SISTEMA_ANTERIOR_TESIS.md)**: Especificación formal del Diagrama de Contexto del **Sistema Anterior (Procesos Manuales / As-Is)**, identificación de puntos de dolor, bitácoras en papel y desarticulación multi-sucursal.
+2. 👉 **[DOCUMENTACION_CONTEXTO_SISTEMA_TESIS.md](DOCUMENTACION_CONTEXTO_SISTEMA_TESIS.md)**: Especificación formal del Diagrama de Contexto del **Sistema Propuesto (Nivel 0 / To-Be)**, frontera del software, matriz de flujos de entrada/salida y subsistemas internos.
+3. 👉 **[DOCUMENTACION_MODELO_ENTIDAD_RELACION_TESIS.md](DOCUMENTACION_MODELO_ENTIDAD_RELACION_TESIS.md)**: Especificación formal del Modelo Entidad-Relación (MER) del **Núcleo de Negocio (Core Transaccional)** con sus 18 tablas, cardinalidades y reglas operativas.
+4. 👉 **[DOCUMENTACION_SOPORTE_AUDITORIA_TESIS.md](DOCUMENTACION_SOPORTE_AUDITORIA_TESIS.md)**: Especificación formal del Diagrama Relacional de **Soporte, Seguridad, Auditoría y Notificaciones**, explicando la separación por capas y las 14 tablas de infraestructura.
+5. 👉 **[DOCUMENTACION_CASOS_DE_USO_TESIS.md](DOCUMENTACION_CASOS_DE_USO_TESIS.md)**: Especificación de los 6 procesos de casos de uso (CU-01 a CU-06), tablas técnicas de casos de uso, relaciones `«include»` / `«extend»`, reglas de negocio y figuras en formato APA 7.
+6. 👉 **[DOCUMENTACION_DIAGRAMAS_UML_TESIS.md](DOCUMENTACION_DIAGRAMAS_UML_TESIS.md)**: Especificación técnica y académica de los 6 Diagramas UML (Clases, Secuencia, Estados, Actividades, Colaboración y Componentes), principios SOLID, patrones transaccionales ACID y topología de IA.
 
 ---
 
-## 🌐 1. Diagrama de Contexto del Sistema (Nivel 0)
+## 🌐 1. Diagramas de Contexto del Negocio y Sistema (As-Is / To-Be)
 
 | Nombre del Diagrama | Archivo Interactivo | Render PNG (Alta Res) | Descripción General |
 |---|---|---|---|
-| **Contexto del Sistema (System Context)** | [DIAGRAMA_CONTEXTO_SISTEMA.html](DIAGRAMA_CONTEXTO_SISTEMA.html) | [Render Contexto](renders/DIAGRAMA_CONTEXTO_SISTEMA.png) | Delimitación perimetral del software frente a 4 perfiles de actores humanos (Cliente, Personal Sucursal, Bodega, Propietario) y 4 sistemas externos (Email, Telegram Bot/IA, PostgreSQL, Cron Jobs). |
+| **Contexto del Sistema Anterior (Manual / As-Is)** | [DIAGRAMA_CONTEXTO_SISTEMA_ANTERIOR.html](DIAGRAMA_CONTEXTO_SISTEMA_ANTERIOR.html) | [Render Contexto Anterior](renders/DIAGRAMA_CONTEXTO_SISTEMA_ANTERIOR.png) | Flujo operativo manual previo: cuadernos físicos, silos aislados entre sucursales, pedidos telefónicos informales, control empírico de producción y falta de consolidación gerencial en tiempo real. |
+| **Contexto del Sistema Propuesto (To-Be / Nivel 0)** | [DIAGRAMA_CONTEXTO_SISTEMA.html](DIAGRAMA_CONTEXTO_SISTEMA.html) | [Render Contexto Propuesto](renders/DIAGRAMA_CONTEXTO_SISTEMA.png) | Delimitación perimetral del software frente a 4 perfiles de actores humanos (Cliente, Personal Sucursal, Bodega, Propietario) y 4 sistemas externos (Email, Telegram Bot/IA, PostgreSQL, Cron Jobs). |
 
 ---
 

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import {
   AlertTriangle,
+  ArrowRight,
   BarChart3,
   Bell,
   Building2,
@@ -14,15 +15,19 @@ import {
   CheckCircle2,
   ChevronDown,
   ClipboardCheck,
+  Clock,
   Factory,
+  Info,
   LineChart,
   Package,
   RefreshCw,
+  TrendingDown,
   TrendingUp,
   Wheat,
 } from "lucide-react"
 import {
   branchesService,
+  dailyCloseService,
   inventoryService,
   notificationsService,
   productionService,
@@ -30,10 +35,12 @@ import {
 } from "@/lib/api"
 import type {
   ApiBranch,
+  DailyCloseRecord,
   ExpirationLot,
   Notification,
   ProductionLog,
   RawMaterialInventory,
+  StockMovement,
 } from "@/lib/api"
 import { useAuth } from "@/context/AuthContext"
 import TelegramAssistantButton from "@/components/admin/TelegramAssistantButton"
@@ -63,12 +70,12 @@ function getPastIsoString(daysAgo: number): string {
   return `${year}-${month}-${day}`
 }
 
-function asNumber(value: string | number | null | undefined) {
+function asNumber(value: string | number | null | undefined): number {
   const parsed = Number(value)
   return Number.isFinite(parsed) ? parsed : 0
 }
 
-function formatDate(value: string) {
+function formatDate(value: string): string {
   return new Date(value).toLocaleString("es-GT", {
     day: "2-digit",
     month: "short",
@@ -77,10 +84,7 @@ function formatDate(value: string) {
   })
 }
 
-/**
- * Calcula un path SVG suave (curva Bézier cúbica) a partir de una lista de coordenadas {x, y}.
- */
-function getBezierPath(points: Array<{ x: number; y: number }>) {
+function getBezierPath(points: Array<{ x: number; y: number }>): string {
   if (points.length === 0) return ""
   if (points.length === 1) return `M ${points[0].x} ${points[0].y}`
   let path = `M ${points[0].x} ${points[0].y}`
@@ -105,13 +109,15 @@ export default function AdminOperationPage() {
   const [expiringLots, setExpiringLots] = useState<ExpirationLot[]>([])
   const [production, setProduction] = useState<ProductionLog[]>([])
   const [activity, setActivity] = useState<Array<{ date: string; produced: number; sold: number; waste: number }>>([])
+  const [wasteMovements, setWasteMovements] = useState<StockMovement[]>([])
+  const [todayCloseRecord, setTodayCloseRecord] = useState<DailyCloseRecord | null>(null)
   const [branches, setBranches] = useState<ApiBranch[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isCheckingExpirations, setIsCheckingExpirations] = useState(false)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [clock, setClock] = useState<Date | null>(null)
 
-  // Controles de Gráfica y Filtros
+  // Controles de Grafica y Filtros
   const [chartType, setChartType] = useState<ChartType>("bars")
   const [filterPreset, setFilterPreset] = useState<FilterPreset>("week")
   const [customStartDate, setCustomStartDate] = useState<string>(() => getPastIsoString(14))
@@ -167,30 +173,61 @@ export default function AdminOperationPage() {
       ? (selectedBranchSlug ? branches.find((b) => b.slug === selectedBranchSlug)?.id : undefined)
       : user?.branchId ?? undefined
 
+    const todayStr = getTodayIsoString()
+    let fromDateStr = todayStr
+    let toDateStr = todayStr
+
     let activityParams: { branchSlug?: string; days?: number; from?: string; to?: string } = {
       branchSlug: effectiveBranchSlug,
     }
+
     if (filterPreset === "day") {
       activityParams.days = 1
+      fromDateStr = todayStr
+      toDateStr = todayStr
     } else if (filterPreset === "week") {
       activityParams.days = 7
+      fromDateStr = getPastIsoString(7)
+      toDateStr = todayStr
     } else if (filterPreset === "month") {
       activityParams.days = 30
+      fromDateStr = getPastIsoString(30)
+      toDateStr = todayStr
     } else if (filterPreset === "custom") {
-      activityParams.from = appliedCustomRange?.from || customStartDate
-      activityParams.to = appliedCustomRange?.to || customEndDate
+      const from = appliedCustomRange?.from || customStartDate
+      const to = appliedCustomRange?.to || customEndDate
+      activityParams.from = from
+      activityParams.to = to
+      fromDateStr = from
+      toDateStr = to
     }
 
     const results = await Promise.allSettled([
       notificationsService.getHistory(1, 20),
       rawMaterialsService.getInventory(effectiveBranchId),
+      // Caducidades a horizonte de 30 dias para productos de reventa comprados
       inventoryService.listExpirations({
         branch: effectiveBranchSlug,
         status: "expiring",
-        days: 7,
+        days: 30,
       }),
       productionService.getTodayProduction(effectiveBranchId),
       inventoryService.getOperationalActivity(activityParams),
+      // Movimientos de merma fisica para identificar productos con mayor descarte
+      inventoryService.listMovements({
+        branchSlug: effectiveBranchSlug,
+        type: "MERMA",
+        from: fromDateStr,
+        to: toDateStr,
+        pageSize: 100,
+      }),
+      // Estado de cierre diario de la jornada actual
+      dailyCloseService.list({
+        branchId: effectiveBranchId,
+        from: todayStr,
+        to: todayStr,
+        pageSize: 1,
+      }),
     ])
 
     const history = results[0]
@@ -205,6 +242,14 @@ export default function AdminOperationPage() {
     if (productionResult.status === "fulfilled") setProduction(productionResult.value)
     const activityResult = results[4]
     if (activityResult.status === "fulfilled") setActivity(activityResult.value.data)
+    const movementsResult = results[5]
+    if (movementsResult.status === "fulfilled") setWasteMovements(movementsResult.value.data)
+    const closeResult = results[6]
+    if (closeResult.status === "fulfilled" && closeResult.value.data.length > 0) {
+      setTodayCloseRecord(closeResult.value.data[0])
+    } else {
+      setTodayCloseRecord(null)
+    }
 
     setLastUpdated(new Date())
     setIsLoading(false)
@@ -237,28 +282,88 @@ export default function AdminOperationPage() {
 
   const lowMaterials = rawMaterials.filter((item) => item.isLow)
   const hour = clock?.getHours() ?? -1
-  const timeGreeting = hour >= 5 && hour < 12 ? "Buenos días" : hour >= 12 && hour < 19 ? "Buenas tardes" : "Buenas noches"
+  const timeGreeting = hour >= 5 && hour < 12 ? "Buenos dias" : hour >= 12 && hour < 19 ? "Buenas tardes" : "Buenas noches"
   const greeting = user?.firstName ? `${timeGreeting}, ${user.firstName}` : "Panel operativo"
   const producedUnits = production.reduce((sum, item) => sum + asNumber(item.unitsProduced), 0)
 
-  // Métricas acumuladas del período seleccionado
+  // Metricas de caducidad para productos comprados (horizonte 30 dias)
+  const urgentExpiringCount = useMemo(() => {
+    return expiringLots.filter((lot) => {
+      if (lot.daysLeft !== null && lot.daysLeft !== undefined) {
+        return lot.daysLeft <= 3
+      }
+      if (!lot.expiresAt) return false
+      const diff = Math.ceil((new Date(lot.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+      return diff <= 3
+    }).length
+  }, [expiringLots])
+
+  const weekExpiringCount = useMemo(() => {
+    return expiringLots.filter((lot) => {
+      if (lot.daysLeft !== null && lot.daysLeft !== undefined) {
+        return lot.daysLeft <= 7
+      }
+      if (!lot.expiresAt) return false
+      const diff = Math.ceil((new Date(lot.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+      return diff <= 7
+    }).length
+  }, [expiringLots])
+
+  const expiringUnitsTotal = useMemo(() => {
+    return expiringLots.reduce((sum, l) => sum + asNumber(l.availableQuantity), 0)
+  }, [expiringLots])
+
+  // Metricas acumuladas del periodo seleccionado
+  // Se distingue claramente:
+  // - Horneado = Produccion total elaborada
+  // - Ventas = Despachado al mostrador
+  // - Sobrante = Pan bueno guardado para venta matutina del dia siguiente (Horneado - Ventas - Merma)
+  // - Merma = Descarte fisico real (pan quemado, caido o inservible)
   const totals = useMemo(() => {
     return activity.reduce(
-      (acc, curr) => ({
-        produced: acc.produced + curr.produced,
-        sold: acc.sold + curr.sold,
-        waste: acc.waste + curr.waste,
-      }),
-      { produced: 0, sold: 0, waste: 0 }
+      (acc, curr) => {
+        const surplusDay = Math.max(0, curr.produced - curr.sold - curr.waste)
+        return {
+          produced: acc.produced + curr.produced,
+          sold: acc.sold + curr.sold,
+          waste: acc.waste + curr.waste,
+          surplus: acc.surplus + surplusDay,
+        }
+      },
+      { produced: 0, sold: 0, waste: 0, surplus: 0 }
     )
   }, [activity])
 
-  const maxActivity = Math.max(1, ...activity.flatMap((item) => [item.produced, item.sold, item.waste]))
+  // Agrupacion para la Grafica 2: Top Panes con Mayor Merma Real
+  const topWasteProducts = useMemo(() => {
+    const map = new Map<string, number>()
+    wasteMovements.forEach((m) => {
+      const name = m.productName || "Pan sin nombre"
+      const qty = map.get(name) || 0
+      map.set(name, qty + asNumber(m.quantity))
+    })
+    const totalWasteFromMovements = Array.from(map.values()).reduce((sum, q) => sum + q, 0)
+    return Array.from(map.entries())
+      .map(([name, quantity]) => ({
+        name,
+        quantity,
+        percentage: totalWasteFromMovements > 0 ? (quantity / totalWasteFromMovements) * 100 : 0,
+      }))
+      .sort((a, b) => b.quantity - a.quantity)
+      .slice(0, 5)
+  }, [wasteMovements])
 
-  // Coordenadas calculadas para la gráfica SVG de líneas/área
+  const maxActivity = Math.max(
+    1,
+    ...activity.flatMap((item) => {
+      const surplus = Math.max(0, item.produced - item.sold - item.waste)
+      return [item.produced, item.sold, item.waste, surplus]
+    })
+  )
+
+  // Coordenadas calculadas para la grafica SVG
   const svgMetrics = useMemo(() => {
     const count = activity.length
-    // Anchura cómoda por punto (al menos 46px por punto para que nunca se amontonen las líneas ni las etiquetas)
     const columnWidth = count > 20 ? 46 : count > 10 ? 54 : count > 3 ? 72 : 120
     const computedWidth = Math.max(720, count * columnWidth)
     const width = computedWidth
@@ -282,6 +387,14 @@ export default function AdminOperationPage() {
       y: paddingTop + innerHeight - (maxActivity > 0 ? (item.sold / maxActivity) * innerHeight : 0),
     }))
 
+    const pointsSurplus = activity.map((item, idx) => {
+      const surplus = Math.max(0, item.produced - item.sold - item.waste)
+      return {
+        x: count === 1 ? paddingLeft + innerWidth / 2 : paddingLeft + idx * stepX,
+        y: paddingTop + innerHeight - (maxActivity > 0 ? (surplus / maxActivity) * innerHeight : 0),
+      }
+    })
+
     const pointsWaste = activity.map((item, idx) => ({
       x: count === 1 ? paddingLeft + innerWidth / 2 : paddingLeft + idx * stepX,
       y: paddingTop + innerHeight - (maxActivity > 0 ? (item.waste / maxActivity) * innerHeight : 0),
@@ -289,18 +402,21 @@ export default function AdminOperationPage() {
 
     const baselineY = paddingTop + innerHeight
 
-    // Paths para líneas
     const pathProduced = count > 1 ? getBezierPath(pointsProduced) : ""
     const pathSold = count > 1 ? getBezierPath(pointsSold) : ""
+    const pathSurplus = count > 1 ? getBezierPath(pointsSurplus) : ""
     const pathWaste = count > 1 ? getBezierPath(pointsWaste) : ""
 
-    // Paths cerrados para áreas con degradado
     const areaProduced = count > 1 && pointsProduced.length > 1
       ? `${pathProduced} L ${pointsProduced[pointsProduced.length - 1].x} ${baselineY} L ${pointsProduced[0].x} ${baselineY} Z`
       : ""
 
     const areaSold = count > 1 && pointsSold.length > 1
       ? `${pathSold} L ${pointsSold[pointsSold.length - 1].x} ${baselineY} L ${pointsSold[0].x} ${baselineY} Z`
+      : ""
+
+    const areaSurplus = count > 1 && pointsSurplus.length > 1
+      ? `${pathSurplus} L ${pointsSurplus[pointsSurplus.length - 1].x} ${baselineY} L ${pointsSurplus[0].x} ${baselineY} Z`
       : ""
 
     const areaWaste = count > 1 && pointsWaste.length > 1
@@ -319,12 +435,15 @@ export default function AdminOperationPage() {
       baselineY,
       pointsProduced,
       pointsSold,
+      pointsSurplus,
       pointsWaste,
       pathProduced,
       pathSold,
+      pathSurplus,
       pathWaste,
       areaProduced,
       areaSold,
+      areaSurplus,
       areaWaste,
     }
   }, [activity, maxActivity])
@@ -335,16 +454,16 @@ export default function AdminOperationPage() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <span className="rounded-full bg-amber-100/80 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#9E4D1A]">
+            <span className="rounded-full bg-amber-100/90 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#9E4D1A]">
               {greeting}
             </span>
             <span className="text-xs font-semibold text-[#8C522B]">
               {clock ? clock.toLocaleTimeString("es-GT", { hour: "2-digit", minute: "2-digit" }) : "--:--"}
             </span>
           </div>
-          <h1 className="mt-1 font-display text-2xl font-bold text-[#2B170F] sm:text-3xl">Operación de la panadería</h1>
+          <h1 className="mt-1 font-display text-2xl font-bold text-[#2B170F] sm:text-3xl">Operacion de la panaderia</h1>
           <p className="mt-1 text-xs text-[#6E5545] sm:text-sm">
-            Control de inventario, producción del día y cierres de turno.
+            Control de inventario, ciclo del pan diario y alertas automaticas.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -352,7 +471,7 @@ export default function AdminOperationPage() {
             type="button"
             onClick={checkExpirations}
             disabled={isCheckingExpirations}
-            className="inline-flex items-center gap-2 rounded-xl border border-[#DECDBB] bg-white px-3.5 py-2 text-xs font-bold text-[#2B170F] hover:border-[#D97706] hover:bg-[#FAF5EE] disabled:opacity-60 transition shadow-xs"
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-[#DECDBB] bg-white px-4 py-2.5 text-xs font-bold text-[#2B170F] hover:border-[#D97706] hover:bg-[#FAF5EE] disabled:opacity-60 transition shadow-xs"
           >
             <RefreshCw className={"h-4 w-4 text-[#D97706] " + (isCheckingExpirations ? "animate-spin" : "")} />
             <span className="hidden sm:inline">Revisar caducidades</span>
@@ -362,74 +481,179 @@ export default function AdminOperationPage() {
         </div>
       </div>
 
-      {/* Tarjetas Bento de Métricas Rápidas */}
+      {/* Tarjetas Bento de Metricas Rapidas (Semaforo Operativo Nivel 1) */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {/* Card 1: Warm Amber Oat */}
-        <Link href="/admin/inventario/materias-primas" className="group rounded-2xl border border-[#ECCDB5] bg-[#FAF0E6] p-5 shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-[#D97706] hover:shadow-md">
-          <div className="flex items-center justify-between">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F0DDCD] text-[#C85A17]">
-              <Wheat className="h-5 w-5" />
+        {/* Card 1: Caducidades de Comprados (< 30 dias) */}
+        <Link
+          href="/admin/inventario/caducidades?status=expiring"
+          className="group rounded-2xl border border-[#DECDBB] bg-[#F3E9DC] p-5 shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-[#D97706] hover:shadow-md min-h-[140px] flex flex-col justify-between"
+        >
+          <div>
+            <div className="flex items-center justify-between">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#E8DAC9] text-[#A25514]">
+                <CalendarClock className="h-5 w-5" />
+              </div>
+              <span className="font-display text-3xl font-bold text-[#2B170F]">{expiringLots.length}</span>
             </div>
-            <span className="font-display text-3xl font-bold text-[#9E4D1A]">{lowMaterials.length}</span>
+            <p className="mt-3 text-xs font-bold uppercase tracking-wider text-[#8C522B]">Caducidades (&lt; 30 dias)</p>
+            <p className="mt-0.5 text-xs text-[#6E5545]">
+              {expiringUnitsTotal} uds. de productos comprados / reventa
+            </p>
           </div>
-          <p className="mt-4 text-xs font-bold uppercase tracking-wider text-[#9E4D1A]">Materias primas bajas</p>
-          <p className="mt-0.5 text-xs text-[#6E5545]">Revisar y reabastecer stock</p>
+          <div className="mt-3 pt-2 border-t border-[#DECDBB]/60 flex items-center justify-between">
+            {urgentExpiringCount > 0 ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700">
+                <AlertTriangle className="h-3 w-3" /> {urgentExpiringCount} criticos (&le; 3d)
+              </span>
+            ) : weekExpiringCount > 0 ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                {weekExpiringCount} proximos (&le; 7d)
+              </span>
+            ) : expiringLots.length > 0 ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-800">
+                Vencen este mes
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+                Bajo control
+              </span>
+            )}
+            <span className="text-[10px] font-semibold text-[#8C522B] group-hover:text-[#D97706] inline-flex items-center">
+              Ver lotes <ArrowRight className="h-3 w-3 ml-0.5" />
+            </span>
+          </div>
         </Link>
 
-        {/* Card 2: Oat Cream */}
-        <Link href="/admin/inventario/caducidades?status=expiring" className="group rounded-2xl border border-[#DECDBB] bg-[#F3E9DC] p-5 shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-[#D97706] hover:shadow-md">
-          <div className="flex items-center justify-between">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#E8DAC9] text-[#A25514]">
-              <CalendarClock className="h-5 w-5" />
+        {/* Card 2: Materias Primas Bajo Minimo */}
+        <Link
+          href="/admin/inventario/materias-primas"
+          className="group rounded-2xl border border-[#ECCDB5] bg-[#FAF0E6] p-5 shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-[#D97706] hover:shadow-md min-h-[140px] flex flex-col justify-between"
+        >
+          <div>
+            <div className="flex items-center justify-between">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F0DDCD] text-[#C85A17]">
+                <Wheat className="h-5 w-5" />
+              </div>
+              <span className="font-display text-3xl font-bold text-[#9E4D1A]">{lowMaterials.length}</span>
             </div>
-            <span className="font-display text-3xl font-bold text-[#2B170F]">{expiringLots.length}</span>
+            <p className="mt-3 text-xs font-bold uppercase tracking-wider text-[#9E4D1A]">Materias primas bajas</p>
+            <p className="mt-0.5 text-xs text-[#6E5545]">Insumos requeridos para hornear</p>
           </div>
-          <p className="mt-4 text-xs font-bold uppercase tracking-wider text-[#8C522B]">Próximos a vencer</p>
-          <p className="mt-0.5 text-xs text-[#6E5545]">Lotes en los próximos 7 días</p>
+          <div className="mt-3 pt-2 border-t border-[#ECCDB5]/60 flex items-center justify-between">
+            {lowMaterials.length > 0 ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                Reabastecer urgente
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+                Stock suficiente
+              </span>
+            )}
+            <span className="text-[10px] font-semibold text-[#8C522B] group-hover:text-[#D97706] inline-flex items-center">
+              Gestionar <ArrowRight className="h-3 w-3 ml-0.5" />
+            </span>
+          </div>
         </Link>
 
-        {/* Card 3: Deep Roast Espresso */}
-        <Link href="/admin/produccion" className="group rounded-2xl border border-[#42261B] bg-[#2B170F] p-5 text-[#FAF5EE] shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
-          <div className="flex items-center justify-between">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#3D2317] text-[#F59E0B]">
-              <Factory className="h-5 w-5" />
+        {/* Card 3: Horneado Acumulado Hoy */}
+        <Link
+          href="/admin/produccion"
+          className="group rounded-2xl border border-[#42261B] bg-[#2B170F] p-5 text-[#FAF5EE] shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg min-h-[140px] flex flex-col justify-between"
+        >
+          <div>
+            <div className="flex items-center justify-between">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#3D2317] text-[#F59E0B]">
+                <Factory className="h-5 w-5" />
+              </div>
+              <span className="font-display text-3xl font-bold text-[#FBBF24]">{producedUnits}</span>
             </div>
-            <span className="font-display text-3xl font-bold text-[#FBBF24]">{producedUnits}</span>
+            <p className="mt-3 text-xs font-bold uppercase tracking-wider text-[#D49E6E]">Horneado de hoy</p>
+            <p className="mt-0.5 text-xs text-[#D2C3B4]">{production.length} tandas registradas en horno</p>
           </div>
-          <p className="mt-4 text-xs font-bold uppercase tracking-wider text-[#D49E6E]">Unidades producidas hoy</p>
-          <p className="mt-0.5 text-xs text-[#D2C3B4]">Amasijos registrados: {production.length}</p>
+          <div className="mt-3 pt-2 border-t border-[#42261B] flex items-center justify-between">
+            {producedUnits > 0 ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-950/70 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-bold text-emerald-300">
+                Produccion activa
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 rounded-full bg-stone-800/80 px-2 py-0.5 text-[10px] font-bold text-stone-400">
+                Sin tandas registradas
+              </span>
+            )}
+            <span className="text-[10px] font-semibold text-[#D49E6E] group-hover:text-[#FBBF24] inline-flex items-center">
+              Nueva tanda <ArrowRight className="h-3 w-3 ml-0.5" />
+            </span>
+          </div>
         </Link>
 
-        {/* Card 4: Clean White Card */}
-        <Link href="/admin/cierre-dia" className="group rounded-2xl border border-[#DECDBB] bg-white p-5 shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-[#D97706] hover:shadow-md">
-          <div className="flex items-center justify-between">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
-              <ClipboardCheck className="h-5 w-5" />
+        {/* Card 4: Estado del Cierre de Jornada */}
+        <Link
+          href="/admin/cierre-dia"
+          className="group rounded-2xl border border-[#DECDBB] bg-white p-5 shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-[#D97706] hover:shadow-md min-h-[140px] flex flex-col justify-between"
+        >
+          <div>
+            <div className="flex items-center justify-between">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+                <ClipboardCheck className="h-5 w-5" />
+              </div>
+              {todayCloseRecord ? (
+                <span className="inline-flex items-center gap-1 font-display text-base font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-xl">
+                  <CheckCircle2 className="h-4 w-4" /> Conciliado
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 font-display text-base font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-xl">
+                  <Clock className="h-4 w-4" /> Pendiente
+                </span>
+              )}
             </div>
-            <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+            <p className="mt-3 text-xs font-bold uppercase tracking-wider text-[#2B170F]">Cierre de jornada</p>
+            <p className="mt-0.5 text-xs text-[#6E5545]">
+              {todayCloseRecord
+                ? `Cerrado por ${todayCloseRecord.user.firstName || "operador"}`
+                : "Conciliar sobrantes, ventas y mermas al terminar"}
+            </p>
           </div>
-          <p className="mt-4 text-xs font-bold uppercase tracking-wider text-[#2B170F]">Cierre del turno</p>
-          <p className="mt-0.5 text-xs text-[#6E5545]">Conciliar existencias y ventas</p>
+          <div className="mt-3 pt-2 border-t border-[#DECDBB]/60 flex items-center justify-between">
+            <span className="text-[10px] font-bold text-[#8C522B]">
+              {todayCloseRecord ? "Auditoria lista" : "Requerido al final del turno"}
+            </span>
+            <span className="text-[10px] font-semibold text-[#8C522B] group-hover:text-[#D97706] inline-flex items-center">
+              Ir a cierre <ArrowRight className="h-3 w-3 ml-0.5" />
+            </span>
+          </div>
         </Link>
       </div>
 
-      {/* SECCIÓN DE MOVIMIENTO OPERATIVO (Con cambio de tipo de gráfica y filtros) */}
+      {/* Nota Operativa y Regla de Negocio para Usuarios */}
+      <div className="rounded-2xl border border-amber-200/80 bg-amber-50/70 p-4 text-xs text-[#8C522B] flex flex-col sm:flex-row items-start sm:items-center gap-3">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-[#D97706]">
+          <Info className="h-4 w-4" />
+        </div>
+        <p className="leading-relaxed">
+          <strong className="text-[#2B170F]">Aclaracion de panaderia:</strong> El pan horneado fresco no tiene fecha de vencimiento por calendario.
+          De las unidades elaboradas, lo vendido va al cliente, lo <strong>sobrante</strong> queda disponible para la venta del dia siguiente,
+          y unicamente lo danado o inservible se registra como <strong>merma fisica real</strong>.
+          Las fechas de caducidad aplican exclusivamente a productos comprados de reventa (lacteos, refrescos y abarrotes).
+        </p>
+      </div>
+
+      {/* SECCION 1: CICLO DEL PAN DIARIO (Movimiento Operativo) */}
       <section className="rounded-2xl border border-[#E8DCCB] bg-white p-5 shadow-xs sm:p-6 space-y-4">
-        {/* Barra Superior con Título y Controles */}
+        {/* Barra Superior con Titulo y Controles */}
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between border-b border-[#E8DCCB] pb-4">
           <div>
             <div className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#FAF0E6] text-[#D97706]">
                 <TrendingUp className="h-4 w-4" />
               </div>
-              <h2 className="font-bold text-base text-[#2B170F] sm:text-lg">Movimiento operativo</h2>
+              <h2 className="font-bold text-base text-[#2B170F] sm:text-lg">Ciclo del pan diario</h2>
             </div>
             <p className="text-xs text-[#6E5545] mt-1">
-              Tendencia de producción, ventas y mermas en unidades físicas
+              Horneado vs Ventas vs Sobrante para manana vs Merma real en unidades fisicas
             </p>
           </div>
 
-          {/* Barra de Filtros y Selector de Gráfica */}
+          {/* Barra de Filtros y Selector de Grafica */}
           <div className="flex flex-wrap items-center gap-2.5">
             {/* Filtro de Sucursal (Para roles globales) */}
             {isGlobalRole && (
@@ -438,7 +662,7 @@ export default function AdminOperationPage() {
                 <select
                   value={selectedBranchSlug}
                   onChange={(e) => setSelectedBranchSlug(e.target.value)}
-                  className="h-9 pl-8 pr-7 text-xs font-semibold bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] hover:border-[#D97706] focus:outline-none focus:ring-1 focus:ring-[#D97706] appearance-none cursor-pointer"
+                  className="min-h-[44px] pl-8 pr-7 text-xs font-semibold bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] hover:border-[#D97706] focus:outline-none focus:ring-1 focus:ring-[#D97706] appearance-none cursor-pointer"
                   title="Filtrar por sucursal"
                 >
                   <option value="">Todas las sucursales</option>
@@ -452,7 +676,7 @@ export default function AdminOperationPage() {
               </div>
             )}
 
-            {/* Presets: Día, Semana, Mes, Personalizado */}
+            {/* Presets: Dia, Semana, Mes, Personalizado */}
             <div className="inline-flex rounded-xl border border-[#DECDBB] bg-[#FAF5EE] p-0.5 text-xs font-semibold">
               <button
                 type="button"
@@ -460,14 +684,14 @@ export default function AdminOperationPage() {
                   setFilterPreset("day")
                   setHoveredIndex(null)
                 }}
-                className={`px-2.5 py-1.5 rounded-lg transition ${
+                className={`min-h-[40px] px-3 py-2 rounded-lg transition ${
                   filterPreset === "day"
                     ? "bg-white text-[#D97706] font-bold shadow-2xs"
                     : "text-[#6E5545] hover:text-[#2B170F]"
                 }`}
-                title="Ver actividad de hoy"
+                title="Ver balance del dia actual"
               >
-                Día
+                Dia
               </button>
               <button
                 type="button"
@@ -475,12 +699,12 @@ export default function AdminOperationPage() {
                   setFilterPreset("week")
                   setHoveredIndex(null)
                 }}
-                className={`px-2.5 py-1.5 rounded-lg transition ${
+                className={`min-h-[40px] px-3 py-2 rounded-lg transition ${
                   filterPreset === "week"
                     ? "bg-white text-[#D97706] font-bold shadow-2xs"
                     : "text-[#6E5545] hover:text-[#2B170F]"
                 }`}
-                title="Ver últimos 7 días"
+                title="Ver ultimos 7 dias"
               >
                 Semana
               </button>
@@ -490,12 +714,12 @@ export default function AdminOperationPage() {
                   setFilterPreset("month")
                   setHoveredIndex(null)
                 }}
-                className={`px-2.5 py-1.5 rounded-lg transition ${
+                className={`min-h-[40px] px-3 py-2 rounded-lg transition ${
                   filterPreset === "month"
                     ? "bg-white text-[#D97706] font-bold shadow-2xs"
                     : "text-[#6E5545] hover:text-[#2B170F]"
                 }`}
-                title="Ver últimos 30 días"
+                title="Ver ultimos 30 dias"
               >
                 Mes
               </button>
@@ -505,7 +729,7 @@ export default function AdminOperationPage() {
                   setFilterPreset("custom")
                   setHoveredIndex(null)
                 }}
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition ${
+                className={`inline-flex min-h-[40px] items-center gap-1.5 px-3 py-2 rounded-lg transition ${
                   filterPreset === "custom"
                     ? "bg-white text-[#D97706] font-bold shadow-2xs"
                     : "text-[#6E5545] hover:text-[#2B170F]"
@@ -518,12 +742,12 @@ export default function AdminOperationPage() {
               </button>
             </div>
 
-            {/* Toggle Tipo de Gráfica (Barras / Líneas / Área) */}
+            {/* Selector de Tipo de Grafica (Barras / Lineas / Area) */}
             <div className="inline-flex rounded-xl border border-[#DECDBB] bg-[#FAF5EE] p-0.5 text-xs font-semibold">
               <button
                 type="button"
                 onClick={() => setChartType("bars")}
-                className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition ${
+                className={`inline-flex min-h-[40px] items-center gap-1 px-3 py-2 rounded-lg transition ${
                   chartType === "bars"
                     ? "bg-white text-[#D97706] font-bold shadow-2xs"
                     : "text-[#6E5545] hover:text-[#2B170F]"
@@ -536,34 +760,34 @@ export default function AdminOperationPage() {
               <button
                 type="button"
                 onClick={() => setChartType("lines")}
-                className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition ${
+                className={`inline-flex min-h-[40px] items-center gap-1 px-3 py-2 rounded-lg transition ${
                   chartType === "lines"
                     ? "bg-white text-[#D97706] font-bold shadow-2xs"
                     : "text-[#6E5545] hover:text-[#2B170F]"
                 }`}
-                title="Vista de Líneas"
+                title="Vista de Lineas"
               >
                 <LineChart className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Líneas</span>
+                <span className="hidden sm:inline">Lineas</span>
               </button>
               <button
                 type="button"
                 onClick={() => setChartType("area")}
-                className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition ${
+                className={`inline-flex min-h-[40px] items-center gap-1 px-3 py-2 rounded-lg transition ${
                   chartType === "area"
                     ? "bg-white text-[#D97706] font-bold shadow-2xs"
                     : "text-[#6E5545] hover:text-[#2B170F]"
                 }`}
-                title="Vista de Área Suave"
+                title="Vista de Area Suave"
               >
                 <TrendingUp className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Área</span>
+                <span className="hidden sm:inline">Area</span>
               </button>
             </div>
           </div>
         </div>
 
-        {/* Panel Desplegable para Filtro de Rango Libre (Personalizado) */}
+        {/* Panel Desplegable para Filtro de Rango Libre */}
         {filterPreset === "custom" && (
           <div className="rounded-xl border border-[#DECDBB] bg-[#FAF5EE] p-3 text-xs space-y-2 animate-in fade-in duration-200">
             <div className="flex flex-wrap items-center gap-3">
@@ -574,7 +798,7 @@ export default function AdminOperationPage() {
                   value={customStartDate}
                   max={customEndDate || getTodayIsoString()}
                   onChange={(e) => setCustomStartDate(e.target.value)}
-                  className="h-8 px-2.5 rounded-lg border border-[#DECDBB] bg-white text-[#2B170F] font-medium focus:outline-none focus:ring-1 focus:ring-[#D97706]"
+                  className="min-h-[40px] px-2.5 rounded-lg border border-[#DECDBB] bg-white text-[#2B170F] font-medium focus:outline-none focus:ring-1 focus:ring-[#D97706]"
                 />
               </div>
               <div className="flex items-center gap-1.5">
@@ -585,13 +809,13 @@ export default function AdminOperationPage() {
                   min={customStartDate}
                   max={getTodayIsoString()}
                   onChange={(e) => setCustomEndDate(e.target.value)}
-                  className="h-8 px-2.5 rounded-lg border border-[#DECDBB] bg-white text-[#2B170F] font-medium focus:outline-none focus:ring-1 focus:ring-[#D97706]"
+                  className="min-h-[40px] px-2.5 rounded-lg border border-[#DECDBB] bg-white text-[#2B170F] font-medium focus:outline-none focus:ring-1 focus:ring-[#D97706]"
                 />
               </div>
               <button
                 type="button"
                 onClick={handleApplyCustomRange}
-                className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-lg bg-[#D97706] text-white font-bold hover:bg-[#B45309] transition shadow-xs"
+                className="inline-flex min-h-[40px] items-center gap-1.5 px-4 rounded-lg bg-[#D97706] text-white font-bold hover:bg-[#B45309] transition shadow-xs"
               >
                 <Check className="h-3.5 w-3.5" />
                 <span>Aplicar</span>
@@ -599,7 +823,7 @@ export default function AdminOperationPage() {
 
               {appliedCustomRange && (
                 <span className="text-[11px] text-[#8C522B] font-semibold bg-white/70 px-2.5 py-1 rounded-md border border-[#DECDBB]">
-                  Activo: {appliedCustomRange.from} al {appliedCustomRange.to} ({activity.length} días)
+                  Activo: {appliedCustomRange.from} al {appliedCustomRange.to} ({activity.length} dias)
                 </span>
               )}
             </div>
@@ -609,28 +833,31 @@ export default function AdminOperationPage() {
           </div>
         )}
 
-        {/* Resumen de Métricas del Período con Indicador de Decisión */}
+        {/* Resumen de Metricas del Periodo con Indicador de Decision */}
         {(() => {
           const wasteRate = totals.produced > 0 ? (totals.waste / totals.produced) * 100 : 0
           const salesRate = totals.produced > 0 ? (totals.sold / totals.produced) * 100 : 0
+          const surplusRate = totals.produced > 0 ? (totals.surplus / totals.produced) * 100 : 0
+          const utilizationRate = totals.produced > 0 ? ((totals.sold + totals.surplus) / totals.produced) * 100 : 100
+
           return (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5 pt-1">
-              {/* 1. Producción */}
+              {/* 1. Horneado */}
               <div className="rounded-2xl border border-blue-200 bg-blue-50/70 p-3.5 shadow-2xs">
                 <div className="flex items-center justify-between">
-                  <p className="text-[10px] font-bold text-blue-800 uppercase tracking-wider">Producción Total</p>
+                  <p className="text-[10px] font-bold text-blue-800 uppercase tracking-wider">Horneado Total</p>
                   <span className="h-2 w-2 rounded-full bg-blue-600" />
                 </div>
                 <p className="text-lg sm:text-2xl font-bold text-blue-700 mt-1">
                   {totals.produced.toLocaleString()} <span className="text-xs font-normal text-blue-800">uds</span>
                 </p>
-                <p className="text-[11px] text-blue-600 font-semibold mt-0.5">Volumen horneado</p>
+                <p className="text-[11px] text-blue-600 font-semibold mt-0.5">Volumen elaborado</p>
               </div>
 
               {/* 2. Ventas */}
               <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-3.5 shadow-2xs">
                 <div className="flex items-center justify-between">
-                  <p className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">Ventas Totales</p>
+                  <p className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">Ventas Despachadas</p>
                   <span className="h-2 w-2 rounded-full bg-emerald-600" />
                 </div>
                 <p className="text-lg sm:text-2xl font-bold text-emerald-700 mt-1">
@@ -639,43 +866,46 @@ export default function AdminOperationPage() {
                 <p className="text-[11px] text-emerald-700 font-bold mt-0.5">{salesRate.toFixed(1)}% colocado</p>
               </div>
 
-              {/* 3. Mermas */}
+              {/* 3. Sobrante para Manana */}
+              <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-3.5 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-bold text-amber-800 uppercase tracking-wider">Sobrante Manana</p>
+                  <span className="h-2 w-2 rounded-full bg-amber-500" />
+                </div>
+                <p className="text-lg sm:text-2xl font-bold text-amber-700 mt-1">
+                  {totals.surplus.toLocaleString()} <span className="text-xs font-normal text-amber-800">uds</span>
+                </p>
+                <p className="text-[11px] text-amber-700 font-bold mt-0.5">{surplusRate.toFixed(1)}% disponible</p>
+              </div>
+
+              {/* 4. Merma Real Descartada */}
               <div className="rounded-2xl border border-red-200 bg-red-50/70 p-3.5 shadow-2xs">
                 <div className="flex items-center justify-between">
-                  <p className="text-[10px] font-bold text-red-800 uppercase tracking-wider">Mermas Totales</p>
+                  <p className="text-[10px] font-bold text-red-800 uppercase tracking-wider">Merma Real</p>
                   <span className="h-2 w-2 rounded-full bg-red-600" />
                 </div>
                 <p className="text-lg sm:text-2xl font-bold text-red-600 mt-1">
                   {totals.waste.toLocaleString()} <span className="text-xs font-normal text-red-800">uds</span>
                 </p>
-                <p className="text-[11px] text-red-600 font-bold mt-0.5">{wasteRate.toFixed(1)}% desperdicio</p>
-              </div>
-
-              {/* 4. Semáforo de Control Operativo */}
-              <div className="rounded-2xl border border-[#DECDBB] bg-[#FAF5EE] p-3.5 shadow-2xs">
-                <p className="text-[10px] font-bold text-[#8C522B] uppercase tracking-wider">Tasa de Merma</p>
-                <div className="mt-1 flex items-center gap-1.5">
-                  <span className={`h-2.5 w-2.5 rounded-full ${wasteRate <= 5 ? 'bg-emerald-500' : wasteRate <= 10 ? 'bg-amber-500' : 'bg-red-500'}`} />
-                  <span className="text-sm sm:text-base font-bold text-[#2B170F]">
-                    {wasteRate.toFixed(1)}%
+                <div className="mt-0.5 flex items-center justify-between">
+                  <span className="text-[11px] text-red-600 font-bold">{wasteRate.toFixed(1)}% descarte</span>
+                  <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${wasteRate <= 5 ? 'bg-emerald-100 text-emerald-700' : wasteRate <= 10 ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-700'}`}>
+                    {wasteRate <= 5 ? 'Optimo' : wasteRate <= 10 ? 'Normal' : 'Alto'}
                   </span>
                 </div>
-                <p className="text-[11px] font-semibold text-[#6E5545] mt-0.5">
-                  {wasteRate <= 5 ? 'Control óptimo (<5%)' : wasteRate <= 10 ? 'Rango normal (5-10%)' : 'Alerta: Reducir amasijo'}
-                </p>
               </div>
             </div>
           )
         })()}
 
-        {/* CONTENEDOR DE GRÁFICA / BALANCE */}
+        {/* CONTENEDOR DE GRAFICA / BALANCE */}
         <div className="pt-2">
           {activity.length === 0 ? (
             <div className="py-12 text-center text-sm text-[#6E5545] bg-[#FAF5EE]/40 rounded-2xl border border-dashed border-[#DECDBB]">
-              No hay movimientos registrados para el período o sucursal seleccionada.
+              No hay movimientos registrados para el periodo o sucursal seleccionada.
             </div>
           ) : activity.length === 1 ? (
-            /* VISTA ESPECIALIZADA: 1 DÍA (Balance Diario de Alto Impacto) */
+            /* VISTA ESPECIALIZADA: 1 DIA (Balance Diario del Ciclo del Pan) */
             <div className="rounded-2xl border border-[#E8DCCB] bg-[#FAF5EE]/50 p-5 space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#E8DCCB] pb-3">
                 <div>
@@ -692,99 +922,139 @@ export default function AdminOperationPage() {
                   </h3>
                 </div>
                 <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-100/90 px-3 py-1 text-xs font-bold text-[#9E4D1A]">
-                  Vista de 1 Día
+                  Balance del Dia
                 </div>
               </div>
 
-              {/* 3 Columnas Proporcionales con Valores y Barras Claras */}
-              <div className="grid gap-4 sm:grid-cols-3 pt-1">
-                <div className="rounded-xl border border-blue-200 bg-white p-4 shadow-2xs">
-                  <div className="flex items-center justify-between text-xs font-bold text-blue-800">
-                    <span>PRODUCCIÓN</span>
-                    <span className="h-2 w-2 rounded-full bg-blue-600" />
-                  </div>
-                  <p className="mt-2 text-3xl font-bold text-blue-700">
-                    {activity[0].produced.toLocaleString()} <span className="text-sm font-normal text-blue-800">uds</span>
-                  </p>
-                  <p className="mt-1 text-[11px] text-[#6E5545]">100% volumen elaborado</p>
-                </div>
+              {/* 4 Columnas Proporcionales del Dia */}
+              {(() => {
+                const dayProd = activity[0].produced
+                const daySold = activity[0].sold
+                const dayWaste = activity[0].waste
+                const daySurplus = Math.max(0, dayProd - daySold - dayWaste)
 
-                <div className="rounded-xl border border-emerald-200 bg-white p-4 shadow-2xs">
-                  <div className="flex items-center justify-between text-xs font-bold text-emerald-800">
-                    <span>VENTAS DESPACHADAS</span>
-                    <span className="h-2 w-2 rounded-full bg-emerald-600" />
-                  </div>
-                  <p className="mt-2 text-3xl font-bold text-emerald-700">
-                    {activity[0].sold.toLocaleString()} <span className="text-sm font-normal text-emerald-800">uds</span>
-                  </p>
-                  <p className="mt-1 text-[11px] text-emerald-700 font-bold">
-                    {activity[0].produced > 0 ? ((activity[0].sold / activity[0].produced) * 100).toFixed(1) : "0"}% colocado
-                  </p>
-                </div>
+                return (
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 pt-1">
+                    <div className="rounded-xl border border-blue-200 bg-white p-4 shadow-2xs">
+                      <div className="flex items-center justify-between text-xs font-bold text-blue-800">
+                        <span>HORNEADO</span>
+                        <span className="h-2 w-2 rounded-full bg-blue-600" />
+                      </div>
+                      <p className="mt-2 text-2xl font-bold text-blue-700">
+                        {dayProd.toLocaleString()} <span className="text-xs font-normal text-blue-800">uds</span>
+                      </p>
+                      <p className="mt-1 text-[11px] text-[#6E5545]">100% volumen elaborado</p>
+                    </div>
 
-                <div className="rounded-xl border border-red-200 bg-white p-4 shadow-2xs">
-                  <div className="flex items-center justify-between text-xs font-bold text-red-800">
-                    <span>MERMAS REGISTRADAS</span>
-                    <span className="h-2 w-2 rounded-full bg-red-600" />
-                  </div>
-                  <p className="mt-2 text-3xl font-bold text-red-600">
-                    {activity[0].waste.toLocaleString()} <span className="text-sm font-normal text-red-800">uds</span>
-                  </p>
-                  <p className="mt-1 text-[11px] text-red-600 font-bold">
-                    {activity[0].produced > 0 ? ((activity[0].waste / activity[0].produced) * 100).toFixed(1) : "0"}% desperdicio
-                  </p>
-                </div>
-              </div>
+                    <div className="rounded-xl border border-emerald-200 bg-white p-4 shadow-2xs">
+                      <div className="flex items-center justify-between text-xs font-bold text-emerald-800">
+                        <span>VENTAS</span>
+                        <span className="h-2 w-2 rounded-full bg-emerald-600" />
+                      </div>
+                      <p className="mt-2 text-2xl font-bold text-emerald-700">
+                        {daySold.toLocaleString()} <span className="text-xs font-normal text-emerald-800">uds</span>
+                      </p>
+                      <p className="mt-1 text-[11px] text-emerald-700 font-bold">
+                        {dayProd > 0 ? ((daySold / dayProd) * 100).toFixed(1) : "0"}% colocado
+                      </p>
+                    </div>
 
-              {/* Barra Comparativa Horizontal del Día */}
-              {activity[0].produced > 0 && (
-                <div className="pt-2">
-                  <div className="flex items-center justify-between text-xs font-bold text-[#2B170F] mb-1.5">
-                    <span>Distribución del Amasijo</span>
-                    <span className="text-[11px] font-normal text-[#6E5545]">Base de cálculo sobre unidades horneadas</span>
+                    <div className="rounded-xl border border-amber-200 bg-white p-4 shadow-2xs">
+                      <div className="flex items-center justify-between text-xs font-bold text-amber-800">
+                        <span>SOBRANTE MANANA</span>
+                        <span className="h-2 w-2 rounded-full bg-amber-500" />
+                      </div>
+                      <p className="mt-2 text-2xl font-bold text-amber-700">
+                        {daySurplus.toLocaleString()} <span className="text-xs font-normal text-amber-800">uds</span>
+                      </p>
+                      <p className="mt-1 text-[11px] text-amber-700 font-bold">
+                        {dayProd > 0 ? ((daySurplus / dayProd) * 100).toFixed(1) : "0"}% guardado
+                      </p>
+                    </div>
+
+                    <div className="rounded-xl border border-red-200 bg-white p-4 shadow-2xs">
+                      <div className="flex items-center justify-between text-xs font-bold text-red-800">
+                        <span>MERMA REAL</span>
+                        <span className="h-2 w-2 rounded-full bg-red-600" />
+                      </div>
+                      <p className="mt-2 text-2xl font-bold text-red-600">
+                        {dayWaste.toLocaleString()} <span className="text-xs font-normal text-red-800">uds</span>
+                      </p>
+                      <p className="mt-1 text-[11px] text-red-600 font-bold">
+                        {dayProd > 0 ? ((dayWaste / dayProd) * 100).toFixed(1) : "0"}% descarte
+                      </p>
+                    </div>
                   </div>
-                  <div className="h-5 w-full rounded-full bg-[#DECDBB]/40 overflow-hidden flex shadow-inner">
-                    <div
-                      className="h-full bg-emerald-600 transition-all"
-                      style={{ width: `${Math.min(100, (activity[0].sold / activity[0].produced) * 100)}%` }}
-                      title={`Ventas: ${activity[0].sold} uds`}
-                    />
-                    <div
-                      className="h-full bg-red-500 transition-all"
-                      style={{ width: `${Math.min(100, (activity[0].waste / activity[0].produced) * 100)}%` }}
-                      title={`Mermas: ${activity[0].waste} uds`}
-                    />
+                )
+              })()}
+
+              {/* Barra Comparativa Horizontal del Dia */}
+              {activity[0].produced > 0 && (() => {
+                const dayProd = activity[0].produced
+                const daySold = activity[0].sold
+                const dayWaste = activity[0].waste
+                const daySurplus = Math.max(0, dayProd - daySold - dayWaste)
+                const soldPct = (daySold / dayProd) * 100
+                const surplusPct = (daySurplus / dayProd) * 100
+                const wastePct = (dayWaste / dayProd) * 100
+
+                return (
+                  <div className="pt-2">
+                    <div className="flex items-center justify-between text-xs font-bold text-[#2B170F] mb-1.5">
+                      <span>Distribucion del Pan Horneado ({dayProd} uds = 100%)</span>
+                      <span className="text-[11px] font-normal text-[#6E5545]">
+                        Aprovechamiento util: {(soldPct + surplusPct).toFixed(1)}%
+                      </span>
+                    </div>
+                    <div className="h-5 w-full rounded-full bg-[#DECDBB]/40 overflow-hidden flex shadow-inner">
+                      <div
+                        className="h-full bg-emerald-600 transition-all"
+                        style={{ width: `${Math.min(100, soldPct)}%` }}
+                        title={`Ventas: ${daySold} uds (${soldPct.toFixed(1)}%)`}
+                      />
+                      <div
+                        className="h-full bg-amber-500 transition-all"
+                        style={{ width: `${Math.min(100, surplusPct)}%` }}
+                        title={`Sobrante para manana: ${daySurplus} uds (${surplusPct.toFixed(1)}%)`}
+                      />
+                      <div
+                        className="h-full bg-red-500 transition-all"
+                        style={{ width: `${Math.min(100, wastePct)}%` }}
+                        title={`Merma descartada: ${dayWaste} uds (${wastePct.toFixed(1)}%)`}
+                      />
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-[#6E5545]">
+                      <span className="inline-flex items-center gap-1 font-semibold text-emerald-700">
+                        <i className="h-2 w-2 rounded-full bg-emerald-600" />
+                        Vendido: {daySold} uds
+                      </span>
+                      <span className="inline-flex items-center gap-1 font-semibold text-amber-700">
+                        <i className="h-2 w-2 rounded-full bg-amber-500" />
+                        Sobrante manana: {daySurplus} uds
+                      </span>
+                      <span className="inline-flex items-center gap-1 font-semibold text-red-600">
+                        <i className="h-2 w-2 rounded-full bg-red-600" />
+                        Merma real: {dayWaste} uds
+                      </span>
+                    </div>
                   </div>
-                  <div className="mt-2 flex items-center justify-between text-[11px] text-[#6E5545]">
-                    <span className="inline-flex items-center gap-1 font-semibold text-emerald-700">
-                      <i className="h-2 w-2 rounded-full bg-emerald-600" />
-                      Vendido: {activity[0].sold} uds
-                    </span>
-                    <span className="inline-flex items-center gap-1 font-semibold text-red-600">
-                      <i className="h-2 w-2 rounded-full bg-red-600" />
-                      Merma: {activity[0].waste} uds
-                    </span>
-                    <span className="font-semibold text-[#8C522B]">
-                      Disponible: {Math.max(0, activity[0].produced - activity[0].sold - activity[0].waste)} uds
-                    </span>
-                  </div>
-                </div>
-              )}
+                )
+              })()}
             </div>
           ) : chartType === "bars" ? (
-            /* 1. MODO BARRAS DE ALTO CONTRASTE (Con espaciado dinámico y scroll) */
+            /* 1. MODO BARRAS (Horneado, Ventas, Sobrante, Merma) */
             <div className="space-y-2">
               {activity.length > 10 && (
                 <div className="flex items-center justify-between text-[11px] text-[#8C522B] px-1">
-                  <span>Mostrando {activity.length} días en el rango seleccionado</span>
+                  <span>Mostrando {activity.length} dias en el rango seleccionado</span>
                   <span className="hidden sm:inline-flex items-center gap-1 text-[#D97706] font-semibold">
-                    ← Desliza horizontalmente para explorar el historial →
+                    &larr; Desliza horizontalmente para explorar el historial &rarr;
                   </span>
                 </div>
               )}
               <div className="overflow-x-auto pb-3 scrollbar-thin scrollbar-thumb-[#DECDBB] hover:scrollbar-thumb-[#B45309]/50">
-                <div style={{ minWidth: `${Math.max(680, activity.length * (activity.length > 20 ? 50 : 64))}px` }}>
-                  <div className="flex h-56 items-end gap-1 sm:gap-2 border-b border-[#E8DCCB] pb-2 px-1">
+                <div style={{ minWidth: `${Math.max(680, activity.length * (activity.length > 20 ? 56 : 72))}px` }}>
+                  <div className="flex h-56 items-end gap-1.5 sm:gap-2.5 border-b border-[#E8DCCB] pb-2 px-1">
                     {activity.map((day, idx) => {
                       const dateObj = new Date(`${day.date}T12:00:00`)
                       const label = activity.length > 14
@@ -792,6 +1062,7 @@ export default function AdminOperationPage() {
                         : dateObj.toLocaleDateString("es-GT", { weekday: "short" }).replace(".", "")
                       const dayNum = dateObj.getDate()
                       const isHovered = hoveredIndex === idx
+                      const surplusDay = Math.max(0, day.produced - day.sold - day.waste)
 
                       return (
                         <div
@@ -799,22 +1070,30 @@ export default function AdminOperationPage() {
                           onMouseEnter={() => setHoveredIndex(idx)}
                           onMouseLeave={() => setHoveredIndex(null)}
                           onClick={() => setHoveredIndex(hoveredIndex === idx ? null : idx)}
-                          className={`flex min-w-[46px] sm:min-w-[54px] flex-1 flex-col items-center justify-end gap-2 rounded-2xl transition-all p-1 cursor-pointer ${
+                          className={`flex min-w-[50px] sm:min-w-[60px] flex-1 flex-col items-center justify-end gap-2 rounded-2xl transition-all p-1 cursor-pointer ${
                             isHovered ? "bg-[#FAF0E6] shadow-2xs scale-[1.02]" : "hover:bg-[#FAF5EE]/70"
                           }`}
-                          title={`${day.date}: ${day.produced} producidas, ${day.sold} vendidas, ${day.waste} mermas`}
+                          title={`${day.date}: ${day.produced} horneadas, ${day.sold} vendidas, ${surplusDay} sobrante, ${day.waste} mermas`}
                         >
-                          <div className="flex h-40 w-full items-end justify-center gap-1">
+                          <div className="flex h-40 w-full items-end justify-center gap-0.5 sm:gap-1">
+                            {/* Barra Horneado (Azul) */}
                             <span
-                              className="w-2.5 sm:w-3.5 rounded-t-md bg-blue-600 transition-all hover:bg-blue-700"
+                              className="w-2 sm:w-2.5 rounded-t-md bg-blue-600 transition-all hover:bg-blue-700"
                               style={{ height: `${Math.max(4, (day.produced / maxActivity) * 100)}%` }}
                             />
+                            {/* Barra Ventas (Verde) */}
                             <span
-                              className="w-2.5 sm:w-3.5 rounded-t-md bg-emerald-600 transition-all hover:bg-emerald-700"
+                              className="w-2 sm:w-2.5 rounded-t-md bg-emerald-600 transition-all hover:bg-emerald-700"
                               style={{ height: `${Math.max(4, (day.sold / maxActivity) * 100)}%` }}
                             />
+                            {/* Barra Sobrante (Ambar) */}
                             <span
-                              className="w-2.5 sm:w-3.5 rounded-t-md bg-red-500 transition-all hover:bg-red-600"
+                              className="w-2 sm:w-2.5 rounded-t-md bg-amber-500 transition-all hover:bg-amber-600"
+                              style={{ height: `${Math.max(4, (surplusDay / maxActivity) * 100)}%` }}
+                            />
+                            {/* Barra Merma (Rojo) */}
+                            <span
+                              className="w-2 sm:w-2.5 rounded-t-md bg-red-500 transition-all hover:bg-red-600"
                               style={{ height: `${Math.max(4, (day.waste / maxActivity) * 100)}%` }}
                             />
                           </div>
@@ -830,13 +1109,13 @@ export default function AdminOperationPage() {
               </div>
             </div>
           ) : (
-            /* 2. MODO LÍNEAS / ÁREA SUAVE (Con ancho dinámico y decimación de fechas) */
+            /* 2. MODO LINEAS / AREA SUAVE */
             <div className="space-y-2">
               {activity.length > 10 && (
                 <div className="flex items-center justify-between text-[11px] text-[#8C522B] px-1">
-                  <span>Mostrando {activity.length} días de actividad</span>
+                  <span>Mostrando {activity.length} dias de actividad</span>
                   <span className="hidden sm:inline-flex items-center gap-1 text-[#D97706] font-semibold">
-                    ← Desliza horizontalmente para explorar el historial →
+                    &larr; Desliza horizontalmente para explorar el historial &rarr;
                   </span>
                 </div>
               )}
@@ -848,24 +1127,25 @@ export default function AdminOperationPage() {
                       className="h-full w-full overflow-visible"
                     >
                       <defs>
-                        {/* Gradiente Producción (Azul Cobalto) */}
                         <linearGradient id="grad-prod" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#2563eb" stopOpacity="0.30" />
+                          <stop offset="0%" stopColor="#2563eb" stopOpacity="0.25" />
                           <stop offset="100%" stopColor="#2563eb" stopOpacity="0.0" />
                         </linearGradient>
-                        {/* Gradiente Ventas (Verde Esmeralda) */}
                         <linearGradient id="grad-sold" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#059669" stopOpacity="0.30" />
+                          <stop offset="0%" stopColor="#059669" stopOpacity="0.25" />
                           <stop offset="100%" stopColor="#059669" stopOpacity="0.0" />
                         </linearGradient>
-                        {/* Gradiente Mermas (Rojo Carmesí) */}
+                        <linearGradient id="grad-surplus" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.25" />
+                          <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.0" />
+                        </linearGradient>
                         <linearGradient id="grad-waste" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#dc2626" stopOpacity="0.30" />
+                          <stop offset="0%" stopColor="#dc2626" stopOpacity="0.25" />
                           <stop offset="100%" stopColor="#dc2626" stopOpacity="0.0" />
                         </linearGradient>
                       </defs>
 
-                      {/* Guías Horizontales con Escala */}
+                      {/* Guias Horizontales con Escala */}
                       {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
                         const y = svgMetrics.paddingTop + svgMetrics.innerHeight * (1 - ratio)
                         const val = Math.round(maxActivity * ratio)
@@ -894,22 +1174,23 @@ export default function AdminOperationPage() {
                         )
                       })}
 
-                      {/* Áreas Rellenas con Gradiente (si chartType === 'area') */}
+                      {/* Areas Rellenas con Gradiente (si chartType === 'area') */}
                       {chartType === "area" && (
                         <>
                           <path d={svgMetrics.areaProduced} fill="url(#grad-prod)" />
                           <path d={svgMetrics.areaSold} fill="url(#grad-sold)" />
+                          <path d={svgMetrics.areaSurplus} fill="url(#grad-surplus)" />
                           <path d={svgMetrics.areaWaste} fill="url(#grad-waste)" />
                         </>
                       )}
 
-                      {/* Líneas de Tendencia de Alto Contraste */}
+                      {/* Lineas de Tendencia */}
                       {svgMetrics.pathProduced && (
                         <path
                           d={svgMetrics.pathProduced}
                           fill="none"
                           stroke="#2563eb"
-                          strokeWidth="2.75"
+                          strokeWidth="2.5"
                           strokeLinecap="round"
                         />
                       )}
@@ -918,7 +1199,16 @@ export default function AdminOperationPage() {
                           d={svgMetrics.pathSold}
                           fill="none"
                           stroke="#059669"
-                          strokeWidth="2.75"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                        />
+                      )}
+                      {svgMetrics.pathSurplus && (
+                        <path
+                          d={svgMetrics.pathSurplus}
+                          fill="none"
+                          stroke="#f59e0b"
+                          strokeWidth="2.5"
                           strokeLinecap="round"
                         />
                       )}
@@ -927,15 +1217,16 @@ export default function AdminOperationPage() {
                           d={svgMetrics.pathWaste}
                           fill="none"
                           stroke="#dc2626"
-                          strokeWidth="2.75"
+                          strokeWidth="2.5"
                           strokeLinecap="round"
                         />
                       )}
 
-                      {/* Puntos y Etiquetas X con Decimación Inteligente */}
+                      {/* Puntos y Etiquetas X */}
                       {activity.map((item, idx) => {
                         const ptProd = svgMetrics.pointsProduced[idx]
                         const ptSold = svgMetrics.pointsSold[idx]
+                        const ptSurplus = svgMetrics.pointsSurplus[idx]
                         const ptWaste = svgMetrics.pointsWaste[idx]
                         const isHovered = hoveredIndex === idx
 
@@ -945,7 +1236,6 @@ export default function AdminOperationPage() {
                           : dateObj.toLocaleDateString("es-GT", { weekday: "short" }).replace(".", "")
                         const dayNum = dateObj.getDate()
 
-                        // Decimación inteligente para evitar solapamiento en rangos grandes
                         const stepTick = activity.length > 24 ? 3 : activity.length > 14 ? 2 : 1
                         const showTick = idx === 0 || idx === activity.length - 1 || idx % stepTick === 0
 
@@ -957,7 +1247,6 @@ export default function AdminOperationPage() {
                             onClick={() => setHoveredIndex(hoveredIndex === idx ? null : idx)}
                             className="cursor-pointer"
                           >
-                            {/* Línea vertical en hover */}
                             {isHovered && (
                               <line
                                 x1={ptProd.x}
@@ -971,38 +1260,47 @@ export default function AdminOperationPage() {
                               />
                             )}
 
-                            {/* Punto Producción (Azul) */}
+                            {/* Punto Horneado (Azul) */}
                             <circle
                               cx={ptProd.x}
                               cy={ptProd.y}
-                              r={isHovered ? "6" : "3.5"}
+                              r={isHovered ? "5.5" : "3"}
                               fill="#2563eb"
                               stroke="#ffffff"
-                              strokeWidth="2"
+                              strokeWidth="1.5"
                               className="transition-all"
                             />
-                            {/* Punto Venta (Verde) */}
+                            {/* Punto Ventas (Verde) */}
                             <circle
                               cx={ptSold.x}
                               cy={ptSold.y}
-                              r={isHovered ? "6" : "3.5"}
+                              r={isHovered ? "5.5" : "3"}
                               fill="#059669"
                               stroke="#ffffff"
-                              strokeWidth="2"
+                              strokeWidth="1.5"
+                              className="transition-all"
+                            />
+                            {/* Punto Sobrante (Ambar) */}
+                            <circle
+                              cx={ptSurplus.x}
+                              cy={ptSurplus.y}
+                              r={isHovered ? "5.5" : "3"}
+                              fill="#f59e0b"
+                              stroke="#ffffff"
+                              strokeWidth="1.5"
                               className="transition-all"
                             />
                             {/* Punto Merma (Rojo) */}
                             <circle
                               cx={ptWaste.x}
                               cy={ptWaste.y}
-                              r={isHovered ? "6" : "3.5"}
+                              r={isHovered ? "5.5" : "3"}
                               fill="#dc2626"
                               stroke="#ffffff"
-                              strokeWidth="2"
+                              strokeWidth="1.5"
                               className="transition-all"
                             />
 
-                            {/* Etiqueta Eje X (Solo si showTick es true o en hover) */}
                             {(showTick || isHovered) && (
                               <text
                                 x={ptProd.x}
@@ -1027,50 +1325,62 @@ export default function AdminOperationPage() {
           )}
         </div>
 
-        {/* Tarjeta de Detalle en Hover / Selección */}
-        {hoveredIndex !== null && activity[hoveredIndex] && (
-          <div className="rounded-2xl border border-[#DECDBB] bg-[#FAF5EE] p-3.5 text-xs flex flex-wrap items-center justify-between gap-3 animate-in fade-in shadow-2xs">
-            <div className="flex items-center gap-2">
-              <CalendarDays className="h-4 w-4 text-[#D97706]" />
-              <span className="font-bold text-[#2B170F]">
-                {new Date(`${activity[hoveredIndex].date}T12:00:00`).toLocaleDateString("es-GT", {
-                  weekday: "long",
-                  day: "numeric",
-                  month: "long",
-                })}
-              </span>
+        {/* Tarjeta de Detalle en Hover / Seleccion */}
+        {hoveredIndex !== null && activity[hoveredIndex] && (() => {
+          const day = activity[hoveredIndex]
+          const surplusDay = Math.max(0, day.produced - day.sold - day.waste)
+          return (
+            <div className="rounded-2xl border border-[#DECDBB] bg-[#FAF5EE] p-3.5 text-xs flex flex-wrap items-center justify-between gap-3 animate-in fade-in shadow-2xs">
+              <div className="flex items-center gap-2">
+                <CalendarDays className="h-4 w-4 text-[#D97706]" />
+                <span className="font-bold text-[#2B170F]">
+                  {new Date(`${day.date}T12:00:00`).toLocaleDateString("es-GT", {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                  })}
+                </span>
+              </div>
+              <div className="flex flex-wrap items-center gap-4">
+                <span className="inline-flex items-center gap-1.5 font-bold text-blue-700">
+                  <i className="h-2.5 w-2.5 rounded-full bg-blue-600" />
+                  Horneado: <strong>{day.produced.toLocaleString()}</strong> uds
+                </span>
+                <span className="inline-flex items-center gap-1.5 font-bold text-emerald-700">
+                  <i className="h-2.5 w-2.5 rounded-full bg-emerald-600" />
+                  Ventas: <strong>{day.sold.toLocaleString()}</strong> uds
+                </span>
+                <span className="inline-flex items-center gap-1.5 font-bold text-amber-700">
+                  <i className="h-2.5 w-2.5 rounded-full bg-amber-500" />
+                  Sobrante: <strong>{surplusDay.toLocaleString()}</strong> uds
+                </span>
+                <span className="inline-flex items-center gap-1.5 font-bold text-red-600">
+                  <i className="h-2.5 w-2.5 rounded-full bg-red-600" />
+                  Merma real: <strong>{day.waste.toLocaleString()}</strong> uds
+                </span>
+              </div>
             </div>
-            <div className="flex flex-wrap items-center gap-4">
-              <span className="inline-flex items-center gap-1.5 font-bold text-blue-700">
-                <i className="h-2.5 w-2.5 rounded-full bg-blue-600" />
-                Producción: <strong>{activity[hoveredIndex].produced.toLocaleString()}</strong> uds
-              </span>
-              <span className="inline-flex items-center gap-1.5 font-bold text-emerald-700">
-                <i className="h-2.5 w-2.5 rounded-full bg-emerald-600" />
-                Ventas: <strong>{activity[hoveredIndex].sold.toLocaleString()}</strong> uds
-              </span>
-              <span className="inline-flex items-center gap-1.5 font-bold text-red-600">
-                <i className="h-2.5 w-2.5 rounded-full bg-red-600" />
-                Mermas: <strong>{activity[hoveredIndex].waste.toLocaleString()}</strong> uds
-              </span>
-            </div>
-          </div>
-        )}
+          )
+        })()}
 
         {/* Leyenda Inferior */}
         <div className="flex flex-wrap items-center justify-between gap-4 border-t border-[#E8DCCB] pt-3 text-xs text-[#6E5545]">
           <div className="flex flex-wrap items-center gap-4">
             <span className="inline-flex items-center gap-1.5 font-bold text-blue-700">
               <i className="h-2.5 w-2.5 rounded-full bg-blue-600" />
-              Producción (Horneado)
+              Horneado (Produccion)
             </span>
             <span className="inline-flex items-center gap-1.5 font-bold text-emerald-700">
               <i className="h-2.5 w-2.5 rounded-full bg-emerald-600" />
               Ventas (Despacho)
             </span>
+            <span className="inline-flex items-center gap-1.5 font-bold text-amber-700">
+              <i className="h-2.5 w-2.5 rounded-full bg-amber-500" />
+              Sobrante para manana (Preservado)
+            </span>
             <span className="inline-flex items-center gap-1.5 font-bold text-red-600">
               <i className="h-2.5 w-2.5 rounded-full bg-red-600" />
-              Mermas (Desperdicio)
+              Merma real (Descarte fisico)
             </span>
           </div>
           <span className="text-[11px] text-[#8C522B] font-semibold">
@@ -1081,99 +1391,237 @@ export default function AdminOperationPage() {
         </div>
       </section>
 
-      {/* Grid Inferior de Alertas y Caducidades */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <section className="rounded-2xl border border-[#E8DCCB] bg-white shadow-xs overflow-hidden">
-          <div className="flex items-center justify-between border-b border-[#E8DCCB] p-4 bg-[#FAF5EE]/60">
+      {/* SECCION 2: GRAFICA DE TOP PANES CON MAYOR MERMA REAL */}
+      <section className="rounded-2xl border border-[#E8DCCB] bg-white p-5 shadow-xs sm:p-6 space-y-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-[#E8DCCB] pb-3">
+          <div>
             <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4.5 w-4.5 text-[#D97706]" />
-              <h2 className="font-bold text-sm text-[#2B170F]">Alertas activas</h2>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-600">
+                <TrendingDown className="h-4 w-4" />
+              </div>
+              <h2 className="font-bold text-base text-[#2B170F] sm:text-lg">Top panes con mayor merma real</h2>
             </div>
-            <Link href="/admin/historial" className="text-xs font-bold text-[#D97706] hover:underline">
-              Ver historial
-            </Link>
+            <p className="text-xs text-[#6E5545] mt-0.5">
+              Productos con mayor descarte acumulado en el periodo para calibrar tandas de horneado
+            </p>
           </div>
-          <div className="divide-y divide-[#E8DCCB]">
-            {isLoading ? (
-              <p className="p-4 text-xs text-[#6E5545]">Cargando alertas...</p>
-            ) : notifications.length === 0 ? (
-              <p className="p-4 text-xs text-[#6E5545]">No hay alertas recientes.</p>
-            ) : (
-              notifications.slice(0, 8).map((item) => (
-                <div key={item.id} className="flex gap-3 p-4 hover:bg-[#FAF5EE]/40 transition-colors">
-                  <Bell className="mt-0.5 h-4 w-4 shrink-0 text-[#D97706]" />
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-[#2B170F]">{item.title}</p>
-                    <p className="mt-0.5 text-xs text-[#6E5545]">{item.message}</p>
-                    <p className="mt-1 text-[10px] text-[#8C522B]">{formatDate(item.createdAt)}</p>
+          <Link
+            href="/admin/produccion"
+            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border border-[#DECDBB] bg-[#FAF5EE] px-3.5 py-2 text-xs font-bold text-[#8C522B] hover:text-[#D97706] hover:border-[#D97706] transition"
+          >
+            <span>Ajustar tandas en produccion</span>
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+
+        {topWasteProducts.length === 0 ? (
+          <div className="py-8 text-center text-xs text-[#6E5545] bg-[#FAF5EE]/40 rounded-xl border border-dashed border-[#DECDBB]">
+            Excelente: No se registran descartes de merma en el periodo seleccionado. El amasijo y la venta estan balanceados.
+          </div>
+        ) : (
+          <div className="space-y-3.5 pt-1">
+            {topWasteProducts.map((item, idx) => (
+              <div key={item.name} className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#FAF5EE] border border-[#DECDBB] text-[10px] font-bold text-[#8C522B]">
+                      {idx + 1}
+                    </span>
+                    <span className="font-bold text-[#2B170F]">{item.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2 font-semibold">
+                    <span className="text-red-600 font-bold">{item.quantity} uds. descartadas</span>
+                    <span className="text-[11px] text-[#8C522B]">({item.percentage.toFixed(1)}% de merma total)</span>
                   </div>
                 </div>
-              ))
-            )}
+                {/* Barra de Progreso Horizontal */}
+                <div className="h-3 w-full rounded-full bg-[#FAF5EE] border border-[#DECDBB]/60 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-amber-500 to-red-500 transition-all duration-500"
+                    style={{ width: `${Math.max(6, Math.min(100, item.percentage))}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+
+            <div className="rounded-xl border border-[#DECDBB] bg-[#FAF5EE]/70 p-3 text-xs text-[#8C522B] mt-4 flex items-center gap-2">
+              <Info className="h-4 w-4 shrink-0 text-[#D97706]" />
+              <p>
+                <strong>Consejo de horneado:</strong> Para los panes con merma continua, reduzca de 2 a 5 latas en la pantalla de{" "}
+                <Link href="/admin/produccion" className="text-[#D97706] font-bold hover:underline">
+                  Registro de Horneado
+                </Link>{" "}
+                hasta que el descarte diario no supere el 5% del volumen horneado.
+              </p>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* Grid Inferior de Alertas y Caducidades de Comprados */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Panel 1: Alertas Automaticas */}
+        <section className="rounded-2xl border border-[#E8DCCB] bg-white shadow-xs overflow-hidden flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between border-b border-[#E8DCCB] p-4 bg-[#FAF5EE]/60">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-4.5 w-4.5 text-[#D97706]" />
+                <h2 className="font-bold text-sm text-[#2B170F]">Alertas automaticas activas</h2>
+              </div>
+              <Link href="/admin/historial" className="text-xs font-bold text-[#D97706] hover:underline">
+                Ver historial
+              </Link>
+            </div>
+            <div className="divide-y divide-[#E8DCCB]">
+              {isLoading ? (
+                <p className="p-4 text-xs text-[#6E5545]">Cargando alertas...</p>
+              ) : notifications.length === 0 ? (
+                <p className="p-4 text-xs text-[#6E5545]">No hay alertas pendientes en el sistema.</p>
+              ) : (
+                notifications.slice(0, 6).map((item) => (
+                  <div key={item.id} className="flex gap-3 p-4 hover:bg-[#FAF5EE]/40 transition-colors">
+                    <Bell className="mt-0.5 h-4 w-4 shrink-0 text-[#D97706]" />
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-[#2B170F]">{item.title}</p>
+                      <p className="mt-0.5 text-xs text-[#6E5545]">{item.message}</p>
+                      <p className="mt-1 text-[10px] text-[#8C522B]">{formatDate(item.createdAt)}</p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+          <div className="p-3 border-t border-[#E8DCCB] bg-[#FAF5EE]/30 text-right">
+            <Link href="/admin/historial" className="text-[11px] font-bold text-[#8C522B] hover:text-[#D97706]">
+              Explorar todas las notificaciones &rarr;
+            </Link>
           </div>
         </section>
 
-        <section className="rounded-2xl border border-[#E8DCCB] bg-white shadow-xs overflow-hidden">
-          <div className="flex items-center justify-between border-b border-[#E8DCCB] p-4 bg-[#FAF5EE]/60">
-            <div className="flex items-center gap-2">
-              <Package className="h-4.5 w-4.5 text-[#D97706]" />
-              <h2 className="font-bold text-sm text-[#2B170F]">Productos próximos a vencer</h2>
-            </div>
-            <Link href="/admin/inventario/caducidades" className="text-xs font-bold text-[#D97706] hover:underline">
-              Ver lotes
-            </Link>
-          </div>
-          <div className="divide-y divide-[#E8DCCB]">
-            {expiringLots.length === 0 ? (
-              <p className="p-4 text-xs text-[#6E5545]">No hay lotes próximos a vencer.</p>
-            ) : (
-              expiringLots.slice(0, 8).map((lot) => (
-                <div key={lot.id} className="flex items-center justify-between gap-4 p-4 hover:bg-[#FAF5EE]/40 transition-colors">
-                  <div className="min-w-0">
-                    <p className="truncate text-xs font-bold text-[#2B170F]">{lot.product.name}</p>
-                    <p className="text-[11px] text-[#6E5545]">{lot.branch.name} · vence {lot.expiresAt}</p>
-                  </div>
-                  <span className="shrink-0 text-xs font-bold text-[#2B170F] bg-[#FAF5EE] border border-[#DECDBB] px-2.5 py-1 rounded-lg">
-                    {lot.availableQuantity} uds.
-                  </span>
+        {/* Panel 2: Productos Comprados Proximos a Vencer (< 30 dias) */}
+        <section className="rounded-2xl border border-[#E8DCCB] bg-white shadow-xs overflow-hidden flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between border-b border-[#E8DCCB] p-4 bg-[#FAF5EE]/60">
+              <div className="flex items-center gap-2">
+                <Package className="h-4.5 w-4.5 text-[#D97706]" />
+                <div>
+                  <h2 className="font-bold text-sm text-[#2B170F]">Lotes de reventa por vencer</h2>
+                  <p className="text-[11px] text-[#6E5545]">Productos comprados (horizonte de 30 dias)</p>
                 </div>
-              ))
-            )}
+              </div>
+              <Link href="/admin/inventario/caducidades" className="text-xs font-bold text-[#D97706] hover:underline">
+                Gestionar lotes
+              </Link>
+            </div>
+            <div className="divide-y divide-[#E8DCCB]">
+              {expiringLots.length === 0 ? (
+                <p className="p-4 text-xs text-[#6E5545]">No hay lotes de reventa proximos a vencer en los proximos 30 dias.</p>
+              ) : (
+                expiringLots.slice(0, 6).map((lot) => {
+                  const daysLeft = lot.daysLeft ?? (
+                    lot.expiresAt
+                      ? Math.ceil((new Date(lot.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+                      : null
+                  )
+                  const isCritical = daysLeft !== null && daysLeft <= 3
+                  const isWarning = daysLeft !== null && daysLeft > 3 && daysLeft <= 7
+
+                  return (
+                    <div key={lot.id} className="flex items-center justify-between gap-4 p-4 hover:bg-[#FAF5EE]/40 transition-colors">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="truncate text-xs font-bold text-[#2B170F]">{lot.product.name}</p>
+                          {isCritical ? (
+                            <span className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-[9px] font-bold text-red-700">
+                              {daysLeft <= 0 ? "Vence hoy" : `${daysLeft}d critico`}
+                            </span>
+                          ) : isWarning ? (
+                            <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-bold text-amber-800">
+                              {daysLeft}d proximo
+                            </span>
+                          ) : (
+                            <span className="shrink-0 rounded-full bg-[#FAF5EE] border border-[#DECDBB] px-2 py-0.5 text-[9px] font-semibold text-[#8C522B]">
+                              {daysLeft}d
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-[#6E5545]">
+                          {lot.branch.name} · Vence: {lot.expiresAt || "Sin fecha"}
+                        </p>
+                      </div>
+                      <span className="shrink-0 text-xs font-bold text-[#2B170F] bg-[#FAF5EE] border border-[#DECDBB] px-2.5 py-1.5 rounded-lg">
+                        {lot.availableQuantity} uds.
+                      </span>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+          </div>
+          <div className="p-3 border-t border-[#E8DCCB] bg-[#FAF5EE]/30 text-right">
+            <Link href="/admin/inventario/caducidades" className="text-[11px] font-bold text-[#8C522B] hover:text-[#D97706]">
+              Ver modulo completo de caducidades &rarr;
+            </Link>
           </div>
         </section>
       </div>
 
-      {/* Sección Materias Primas Bajo Mínimo */}
+      {/* Seccion Materias Primas Bajo Minimo */}
       <section className="rounded-2xl border border-[#E8DCCB] bg-white p-5 shadow-xs">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Wheat className="h-4.5 w-4.5 text-[#D97706]" />
-            <h2 className="font-bold text-sm text-[#2B170F]">Materias primas bajo mínimo</h2>
+            <div>
+              <h2 className="font-bold text-sm text-[#2B170F]">Materias primas bajo minimo</h2>
+              <p className="text-[11px] text-[#6E5545]">Insumos esenciales para el amasijo en riesgo de agotamiento</p>
+            </div>
           </div>
-          <Link href="/admin/inventario/materias-primas" className="text-xs font-bold text-[#D97706] hover:underline">
-            Gestionar inventario
+          <Link
+            href="/admin/inventario/materias-primas"
+            className="inline-flex min-h-[44px] items-center gap-1 text-xs font-bold text-[#D97706] hover:underline"
+          >
+            <span>Gestionar insumos</span>
+            <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
         {lowMaterials.length === 0 ? (
-          <p className="mt-4 text-xs text-[#6E5545]">No hay materias primas bajo mínimo en la sucursal consultada.</p>
+          <p className="mt-4 text-xs text-[#6E5545]">
+            No hay materias primas bajo minimo en la sucursal consultada. El inventario cubre la demanda proyectada.
+          </p>
         ) : (
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {lowMaterials.slice(0, 9).map((item) => (
-              <div key={item.id} className="rounded-xl border border-[#ECCDB5] bg-[#FAF0E6] p-3.5">
-                <p className="text-xs font-bold text-[#2B170F]">{item.rawMaterial.name}</p>
-                <p className="mt-1 text-xs text-[#9E4D1A]">
-                  {asNumber(item.quantity).toFixed(1)} {item.rawMaterial.baseUnit} · mínimo {asNumber(item.rawMaterial.minStock).toFixed(1)}
+              <div key={item.id} className="rounded-xl border border-[#ECCDB5] bg-[#FAF0E6] p-3.5 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-bold text-[#2B170F]">{item.rawMaterial.name}</p>
+                    <span className="rounded-full bg-red-100 text-red-700 px-2 py-0.5 text-[9px] font-bold">
+                      Bajo stock
+                    </span>
+                  </div>
+                  <p className="mt-1.5 text-xs text-[#9E4D1A] font-semibold">
+                    Disponible: {asNumber(item.quantity).toFixed(1)} {item.rawMaterial.baseUnit}
+                  </p>
+                  <p className="text-[11px] text-[#6E5545]">
+                    Stock minimo requerido: {asNumber(item.rawMaterial.minStock).toFixed(1)} {item.rawMaterial.baseUnit}
+                  </p>
+                </div>
+                <p className="mt-2 text-[10px] text-[#8C522B] pt-2 border-t border-[#ECCDB5]/60">
+                  {item.branch.name}
                 </p>
-                <p className="mt-1 text-[10px] text-[#8C522B]">{item.branch.name}</p>
               </div>
             ))}
           </div>
         )}
       </section>
 
-      <p className="text-right text-[11px] text-[#8C522B]">
-        {lastUpdated ? "Actualizado " + lastUpdated.toLocaleTimeString("es-GT") : "Sin actualizar"}
-      </p>
+      {/* Pie de Pagina con Sincronizacion */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-[#8C522B] pt-2">
+        <p>Panel adaptado al ciclo operativo de panaderia tradicional y gestion de vencimientos de reventa.</p>
+        <p>
+          {lastUpdated ? "Ultima actualizacion: " + lastUpdated.toLocaleTimeString("es-GT") : "Sin actualizar"}
+        </p>
+      </div>
     </div>
   )
 }

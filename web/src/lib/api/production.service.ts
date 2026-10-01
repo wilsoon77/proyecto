@@ -92,6 +92,62 @@ export const productionService = {
     return api.post<ProductionResult>('/production', data)
   },
 
+  /** Registrar una tanda de múltiples horneados */
+  async registerBatch(
+    items: Array<{
+      recipeId: number
+      traysProduced?: number
+      productionPresentationId?: number
+      productionQuantity?: number
+      branchId?: number
+      note?: string
+    }>,
+    onProgress?: (current: number, total: number) => void,
+  ): Promise<{
+    successCount: number
+    failedCount: number
+    results: Array<{
+      recipeId: number
+      success: boolean
+      result?: ProductionResult
+      error?: string
+    }>
+  }> {
+    const results: Array<{
+      recipeId: number
+      success: boolean
+      result?: ProductionResult
+      error?: string
+    }> = []
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i]
+      if (onProgress) {
+        onProgress(i + 1, items.length)
+      }
+      try {
+        const res = await this.registerProduction(item)
+        results.push({
+          recipeId: item.recipeId,
+          success: true,
+          result: res,
+        })
+      } catch (err: unknown) {
+        const errorMsg = err instanceof Error ? err.message : 'Error al registrar producción'
+        results.push({
+          recipeId: item.recipeId,
+          success: false,
+          error: errorMsg,
+        })
+      }
+    }
+
+    const successCount = results.filter((r) => r.success).length
+    const failedCount = results.filter((r) => !r.success).length
+
+    return { successCount, failedCount, results }
+  },
+
   /** Producción de hoy */
   async getTodayProduction(branchId?: number): Promise<ProductionLog[]> {
     const params = branchId ? `?branchId=${branchId}` : ''

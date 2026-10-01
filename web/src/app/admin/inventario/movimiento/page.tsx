@@ -35,6 +35,7 @@ import {
 } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader"
 
 interface Branch {
   id: number
@@ -493,23 +494,16 @@ function MovimientoForm() {
   const toBranchName = branches.find(b => b.slug === transferToBranch)?.name || "Destino"
 
   return (
-    <div className="min-h-screen bg-stone-50 pb-32 sm:pb-20 p-3 sm:p-6 lg:p-8">
-      <div className="mx-auto max-w-7xl space-y-6">
-        {/* Encabezado Superior */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <Link href={returnUrl} className="mb-2 inline-flex items-center gap-1 text-xs sm:text-sm text-stone-500 hover:text-stone-900 transition-colors">
-              <ArrowLeft className="h-3.5 w-3.5" />Volver al Inventario
-            </Link>
-            <h1 className="flex items-center gap-2.5 text-2xl sm:text-3xl font-extrabold text-gray-900 font-serif">
-              <ArrowRightLeft className="h-7 w-7 text-primary flex-shrink-0" />
-              Movimientos & Transferencias
-            </h1>
-            <p className="mt-1 text-xs sm:text-sm text-stone-600 max-w-2xl leading-relaxed">
-              Transfiere múltiples productos entre sucursales en un solo envío o registra ajustes puntuales de inventario.
-            </p>
-          </div>
-        </div>
+    <div className="space-y-6 max-w-7xl mx-auto pb-16">
+      <AdminPageHeader
+        title="Movimientos & Transferencias"
+        description="Transfiere múltiples productos entre sucursales en un solo envío o registra ajustes puntuales de inventario."
+        icon={<ArrowRightLeft className="h-6 w-6 text-[#D97706]" />}
+        breadcrumbs={[
+          { label: "Inventario", href: returnUrl },
+          { label: "Movimientos & Transferencias" },
+        ]}
+      />
 
         {/* Pestañas de Modo (Transferencia Masiva vs Movimiento Individual) */}
         <div className="flex rounded-2xl bg-stone-200/80 p-1 max-w-md">
@@ -683,23 +677,23 @@ function MovimientoForm() {
                             : "border-stone-200 bg-white hover:border-stone-300"
                         } ${!hasStock && !isSelected ? "opacity-60" : ""}`}
                       >
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-w-0">
                           {/* Información del Producto */}
-                          <div className="space-y-1 flex-1">
-                            <div className="flex items-center gap-2">
-                              <h3 className="text-base font-bold text-gray-900">{product.name}</h3>
+                          <div className="space-y-1 flex-1 min-w-0">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <h3 className="text-base font-bold text-gray-900 break-words">{product.name}</h3>
                               {product.origin === 'PRODUCIDO' ? (
-                                <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 flex items-center gap-1">
+                                <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 flex items-center gap-1 shrink-0">
                                   <Croissant className="h-3 w-3" /> Panadería
                                 </span>
                               ) : (
-                                <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-bold text-blue-800 flex items-center gap-1">
+                                <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-bold text-blue-800 flex items-center gap-1 shrink-0">
                                   <ShoppingBag className="h-3 w-3" /> Reventa
                                 </span>
                               )}
                             </div>
                             <div className="flex flex-wrap items-center gap-2 text-xs text-stone-500">
-                              <span className="font-mono">{product.slug}</span>
+                              <span className="font-mono break-all">{product.slug}</span>
                               {product.category && <span>· {product.category}</span>}
                             </div>
 
@@ -1086,7 +1080,6 @@ function MovimientoForm() {
             </form>
           </div>
         )}
-      </div>
 
       {/* BARRA FLOTANTE STICKY PARA MÓVIL (Transferencia Masiva) */}
       {mainMode === "TRANSFER_BULK" && selectedTransferList.length > 0 && (
@@ -1116,7 +1109,7 @@ function MovimientoForm() {
 export default function MovimientoPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-stone-50 p-8 flex items-center justify-center">
+      <div className="min-h-[50vh] flex items-center justify-center">
         <div className="text-center space-y-2">
           <RefreshCw className="h-8 w-8 animate-spin text-primary mx-auto" />
           <p className="text-sm text-stone-600 font-medium">Cargando módulo de movimientos...</p>

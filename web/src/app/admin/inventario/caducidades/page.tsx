@@ -622,15 +622,15 @@ export default function CaducidadesPage() {
 
       {/* ── MODAL PARA AJUSTAR ALERTA DE CADUCIDAD ── */}
       {selectedLotForEdit && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs animate-fadeIn">
-          <div className="w-full max-w-lg rounded-2xl border border-[#E8DCCB] bg-white p-6 shadow-xl space-y-5">
-            {/* Header del Modal */}
-            <div className="flex items-start justify-between gap-4 border-b border-[#E8DCCB] pb-3">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-3 sm:p-4 backdrop-blur-xs animate-fadeIn">
+          <div className="w-full max-w-lg max-h-[calc(100dvh-2rem)] flex flex-col rounded-2xl border border-[#E8DCCB] bg-white shadow-xl overflow-hidden">
+            {/* Header del Modal (Fijo) */}
+            <div className="flex items-start justify-between gap-4 border-b border-[#E8DCCB] p-4 sm:p-5 pb-3 shrink-0 bg-[#FAF5EE]/70">
               <div>
-                <h3 className="text-lg font-bold text-[#2B170F] flex items-center gap-2">
-                  <SlidersHorizontal className="h-5 w-5 text-[#D97706]" /> Ajustar Alertas de Caducidad
+                <h3 className="text-base sm:text-lg font-bold text-[#2B170F] flex items-center gap-2">
+                  <SlidersHorizontal className="h-5 w-5 text-[#D97706] shrink-0" /> Ajustar Alertas de Caducidad
                 </h3>
-                <p className="text-xs text-[#8C522B] mt-0.5">
+                <p className="text-xs text-[#8C522B] mt-0.5 truncate max-w-[280px] sm:max-w-none">
                   Lote #{selectedLotForEdit.id} · {selectedLotForEdit.product.name} ({selectedLotForEdit.branch.name})
                 </p>
               </div>
@@ -638,127 +638,131 @@ export default function CaducidadesPage() {
                 type="button"
                 onClick={() => setSelectedLotForEdit(null)}
                 className="rounded-lg p-1.5 text-[#8C522B] hover:bg-[#FAF5EE] transition"
+                aria-label="Cerrar modal"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            {/* Información del Lote */}
-            <div className="grid grid-cols-2 gap-3 bg-[#FAF5EE] p-3.5 rounded-xl border border-[#DECDBB]/60 text-xs">
-              <div>
-                <span className="text-[#8C522B] block font-bold uppercase text-[10px] tracking-wider">Existencia</span>
-                <span className="font-bold text-[#2B170F] text-sm">{selectedLotForEdit.availableQuantity} unidades</span>
-              </div>
-              <div>
-                <span className="text-[#8C522B] block font-bold uppercase text-[10px] tracking-wider">Fecha de Caducidad</span>
-                <span className="font-bold text-[#2B170F] text-sm">
-                  {formatDatePretty(editCustomExpiresAt || selectedLotForEdit.expiresAt)}
-                </span>
-              </div>
-            </div>
-
-            {/* Opciones de Modo: Días de anticipación vs Fecha exacta */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-bold uppercase tracking-wider text-[#8C522B]">
-                  Programación de Avisos
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setIsCustomDateMode(!isCustomDateMode)}
-                  className="text-xs font-semibold text-[#D97706] hover:underline"
-                >
-                  {isCustomDateMode ? "Usar días de anticipación" : "Elegir fecha exacta"}
-                </button>
-              </div>
-
-              {!isCustomDateMode ? (
-                <div className="space-y-3">
-                  <p className="text-xs text-[#6E5545]">
-                    Selecciona <strong>días de anticipación</strong> para recibir recordatorios:
-                  </p>
-                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                    {quickReminderDays.map((d) => {
-                      const isSelected = editReminderDays.includes(d)
-                      return (
-                        <button
-                          key={d}
-                          type="button"
-                          onClick={() => toggleReminderDay(d)}
-                          className={`py-2 px-2.5 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 transition ${
-                            isSelected
-                              ? "bg-[#D97706] text-white border-[#D97706] shadow-xs"
-                              : "bg-white border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE]"
-                          }`}
-                        >
-                          {isSelected && <Check className="h-3.5 w-3.5" />}
-                          {d} {d === 1 ? "día" : "días"}
-                        </button>
-                      )
-                    })}
-                  </div>
+            {/* Cuerpo del Modal (Scrollable) */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+              {/* Información del Lote */}
+              <div className="grid grid-cols-2 gap-3 bg-[#FAF5EE] p-3.5 rounded-xl border border-[#DECDBB]/60 text-xs">
+                <div>
+                  <span className="text-[#8C522B] block font-bold uppercase text-[10px] tracking-wider">Existencia</span>
+                  <span className="font-bold text-[#2B170F] text-sm">{selectedLotForEdit.availableQuantity} unidades</span>
                 </div>
-              ) : (
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-[#2B170F] block">
-                    Fecha exacta para enviar notificación:
+                <div>
+                  <span className="text-[#8C522B] block font-bold uppercase text-[10px] tracking-wider">Fecha de Caducidad</span>
+                  <span className="font-bold text-[#2B170F] text-sm">
+                    {formatDatePretty(editCustomExpiresAt || selectedLotForEdit.expiresAt)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Opciones de Modo: Días de anticipación vs Fecha exacta */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold uppercase tracking-wider text-[#8C522B]">
+                    Programación de Avisos
                   </label>
-                  <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8C522B]" />
-                    <input
-                      type="date"
-                      value={editCustomAlertAt}
-                      onChange={(e) => setEditCustomAlertAt(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-[#DECDBB] rounded-xl text-[#2B170F] focus:outline-none focus:ring-2 focus:ring-[#D97706]/30"
-                    />
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsCustomDateMode(!isCustomDateMode)}
+                    className="text-xs font-semibold text-[#D97706] hover:underline"
+                  >
+                    {isCustomDateMode ? "Usar días de anticipación" : "Elegir fecha exacta"}
+                  </button>
                 </div>
-              )}
 
-              {/* Vista Previa */}
-              {previewAlertDates.length > 0 && (
-                <div className="rounded-xl bg-amber-50 border border-amber-200 p-3.5 space-y-2 text-xs text-amber-950">
-                  <div className="flex items-center gap-2 font-bold text-amber-900">
-                    <Bell className="h-4 w-4 text-[#D97706] shrink-0" />
-                    <span>
-                      {previewAlertDates.length === 1
-                        ? "1 notificación programada:"
-                        : `${previewAlertDates.length} notificaciones programadas:`}
-                    </span>
+                {!isCustomDateMode ? (
+                  <div className="space-y-3">
+                    <p className="text-xs text-[#6E5545]">
+                      Selecciona <strong>días de anticipación</strong> para recibir recordatorios:
+                    </p>
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                      {quickReminderDays.map((d) => {
+                        const isSelected = editReminderDays.includes(d)
+                        return (
+                          <button
+                            key={d}
+                            type="button"
+                            onClick={() => toggleReminderDay(d)}
+                            className={`py-2 px-2.5 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 transition ${
+                              isSelected
+                                ? "bg-[#D97706] text-white border-[#D97706] shadow-xs"
+                                : "bg-white border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE]"
+                            }`}
+                          >
+                            {isSelected && <Check className="h-3.5 w-3.5" />}
+                            {d} {d === 1 ? "día" : "días"}
+                          </button>
+                        )
+                      })}
+                    </div>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-0.5">
-                    {previewAlertDates.map((item, idx) => (
-                      <div
-                        key={item.date + idx}
-                        className="flex items-center justify-between bg-white px-2.5 py-1.5 rounded-lg border border-amber-200/60 font-medium"
-                      >
-                        <span className="text-amber-800 text-[11px]">
-                          {isCustomDateMode ? "Alerta:" : `Aviso (${item.label}):`}
-                        </span>
-                        <strong className="text-amber-950 font-bold">{formatDatePretty(item.date)}</strong>
-                      </div>
-                    ))}
+                ) : (
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-[#2B170F] block">
+                      Fecha exacta para enviar notificación:
+                    </label>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8C522B]" />
+                      <input
+                        type="date"
+                        value={editCustomAlertAt}
+                        onChange={(e) => setEditCustomAlertAt(e.target.value)}
+                        className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-[#DECDBB] rounded-xl text-[#2B170F] focus:outline-none focus:ring-2 focus:ring-[#D97706]/30"
+                      />
+                    </div>
                   </div>
+                )}
+
+                {/* Vista Previa */}
+                {previewAlertDates.length > 0 && (
+                  <div className="rounded-xl bg-amber-50 border border-amber-200 p-3.5 space-y-2 text-xs text-amber-950">
+                    <div className="flex items-center gap-2 font-bold text-amber-900">
+                      <Bell className="h-4 w-4 text-[#D97706] shrink-0" />
+                      <span>
+                        {previewAlertDates.length === 1
+                          ? "1 notificación programada:"
+                          : `${previewAlertDates.length} notificaciones programadas:`}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-0.5">
+                      {previewAlertDates.map((item, idx) => (
+                        <div
+                          key={item.date + idx}
+                          className="flex items-center justify-between bg-white px-2.5 py-1.5 rounded-lg border border-amber-200/60 font-medium"
+                        >
+                          <span className="text-amber-800 text-[11px]">
+                            {isCustomDateMode ? "Alerta:" : `Aviso (${item.label}):`}
+                          </span>
+                          <strong className="text-amber-950 font-bold">{formatDatePretty(item.date)}</strong>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Corrección de Caducidad (Opcional) */}
+                <div className="pt-2 border-t border-[#E8DCCB] space-y-1.5">
+                  <label className="text-xs font-medium text-[#6E5545] flex items-center gap-1.5">
+                    <CalendarClock className="h-3.5 w-3.5 text-[#8C522B]" />
+                    Corregir fecha de caducidad del lote (opcional):
+                  </label>
+                  <input
+                    type="date"
+                    value={editCustomExpiresAt}
+                    onChange={(e) => setEditCustomExpiresAt(e.target.value)}
+                    className="w-full px-3 py-2 text-xs bg-white border border-[#DECDBB] rounded-xl text-[#2B170F] focus:outline-none focus:ring-2 focus:ring-[#D97706]/30"
+                  />
                 </div>
-              )}
-
-              {/* Corrección de Caducidad (Opcional) */}
-              <div className="pt-2 border-t border-[#E8DCCB] space-y-1.5">
-                <label className="text-xs font-medium text-[#6E5545] flex items-center gap-1.5">
-                  <CalendarClock className="h-3.5 w-3.5 text-[#8C522B]" />
-                  Corregir fecha de caducidad del lote (opcional):
-                </label>
-                <input
-                  type="date"
-                  value={editCustomExpiresAt}
-                  onChange={(e) => setEditCustomExpiresAt(e.target.value)}
-                  className="w-full px-3 py-2 text-xs bg-white border border-[#DECDBB] rounded-xl text-[#2B170F] focus:outline-none focus:ring-2 focus:ring-[#D97706]/30"
-                />
               </div>
             </div>
 
-            {/* Footer con Botones */}
-            <div className="flex items-center justify-between gap-2 border-t border-[#E8DCCB] pt-4">
+            {/* Footer con Botones (Fijo en la base) */}
+            <div className="flex items-center justify-between gap-2 border-t border-[#E8DCCB] p-4 shrink-0 bg-white">
               {selectedLotForEdit.isCustomAlert ? (
                 <Button
                   variant="outline"
@@ -776,7 +780,7 @@ export default function CaducidadesPage() {
                   type="button"
                   onClick={() => setSelectedLotForEdit(null)}
                   disabled={isSavingAlert}
-                  className="h-10 px-4 border-[#DECDBB]"
+                  className="h-10 px-4 border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] font-bold text-xs"
                 >
                   Cancelar
                 </Button>
@@ -784,7 +788,7 @@ export default function CaducidadesPage() {
                   type="button"
                   onClick={() => void handleSaveAlertConfig()}
                   disabled={isSavingAlert}
-                  className="h-10 px-5 bg-[#D97706] hover:bg-[#B45309] text-white font-bold rounded-xl shadow-xs"
+                  className="h-10 px-5 bg-[#D97706] hover:bg-[#B45309] text-white font-bold rounded-xl shadow-xs text-xs"
                 >
                   {isSavingAlert && <RefreshCw className="h-4 w-4 mr-1.5 animate-spin" />}
                   Guardar Alertas

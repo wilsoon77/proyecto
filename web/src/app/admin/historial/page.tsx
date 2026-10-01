@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { Factory as History, Search, Loader as Loader2, ListFilter as Filter, Calendar, User, Package, ShoppingCart, Building2, Tag, CircleAlert as AlertCircle, RefreshCcw, ChevronLeft, ChevronRight, Clock, Activity, ClipboardCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader"
 import { useToast } from "@/context/ToastContext"
 import { useAuth } from "@/context/AuthContext"
 import { auditService, type AuditLog, type AuditListFilters, type AuditListResponse, type AuditStats, type AuditFilterOptions } from "@/lib/api"
@@ -202,30 +203,22 @@ export default function HistorialPage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-3">
-            <History className="h-7 w-7 sm:h-8 sm:w-8 text-primary" />
-            Historial de Cambios
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Registro completo de todas las acciones realizadas en el sistema
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          onClick={() => {
+    <div className="space-y-6 max-w-7xl mx-auto pb-16">
+      {/* Header Estandarizado */}
+      <AdminPageHeader
+        title="Historial de Auditoría"
+        description="Registro completo de trazabilidad, eventos y acciones administrativas en el sistema"
+        icon={<History className="h-6 w-6 text-[#D97706]" />}
+        primaryAction={{
+          label: "Actualizar",
+          onClick: () => {
             loadLogs()
             loadStats()
-          }}
-          className="gap-2"
-        >
-          <RefreshCcw className="h-4 w-4" />
-          Actualizar
-        </Button>
-      </div>
+          },
+          icon: <RefreshCcw className="h-4 w-4 mr-1.5" />,
+          variant: "outline",
+        }}
+      />
 
       {/* Stats Cards */}
       {!isLoadingStats && stats && (
@@ -429,8 +422,8 @@ export default function HistorialPage() {
             </div>
 
             {/* Pagination */}
-            <div className="px-4 py-3 border-t border-border flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
+            <div className="px-4 py-3 border-t border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs sm:text-sm">
+              <p className="text-muted-foreground">
                 Mostrando {((pagination.page - 1) * pagination.pageSize) + 1} - {Math.min(pagination.page * pagination.pageSize, pagination.total)} de {pagination.total}
               </p>
               <div className="flex items-center gap-2">
@@ -595,7 +588,7 @@ function LogCard({ log }: { log: AuditLog }) {
         </span>
       </div>
       
-      <p className="text-sm font-medium text-foreground leading-snug">
+      <p className="text-sm font-medium text-foreground leading-snug break-words">
         {summary.headline}
       </p>
 
@@ -609,17 +602,17 @@ function LogCard({ log }: { log: AuditLog }) {
         </div>
       )}
 
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <div className="flex items-center gap-1.5">
-          <EntityIcon className="h-3.5 w-3.5 text-muted-foreground/60" />
-          <span>{ENTITY_LABELS[log.entity] || log.entity}</span>
+      <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground min-w-0">
+        <div className="flex items-center gap-1.5 min-w-0 truncate">
+          <EntityIcon className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />
+          <span className="shrink-0">{ENTITY_LABELS[log.entity] || log.entity}</span>
           {log.entityName && (
-            <span className="text-muted-foreground/60">• {log.entityName}</span>
+            <span className="text-muted-foreground/60 truncate min-w-0">• {log.entityName}</span>
           )}
         </div>
-        <div className="flex items-center gap-1">
-          <User className="h-3 w-3" />
-          <span className="truncate max-w-[120px]">{log.userName}</span>
+        <div className="flex items-center gap-1 shrink-0 ml-auto">
+          <User className="h-3 w-3 shrink-0" />
+          <span className="truncate max-w-[100px] sm:max-w-[120px]">{log.userName}</span>
         </div>
       </div>
     </a>

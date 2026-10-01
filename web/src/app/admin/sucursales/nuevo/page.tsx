@@ -96,7 +96,7 @@ function NuevaSucursalContent() {
   }
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto pb-12">
+    <div className="space-y-6 max-w-3xl mx-auto pb-16">
       {/* ── Header Estandarizado ── */}
       <AdminPageHeader
         title="Nueva Sucursal"
@@ -117,15 +117,15 @@ function NuevaSucursalContent() {
           )}
 
           {/* Icon Badge Preview */}
-          <div className="flex items-center gap-4 p-4 rounded-xl bg-[#FAF5EE] border border-[#DECDBB]/60">
+          <div className="flex items-center gap-4 p-4 rounded-xl bg-[#FAF5EE] border border-[#DECDBB]/60 min-w-0">
             <div className="h-14 w-14 bg-[#FAF0E6] text-[#D97706] rounded-2xl flex items-center justify-center shrink-0 border border-[#E8DCCB]">
               <MapPin className="h-7 w-7" />
             </div>
-            <div>
-              <p className="text-sm font-bold text-[#2B170F]">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold text-[#2B170F] break-words">
                 {name || "Nombre de la sucursal"}
               </p>
-              <p className="text-xs text-[#8C522B] font-mono mt-0.5">
+              <p className="text-xs text-[#8C522B] font-mono mt-0.5 break-all">
                 /{slug || "slug-automatico"}
               </p>
             </div>

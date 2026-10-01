@@ -147,7 +147,7 @@ function EditarSucursalContent({ params }: { params: Promise<{ id: string }> }) 
   }
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto pb-12">
+    <div className="space-y-6 max-w-3xl mx-auto pb-16">
       {/* ── Header Estandarizado ── */}
       <AdminPageHeader
         title={`Editar: ${name}`}
@@ -168,13 +168,13 @@ function EditarSucursalContent({ params }: { params: Promise<{ id: string }> }) 
           )}
 
           {/* Icon Badge Preview */}
-          <div className="flex items-center gap-4 p-4 rounded-xl bg-[#FAF5EE] border border-[#DECDBB]/60">
+          <div className="flex items-center gap-4 p-4 rounded-xl bg-[#FAF5EE] border border-[#DECDBB]/60 min-w-0">
             <div className="h-14 w-14 bg-[#FAF0E6] text-[#D97706] rounded-2xl flex items-center justify-center shrink-0 border border-[#E8DCCB]">
               <MapPin className="h-7 w-7" />
             </div>
-            <div>
-              <p className="text-sm font-bold text-[#2B170F]">{name}</p>
-              <p className="text-xs text-[#8C522B] font-mono mt-0.5">/{slug}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold text-[#2B170F] break-words">{name}</p>
+              <p className="text-xs text-[#8C522B] font-mono mt-0.5 break-all">/{slug}</p>
             </div>
           </div>
 

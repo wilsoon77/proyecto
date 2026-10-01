@@ -45,6 +45,9 @@ web/out/
 web/build/
 web/dist/
 web/.turbo/
+web/audit-results/
+web/scripts/run-responsiveness-audit.mjs
+web/scripts/test-local-auth.mjs
 
 # Documentation outputs
 documentation/.cache/

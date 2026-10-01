@@ -6,6 +6,7 @@ import Link from "next/link"
 import { ArrowLeft, Loader as Loader2, Clock, CircleCheck as CheckCircle, Circle as XCircle, Package, ChefHat, Phone, FileText, Store, Calendar, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader"
 import { ordersService, type OrderStatus } from "@/lib/api"
 import { formatCurrency, formatDateString } from "@/lib/utils"
 
@@ -129,8 +130,8 @@ function DetalleOrdenContent() {
 
   if (isLoading) {
     return (
-      <div className="p-4 sm:p-6 lg:p-8">
-        <div className="flex items-center justify-center py-12">
+      <div className="space-y-6 max-w-5xl mx-auto pb-16 py-12">
+        <div className="flex items-center justify-center">
           <Loader2 className="h-8 w-8 text-primary animate-spin" />
         </div>
       </div>
@@ -139,7 +140,7 @@ function DetalleOrdenContent() {
 
   if (!order) {
     return (
-      <div className="p-4 sm:p-6 lg:p-8">
+      <div className="space-y-6 max-w-5xl mx-auto pb-16 py-12">
         <p className="text-center text-muted-foreground">Orden no encontrada</p>
       </div>
     )
@@ -150,28 +151,21 @@ function DetalleOrdenContent() {
   const availableTransitions = STATUS_FLOW[order.status]
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-12">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-        <div className="flex items-center gap-4">
-          <Link href={returnUrl}>
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Volver
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Orden {order.orderNumber}</h1>
-            <p className="text-sm text-muted-foreground">Creada el {formatDate(order.createdAt)}</p>
-          </div>
-        </div>
-        
-        {/* Status Badge */}
-        <div className={`flex items-center gap-2 px-4 py-2 rounded-xl self-start sm:self-auto ${statusConfig.bgColor}`}>
+    <div className="space-y-6 max-w-5xl mx-auto pb-16">
+      <AdminPageHeader
+        title={`Orden ${order.orderNumber}`}
+        description={`Creada el ${formatDate(order.createdAt)}`}
+        icon={<Package className="h-6 w-6 text-[#D97706]" />}
+        breadcrumbs={[
+          { label: "Órdenes", href: returnUrl },
+          { label: `Orden ${order.orderNumber}` },
+        ]}
+      >
+        <div className={`flex items-center gap-2 px-4 py-2 rounded-xl ${statusConfig.bgColor}`}>
           <StatusIcon className={`h-5 w-5 ${statusConfig.color}`} />
           <span className={`font-medium text-sm sm:text-base ${statusConfig.color}`}>{statusConfig.label}</span>
         </div>
-      </div>
+      </AdminPageHeader>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
@@ -261,7 +255,7 @@ function DetalleOrdenContent() {
                 <FileText className="h-5 w-5 text-muted-foreground/60" />
                 <h3 className="font-medium text-foreground">Notas del Cliente</h3>
               </div>
-              <p className="text-muted-foreground">{order.customerNotes}</p>
+              <p className="text-muted-foreground break-words">{order.customerNotes}</p>
             </div>
           )}
 
@@ -305,11 +299,11 @@ function DetalleOrdenContent() {
                 <h3 className="font-medium text-foreground">Cliente</h3>
               </div>
               <div className="space-y-3">
-                <p className="font-medium text-foreground">{order.user.firstName} {order.user.lastName}</p>
-                <p className="text-sm text-muted-foreground">{order.user.email}</p>
+                <p className="font-medium text-foreground break-words">{order.user.firstName} {order.user.lastName}</p>
+                <p className="text-sm text-muted-foreground break-all">{order.user.email}</p>
                 {order.user.phone && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Phone className="h-4 w-4" />
+                    <Phone className="h-4 w-4 shrink-0" />
                     <span>{order.user.phone}</span>
                   </div>
                 )}
@@ -321,15 +315,15 @@ function DetalleOrdenContent() {
           {order.branch && (
             <div className="bg-card rounded-xl shadow-sm border border-border p-6">
               <div className="flex items-center gap-2 mb-4">
-                <Store className="h-5 w-5 text-muted-foreground/60" />
+                <Store className="h-5 w-5 text-muted-foreground/60 shrink-0" />
                 <h3 className="font-medium text-foreground">Sucursal</h3>
               </div>
               <div className="space-y-2">
-                <p className="font-medium text-foreground">{order.branch.name}</p>
-                <p className="text-sm text-muted-foreground">{order.branch.address}</p>
+                <p className="font-medium text-foreground break-words">{order.branch.name}</p>
+                <p className="text-sm text-muted-foreground break-words">{order.branch.address}</p>
                 {order.branch.phone && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Phone className="h-4 w-4" />
+                    <Phone className="h-4 w-4 shrink-0" />
                     <span>{order.branch.phone}</span>
                   </div>
                 )}

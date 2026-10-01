@@ -71,7 +71,7 @@ export function ConfirmDialog({
   const styles = variantStyles[variant]
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in"
         onClick={!isLoading ? onCancel : undefined}
@@ -79,7 +79,7 @@ export function ConfirmDialog({
       <div
         ref={dialogRef}
         tabIndex={-1}
-        className="relative bg-card rounded-xl shadow-card-hover max-w-md w-full mx-4 animate-scale-in border border-border"
+        className="relative bg-card rounded-xl shadow-card-hover max-w-md w-full animate-scale-in border border-border"
         role="dialog"
         aria-modal="true"
         aria-labelledby="dialog-title"
@@ -99,27 +99,27 @@ export function ConfirmDialog({
           </div>
 
           <div className="mt-4 text-center">
-            <h3 id="dialog-title" className="text-lg font-semibold text-card-foreground">
+            <h3 id="dialog-title" className="text-lg font-semibold text-card-foreground break-words">
               {title}
             </h3>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p className="mt-2 text-sm text-muted-foreground break-words">
               {message}
             </p>
           </div>
 
-          <div className="mt-6 flex gap-3 justify-center">
+          <div className="mt-6 flex flex-col-reverse sm:flex-row gap-3 justify-center">
             <Button
               variant="outline"
               onClick={onCancel}
               disabled={isLoading}
-              className="min-w-[100px]"
+              className="w-full sm:w-auto min-w-[100px]"
             >
               {cancelText}
             </Button>
             <Button
               onClick={onConfirm}
               disabled={isLoading}
-              className={`min-w-[100px] ${styles.button}`}
+              className={`w-full sm:w-auto min-w-[100px] ${styles.button}`}
             >
               {isLoading ? (
                 <span className="flex items-center gap-2">

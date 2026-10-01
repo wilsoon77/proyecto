@@ -127,7 +127,7 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="flex h-screen bg-[#FAF5EE] text-[#2B170F]">
+    <div className="fixed inset-0 lg:static flex h-screen h-[100dvh] max-h-[100dvh] overflow-hidden bg-[#FAF5EE] text-[#2B170F]">
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
         <div 
@@ -367,7 +367,7 @@ export default function AdminLayout({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top Header */}
-        <header className="relative z-30 h-16 bg-white/95 backdrop-blur-md border-b border-[#E8DCCB] flex items-center justify-between px-4 lg:px-6 shrink-0">
+        <header className="sticky top-0 z-30 h-16 bg-white/95 backdrop-blur-md border-b border-[#E8DCCB] flex items-center justify-between px-4 lg:px-6 shrink-0">
           {/* Left: Mobile menu button + Logo (mobile) + Search (desktop) */}
           <div className="flex items-center gap-3">
             <button
@@ -432,7 +432,7 @@ export default function AdminLayout({
         </header>
 
         {/* Page Content with Warm Background and Smooth Scrolling */}
-        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden bg-[#FAF5EE] p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden overscroll-y-contain bg-[#FAF5EE] p-4 sm:p-6 lg:p-8">
           <ToastProvider>
             {children}
           </ToastProvider>

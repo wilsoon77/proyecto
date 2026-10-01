@@ -188,7 +188,7 @@ function EditarUsuarioContent() {
   }
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto pb-12">
+    <div className="space-y-6 max-w-3xl mx-auto pb-16">
       {/* ── Header Estandarizado ── */}
       <AdminPageHeader
         title={`Editar: ${user.firstName} ${user.lastName}`}
@@ -241,15 +241,15 @@ function EditarUsuarioContent() {
           )}
 
           {/* Icon Badge Preview */}
-          <div className="flex items-center gap-4 p-4 rounded-xl bg-[#FAF5EE] border border-[#DECDBB]/60">
+          <div className="flex items-center gap-4 p-4 rounded-xl bg-[#FAF5EE] border border-[#DECDBB]/60 min-w-0">
             <div className="h-14 w-14 rounded-2xl bg-[#FAF0E6] text-[#D97706] border border-[#E8DCCB] flex items-center justify-center font-bold text-base shrink-0">
               {user.firstName[0]}{user.lastName[0]}
             </div>
-            <div>
-              <p className="text-sm font-bold text-[#2B170F]">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold text-[#2B170F] break-words">
                 {firstName} {lastName}
               </p>
-              <p className="text-xs text-[#8C522B] font-mono mt-0.5">{email}</p>
+              <p className="text-xs text-[#8C522B] font-mono mt-0.5 break-all">{email}</p>
             </div>
           </div>
 

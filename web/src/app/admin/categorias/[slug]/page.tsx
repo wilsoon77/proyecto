@@ -133,7 +133,7 @@ function EditarCategoriaContent({ params }: { params: Promise<{ slug: string }> 
   }
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto pb-12">
+    <div className="space-y-6 max-w-3xl mx-auto pb-16">
       {/* Header Estandarizado */}
       <AdminPageHeader
         title={`Editar: ${name}`}
@@ -154,13 +154,13 @@ function EditarCategoriaContent({ params }: { params: Promise<{ slug: string }> 
           )}
 
           {/* Icon Preview */}
-          <div className="flex items-center gap-4 p-4 rounded-xl bg-[#FAF5EE] border border-[#DECDBB]/60">
+          <div className="flex items-center gap-4 p-4 rounded-xl bg-[#FAF5EE] border border-[#DECDBB]/60 min-w-0">
             <div className="h-14 w-14 bg-[#FAF0E6] text-[#D97706] rounded-2xl flex items-center justify-center shrink-0 border border-[#E8DCCB]">
               <Tag className="h-7 w-7" />
             </div>
-            <div>
-              <p className="text-sm font-bold text-[#2B170F]">{name}</p>
-              <p className="text-xs text-[#8C522B] font-mono mt-0.5">/{slug}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold text-[#2B170F] break-words">{name}</p>
+              <p className="text-xs text-[#8C522B] font-mono mt-0.5 break-all">/{slug}</p>
             </div>
           </div>
 
@@ -186,15 +186,15 @@ function EditarCategoriaContent({ params }: { params: Promise<{ slug: string }> 
             <label htmlFor="slug" className="block text-xs font-bold text-[#2B170F] uppercase tracking-wider mb-2">
               Slug URL (identificador único) *
             </label>
-            <div className="flex items-center rounded-xl border border-[#DECDBB] bg-[#FAF5EE] px-3 focus-within:ring-2 focus-within:ring-[#D97706]/30 focus-within:border-[#D97706]">
-              <span className="text-xs text-[#8C522B] font-mono">/categorias/</span>
+            <div className="flex items-center rounded-xl border border-[#DECDBB] bg-[#FAF5EE] px-3 focus-within:ring-2 focus-within:ring-[#D97706]/30 focus-within:border-[#D97706] min-w-0">
+              <span className="text-xs text-[#8C522B] font-mono shrink-0">/categorias/</span>
               <input
                 id="slug"
                 type="text"
                 value={slug}
                 onChange={(e) => setSlug(e.target.value)}
                 placeholder="panaderia-artesanal"
-                className="w-full py-2.5 px-1 text-sm bg-transparent font-mono text-[#2B170F] focus:outline-none"
+                className="flex-1 min-w-0 py-2.5 px-1 text-sm bg-transparent font-mono text-[#2B170F] focus:outline-none"
               />
             </div>
             <p className="text-xs text-[#6E5545] mt-1.5">

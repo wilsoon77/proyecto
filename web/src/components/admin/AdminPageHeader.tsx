@@ -106,9 +106,9 @@ export function AdminPageHeader({
       )}
 
       {/* Cabecera Principal */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="font-display text-2xl sm:text-3xl font-bold text-[#2B170F] flex items-center gap-3">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between min-w-0">
+        <div className="min-w-0 flex-1">
+          <h1 className="font-display text-2xl sm:text-3xl font-bold text-[#2B170F] flex items-center gap-3 min-w-0">
             {icon && (
               <span className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-2xl bg-[#FAF0E6] text-[#D97706] border border-[#ECCDB5] shrink-0">
                 {React.isValidElement(icon)
@@ -118,17 +118,17 @@ export function AdminPageHeader({
                     })}
               </span>
             )}
-            <span>{title}</span>
+            <span className="min-w-0 flex-1 break-words">{title}</span>
           </h1>
           {description && (
-            <p className="text-xs sm:text-sm text-[#6E5545] mt-1 font-normal max-w-2xl">
+            <p className="text-xs sm:text-sm text-[#6E5545] mt-1 font-normal max-w-2xl break-words">
               {description}
             </p>
           )}
         </div>
 
         {/* Acciones principales / Botones CTA */}
-        <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto shrink-0">
           {children}
           {secondaryAction && renderActionButton(secondaryAction, false)}
           {effectivePrimary && renderActionButton(effectivePrimary, true)}

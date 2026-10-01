@@ -32,6 +32,7 @@ import {
 } from "@/lib/api"
 import { useAuth } from "@/context/AuthContext"
 import { Button } from "@/components/ui/button"
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader"
 import { useToast } from "@/components/ui/toast"
 import { PresentationCountFields } from "@/components/admin/PresentationCountFields"
 import { baseQuantityFromCounts, breakdownBaseQuantity } from "@/lib/presentation-quantities"
@@ -358,26 +359,42 @@ export default function DailyClosePage() {
   // Vista de éxito / Cierre Registrado
   if (result) {
     return (
-      <div className="mx-auto max-w-4xl space-y-6">
-        <div className="rounded-2xl border border-[#E8DCCB] bg-white p-6 shadow-xs sm:p-8">
-          <div className="mb-8 text-center space-y-2">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
-              <Check className="h-8 w-8" />
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#2B170F] font-display">¡Cierre Diario Registrado!</h1>
-            <p className="text-xs sm:text-sm text-[#6E5545]">
-              Jornada: <span className="font-bold text-[#2B170F]">{result.closeDate}</span> · Sucursal: <span className="font-bold text-[#2B170F]">{selectedBranchName}</span>
-            </p>
-          </div>
+      <div className="space-y-6 max-w-7xl mx-auto pb-16">
+        <AdminPageHeader
+          title="¡Cierre Diario Registrado!"
+          description={`Jornada: ${result.closeDate} · Sucursal: ${selectedBranchName}`}
+          icon={<Check className="h-6 w-6 text-emerald-600" />}
+          breadcrumbs={[
+            { label: "Operación", href: "/admin" },
+            { label: "Cierre del Día", href: "/admin/cierre-dia" },
+            { label: "Confirmación" },
+          ]}
+          primaryAction={{
+            label: "Volver al panel",
+            href: "/admin",
+            icon: <ArrowLeft className="h-4 w-4 mr-1.5" />,
+          }}
+          secondaryAction={
+            user?.role === "ADMIN" || user?.role === "MANAGER"
+              ? {
+                  label: "Ver historial",
+                  href: "/admin/cierre-dia/historial",
+                  icon: <History className="h-4 w-4 mr-1.5" />,
+                  variant: "outline",
+                }
+              : undefined
+          }
+        />
 
-          <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="rounded-2xl border border-[#E8DCCB] bg-white p-6 shadow-xs sm:p-8 space-y-6">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <SummaryCard label="Ventas calculadas" value={result.summary.totalSold} tone="blue" />
             <SummaryCard label="Mermas declaradas" value={result.summary.totalWaste} tone="orange" />
             <SummaryCard label="Sobrantes" value={result.summary.totalSurplus} tone="green" />
             <SummaryCard label="Productos cerrados" value={result.summary.productsClosed} tone="gray" />
           </div>
 
-          <div className="mb-8 overflow-x-auto rounded-2xl border border-[#E8DCCB]">
+          <div className="overflow-x-auto rounded-2xl border border-[#E8DCCB]">
             <table className="w-full min-w-[620px] text-xs">
               <thead className="bg-[#FAF5EE] text-left text-[11px] uppercase text-[#8C522B] font-bold">
                 <tr>
@@ -403,51 +420,33 @@ export default function DailyClosePage() {
               </tbody>
             </table>
           </div>
-
-          <div className="flex flex-wrap justify-center gap-3">
-            {(user?.role === "ADMIN" || user?.role === "MANAGER") && (
-              <Link href="/admin/cierre-dia/historial">
-                <Button variant="outline" className="border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] rounded-xl h-11 text-xs font-bold">
-                  <History className="mr-2 h-4 w-4 text-[#D97706]" />Ver historial
-                </Button>
-              </Link>
-            )}
-            <Link href="/admin">
-              <Button className="bg-[#D97706] hover:bg-[#B45309] text-white rounded-xl h-11 text-xs font-bold shadow-xs">
-                <ArrowLeft className="mr-2 h-4 w-4" />Volver al panel
-              </Button>
-            </Link>
-          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6 pb-20">
-      <div className="mx-auto max-w-7xl space-y-6">
-        {/* Header Superior */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <Link href="/admin" className="mb-2 inline-flex items-center gap-1 text-xs font-semibold text-[#8C522B] hover:text-[#2B170F] transition-colors">
-              <ArrowLeft className="h-3.5 w-3.5" />Volver al panel
-            </Link>
-            <h1 className="flex items-center gap-2.5 text-2xl sm:text-3xl font-bold text-[#2B170F] font-display">
-              <ClipboardCheck className="h-7 w-7 text-[#D97706] flex-shrink-0" />
-              Cierre del Día
-            </h1>
-            <p className="mt-1 text-xs sm:text-sm text-[#6E5545] max-w-2xl leading-relaxed">
-              Arqueo físico de inventario al final de la jornada. Cuenta las piezas restantes para deducir automáticamente las ventas en mostrador y mermas.
-            </p>
-          </div>
-          {(user?.role === "ADMIN" || user?.role === "MANAGER") && (
-            <Link href="/admin/cierre-dia/historial">
-              <Button variant="outline" size="sm" className="border-[#DECDBB] text-[#2B170F] hover:bg-white rounded-xl h-10 text-xs font-bold shadow-xs">
-                <History className="mr-2 h-4 w-4 text-[#D97706]" />Historial de Cierres
-              </Button>
-            </Link>
-          )}
-        </div>
+    <div className="space-y-6 max-w-7xl mx-auto pb-16">
+      {/* Header Estandarizado */}
+      <AdminPageHeader
+        title="Cierre del Día"
+        description="Arqueo físico de inventario al final de la jornada. Cuenta las piezas restantes para deducir automáticamente las ventas en mostrador y mermas."
+        icon={<ClipboardCheck className="h-6 w-6 text-[#D97706]" />}
+        breadcrumbs={[
+          { label: "Operación", href: "/admin" },
+          { label: "Cierre del Día" },
+        ]}
+        primaryAction={
+          user?.role === "ADMIN" || user?.role === "MANAGER"
+            ? {
+                label: "Historial de Cierres",
+                href: "/admin/cierre-dia/historial",
+                icon: <History className="h-4 w-4 mr-1.5" />,
+                variant: "outline",
+              }
+            : undefined
+        }
+      />
 
         {/* Panel de Configuración (Sucursal y Fecha) */}
         <div className="grid gap-3 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm sm:grid-cols-3">
@@ -540,19 +539,19 @@ export default function DailyClosePage() {
 
             {/* Selector de Pestañas Principales (Producidos vs Comprados) */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-b border-stone-200 pb-2">
-              <div className="flex rounded-xl bg-stone-200/70 p-1">
+              <div className="flex rounded-xl bg-stone-200/70 p-1 w-full sm:w-auto overflow-x-auto">
                 <button
                   type="button"
                   onClick={() => setActiveTab("PRODUCIDO")}
-                  className={`flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-xs sm:text-sm font-bold transition-all ${
+                  className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 sm:gap-2 rounded-lg px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
                     activeTab === "PRODUCIDO"
                       ? "bg-white text-primary shadow-sm"
                       : "text-stone-600 hover:text-stone-900"
                   }`}
                 >
-                  <Croissant className="h-4 w-4" />
-                  <span>Producidos (Panes)</span>
-                  <span className={`ml-1 rounded-full px-2 py-0.5 text-xs ${
+                  <Croissant className="h-4 w-4 shrink-0" />
+                  <span>Producidos<span className="hidden sm:inline"> (Panes)</span></span>
+                  <span className={`ml-1 rounded-full px-2 py-0.5 text-xs shrink-0 ${
                     activeTab === "PRODUCIDO" ? "bg-amber-100 text-amber-900" : "bg-stone-300 text-stone-700"
                   }`}>
                     {producedEntries.length}
@@ -562,15 +561,15 @@ export default function DailyClosePage() {
                 <button
                   type="button"
                   onClick={() => setActiveTab("COMPRADO")}
-                  className={`flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-xs sm:text-sm font-bold transition-all ${
+                  className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 sm:gap-2 rounded-lg px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
                     activeTab === "COMPRADO"
                       ? "bg-white text-primary shadow-sm"
                       : "text-stone-600 hover:text-stone-900"
                   }`}
                 >
-                  <ShoppingBag className="h-4 w-4" />
-                  <span>Comprados (Bebidas/Reventa)</span>
-                  <span className={`ml-1 rounded-full px-2 py-0.5 text-xs ${
+                  <ShoppingBag className="h-4 w-4 shrink-0" />
+                  <span>Comprados<span className="hidden sm:inline"> (Bebidas/Reventa)</span></span>
+                  <span className={`ml-1 rounded-full px-2 py-0.5 text-xs shrink-0 ${
                     activeTab === "COMPRADO" ? "bg-amber-100 text-amber-900" : "bg-stone-300 text-stone-700"
                   }`}>
                     {purchasedEntries.length}
@@ -579,12 +578,12 @@ export default function DailyClosePage() {
               </div>
 
               {/* Acciones Rápidas de la Pestaña Activa */}
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap sm:flex-nowrap items-center gap-2">
                 <Button 
                   variant="outline" 
                   size="sm" 
                   onClick={setAllTabToZero}
-                  className="text-xs h-9 border-stone-300 hover:bg-stone-100 text-stone-700 font-medium"
+                  className="flex-1 sm:flex-initial text-xs h-9 border-stone-300 hover:bg-stone-100 text-stone-700 font-medium whitespace-nowrap"
                 >
                   <CheckCircle2 className="mr-1.5 h-3.5 w-3.5 text-emerald-600" />
                   Marcar todo en 0 restante
@@ -593,7 +592,7 @@ export default function DailyClosePage() {
                   variant="outline" 
                   size="sm" 
                   onClick={copySystemToCounted}
-                  className="text-xs h-9 border-stone-300 hover:bg-stone-100 text-stone-700 font-medium"
+                  className="flex-1 sm:flex-initial text-xs h-9 border-stone-300 hover:bg-stone-100 text-stone-700 font-medium whitespace-nowrap"
                 >
                   <RefreshCw className="mr-1.5 h-3.5 w-3.5 text-blue-600" />
                   Copiar stock sistema
@@ -955,7 +954,6 @@ export default function DailyClosePage() {
             </div>
           </>
         )}
-      </div>
 
       {/* BARRA INFERIOR STICKY (Resumen Rápido en Móvil) */}
       {entries.length > 0 && !result && (

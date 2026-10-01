@@ -293,7 +293,7 @@ function EditarProductoContent({ params }: { params: Promise<{ id: string }> }) 
 
   if (isLoadingProduct) {
     return (
-      <div className="space-y-6 max-w-3xl mx-auto">
+      <div className="space-y-6 max-w-4xl mx-auto pb-16">
         <div className="animate-pulse space-y-6">
           <div className="h-10 bg-border rounded w-1/3"></div>
           <div className="h-64 bg-border rounded-xl"></div>
@@ -304,7 +304,7 @@ function EditarProductoContent({ params }: { params: Promise<{ id: string }> }) 
 
   if (!product) {
     return (
-      <div className="space-y-6 max-w-3xl mx-auto">
+      <div className="space-y-6 max-w-4xl mx-auto pb-16">
         <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg">
           Producto no encontrado
         </div>
@@ -316,7 +316,7 @@ function EditarProductoContent({ params }: { params: Promise<{ id: string }> }) 
   }
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto pb-12">
+    <div className="space-y-6 max-w-4xl mx-auto pb-16">
       {/* Header Estandarizado */}
       <AdminPageHeader
         title={`Editar: ${product.name}`}

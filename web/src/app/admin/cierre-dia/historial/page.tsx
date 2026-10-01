@@ -7,6 +7,7 @@ import { branchesService, dailyCloseService, type ApiBranch, type DailyCloseReco
 import { useAuth } from "@/context/AuthContext"
 import { useToast } from "@/components/ui/toast"
 import { Button } from "@/components/ui/button"
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader"
 
 function displayDate(value: string) {
   const date = /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T12:00:00`) : new Date(value)
@@ -65,22 +66,22 @@ export default function DailyCloseHistoryPage() {
   if (user && user.role !== "ADMIN" && user.role !== "MANAGER") return null
 
   return (
-    <div className="min-h-screen bg-cream p-4 sm:p-6 lg:p-8">
-      <div className="mx-auto max-w-7xl">
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <Link href="/admin/cierre-dia" className="mb-3 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-              <ArrowLeft className="h-4 w-4" />Volver al cierre
-            </Link>
-            <h1 className="flex items-center gap-2 text-2xl font-bold text-foreground">
-              <ClipboardCheck className="h-7 w-7 text-primary" />Historial de cierres
-            </h1>
-            <p className="mt-1 text-muted-foreground">Consulta las ventas calculadas, mermas y sobrantes de cada jornada.</p>
-          </div>
-          <Link href="/admin/cierre-dia">
-            <Button><ClipboardCheck className="h-4 w-4" />Nuevo cierre</Button>
-          </Link>
-        </div>
+    <div className="space-y-6 max-w-7xl mx-auto pb-16">
+      {/* Header Estandarizado */}
+      <AdminPageHeader
+        title="Historial de Cierres"
+        description="Consulta las ventas calculadas, mermas y sobrantes de cada jornada por sucursal"
+        icon={<ClipboardCheck className="h-6 w-6 text-[#D97706]" />}
+        breadcrumbs={[
+          { label: "Cierre del Día", href: "/admin/cierre-dia" },
+          { label: "Historial de Cierres" },
+        ]}
+        primaryAction={{
+          label: "Nuevo Cierre",
+          href: "/admin/cierre-dia",
+          icon: <ClipboardCheck className="h-4 w-4 mr-1.5" />,
+        }}
+      />
 
         <div className="mb-6 grid gap-4 rounded-xl border border-border bg-card p-4 shadow-sm md:grid-cols-3">
           {(user?.role === "ADMIN" || user?.role === "MANAGER") && (
@@ -169,6 +170,5 @@ export default function DailyCloseHistoryPage() {
           )}
         </div>
       </div>
-    </div>
   )
 }

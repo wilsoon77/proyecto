@@ -12,7 +12,8 @@ import {
   Edit2, 
   PowerOff,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  X
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
@@ -441,16 +442,16 @@ export default function MateriasPrimasPage() {
                       },
                     ]}
                     actions={
-                      <>
+                      <div className="grid grid-cols-3 gap-1.5 sm:gap-2 w-full">
                         <Button
                           type="button"
                           variant="outline"
                           size="sm"
                           onClick={() => openEditModal(item.rawMaterial.id)}
-                          className="flex-1 h-10 px-3 border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] font-bold text-xs"
+                          className="w-full h-10 px-1.5 sm:px-2.5 border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] font-bold text-xs justify-center"
                         >
-                          <Edit2 className="h-4 w-4 mr-1 text-[#8C522B]" />
-                          Editar
+                          <Edit2 className="h-3.5 w-3.5 mr-1 text-[#8C522B] shrink-0" />
+                          <span className="truncate">Editar</span>
                         </Button>
                         {isActive ? (
                           <>
@@ -459,20 +460,20 @@ export default function MateriasPrimasPage() {
                               variant="outline"
                               size="sm"
                               onClick={() => openPurchaseModal(item)}
-                              className="flex-1 h-10 px-3 border-emerald-300 text-emerald-700 hover:bg-emerald-50 font-bold text-xs"
+                              className="w-full h-10 px-1.5 sm:px-2.5 border-emerald-300 text-emerald-700 hover:bg-emerald-50 font-bold text-xs justify-center"
                             >
-                              <Plus className="h-4 w-4 mr-1" />
-                              Compra
+                              <Plus className="h-3.5 w-3.5 mr-0.5 sm:mr-1 shrink-0" />
+                              <span className="truncate">Compra</span>
                             </Button>
                             <Button
                               type="button"
                               variant="outline"
                               size="sm"
                               onClick={() => setDeactivateTarget({ id: item.rawMaterial.id, name: item.rawMaterial.name })}
-                              className="h-10 px-3 border-red-200 text-red-600 hover:bg-red-50 font-bold text-xs"
+                              className="w-full h-10 px-1.5 sm:px-2.5 border-red-200 text-red-600 hover:bg-red-50 font-bold text-xs justify-center"
                             >
-                              <PowerOff className="h-4 w-4 mr-1" />
-                              Desactivar
+                              <PowerOff className="h-3.5 w-3.5 mr-0.5 sm:mr-1 shrink-0" />
+                              <span className="truncate">Desactivar</span>
                             </Button>
                           </>
                         ) : (
@@ -481,13 +482,13 @@ export default function MateriasPrimasPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => handleReactivateMaterial(item.rawMaterial.id, item.rawMaterial.name)}
-                            className="flex-1 h-10 px-3 border-emerald-300 text-emerald-700 hover:bg-emerald-50 font-bold text-xs"
+                            className="col-span-2 w-full h-10 px-3 border-emerald-300 text-emerald-700 hover:bg-emerald-50 font-bold text-xs justify-center"
                           >
-                            <CheckCircle2 className="h-4 w-4 mr-1" />
-                            Reactivar
+                            <CheckCircle2 className="h-3.5 w-3.5 mr-1.5 shrink-0" />
+                            <span>Reactivar Insumo</span>
                           </Button>
                         )}
-                      </>
+                      </div>
                     }
                   />
                 )
@@ -677,12 +678,20 @@ export default function MateriasPrimasPage() {
 
       {/* ── MODAL 1: Registrar Compra / Entrada Rápida de Insumo ── */}
       {showPurchaseModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-[60] animate-fadeIn">
-          <div className="bg-white rounded-2xl shadow-xl border border-[#E8DCCB] max-w-md w-full p-6 relative overflow-hidden">
-            <h3 className="text-lg font-bold text-[#2B170F] mb-4 flex items-center gap-2">
-              <Plus className="h-5 w-5 text-emerald-600" />
-              Registrar Entrada / Compra de Insumo
-            </h3>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-[60] animate-fadeIn">
+          <div className="bg-white rounded-2xl shadow-xl border border-[#E8DCCB] max-w-md w-full max-h-[calc(100dvh-2rem)] sm:max-h-[90vh] flex flex-col relative overflow-hidden">
+            <div className="p-4 sm:p-5 border-b border-[#E8DCCB] flex items-center justify-between shrink-0 bg-[#FAF5EE]/70">
+              <h3 className="text-base sm:text-lg font-bold text-[#2B170F] flex items-center gap-2">
+                <Plus className="h-5 w-5 text-emerald-600" />
+                Registrar Entrada / Compra
+              </h3>
+              <button 
+                onClick={() => setShowPurchaseModal(false)}
+                className="p-1 text-[#8C522B] hover:text-[#2B170F] rounded-lg hover:bg-[#FAF5EE] transition-all"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
             
             <form onSubmit={async (e) => {
               e.preventDefault()
@@ -706,94 +715,98 @@ export default function MateriasPrimasPage() {
               } finally {
                 setIsPurchaseSubmitting(false)
               }
-            }} className="space-y-4">
-              <div>
-                <label className="text-xs text-[#2B170F] font-bold uppercase tracking-wider block mb-1.5">Materia Prima *</label>
-                <select
-                  value={purchaseMaterialId}
-                  onChange={(e) => {
-                    const id = Number(e.target.value)
-                    setPurchaseMaterialId(id)
-                    const m = rawMaterials.find(x => x.id === id)
-                    if (m) {
-                      setPurchaseUnit(m.baseUnit === "LB" ? "LIBRA" : m.baseUnit === "ML" ? "LITRO" : "UNIDAD")
-                    }
-                  }}
-                  className="w-full border border-[#DECDBB] rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 bg-white"
-                  required
-                >
-                  <option value="" disabled>Seleccione materia prima...</option>
-                  {rawMaterials.map(m => (
-                    <option key={m.id} value={m.id}>{m.name} (Base: {m.baseUnit})</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
+            }} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
                 <div>
-                  <label className="text-xs text-[#2B170F] font-bold uppercase tracking-wider block mb-1.5">Cantidad *</label>
-                  <input
-                    type="number"
-                    min="0.01"
-                    step="0.01"
-                    className="w-full border border-[#DECDBB] rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 bg-white h-10 px-3"
-                    value={purchaseQuantity || ""}
-                    onChange={(e) => setPurchaseQuantity(Number(e.target.value))}
-                    placeholder="Ej: 50"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-[#2B170F] font-bold uppercase tracking-wider block mb-1.5">Unidad *</label>
+                  <label className="text-xs text-[#2B170F] font-bold uppercase tracking-wider block mb-1.5">Materia Prima *</label>
                   <select
-                    value={purchaseUnit}
-                    onChange={(e) => setPurchaseUnit(e.target.value)}
-                    className="w-full border border-[#DECDBB] rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 bg-white h-10"
+                    value={purchaseMaterialId}
+                    onChange={(e) => {
+                      const id = Number(e.target.value)
+                      setPurchaseMaterialId(id)
+                      const m = rawMaterials.find(x => x.id === id)
+                      if (m) {
+                        setPurchaseUnit(m.baseUnit === "LB" ? "LIBRA" : m.baseUnit === "ML" ? "LITRO" : "UNIDAD")
+                      }
+                    }}
+                    className="w-full border border-[#DECDBB] rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 bg-white"
                     required
                   >
-                    <option value="LIBRA">Libra (LB)</option>
-                    <option value="ARROBA">Arroba (@ = 25 LB)</option>
-                    <option value="QUINTAL">Quintal (QQ = 100 LB)</option>
-                    <option value="LITRO">Litro (1000 ML)</option>
-                    <option value="GALON">Galón (3785 ML)</option>
-                    <option value="UNIDAD">Unidad (1 UNIT)</option>
-                    <option value="CARTON">Cartón (30 UNIT)</option>
+                    <option value="" disabled>Seleccione materia prima...</option>
+                    {rawMaterials.map(m => (
+                      <option key={m.id} value={m.id}>{m.name} (Base: {m.baseUnit})</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-[#2B170F] font-bold uppercase tracking-wider block mb-1.5">Cantidad *</label>
+                    <input
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      className="w-full border border-[#DECDBB] rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 bg-white h-10 px-3 font-mono"
+                      value={purchaseQuantity || ""}
+                      onChange={(e) => setPurchaseQuantity(Number(e.target.value))}
+                      placeholder="Ej: 50"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-[#2B170F] font-bold uppercase tracking-wider block mb-1.5">Unidad *</label>
+                    <select
+                      value={purchaseUnit}
+                      onChange={(e) => setPurchaseUnit(e.target.value)}
+                      className="w-full border border-[#DECDBB] rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 bg-white h-10"
+                      required
+                    >
+                      <option value="LIBRA">Libra (LB)</option>
+                      <option value="ARROBA">Arroba (@ = 25 LB)</option>
+                      <option value="QUINTAL">Quintal (QQ = 100 LB)</option>
+                      <option value="LITRO">Litro (1000 ML)</option>
+                      <option value="GALON">Galón (3785 ML)</option>
+                      <option value="UNIDAD">Unidad (1 UNIT)</option>
+                      <option value="CARTON">Cartón (30 UNIT)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs text-[#2B170F] font-bold uppercase tracking-wider block mb-1.5">Sucursal Destino *</label>
+                  <select
+                    value={purchaseBranchId}
+                    onChange={(e) => setPurchaseBranchId(Number(e.target.value))}
+                    className="w-full border border-[#DECDBB] rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 bg-white"
+                    required
+                  >
+                    <option value="" disabled>Seleccione sucursal...</option>
+                    {branches.map(b => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
                   </select>
                 </div>
               </div>
 
-              <div>
-                <label className="text-xs text-[#2B170F] font-bold uppercase tracking-wider block mb-1.5">Sucursal Destino *</label>
-                <select
-                  value={purchaseBranchId}
-                  onChange={(e) => setPurchaseBranchId(Number(e.target.value))}
-                  className="w-full border border-[#DECDBB] rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 bg-white"
-                  required
-                >
-                  <option value="" disabled>Seleccione sucursal...</option>
-                  {branches.map(b => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex gap-3 justify-end pt-4 border-t border-[#E8DCCB]">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowPurchaseModal(false)}
-                  disabled={isPurchaseSubmitting}
-                  className="h-10 px-4 border-[#DECDBB]"
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  type="submit"
-                  className="h-10 px-5 bg-[#D97706] hover:bg-[#B45309] text-white font-bold rounded-xl shadow-xs"
-                  disabled={isPurchaseSubmitting}
-                >
-                  {isPurchaseSubmitting ? "Registrando..." : "Guardar Entrada"}
-                </Button>
+              <div className="p-3 sm:p-4 border-t border-[#E8DCCB] bg-[#FAF5EE]/80 shrink-0">
+                <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end sm:gap-3 w-full">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowPurchaseModal(false)}
+                    disabled={isPurchaseSubmitting}
+                    className="w-full sm:w-auto h-11 sm:h-10 px-4 border-[#DECDBB] font-bold text-xs"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="w-full sm:w-auto h-11 sm:h-10 px-5 bg-[#D97706] hover:bg-[#B45309] text-white font-bold rounded-xl shadow-xs text-xs"
+                    disabled={isPurchaseSubmitting}
+                  >
+                    {isPurchaseSubmitting ? "Registrando..." : "Guardar Entrada"}
+                  </Button>
+                </div>
               </div>
             </form>
           </div>
@@ -802,12 +815,20 @@ export default function MateriasPrimasPage() {
 
       {/* ── MODAL 2: Crear Nueva Materia Prima ── */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-[60] animate-fadeIn">
-          <div className="bg-white rounded-2xl shadow-xl border border-[#E8DCCB] max-w-md w-full p-6 relative overflow-hidden">
-            <h3 className="text-lg font-bold text-[#2B170F] mb-4 flex items-center gap-2">
-              <Package className="h-5 w-5 text-[#D97706]" />
-              Nueva Materia Prima
-            </h3>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-[60] animate-fadeIn">
+          <div className="bg-white rounded-2xl shadow-xl border border-[#E8DCCB] max-w-md w-full max-h-[calc(100dvh-2rem)] sm:max-h-[90vh] flex flex-col relative overflow-hidden">
+            <div className="p-4 sm:p-5 border-b border-[#E8DCCB] flex items-center justify-between shrink-0 bg-[#FAF5EE]/70">
+              <h3 className="text-base sm:text-lg font-bold text-[#2B170F] flex items-center gap-2">
+                <Package className="h-5 w-5 text-[#D97706]" />
+                Nueva Materia Prima
+              </h3>
+              <button 
+                onClick={() => setShowCreateModal(false)}
+                className="p-1 text-[#8C522B] hover:text-[#2B170F] rounded-lg hover:bg-[#FAF5EE] transition-all"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
             
             <form onSubmit={async (e) => {
               e.preventDefault()
@@ -833,77 +854,81 @@ export default function MateriasPrimasPage() {
               } finally {
                 setIsCreateSubmitting(false)
               }
-            }} className="space-y-4">
-              <div>
-                <label className="text-xs text-[#2B170F] font-bold uppercase tracking-wider block mb-1.5">Nombre del Insumo *</label>
-                <input
-                  placeholder="Ej: Harina de Trigo Especial, Azúcar Morena..."
-                  className="w-full border border-[#DECDBB] rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 bg-white h-10 px-3"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
+            }} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
                 <div>
-                  <label className="text-xs text-[#2B170F] font-bold uppercase tracking-wider block mb-1.5">Unidad Base *</label>
-                  <select
-                    value={newBaseUnit}
-                    onChange={(e) => setNewBaseUnit(e.target.value as any)}
-                    className="w-full border border-[#DECDBB] rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 bg-white h-10"
-                    required
-                  >
-                    <option value="LB">Libra (LB)</option>
-                    <option value="ML">Mililitro (ML)</option>
-                    <option value="UNIT">Unidad (UNIT)</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs text-[#2B170F] font-bold uppercase tracking-wider block mb-1.5">Costo Unitario (Q) *</label>
+                  <label className="text-xs text-[#2B170F] font-bold uppercase tracking-wider block mb-1.5">Nombre del Insumo *</label>
                   <input
-                    type="number"
-                    min="0"
-                    step="0.0001"
+                    placeholder="Ej: Harina de Trigo Especial, Azúcar Morena..."
                     className="w-full border border-[#DECDBB] rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 bg-white h-10 px-3"
-                    value={newCost || ""}
-                    onChange={(e) => setNewCost(Number(e.target.value))}
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
                     required
                   />
                 </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-[#2B170F] font-bold uppercase tracking-wider block mb-1.5">Unidad Base *</label>
+                    <select
+                      value={newBaseUnit}
+                      onChange={(e) => setNewBaseUnit(e.target.value as any)}
+                      className="w-full border border-[#DECDBB] rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 bg-white h-10"
+                      required
+                    >
+                      <option value="LB">Libra (LB)</option>
+                      <option value="ML">Mililitro (ML)</option>
+                      <option value="UNIT">Unidad (UNIT)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-[#2B170F] font-bold uppercase tracking-wider block mb-1.5">Costo Unitario (Q) *</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.0001"
+                      className="w-full border border-[#DECDBB] rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 bg-white h-10 px-3 font-mono"
+                      value={newCost || ""}
+                      onChange={(e) => setNewCost(Number(e.target.value))}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs text-[#2B170F] font-bold uppercase tracking-wider block mb-1.5">Stock de Alerta Mínima *</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    className="w-full border border-[#DECDBB] rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 bg-white h-10 px-3 font-mono"
+                    value={newMinStock || ""}
+                    onChange={(e) => setNewMinStock(Number(e.target.value))}
+                    required
+                  />
+                  <p className="text-[11px] text-[#8C522B] mt-1">El sistema alertará cuando la existencia en cualquier sucursal sea menor a este umbral.</p>
+                </div>
               </div>
 
-              <div>
-                <label className="text-xs text-[#2B170F] font-bold uppercase tracking-wider block mb-1.5">Stock de Alerta Mínima *</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  className="w-full border border-[#DECDBB] rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 bg-white h-10 px-3"
-                  value={newMinStock || ""}
-                  onChange={(e) => setNewMinStock(Number(e.target.value))}
-                  required
-                />
-                <p className="text-[11px] text-[#8C522B] mt-1">El sistema alertará cuando la existencia en cualquier sucursal sea menor a este umbral.</p>
-              </div>
-
-              <div className="flex gap-3 justify-end pt-4 border-t border-[#E8DCCB]">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowCreateModal(false)}
-                  disabled={isCreateSubmitting}
-                  className="h-10 px-4 border-[#DECDBB]"
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  type="submit"
-                  className="h-10 px-5 bg-[#D97706] hover:bg-[#B45309] text-white font-bold rounded-xl shadow-xs"
-                  disabled={isCreateSubmitting}
-                >
-                  {isCreateSubmitting ? "Creando..." : "Crear Insumo"}
-                </Button>
+              <div className="p-3 sm:p-4 border-t border-[#E8DCCB] bg-[#FAF5EE]/80 shrink-0">
+                <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end sm:gap-3 w-full">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowCreateModal(false)}
+                    disabled={isCreateSubmitting}
+                    className="w-full sm:w-auto h-11 sm:h-10 px-4 border-[#DECDBB] font-bold text-xs"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="w-full sm:w-auto h-11 sm:h-10 px-5 bg-[#D97706] hover:bg-[#B45309] text-white font-bold rounded-xl shadow-xs text-xs"
+                    disabled={isCreateSubmitting}
+                  >
+                    {isCreateSubmitting ? "Creando..." : "Crear Insumo"}
+                  </Button>
+                </div>
               </div>
             </form>
           </div>
@@ -912,88 +937,100 @@ export default function MateriasPrimasPage() {
 
       {/* ── MODAL 3: Editar Materia Prima ── */}
       {showEditModal && editingMaterial && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-[60] animate-fadeIn">
-          <div className="bg-white rounded-2xl shadow-xl border border-[#E8DCCB] max-w-md w-full p-6 relative overflow-hidden">
-            <h3 className="text-lg font-bold text-[#2B170F] mb-4 flex items-center gap-2">
-              <Edit2 className="h-5 w-5 text-[#D97706]" />
-              Editar Materia Prima
-            </h3>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-[60] animate-fadeIn">
+          <div className="bg-white rounded-2xl shadow-xl border border-[#E8DCCB] max-w-md w-full max-h-[calc(100dvh-2rem)] sm:max-h-[90vh] flex flex-col relative overflow-hidden">
+            <div className="p-4 sm:p-5 border-b border-[#E8DCCB] flex items-center justify-between shrink-0 bg-[#FAF5EE]/70">
+              <h3 className="text-base sm:text-lg font-bold text-[#2B170F] flex items-center gap-2">
+                <Edit2 className="h-5 w-5 text-[#D97706]" />
+                Editar Materia Prima
+              </h3>
+              <button 
+                onClick={() => { setShowEditModal(false); setEditingMaterial(null) }}
+                className="p-1 text-[#8C522B] hover:text-[#2B170F] rounded-lg hover:bg-[#FAF5EE] transition-all"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
 
-            <form onSubmit={handleEditSubmit} className="space-y-4">
-              <div>
-                <label className="text-xs text-[#2B170F] font-bold uppercase tracking-wider block mb-1.5">Nombre del Insumo *</label>
-                <input
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  className="w-full border border-[#DECDBB] rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 bg-white h-10 px-3"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
+            <form onSubmit={handleEditSubmit} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
                 <div>
-                  <label className="text-xs text-[#2B170F] font-bold uppercase tracking-wider block mb-1.5">Unidad Base</label>
+                  <label className="text-xs text-[#2B170F] font-bold uppercase tracking-wider block mb-1.5">Nombre del Insumo *</label>
                   <input
-                    value={editingMaterial.baseUnit}
-                    readOnly
-                    className="w-full border border-[#DECDBB] rounded-xl p-2.5 text-sm bg-[#FAF5EE] text-[#6E5545] font-mono h-10 px-3"
-                  />
-                  <p className="text-[10px] text-[#8C522B] mt-1">Fija para proteger recetas.</p>
-                </div>
-                <div>
-                  <label className="text-xs text-[#2B170F] font-bold uppercase tracking-wider block mb-1.5">Costo Unitario (Q) *</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.0001"
-                    value={editCost}
-                    onChange={(e) => setEditCost(Number(e.target.value))}
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
                     className="w-full border border-[#DECDBB] rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 bg-white h-10 px-3"
                     required
                   />
                 </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-[#2B170F] font-bold uppercase tracking-wider block mb-1.5">Unidad Base</label>
+                    <input
+                      value={editingMaterial.baseUnit}
+                      readOnly
+                      className="w-full border border-[#DECDBB] rounded-xl p-2.5 text-sm bg-[#FAF5EE] text-[#6E5545] font-mono h-10 px-3"
+                    />
+                    <p className="text-[10px] text-[#8C522B] mt-1">Fija para proteger recetas.</p>
+                  </div>
+                  <div>
+                    <label className="text-xs text-[#2B170F] font-bold uppercase tracking-wider block mb-1.5">Costo Unitario (Q) *</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.0001"
+                      value={editCost}
+                      onChange={(e) => setEditCost(Number(e.target.value))}
+                      className="w-full border border-[#DECDBB] rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 bg-white h-10 px-3 font-mono"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs text-[#2B170F] font-bold uppercase tracking-wider block mb-1.5">Stock de Alerta Mínima *</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={editMinStock}
+                    onChange={(e) => setEditMinStock(Number(e.target.value))}
+                    className="w-full border border-[#DECDBB] rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 bg-white h-10 px-3 font-mono"
+                    required
+                  />
+                </div>
+
+                <label className="flex items-center gap-2 text-sm text-[#2B170F] cursor-pointer pt-1 font-medium">
+                  <input
+                    type="checkbox"
+                    checked={editIsActive}
+                    onChange={(e) => setEditIsActive(e.target.checked)}
+                    className="w-4 h-4 text-[#D97706] rounded focus:ring-[#D97706]"
+                  />
+                  Insumo Activo para compras y recetas
+                </label>
               </div>
 
-              <div>
-                <label className="text-xs text-[#2B170F] font-bold uppercase tracking-wider block mb-1.5">Stock de Alerta Mínima *</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  value={editMinStock}
-                  onChange={(e) => setEditMinStock(Number(e.target.value))}
-                  className="w-full border border-[#DECDBB] rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 bg-white h-10 px-3"
-                  required
-                />
-              </div>
-
-              <label className="flex items-center gap-2 text-sm text-[#2B170F] cursor-pointer pt-1 font-medium">
-                <input
-                  type="checkbox"
-                  checked={editIsActive}
-                  onChange={(e) => setEditIsActive(e.target.checked)}
-                  className="w-4 h-4 text-[#D97706] rounded focus:ring-[#D97706]"
-                />
-                Insumo Activo para compras y recetas
-              </label>
-
-              <div className="flex gap-3 justify-end pt-4 border-t border-[#E8DCCB]">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => { setShowEditModal(false); setEditingMaterial(null) }}
-                  disabled={isEditSubmitting}
-                  className="h-10 px-4 border-[#DECDBB]"
-                >
-                  Cancelar
-                </Button>
-                <Button 
-                  type="submit" 
-                  className="h-10 px-5 bg-[#D97706] hover:bg-[#B45309] text-white font-bold rounded-xl shadow-xs" 
-                  disabled={isEditSubmitting}
-                >
-                  {isEditSubmitting ? "Guardando..." : "Guardar Cambios"}
-                </Button>
+              <div className="p-3 sm:p-4 border-t border-[#E8DCCB] bg-[#FAF5EE]/80 shrink-0">
+                <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end sm:gap-3 w-full">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => { setShowEditModal(false); setEditingMaterial(null) }}
+                    disabled={isEditSubmitting}
+                    className="w-full sm:w-auto h-11 sm:h-10 px-4 border-[#DECDBB] font-bold text-xs"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    className="w-full sm:w-auto h-11 sm:h-10 px-5 bg-[#D97706] hover:bg-[#B45309] text-white font-bold rounded-xl shadow-xs text-xs" 
+                    disabled={isEditSubmitting}
+                  >
+                    {isEditSubmitting ? "Guardando..." : "Guardar Cambios"}
+                  </Button>
+                </div>
               </div>
             </form>
           </div>

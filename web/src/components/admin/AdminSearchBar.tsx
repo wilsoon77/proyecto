@@ -50,10 +50,10 @@ export function AdminSearchBar({
 
   return (
     <div className={`bg-white rounded-2xl shadow-xs border border-[#E8DCCB] p-4 space-y-3 ${className}`}>
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between min-w-0">
         {/* Input de Búsqueda */}
-        <form onSubmit={handleSubmit} className="flex-1 flex gap-2">
-          <div className="relative flex-1">
+        <form onSubmit={handleSubmit} className="flex-1 min-w-0 flex gap-2">
+          <div className="relative flex-1 min-w-0">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8C522B]" />
             <input
               type="text"
@@ -78,7 +78,7 @@ export function AdminSearchBar({
 
         {/* Controles extra / Dropdowns secundarios */}
         {children && (
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 min-w-0">
             {children}
           </div>
         )}
@@ -86,10 +86,10 @@ export function AdminSearchBar({
 
       {/* Píldoras / Chips de Estado y Contador */}
       {(chips && chips.length > 0) || showCount ? (
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 pt-2 border-t border-[#FAF0E6]">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 pt-2 border-t border-[#FAF0E6] min-w-0">
           {/* Chips scrolleables */}
           {chips && chips.length > 0 && (
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none touch-pan-x">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none touch-pan-x min-w-0 flex-1">
               {chips.map((chip) => (
                 <button
                   key={chip.id}

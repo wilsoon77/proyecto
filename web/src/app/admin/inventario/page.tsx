@@ -14,6 +14,7 @@ import {
 } from "lucide-react"
 import { inventoryService, rawMaterialsService } from "@/lib/api"
 import type { ExpirationLot, RawMaterialInventory } from "@/lib/api"
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader"
 import { useAuth } from "@/context/AuthContext"
 import { useToast } from "@/components/ui/toast"
 
@@ -113,7 +114,7 @@ export default function InventarioResumenPage() {
 
   if (isLoading && rawInventory.length === 0 && expiringLots.length === 0) {
     return (
-      <div className="space-y-5 animate-pulse">
+      <div className="space-y-6 max-w-7xl mx-auto pb-16 animate-pulse">
         <div className="h-8 w-64 rounded-xl bg-[#FAF5EE] border border-[#E8DCCB]" />
         <div className="grid gap-5 lg:grid-cols-2">
           <div className="h-64 rounded-2xl bg-white border border-[#E8DCCB]" />
@@ -124,36 +125,24 @@ export default function InventarioResumenPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="flex items-center gap-3 font-display text-2xl font-bold text-[#2B170F] sm:text-3xl">
-            <Warehouse className="h-7 w-7 text-[#D97706]" />
-            Inventario Operativo
-          </h1>
-          <p className="mt-1 text-xs sm:text-sm text-[#6E5545]">
-            Monitoreo en tiempo real de materias primas, caducidades y existencia de productos.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => void loadData()}
-            disabled={isLoading}
-            className="inline-flex items-center gap-2 rounded-xl border border-[#DECDBB] bg-white px-3.5 py-2 text-xs font-bold text-[#2B170F] shadow-xs transition hover:bg-[#FAF5EE] disabled:opacity-50"
-          >
-            <RefreshCw className={`h-4 w-4 text-[#D97706] ${isLoading ? "animate-spin" : ""}`} />
-            Actualizar
-          </button>
-          <button
-            onClick={() => void checkExpirations()}
-            disabled={isCheckingExpirations}
-            className="inline-flex items-center gap-2 rounded-xl bg-[#D97706] px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-[#B45309] disabled:opacity-50"
-          >
-            <CalendarClock className={`h-4 w-4 ${isCheckingExpirations ? "animate-spin" : ""}`} />
-            Revisar caducidades
-          </button>
-        </div>
-      </div>
+    <div className="space-y-6 max-w-7xl mx-auto pb-16">
+      <AdminPageHeader
+        title="Inventario Operativo"
+        description="Monitoreo en tiempo real de materias primas, caducidades y existencia de productos."
+        icon={<Warehouse className="h-6 w-6 text-[#D97706]" />}
+        secondaryAction={{
+          label: "Actualizar",
+          onClick: () => void loadData(),
+          disabled: isLoading,
+          icon: <RefreshCw className={`h-4 w-4 text-[#D97706] ${isLoading ? "animate-spin" : ""}`} />,
+        }}
+        primaryAction={{
+          label: "Revisar caducidades",
+          onClick: () => void checkExpirations(),
+          disabled: isCheckingExpirations,
+          icon: <CalendarClock className={`h-4 w-4 ${isCheckingExpirations ? "animate-spin" : ""}`} />,
+        }}
+      />
 
       {error && (
         <div className="flex items-center gap-2 rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-xs font-bold text-destructive">
@@ -184,12 +173,12 @@ export default function InventarioResumenPage() {
           ) : (
             <div className="space-y-2">
               {lowMaterials.slice(0, 6).map((item) => (
-                <div key={item.id} className="flex items-center justify-between rounded-xl border border-[#ECCDB5] bg-[#FAF0E6] p-3">
-                  <div>
-                    <p className="font-bold text-xs text-[#2B170F]">{item.rawMaterial.name}</p>
-                    <p className="text-[11px] text-[#8C522B]">{item.branch.name}</p>
+                <div key={item.id} className="flex items-center justify-between gap-3 rounded-xl border border-[#ECCDB5] bg-[#FAF0E6] p-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-xs text-[#2B170F] truncate">{item.rawMaterial.name}</p>
+                    <p className="text-[11px] text-[#8C522B] truncate">{item.branch.name}</p>
                   </div>
-                  <span className="text-xs font-bold text-[#9E4D1A]">
+                  <span className="shrink-0 text-xs font-bold text-[#9E4D1A]">
                     {Number(item.quantity).toFixed(1)} {item.rawMaterial.baseUnit}
                   </span>
                 </div>
@@ -225,12 +214,12 @@ export default function InventarioResumenPage() {
           ) : (
             <div className="space-y-2">
               {expiringLots.slice(0, 6).map((lot) => (
-                <div key={lot.id} className="flex items-center justify-between rounded-xl border border-orange-200 bg-orange-50/70 p-3">
-                  <div>
-                    <p className="font-bold text-xs text-[#2B170F]">{lot.product.name}</p>
-                    <p className="text-[11px] text-[#6E5545]">{lot.branch.name} · {lot.availableQuantity} disponibles</p>
+                <div key={lot.id} className="flex items-center justify-between gap-3 rounded-xl border border-orange-200 bg-orange-50/70 p-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-xs text-[#2B170F] truncate">{lot.product.name}</p>
+                    <p className="text-[11px] text-[#6E5545] truncate">{lot.branch.name} · {lot.availableQuantity} disponibles</p>
                   </div>
-                  <span className="text-right text-xs font-bold text-orange-800">
+                  <span className="shrink-0 text-right text-xs font-bold text-orange-800">
                     {lot.expiresAt ? formatDate(lot.expiresAt) : "Sin fecha"}
                     {lot.daysLeft !== null && <span className="block text-[10px] font-normal text-orange-700">{lot.daysLeft} días</span>}
                   </span>

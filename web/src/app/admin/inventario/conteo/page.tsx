@@ -13,6 +13,7 @@ import { useAuth } from "@/context/AuthContext"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { PresentationCountFields } from "@/components/admin/PresentationCountFields"
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader"
 import { baseQuantityFromCounts, breakdownBaseQuantity } from "@/lib/presentation-quantities"
 
 interface Branch {
@@ -211,9 +212,8 @@ export default function ConteoPage() {
   // Pantalla de resultado
   if (result) {
     return (
-      <div className="p-4 sm:p-6 lg:p-8 bg-cream min-h-screen">
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-card rounded-2xl shadow-sm border border-border p-8">
+      <div className="space-y-6 max-w-4xl mx-auto pb-16">
+        <div className="bg-card rounded-2xl shadow-sm border border-border p-4 sm:p-6 lg:p-8">
             {/* Header */}
             <div className="text-center mb-8">
               <div className="w-20 h-20 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -247,8 +247,8 @@ export default function ConteoPage() {
             {result.details.filter(d => d.adjustmentType !== 'SIN_CAMBIO').length > 0 && (
               <div className="mb-8">
                 <h3 className="text-lg font-semibold text-foreground mb-3">Detalle de ajustes</h3>
-                <div className="border rounded-xl overflow-hidden">
-                  <table className="w-full text-sm">
+                <div className="border rounded-xl overflow-x-auto">
+                  <table className="w-full min-w-[540px] text-sm">
                     <thead className="bg-cream">
                       <tr>
                         <th className="text-left px-4 py-3 font-medium text-muted-foreground">Producto</th>
@@ -298,41 +298,30 @@ export default function ConteoPage() {
               </div>
             )}
 
-            <div className="flex justify-center gap-4">
-              <Link href="/admin/inventario">
-                <Button variant="outline" size="lg">Volver al inventario</Button>
+            <div className="flex flex-col-reverse sm:flex-row justify-center gap-3 w-full sm:w-auto">
+              <Link href="/admin/inventario" className="w-full sm:w-auto">
+                <Button variant="outline" size="lg" className="w-full sm:w-auto">Volver al inventario</Button>
               </Link>
-              <Button size="lg" onClick={() => { setResult(null); setEntries([]); setSelectedBranch("") }}>
+              <Button size="lg" className="w-full sm:w-auto" onClick={() => { setResult(null); setEntries([]); setSelectedBranch("") }}>
                 Nuevo conteo
               </Button>
             </div>
           </div>
         </div>
-      </div>
     )
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 bg-cream min-h-screen">
-      {/* Header */}
-      <div className="mb-6">
-        <Link
-          href="/admin/inventario"
-          className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Volver al inventario
-        </Link>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-              <ClipboardCheck className="h-7 w-7 text-primary" />
-              Conteo de Inventario
-            </h1>
-            <p className="text-muted-foreground mt-1">Ingresa las cantidades físicas reales y el sistema calculará los ajustes automáticamente</p>
-          </div>
-        </div>
-      </div>
+    <div className="space-y-6 max-w-7xl mx-auto pb-16">
+      <AdminPageHeader
+        title="Conteo de Inventario"
+        description="Ingresa las cantidades físicas reales y el sistema calculará los ajustes automáticamente"
+        icon={<ClipboardCheck className="h-6 w-6 text-[#D97706]" />}
+        breadcrumbs={[
+          { label: "Inventario", href: "/admin/inventario" },
+          { label: "Conteo" },
+        ]}
+      />
 
       {/* Controles: Sucursal + Búsqueda */}
       <div className="bg-card rounded-xl shadow-sm border border-border p-4 mb-6">
@@ -371,7 +360,7 @@ export default function ConteoPage() {
 
       {/* Stats en tiempo real */}
       {stats.touched > 0 && (
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
           <div className="bg-success/10 rounded-xl p-3 flex items-center gap-3 border border-success/20">
             <TrendingUp className="h-5 w-5 text-success" />
             <div>
@@ -551,9 +540,9 @@ export default function ConteoPage() {
 
       {/* Footer: Nota + Botón de envío */}
       {entries.length > 0 && (
-        <div className="mt-6 bg-card rounded-xl shadow-sm border border-border p-6">
-          <div className="flex flex-col md:flex-row gap-4 items-end">
-            <div className="flex-1">
+        <div className="mt-6 bg-card rounded-xl shadow-sm border border-border p-4 sm:p-6">
+          <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-end">
+            <div className="flex-1 min-w-0 w-full">
               <label className="block text-sm font-medium text-foreground mb-2">
                 Nota del conteo (opcional)
               </label>
@@ -565,15 +554,15 @@ export default function ConteoPage() {
                 className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
-            <div className="flex gap-3">
-              <Link href="/admin/inventario">
-                <Button variant="outline" size="lg">Cancelar</Button>
+            <div className="flex flex-col-reverse sm:flex-row gap-3 w-full sm:w-auto">
+              <Link href="/admin/inventario" className="w-full sm:w-auto">
+                <Button variant="outline" size="lg" className="w-full sm:w-auto">Cancelar</Button>
               </Link>
               <Button
                 size="lg"
                 onClick={handleSubmit}
                 disabled={isSubmitting || stats.touched === 0}
-                className="min-w-[200px]"
+                className="w-full sm:w-auto sm:min-w-[200px]"
               >
                 {isSubmitting ? (
                   <>

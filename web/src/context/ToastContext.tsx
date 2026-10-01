@@ -31,7 +31,18 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={api}>
       {children}
-      <Toaster position="bottom-right" richColors closeButton expand />
+      <Toaster
+        position="bottom-right"
+        richColors
+        closeButton
+        expand
+        mobileOffset={{ left: 0, right: 0, bottom: 16 }}
+        style={{ maxWidth: "100vw", overflowX: "hidden" }}
+        toastOptions={{
+          style: { maxWidth: "calc(100vw - 32px)", margin: "0 auto" },
+          className: "break-words",
+        }}
+      />
     </ToastContext.Provider>
   )
 }

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Flame, Plus, Minus, Loader as Loader2, Clock, ChefHat } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader"
 import { useToast } from "@/components/ui/toast"
 import { useAuth } from "@/context/AuthContext"
 import { branchesService, productionService } from "@/lib/api"
@@ -153,19 +154,23 @@ export default function ProduccionPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header */}
-      <div>
-        <div className="flex items-center gap-3">
-          <div className="h-11 w-11 rounded-2xl bg-[#FAF0E6] text-[#D97706] flex items-center justify-center flex-shrink-0">
-            <Flame className="h-6 w-6" />
-          </div>
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#2B170F] font-display">Registro de Horneado</h1>
-            <p className="text-xs sm:text-sm text-[#6E5545]">Control de amasijos y producción por turno</p>
-          </div>
-        </div>
-      </div>
+    <div className="space-y-6 max-w-7xl mx-auto pb-16">
+      {/* Header Estandarizado */}
+      <AdminPageHeader
+        title="Registro de Horneado"
+        description="Control de amasijos, rendimiento de latas y producción de panadería por turno"
+        icon={<Flame className="h-6 w-6 text-[#D97706]" />}
+        breadcrumbs={[
+          { label: "Operación", href: "/admin" },
+          { label: "Producción" },
+        ]}
+        primaryAction={{
+          label: "Ver Recetas",
+          href: "/admin/recetas",
+          icon: <ChefHat className="h-4 w-4 mr-1.5" />,
+          variant: "outline",
+        }}
+      />
 
       {(user?.role === 'ADMIN' || user?.role === 'MANAGER') && (
         <div className="rounded-2xl border border-[#ECCDB5] bg-[#FAF0E6] p-4 shadow-xs">
@@ -349,15 +354,15 @@ export default function ProduccionPage() {
         ) : (
           <div className="divide-y divide-[#E8DCCB]">
             {todayLogs.map((log) => (
-              <div key={log.id} className="px-5 py-3.5 flex items-center justify-between hover:bg-[#FAF5EE]/40 transition-colors">
-                <div>
-                  <p className="font-bold text-xs text-[#2B170F]">{log.recipe.name}</p>
-                  <p className="text-[11px] text-[#6E5545]">
+              <div key={log.id} className="px-4 sm:px-5 py-3.5 flex items-center justify-between gap-3 hover:bg-[#FAF5EE]/40 transition-colors min-w-0">
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold text-xs text-[#2B170F] truncate">{log.recipe.name}</p>
+                  <p className="text-[11px] text-[#6E5545] truncate">
                     {log.recipe.product.name} • {log.user.firstName} {log.user.lastName} •{' '}
                     {new Date(log.createdAt).toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
-                <div className="text-right">
+                <div className="text-right shrink-0">
                   <p className="font-bold text-xs text-[#2B170F]">{log.presentationQuantity && log.presentationName ? `${log.presentationQuantity} ${log.presentationName}` : `${log.traysProduced} latas`}</p>
                   <p className="text-[11px] text-[#D97706] font-bold">{log.unitsProduced.toLocaleString()} uds</p>
                 </div>

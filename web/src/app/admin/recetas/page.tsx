@@ -54,6 +54,9 @@ export default function RecipesAdminPage() {
 
   // Filters
   const [searchQuery, setSearchQuery] = useState("")
+  const [selectedProductId, setSelectedProductId] = useState<number | "ALL">("ALL")
+  const [trayFilter, setTrayFilter] = useState<"ALL" | "1" | "2-4" | "5+">("ALL")
+  const [sortBy, setSortBy] = useState<"name-asc" | "trays-desc" | "trays-asc" | "ingredients-desc">("name-asc")
 
   // Modales
   const [showFormModal, setShowFormModal] = useState(false)
@@ -102,16 +105,90 @@ export default function RecipesAdminPage() {
     }
   }, [user, loadData])
 
-  // Filtrar recetas
+  // Recetas activas
+  const activeRecipes = useMemo(() => recipes.filter(r => r.isActive), [recipes])
+  
+  // Contadores para chips de rendimiento
+  const count1Tray = useMemo(() => activeRecipes.filter(r => r.standardTrays === 1).length, [activeRecipes])
+  const count2to4Trays = useMemo(() => activeRecipes.filter(r => r.standardTrays >= 2 && r.standardTrays <= 4).length, [activeRecipes])
+  const count5PlusTrays = useMemo(() => activeRecipes.filter(r => r.standardTrays >= 5).length, [activeRecipes])
+
+  // Chips de filtro táctil
+  const filterChips = useMemo(() => [
+    {
+      id: "ALL",
+      label: "Todas",
+      count: activeRecipes.length,
+      active: trayFilter === "ALL",
+      onClick: () => setTrayFilter("ALL"),
+    },
+    {
+      id: "1",
+      label: "1 Lata",
+      count: count1Tray,
+      active: trayFilter === "1",
+      onClick: () => setTrayFilter("1"),
+    },
+    {
+      id: "2-4",
+      label: "2 - 4 Latas",
+      count: count2to4Trays,
+      active: trayFilter === "2-4",
+      onClick: () => setTrayFilter("2-4"),
+    },
+    {
+      id: "5+",
+      label: "5+ Latas",
+      count: count5PlusTrays,
+      active: trayFilter === "5+",
+      onClick: () => setTrayFilter("5+"),
+    },
+  ], [activeRecipes.length, count1Tray, count2to4Trays, count5PlusTrays, trayFilter])
+
+  // Filtrar y ordenar recetas
   const filteredRecipes = useMemo(() => {
-    if (!searchQuery.trim()) return recipes.filter(r => r.isActive)
-    const query = searchQuery.toLowerCase()
-    return recipes.filter(r => 
-      r.isActive && 
-      (r.name.toLowerCase().includes(query) || 
-       r.product.name.toLowerCase().includes(query))
-    )
-  }, [recipes, searchQuery])
+    let result = recipes.filter(r => r.isActive)
+
+    // Filtro por texto: nombre de receta, producto asociado o materias primas
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim()
+      result = result.filter(r => 
+        r.name.toLowerCase().includes(query) || 
+        r.product.name.toLowerCase().includes(query) ||
+        r.ingredients.some(ing => ing.rawMaterial?.name?.toLowerCase().includes(query))
+      )
+    }
+
+    // Filtro por producto terminado específico
+    if (selectedProductId !== "ALL") {
+      result = result.filter(r => r.product.id === selectedProductId)
+    }
+
+    // Filtro por rendimiento en latas
+    if (trayFilter === "1") {
+      result = result.filter(r => r.standardTrays === 1)
+    } else if (trayFilter === "2-4") {
+      result = result.filter(r => r.standardTrays >= 2 && r.standardTrays <= 4)
+    } else if (trayFilter === "5+") {
+      result = result.filter(r => r.standardTrays >= 5)
+    }
+
+    // Ordenamiento inteligente
+    result.sort((a, b) => {
+      if (sortBy === "name-asc") {
+        return a.name.localeCompare(b.name)
+      } else if (sortBy === "trays-desc") {
+        return b.standardTrays - a.standardTrays
+      } else if (sortBy === "trays-asc") {
+        return a.standardTrays - b.standardTrays
+      } else if (sortBy === "ingredients-desc") {
+        return b.ingredients.length - a.ingredients.length
+      }
+      return 0
+    })
+
+    return result
+  }, [recipes, searchQuery, selectedProductId, trayFilter, sortBy])
 
   // Inicializar formulario para CREAR
   const handleOpenCreateModal = () => {
@@ -309,16 +386,72 @@ export default function RecipesAdminPage() {
         </div>
       </div>
 
-      {/* ── Buscador Estandarizado ── */}
+      {/* ── Buscador Estandarizado con Filtros Avanzados ── */}
       <AdminSearchBar
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        placeholder="Buscar recetas por nombre o producto asociado..."
-        totalCount={recipes.filter(r => r.isActive).length}
+        placeholder="Buscar por receta, producto o insumo..."
+        chips={filterChips}
+        totalCount={activeRecipes.length}
         filteredCount={filteredRecipes.length}
         entityName="recetas"
         isLoading={isLoading}
-      />
+      >
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          {/* Selector de Producto */}
+          <div className="flex items-center gap-1.5 flex-1 sm:flex-initial min-w-[150px]">
+            <span className="text-[11px] font-bold text-[#8C522B] uppercase tracking-wider hidden lg:inline shrink-0">
+              Producto:
+            </span>
+            <select
+              value={selectedProductId}
+              onChange={(e) => setSelectedProductId(e.target.value === "ALL" ? "ALL" : Number(e.target.value))}
+              className="w-full sm:w-auto h-10 px-3 bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-xs font-semibold text-[#2B170F] focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 cursor-pointer"
+            >
+              <option value="ALL">Todos los productos</option>
+              {products.map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Ordenar Por */}
+          <div className="flex items-center gap-1.5 flex-1 sm:flex-initial min-w-[140px]">
+            <span className="text-[11px] font-bold text-[#8C522B] uppercase tracking-wider hidden lg:inline shrink-0">
+              Orden:
+            </span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="w-full sm:w-auto h-10 px-3 bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-xs font-semibold text-[#2B170F] focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 cursor-pointer"
+            >
+              <option value="name-asc">Nombre (A - Z)</option>
+              <option value="trays-desc">Mayor rendimiento</option>
+              <option value="trays-asc">Menor rendimiento</option>
+              <option value="ingredients-desc">Más ingredientes</option>
+            </select>
+          </div>
+
+          {/* Reset Filters si alguno está activo */}
+          {(searchQuery || selectedProductId !== "ALL" || trayFilter !== "ALL" || sortBy !== "name-asc") && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setSearchQuery("")
+                setSelectedProductId("ALL")
+                setTrayFilter("ALL")
+                setSortBy("name-asc")
+              }}
+              className="h-10 px-3 border-amber-300 text-[#D97706] hover:bg-amber-50 rounded-xl text-xs font-bold"
+            >
+              <X className="h-3.5 w-3.5 mr-1" />
+              Limpiar
+            </Button>
+          )}
+        </div>
+      </AdminSearchBar>
 
       {/* ── Listado de Recetas Grid ── */}
       {isLoading ? (
@@ -337,11 +470,11 @@ export default function RecipesAdminPage() {
             No se encontraron recetas
           </h3>
           <p className="text-xs text-[#6E5545] mb-6 max-w-sm mx-auto">
-            {searchQuery 
-              ? "Prueba con otro término de búsqueda." 
+            {searchQuery || selectedProductId !== "ALL" || trayFilter !== "ALL"
+              ? "Prueba ajustando los filtros o el término de búsqueda." 
               : "Registra fórmulas para que los panaderos puedan calcular insumos automáticamente."}
           </p>
-          {!searchQuery && (
+          {!searchQuery && selectedProductId === "ALL" && trayFilter === "ALL" && (
             <Button 
               onClick={handleOpenCreateModal}
               className="bg-[#D97706] hover:bg-[#B45309] text-white font-bold rounded-xl shadow-xs text-xs h-11 px-5"
@@ -370,28 +503,28 @@ export default function RecipesAdminPage() {
                 </span>
               }
               actions={
-                <>
+                <div className="grid grid-cols-2 gap-2 w-full">
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={() => handleOpenEditModal(recipe)}
-                    className="flex-1 h-10 px-3.5 border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] font-bold text-xs"
+                    className="w-full h-10 px-3 border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] font-bold text-xs justify-center"
                   >
-                    <Edit2 className="h-4 w-4 mr-1.5 text-[#8C522B]" />
-                    Editar
+                    <Edit2 className="h-4 w-4 mr-1.5 text-[#8C522B] shrink-0" />
+                    <span>Editar</span>
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={() => setRecipeToDelete(recipe)}
-                    className="h-10 px-3.5 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 font-bold text-xs"
+                    className="w-full h-10 px-3 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 font-bold text-xs justify-center"
                   >
-                    <PowerOff className="h-4 w-4 mr-1.5" />
-                    Desactivar
+                    <PowerOff className="h-4 w-4 mr-1.5 shrink-0" />
+                    <span>Desactivar</span>
                   </Button>
-                </>
+                </div>
               }
             >
               <div className="pt-1">
@@ -417,12 +550,12 @@ export default function RecipesAdminPage() {
         </div>
       )}
 
-      {/* ── FORM MODAL: Crear/Editar Receta ── */}
+      {/* ── FORM MODAL: Crear/Editar Receta con Header y Footer Fijos ── */}
       {showFormModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-[60] animate-fadeIn">
-          <div className="bg-white rounded-2xl shadow-xl border border-[#E8DCCB] max-w-lg w-full max-h-[90vh] flex flex-col relative overflow-hidden">
-            <div className="p-6 border-b border-[#E8DCCB] flex items-center justify-between shrink-0 bg-[#FAF5EE]/70">
-              <h3 className="text-lg font-bold text-[#2B170F] flex items-center gap-2">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-[60] animate-fadeIn">
+          <div className="bg-white rounded-2xl shadow-xl border border-[#E8DCCB] max-w-lg w-full max-h-[calc(100dvh-2rem)] sm:max-h-[90vh] flex flex-col relative overflow-hidden">
+            <div className="p-4 sm:p-6 border-b border-[#E8DCCB] flex items-center justify-between shrink-0 bg-[#FAF5EE]/70">
+              <h3 className="text-base sm:text-lg font-bold text-[#2B170F] flex items-center gap-2">
                 {editingRecipe ? <Edit2 className="h-5 w-5 text-[#D97706]" /> : <Plus className="h-5 w-5 text-[#D97706]" />}
                 {editingRecipe ? "Editar Receta de Amasijo" : "Nueva Receta de Amasijo"}
               </h3>
@@ -434,138 +567,142 @@ export default function RecipesAdminPage() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs text-[#2B170F] font-bold uppercase tracking-wider block mb-1.5">
-                    Nombre de la Fórmula *
-                  </label>
-                  <input
-                    placeholder="Ej: Fino Navideño, Especial..."
-                    className="w-full border border-[#DECDBB] rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 bg-white h-10 px-3"
-                    value={formName}
-                    onChange={(e) => setFormName(e.target.value)}
-                    required
-                  />
+            <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs text-[#2B170F] font-bold uppercase tracking-wider block mb-1.5">
+                      Nombre de la Fórmula *
+                    </label>
+                    <input
+                      placeholder="Ej: Fino Navideño, Especial..."
+                      className="w-full border border-[#DECDBB] rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 bg-white h-10 px-3"
+                      value={formName}
+                      onChange={(e) => setFormName(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-[#2B170F] font-bold uppercase tracking-wider block mb-1.5">
+                      Rendimiento (Latas) *
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      className="w-full border border-[#DECDBB] rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 bg-white h-10 px-3 font-mono"
+                      value={formStandardTrays || ""}
+                      onChange={(e) => setFormStandardTrays(Number(e.target.value))}
+                      required
+                    />
+                  </div>
                 </div>
+
                 <div>
                   <label className="text-xs text-[#2B170F] font-bold uppercase tracking-wider block mb-1.5">
-                    Rendimiento (Latas) *
+                    Producto Terminado Asociado *
                   </label>
-                  <input
-                    type="number"
-                    min="1"
-                    className="w-full border border-[#DECDBB] rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 bg-white h-10 px-3 font-mono"
-                    value={formStandardTrays || ""}
-                    onChange={(e) => setFormStandardTrays(Number(e.target.value))}
+                  <select
+                    value={formProductId}
+                    onChange={(e) => setFormProductId(Number(e.target.value))}
+                    className="w-full border border-[#DECDBB] rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 bg-white h-10"
                     required
-                  />
+                  >
+                    <option value="" disabled>Seleccione producto...</option>
+                    {products.map(p => (
+                      <option key={p.id} value={p.id}>{p.name} ({p.category})</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Ingredientes dinámicos */}
+                <div className="border-t border-[#E8DCCB] pt-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <label className="text-xs font-bold uppercase tracking-wider text-[#2B170F]">
+                      Ingredientes del Amasijo
+                    </label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleAddIngredientLine}
+                      className="h-8 border-[#DECDBB] text-[#D97706] hover:bg-[#FAF5EE] font-bold text-xs"
+                    >
+                      <Plus className="h-3.5 w-3.5 mr-1" />
+                      Añadir Insumo
+                    </Button>
+                  </div>
+
+                  <div className="space-y-3 max-h-[30vh] overflow-y-auto pr-1">
+                    {formIngredients.map((line, index) => {
+                      const selectedMaterial = rawMaterials.find(rm => rm.id === Number(line.rawMaterialId))
+                      return (
+                        <div key={index} className="flex gap-2 items-end bg-[#FAF5EE] p-3 rounded-xl border border-[#DECDBB]/70 min-w-0">
+                          <div className="flex-1 min-w-0">
+                            <label className="text-[10px] text-[#8C522B] font-bold block mb-1">Insumo</label>
+                            <select
+                              value={line.rawMaterialId}
+                              onChange={(e) => handleUpdateIngredientLine(index, "rawMaterialId", e.target.value ? Number(e.target.value) : "")}
+                              className="w-full border border-[#DECDBB] rounded-lg p-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 bg-white h-9"
+                              required
+                            >
+                              <option value="" disabled>Seleccione...</option>
+                              {rawMaterials.map(rm => (
+                                <option key={rm.id} value={rm.id}>{rm.name} ({rm.baseUnit})</option>
+                              ))}
+                            </select>
+                          </div>
+                          
+                          <div className="w-[90px] sm:w-[110px] shrink-0">
+                            <label className="text-[10px] text-[#8C522B] font-bold block mb-1">
+                              Cant {selectedMaterial ? `(${selectedMaterial.baseUnit})` : ""}
+                            </label>
+                            <input
+                              type="number"
+                              min="0.01"
+                              step="0.01"
+                              placeholder="0.00"
+                              className="w-full border border-[#DECDBB] rounded-lg p-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 bg-white h-9 px-2.5 font-bold font-mono"
+                              value={line.quantity || ""}
+                              onChange={(e) => handleUpdateIngredientLine(index, "quantity", Number(e.target.value))}
+                              required
+                            />
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveIngredientLine(index)}
+                            className="h-9 w-9 bg-red-50 text-red-600 rounded-lg flex items-center justify-center border border-red-200 shrink-0 hover:bg-red-100 transition-colors"
+                            title="Eliminar insumo"
+                          >
+                            <Trash className="h-4 w-4" />
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <label className="text-xs text-[#2B170F] font-bold uppercase tracking-wider block mb-1.5">
-                  Producto Terminado Asociado *
-                </label>
-                <select
-                  value={formProductId}
-                  onChange={(e) => setFormProductId(Number(e.target.value))}
-                  className="w-full border border-[#DECDBB] rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 bg-white h-10"
-                  required
-                >
-                  <option value="" disabled>Seleccione producto...</option>
-                  {products.map(p => (
-                    <option key={p.id} value={p.id}>{p.name} ({p.category})</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Ingredientes dinámicos */}
-              <div className="border-t border-[#E8DCCB] pt-4">
-                <div className="flex items-center justify-between mb-3">
-                  <label className="text-xs font-bold uppercase tracking-wider text-[#2B170F]">
-                    Ingredientes del Amasijo
-                  </label>
+              {/* Botones de acción fijos en la parte inferior */}
+              <div className="p-3 sm:p-4 border-t border-[#E8DCCB] bg-[#FAF5EE]/80 shrink-0">
+                <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end sm:gap-3 w-full">
                   <Button
                     type="button"
                     variant="outline"
-                    size="sm"
-                    onClick={handleAddIngredientLine}
-                    className="h-8 border-[#DECDBB] text-[#D97706] hover:bg-[#FAF5EE] font-bold text-xs"
+                    onClick={() => setShowFormModal(false)}
+                    disabled={isSubmitting}
+                    className="w-full sm:w-auto h-11 sm:h-10 px-4 border-[#DECDBB] font-bold text-xs"
                   >
-                    <Plus className="h-3.5 w-3.5 mr-1" />
-                    Añadir Insumo
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="w-full sm:w-auto h-11 sm:h-10 px-5 bg-[#D97706] hover:bg-[#B45309] text-white font-bold rounded-xl shadow-xs text-xs"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? "Guardando..." : "Guardar Receta"}
                   </Button>
                 </div>
-
-                <div className="space-y-3 max-h-[30vh] overflow-y-auto pr-1">
-                  {formIngredients.map((line, index) => {
-                    const selectedMaterial = rawMaterials.find(rm => rm.id === Number(line.rawMaterialId))
-                    return (
-                      <div key={index} className="flex gap-2.5 items-end bg-[#FAF5EE] p-3 rounded-xl border border-[#DECDBB]/70">
-                        <div className="flex-1">
-                          <label className="text-[10px] text-[#8C522B] font-bold block mb-1">Insumo</label>
-                          <select
-                            value={line.rawMaterialId}
-                            onChange={(e) => handleUpdateIngredientLine(index, "rawMaterialId", e.target.value ? Number(e.target.value) : "")}
-                            className="w-full border border-[#DECDBB] rounded-lg p-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 bg-white h-9"
-                            required
-                          >
-                            <option value="" disabled>Seleccione...</option>
-                            {rawMaterials.map(rm => (
-                              <option key={rm.id} value={rm.id}>{rm.name} ({rm.baseUnit})</option>
-                            ))}
-                          </select>
-                        </div>
-                        
-                        <div className="w-[110px]">
-                          <label className="text-[10px] text-[#8C522B] font-bold block mb-1">
-                            Cant {selectedMaterial ? `(${selectedMaterial.baseUnit})` : ""}
-                          </label>
-                          <input
-                            type="number"
-                            min="0.01"
-                            step="0.01"
-                            placeholder="0.00"
-                            className="w-full border border-[#DECDBB] rounded-lg p-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 bg-white h-9 px-2.5 font-bold font-mono"
-                            value={line.quantity || ""}
-                            onChange={(e) => handleUpdateIngredientLine(index, "quantity", Number(e.target.value))}
-                            required
-                          />
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveIngredientLine(index)}
-                          className="h-9 w-9 bg-red-50 text-red-600 rounded-lg flex items-center justify-center border border-red-200 shrink-0 hover:bg-red-100 transition-colors"
-                          title="Eliminar insumo"
-                        >
-                          <Trash className="h-4 w-4" />
-                        </button>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-
-              {/* Botones de acción */}
-              <div className="flex gap-3 justify-end pt-4 border-t border-[#E8DCCB] shrink-0">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowFormModal(false)}
-                  disabled={isSubmitting}
-                  className="h-10 px-4 border-[#DECDBB]"
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  type="submit"
-                  className="h-10 px-5 bg-[#D97706] hover:bg-[#B45309] text-white font-bold rounded-xl shadow-xs"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? "Guardando..." : "Guardar Receta"}
-                </Button>
               </div>
             </form>
           </div>

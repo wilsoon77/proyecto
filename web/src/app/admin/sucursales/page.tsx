@@ -190,30 +190,30 @@ function SucursalesContent() {
                 }] : []),
               ]}
               actions={
-                <>
+                <div className="grid grid-cols-2 gap-2 w-full">
                   <Link
                     href={`/admin/sucursales/${branch.id}?returnUrl=${encodeURIComponent(currentReturnUrl)}`}
-                    className="flex-1 sm:flex-none"
+                    className="w-full"
                   >
                     <Button
                       variant="outline"
                       size="sm"
-                      className="w-full sm:w-auto h-10 px-3.5 border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] font-bold text-xs"
+                      className="w-full h-10 px-3 border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] font-bold text-xs justify-center"
                     >
-                      <Edit2 className="h-4 w-4 mr-1.5 text-[#8C522B]" />
-                      Editar
+                      <Edit2 className="h-4 w-4 mr-1.5 text-[#8C522B] shrink-0" />
+                      <span>Editar</span>
                     </Button>
                   </Link>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setDeleteId(branch.id)}
-                    className="w-full sm:w-auto h-10 px-3.5 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 font-bold text-xs"
+                    className="w-full h-10 px-3 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 font-bold text-xs justify-center"
                   >
-                    <Trash2 className="h-4 w-4 mr-1.5" />
-                    Eliminar
+                    <Trash2 className="h-4 w-4 mr-1.5 shrink-0" />
+                    <span>Eliminar</span>
                   </Button>
-                </>
+                </div>
               }
             />
           ))}

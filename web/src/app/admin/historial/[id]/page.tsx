@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Loader as Loader2, User, Package, ShoppingCart, Building2, Tag, RefreshCcw, Clock, Globe, Monitor, FileText, Hash } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader"
 import { useToast } from "@/context/ToastContext"
 import { auditService, type AuditLog } from "@/lib/api"
 import { summarizeAudit, ACTION_LABELS, ENTITY_LABELS } from "@/lib/audit-helpers"
@@ -65,7 +66,7 @@ export default function HistorialDetallePage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6 max-w-3xl mx-auto">
+      <div className="space-y-6 max-w-4xl mx-auto pb-16">
         <div className="flex items-center justify-center py-20">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -75,7 +76,7 @@ export default function HistorialDetallePage() {
 
   if (!log) {
     return (
-      <div className="space-y-6 max-w-3xl mx-auto">
+      <div className="space-y-6 max-w-4xl mx-auto pb-16">
         <p className="text-center text-muted-foreground">Registro no encontrado</p>
       </div>
     )
@@ -91,17 +92,16 @@ export default function HistorialDetallePage() {
   )
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto pb-12">
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
-        <Link href="/admin/historial">
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Volver
-          </Button>
-        </Link>
-        <h1 className="text-xl sm:text-2xl font-bold text-foreground">Detalle de Auditoría</h1>
-      </div>
+    <div className="space-y-6 max-w-4xl mx-auto pb-16">
+      {/* Header Estandarizado */}
+      <AdminPageHeader
+        title="Detalle de Auditoría"
+        description={`Registro de evento #${id} en el sistema`}
+        breadcrumbs={[
+          { label: "Historial", href: "/admin/historial" },
+          { label: `Evento #${id.slice(0, 8)}` },
+        ]}
+      />
 
       {/* Summary Card */}
       <div className="bg-card rounded-xl shadow-sm border border-border p-5 sm:p-6 mb-6">
@@ -117,11 +117,11 @@ export default function HistorialDetallePage() {
         </div>
 
         {/* Headline */}
-        <p className="text-lg font-semibold text-foreground mb-1">
+        <p className="text-lg font-semibold text-foreground mb-1 break-words">
           {summary.headline}
         </p>
         {log.entityName && (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground break-words">
             {ENTITY_LABELS[log.entity] || log.entity}: <span className="font-medium text-foreground">{log.entityName}</span>
           </p>
         )}
@@ -177,9 +177,9 @@ export default function HistorialDetallePage() {
             <User className="h-5 w-5 text-muted-foreground/60 mt-0.5 flex-shrink-0" />
             <div>
               <dt className="text-xs font-medium text-muted-foreground uppercase">Usuario</dt>
-              <dd className="text-sm text-foreground font-medium">{log.userName}</dd>
+              <dd className="text-sm text-foreground font-medium break-words">{log.userName}</dd>
               {log.user?.email && (
-                <dd className="text-xs text-muted-foreground">{log.user.email}</dd>
+                <dd className="text-xs text-muted-foreground break-all">{log.user.email}</dd>
               )}
             </div>
           </div>
@@ -199,7 +199,7 @@ export default function HistorialDetallePage() {
               <Hash className="h-5 w-5 text-muted-foreground/60 mt-0.5 flex-shrink-0" />
               <div>
                 <dt className="text-xs font-medium text-muted-foreground uppercase">ID de Entidad</dt>
-                <dd className="text-sm text-foreground font-mono">{log.entityId}</dd>
+                <dd className="text-sm text-foreground font-mono break-all">{log.entityId}</dd>
               </div>
             </div>
           )}
@@ -210,7 +210,7 @@ export default function HistorialDetallePage() {
               <Globe className="h-5 w-5 text-muted-foreground/60 mt-0.5 flex-shrink-0" />
               <div>
                 <dt className="text-xs font-medium text-muted-foreground uppercase">Dirección IP</dt>
-                <dd className="text-sm text-foreground font-mono">{log.ipAddress}</dd>
+                <dd className="text-sm text-foreground font-mono break-all">{log.ipAddress}</dd>
               </div>
             </div>
           )}

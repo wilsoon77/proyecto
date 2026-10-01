@@ -39,6 +39,7 @@ import {
   AlertCircle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader"
 import { useToast } from "@/components/ui/toast"
 import { useAuth } from "@/context/AuthContext"
 import { useSystemConfig } from "@/context/SystemConfigContext"
@@ -419,7 +420,7 @@ export default function ConfiguracionPage() {
 
   if (isLoading) {
     return (
-      <div className="p-4 sm:p-6 lg:p-8">
+      <div className="space-y-6 max-w-7xl mx-auto pb-16">
         <div className="animate-pulse space-y-6">
           <div className="h-8 bg-border rounded w-48"></div>
           <div className="bg-card rounded-xl h-96"></div>
@@ -429,34 +430,19 @@ export default function ConfiguracionPage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-3">
-            <Settings className="h-7 w-7 sm:h-8 sm:w-8 text-primary" />
-            Configuración
-          </h1>
-          <p className="text-muted-foreground mt-1">Administra las opciones del sistema</p>
-        </div>
-        <Button 
-          onClick={handleSaveSettings}
-          disabled={isSaving}
-          className="bg-primary hover:bg-primary/90 w-full sm:w-auto"
-        >
-          {isSaving ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Guardando...
-            </>
-          ) : (
-            <>
-              <Save className="h-4 w-4 mr-2" />
-              Guardar Cambios
-            </>
-          )}
-        </Button>
-      </div>
+    <div className="space-y-6 max-w-7xl mx-auto pb-16">
+      {/* Header Estandarizado */}
+      <AdminPageHeader
+        title="Configuración"
+        description="Administra los parámetros generales del sistema, sucursales, notificaciones e integraciones de IA"
+        icon={<Settings className="h-6 w-6 text-[#D97706]" />}
+        primaryAction={{
+          label: isSaving ? "Guardando..." : "Guardar Cambios",
+          onClick: handleSaveSettings,
+          disabled: isSaving,
+          icon: isSaving ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Save className="h-4 w-4 mr-1.5" />,
+        }}
+      />
 
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Mobile horizontal tabs */}

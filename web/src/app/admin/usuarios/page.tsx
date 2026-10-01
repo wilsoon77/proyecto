@@ -365,15 +365,15 @@ function UsuariosContent() {
                       },
                     ]}
                     actions={
-                      <>
-                        <Link href={`/admin/usuarios/${user.id}?returnUrl=${encodeURIComponent(currentReturnUrl)}`} className="flex-1">
+                      <div className="grid grid-cols-2 gap-2 w-full">
+                        <Link href={`/admin/usuarios/${user.id}?returnUrl=${encodeURIComponent(currentReturnUrl)}`} className="w-full">
                           <Button
                             variant="outline"
                             size="sm"
-                            className="w-full h-10 px-3.5 border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] font-bold text-xs"
+                            className="w-full h-10 px-3 border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] font-bold text-xs justify-center"
                           >
-                            <Edit2 className="h-4 w-4 mr-1.5 text-[#8C522B]" />
-                            Editar
+                            <Edit2 className="h-4 w-4 mr-1.5 text-[#8C522B] shrink-0" />
+                            <span>Editar</span>
                           </Button>
                         </Link>
 
@@ -381,34 +381,34 @@ function UsuariosContent() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-10 px-3.5 border-red-200 text-red-600 hover:bg-red-50 font-bold text-xs"
+                            className="w-full h-10 px-3 border-red-200 text-red-600 hover:bg-red-50 font-bold text-xs justify-center"
                             onClick={() => setDeactivateTarget(user)}
                             disabled={processingId === user.id}
                           >
                             {processingId === user.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                              <Loader2 className="h-4 w-4 animate-spin mr-1 shrink-0" />
                             ) : (
-                              <UserX className="h-4 w-4 mr-1" />
+                              <UserX className="h-4 w-4 mr-1 shrink-0" />
                             )}
-                            Desactivar
+                            <span>Desactivar</span>
                           </Button>
                         ) : (
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-10 px-3.5 border-emerald-200 text-emerald-600 hover:bg-emerald-50 font-bold text-xs"
+                            className="w-full h-10 px-3 border-emerald-200 text-emerald-600 hover:bg-emerald-50 font-bold text-xs justify-center"
                             onClick={() => handleReactivate(user.id)}
                             disabled={processingId === user.id}
                           >
                             {processingId === user.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                              <Loader2 className="h-4 w-4 animate-spin mr-1 shrink-0" />
                             ) : (
-                              <UserCheck className="h-4 w-4 mr-1" />
+                              <UserCheck className="h-4 w-4 mr-1 shrink-0" />
                             )}
-                            Reactivar
+                            <span>Reactivar</span>
                           </Button>
                         )}
-                      </>
+                      </div>
                     }
                   />
                 )

@@ -330,7 +330,7 @@ export default function AdminOperationPage() {
   }, [activity, maxActivity])
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto pb-16">
       {/* Header Principal */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>

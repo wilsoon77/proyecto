@@ -204,7 +204,7 @@ function AdminProductosContent() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto pb-16">
       {/* Header Estandarizado */}
       <AdminPageHeader
         title="Productos"
@@ -391,20 +391,20 @@ function AdminProductosContent() {
                   ]}
                   actions={
                     canManageCatalog && (
-                      <div className="flex flex-wrap items-center gap-2 w-full">
-                        <Link href={`/admin/productos/${product.id}/editar?returnUrl=${encodeURIComponent(currentReturnUrl)}`} className="flex-1 min-w-[90px]">
+                      <div className="grid grid-cols-3 gap-1.5 sm:gap-2 w-full">
+                        <Link href={`/admin/productos/${product.id}/editar?returnUrl=${encodeURIComponent(currentReturnUrl)}`} className="w-full">
                           <button
                             type="button"
-                            className="w-full h-10 px-3 bg-white border border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] rounded-xl font-bold text-xs shadow-2xs inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                            className="w-full h-10 px-1 sm:px-2 bg-white border border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] rounded-xl font-bold text-xs shadow-2xs inline-flex items-center justify-center gap-1 transition-colors cursor-pointer"
                           >
-                            <Edit2 className="h-3.5 w-3.5 text-[#8C522B]" />
-                            <span>Editar</span>
+                            <Edit2 className="h-3.5 w-3.5 text-[#8C522B] shrink-0" />
+                            <span className="truncate">Editar</span>
                           </button>
                         </Link>
                         <button
                           type="button"
                           onClick={() => handleToggleActive(product)}
-                          className={`flex-1 min-w-[110px] h-10 px-3 border rounded-xl font-bold text-xs shadow-2xs inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                          className={`w-full h-10 px-1 sm:px-2 border rounded-xl font-bold text-xs shadow-2xs inline-flex items-center justify-center gap-1 transition-colors cursor-pointer ${
                             product.isActive
                               ? "bg-white border-[#DECDBB] text-[#6E5545] hover:bg-[#FAF5EE] hover:text-[#2B170F]"
                               : "bg-[#FAF0E6] border-[#DECDBB] text-[#D97706] hover:bg-amber-100"
@@ -412,24 +412,24 @@ function AdminProductosContent() {
                         >
                           {product.isActive ? (
                             <>
-                              <EyeOff className="h-3.5 w-3.5 text-[#8C522B]" />
-                              <span>Ocultar Web</span>
+                              <EyeOff className="h-3.5 w-3.5 text-[#8C522B] shrink-0" />
+                              <span className="truncate">Ocultar</span>
                             </>
                           ) : (
                             <>
-                              <Eye className="h-3.5 w-3.5 text-[#D97706]" />
-                              <span>Mostrar Web</span>
+                              <Eye className="h-3.5 w-3.5 text-[#D97706] shrink-0" />
+                              <span className="truncate">Mostrar</span>
                             </>
                           )}
                         </button>
                         <button
                           type="button"
                           onClick={() => openDeleteModal(product)}
-                          className="h-10 px-3 bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 rounded-xl font-bold text-xs inline-flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                          className="w-full h-10 px-1 sm:px-2 bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 rounded-xl font-bold text-xs inline-flex items-center justify-center gap-1 transition-colors cursor-pointer"
                           title="Eliminar producto"
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
-                          <span>Eliminar</span>
+                          <Trash2 className="h-3.5 w-3.5 shrink-0" />
+                          <span className="truncate">Eliminar</span>
                         </button>
                       </div>
                     )

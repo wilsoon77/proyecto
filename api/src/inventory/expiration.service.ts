@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { ProductOrigin } from '@prisma/client';
-import { addDays, dateKeyToUtcDate, todayBusinessDate } from '../common/time/business-date.js';
+import { addDays, dateKeyToUtcDate, formatHumanExpirationDate, todayBusinessDate } from '../common/time/business-date.js';
 import { isCustomExpirationAlert, normalizeExpirationAlertDays } from './expiration-alerts.js';
 
 @Injectable()
@@ -64,7 +64,7 @@ export class ExpirationService {
             placeholders: {
               productName: lot.product.name,
               quantity: lot.availableQuantity,
-              expiresAt: expiresAtKey,
+              expiresAt: formatHumanExpirationDate(expiresAtKey),
               daysLeft: Math.max(0, daysLeft),
               daysBefore,
               branchName: lot.branch.name,
@@ -90,7 +90,7 @@ export class ExpirationService {
             placeholders: {
               productName: lot.product.name,
               quantity: lot.availableQuantity,
-              expiresAt: expiresAtKey,
+              expiresAt: formatHumanExpirationDate(expiresAtKey),
               daysLeft: Math.max(0, daysLeft),
               daysBefore,
               branchName: lot.branch.name,

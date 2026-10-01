@@ -330,4 +330,37 @@ export interface SubscribePushDto {
   }
 }
 
+export interface NotificationDeliveryAuditRecipient {
+  userId: string
+  name: string
+  email: string
+  role: string
+  channels: {
+    inApp: 'ENVIADO' | 'FALLIDO' | 'DESHABILITADO'
+    whatsapp: 'ENVIADO' | 'OMITIDO_DUPLICADO' | 'SIN_TELEFONO' | 'NO_CONFIGURADO' | 'FALLIDO' | 'DESHABILITADO'
+    whatsappPhone?: string
+    telegram: 'ENVIADO' | 'OMITIDO_DUPLICADO' | 'NO_VINCULADO' | 'NO_CONFIGURADO' | 'FALLIDO' | 'DESHABILITADO'
+    telegramChat?: string
+    push: 'ENVIADO' | 'SIN_SUSCRIPCION' | 'NO_CONFIGURADO' | 'FALLIDO' | 'DESHABILITADO'
+    pushCount?: number
+  }
+}
+
+export interface NotificationDeliveryAudit {
+  totalEvaluatedUsers: number
+  targetRoles: string[]
+  configKey: string
+  summary: {
+    inAppSent: number
+    whatsappSent: number
+    whatsappSkippedDuplicate: number
+    whatsappNoPhone: number
+    telegramSent: number
+    telegramNotLinked: number
+    pushSent: number
+    pushNoSubscription: number
+  }
+  recipients: NotificationDeliveryAuditRecipient[]
+}
+
 

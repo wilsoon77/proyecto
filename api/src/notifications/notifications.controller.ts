@@ -30,6 +30,7 @@ import { TestNotificationDto } from './dto/test-notification.dto.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/roles.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
+import { formatHumanExpirationDate } from '../common/time/business-date.js';
 
 @Controller('notifications')
 @ApiTags('notifications')
@@ -161,7 +162,7 @@ export class NotificationsController {
     const key = testDto.key;
     const placeholders: Record<string, any> = {
       productName: 'Pan de Banano',
-      expiresAt: '2026-09-01',
+      expiresAt: formatHumanExpirationDate('2026-09-01'),
       daysBefore: 30,
       materialName: 'Harina de Trigo',
       current: 8,
@@ -170,9 +171,9 @@ export class NotificationsController {
       quantity: 5,
     };
 
-    // Despachar la notificación de prueba a todos los roles configurados (ADMIN, MANAGER)
-    await this.notificationsService.sendByConfig(key, placeholders, '/admin/historial', 'Bell');
-    return { success: true, key };
+    // Despachar la notificacion de prueba a todos los roles configurados (ADMIN, MANAGER) con deduplicacion por canal
+    const audit = await this.notificationsService.sendByConfig(key, placeholders, '/admin/historial', 'Bell');
+    return { success: true, key, audit };
   }
 
   @Get('whatsapp-diagnostics')

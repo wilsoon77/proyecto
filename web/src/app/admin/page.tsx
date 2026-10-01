@@ -84,6 +84,20 @@ function formatDate(value: string): string {
   })
 }
 
+function formatExpirationDisplay(value?: string | null): string {
+  if (!value) return "Sin fecha"
+  const datePart = value.split("T")[0]
+  const parts = datePart.split("-")
+  if (parts.length !== 3) return value
+  const year = parseInt(parts[0], 10)
+  const month = parseInt(parts[1], 10)
+  const day = parseInt(parts[2], 10)
+  if (isNaN(year) || isNaN(month) || isNaN(day)) return value
+  const months = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sept", "oct", "nov", "dic"]
+  const monthName = months[month - 1] || ""
+  return `${day} ${monthName} ${year}`
+}
+
 function getBezierPath(points: Array<{ x: number; y: number }>): string {
   if (points.length === 0) return ""
   if (points.length === 1) return `M ${points[0].x} ${points[0].y}`
@@ -624,19 +638,6 @@ export default function AdminOperationPage() {
         </Link>
       </div>
 
-      {/* Nota Operativa y Regla de Negocio para Usuarios */}
-      <div className="rounded-2xl border border-amber-200/80 bg-amber-50/70 p-4 text-xs text-[#8C522B] flex flex-col sm:flex-row items-start sm:items-center gap-3">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-[#D97706]">
-          <Info className="h-4 w-4" />
-        </div>
-        <p className="leading-relaxed">
-          <strong className="text-[#2B170F]">Aclaracion de panaderia:</strong> El pan horneado fresco no tiene fecha de vencimiento por calendario.
-          De las unidades elaboradas, lo vendido va al cliente, lo <strong>sobrante</strong> queda disponible para la venta del dia siguiente,
-          y unicamente lo danado o inservible se registra como <strong>merma fisica real</strong>.
-          Las fechas de caducidad aplican exclusivamente a productos comprados de reventa (lacteos, refrescos y abarrotes).
-        </p>
-      </div>
-
       {/* SECCION 1: CICLO DEL PAN DIARIO (Movimiento Operativo) */}
       <section className="rounded-2xl border border-[#E8DCCB] bg-white p-5 shadow-xs sm:p-6 space-y-4">
         {/* Barra Superior con Titulo y Controles */}
@@ -654,15 +655,15 @@ export default function AdminOperationPage() {
           </div>
 
           {/* Barra de Filtros y Selector de Grafica */}
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap lg:flex-nowrap items-stretch sm:items-center gap-2.5 w-full lg:w-auto">
             {/* Filtro de Sucursal (Para roles globales) */}
             {isGlobalRole && (
-              <div className="relative inline-flex items-center">
-                <Building2 className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#8C522B] pointer-events-none" />
+              <div className="relative flex items-center w-full sm:w-auto">
+                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8C522B] pointer-events-none" />
                 <select
                   value={selectedBranchSlug}
                   onChange={(e) => setSelectedBranchSlug(e.target.value)}
-                  className="min-h-[44px] pl-8 pr-7 text-xs font-semibold bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] hover:border-[#D97706] focus:outline-none focus:ring-1 focus:ring-[#D97706] appearance-none cursor-pointer"
+                  className="w-full sm:w-auto min-h-[44px] pl-9 pr-8 text-xs font-semibold bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] hover:border-[#D97706] focus:outline-none focus:ring-1 focus:ring-[#D97706] appearance-none cursor-pointer transition"
                   title="Filtrar por sucursal"
                 >
                   <option value="">Todas las sucursales</option>
@@ -672,19 +673,19 @@ export default function AdminOperationPage() {
                     </option>
                   ))}
                 </select>
-                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-[#8C522B] pointer-events-none" />
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#8C522B] pointer-events-none" />
               </div>
             )}
 
             {/* Presets: Dia, Semana, Mes, Personalizado */}
-            <div className="inline-flex rounded-xl border border-[#DECDBB] bg-[#FAF5EE] p-0.5 text-xs font-semibold">
+            <div className="flex w-full sm:w-auto rounded-xl border border-[#DECDBB] bg-[#FAF5EE] p-0.5 text-xs font-semibold">
               <button
                 type="button"
                 onClick={() => {
                   setFilterPreset("day")
                   setHoveredIndex(null)
                 }}
-                className={`min-h-[40px] px-3 py-2 rounded-lg transition ${
+                className={`flex-1 sm:flex-initial inline-flex items-center justify-center min-h-[40px] px-2.5 sm:px-3 py-2 rounded-lg transition ${
                   filterPreset === "day"
                     ? "bg-white text-[#D97706] font-bold shadow-2xs"
                     : "text-[#6E5545] hover:text-[#2B170F]"
@@ -699,7 +700,7 @@ export default function AdminOperationPage() {
                   setFilterPreset("week")
                   setHoveredIndex(null)
                 }}
-                className={`min-h-[40px] px-3 py-2 rounded-lg transition ${
+                className={`flex-1 sm:flex-initial inline-flex items-center justify-center min-h-[40px] px-2.5 sm:px-3 py-2 rounded-lg transition ${
                   filterPreset === "week"
                     ? "bg-white text-[#D97706] font-bold shadow-2xs"
                     : "text-[#6E5545] hover:text-[#2B170F]"
@@ -714,7 +715,7 @@ export default function AdminOperationPage() {
                   setFilterPreset("month")
                   setHoveredIndex(null)
                 }}
-                className={`min-h-[40px] px-3 py-2 rounded-lg transition ${
+                className={`flex-1 sm:flex-initial inline-flex items-center justify-center min-h-[40px] px-2.5 sm:px-3 py-2 rounded-lg transition ${
                   filterPreset === "month"
                     ? "bg-white text-[#D97706] font-bold shadow-2xs"
                     : "text-[#6E5545] hover:text-[#2B170F]"
@@ -729,59 +730,59 @@ export default function AdminOperationPage() {
                   setFilterPreset("custom")
                   setHoveredIndex(null)
                 }}
-                className={`inline-flex min-h-[40px] items-center gap-1.5 px-3 py-2 rounded-lg transition ${
+                className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 min-h-[40px] px-2.5 sm:px-3 py-2 rounded-lg transition ${
                   filterPreset === "custom"
                     ? "bg-white text-[#D97706] font-bold shadow-2xs"
                     : "text-[#6E5545] hover:text-[#2B170F]"
                 }`}
                 title="Seleccionar rango de fechas libre"
               >
-                <Calendar className="h-3.5 w-3.5" />
+                <Calendar className="h-3.5 w-3.5 shrink-0" />
                 <span className="hidden sm:inline">Rango libre</span>
                 <span className="sm:hidden">Libre</span>
               </button>
             </div>
 
             {/* Selector de Tipo de Grafica (Barras / Lineas / Area) */}
-            <div className="inline-flex rounded-xl border border-[#DECDBB] bg-[#FAF5EE] p-0.5 text-xs font-semibold">
+            <div className="flex w-full sm:w-auto rounded-xl border border-[#DECDBB] bg-[#FAF5EE] p-0.5 text-xs font-semibold">
               <button
                 type="button"
                 onClick={() => setChartType("bars")}
-                className={`inline-flex min-h-[40px] items-center gap-1 px-3 py-2 rounded-lg transition ${
+                className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 min-h-[40px] px-2.5 sm:px-3 py-2 rounded-lg transition ${
                   chartType === "bars"
                     ? "bg-white text-[#D97706] font-bold shadow-2xs"
                     : "text-[#6E5545] hover:text-[#2B170F]"
                 }`}
                 title="Vista de Barras"
               >
-                <BarChart3 className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Barras</span>
+                <BarChart3 className="h-3.5 w-3.5 shrink-0" />
+                <span>Barras</span>
               </button>
               <button
                 type="button"
                 onClick={() => setChartType("lines")}
-                className={`inline-flex min-h-[40px] items-center gap-1 px-3 py-2 rounded-lg transition ${
+                className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 min-h-[40px] px-2.5 sm:px-3 py-2 rounded-lg transition ${
                   chartType === "lines"
                     ? "bg-white text-[#D97706] font-bold shadow-2xs"
                     : "text-[#6E5545] hover:text-[#2B170F]"
                 }`}
                 title="Vista de Lineas"
               >
-                <LineChart className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Lineas</span>
+                <LineChart className="h-3.5 w-3.5 shrink-0" />
+                <span>Lineas</span>
               </button>
               <button
                 type="button"
                 onClick={() => setChartType("area")}
-                className={`inline-flex min-h-[40px] items-center gap-1 px-3 py-2 rounded-lg transition ${
+                className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 min-h-[40px] px-2.5 sm:px-3 py-2 rounded-lg transition ${
                   chartType === "area"
                     ? "bg-white text-[#D97706] font-bold shadow-2xs"
                     : "text-[#6E5545] hover:text-[#2B170F]"
                 }`}
                 title="Vista de Area Suave"
               >
-                <TrendingUp className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Area</span>
+                <TrendingUp className="h-3.5 w-3.5 shrink-0" />
+                <span>Area</span>
               </button>
             </div>
           </div>
@@ -790,39 +791,39 @@ export default function AdminOperationPage() {
         {/* Panel Desplegable para Filtro de Rango Libre */}
         {filterPreset === "custom" && (
           <div className="rounded-xl border border-[#DECDBB] bg-[#FAF5EE] p-3 text-xs space-y-2 animate-in fade-in duration-200">
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-[#8C522B]">Desde:</span>
+            <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3">
+              <div className="flex items-center gap-2 flex-1 sm:flex-initial">
+                <span className="font-bold text-[#8C522B] shrink-0">Desde:</span>
                 <input
                   type="date"
                   value={customStartDate}
                   max={customEndDate || getTodayIsoString()}
                   onChange={(e) => setCustomStartDate(e.target.value)}
-                  className="min-h-[40px] px-2.5 rounded-lg border border-[#DECDBB] bg-white text-[#2B170F] font-medium focus:outline-none focus:ring-1 focus:ring-[#D97706]"
+                  className="w-full sm:w-auto min-h-[40px] px-2.5 rounded-lg border border-[#DECDBB] bg-white text-[#2B170F] font-medium focus:outline-none focus:ring-1 focus:ring-[#D97706]"
                 />
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-[#8C522B]">Hasta:</span>
+              <div className="flex items-center gap-2 flex-1 sm:flex-initial">
+                <span className="font-bold text-[#8C522B] shrink-0">Hasta:</span>
                 <input
                   type="date"
                   value={customEndDate}
                   min={customStartDate}
                   max={getTodayIsoString()}
                   onChange={(e) => setCustomEndDate(e.target.value)}
-                  className="min-h-[40px] px-2.5 rounded-lg border border-[#DECDBB] bg-white text-[#2B170F] font-medium focus:outline-none focus:ring-1 focus:ring-[#D97706]"
+                  className="w-full sm:w-auto min-h-[40px] px-2.5 rounded-lg border border-[#DECDBB] bg-white text-[#2B170F] font-medium focus:outline-none focus:ring-1 focus:ring-[#D97706]"
                 />
               </div>
               <button
                 type="button"
                 onClick={handleApplyCustomRange}
-                className="inline-flex min-h-[40px] items-center gap-1.5 px-4 rounded-lg bg-[#D97706] text-white font-bold hover:bg-[#B45309] transition shadow-xs"
+                className="inline-flex min-h-[40px] items-center justify-center gap-1.5 px-4 rounded-lg bg-[#D97706] text-white font-bold hover:bg-[#B45309] transition shadow-xs w-full sm:w-auto"
               >
                 <Check className="h-3.5 w-3.5" />
                 <span>Aplicar</span>
               </button>
 
               {appliedCustomRange && (
-                <span className="text-[11px] text-[#8C522B] font-semibold bg-white/70 px-2.5 py-1 rounded-md border border-[#DECDBB]">
+                <span className="text-[11px] text-[#8C522B] font-semibold bg-white/70 px-2.5 py-1.5 rounded-md border border-[#DECDBB] text-center w-full sm:w-auto">
                   Activo: {appliedCustomRange.from} al {appliedCustomRange.to} ({activity.length} dias)
                 </span>
               )}
@@ -1546,7 +1547,7 @@ export default function AdminOperationPage() {
                           )}
                         </div>
                         <p className="text-[11px] text-[#6E5545]">
-                          {lot.branch.name} · Vence: {lot.expiresAt || "Sin fecha"}
+                          {lot.branch.name} · Vence: {formatExpirationDisplay(lot.expiresAt)}
                         </p>
                       </div>
                       <span className="shrink-0 text-xs font-bold text-[#2B170F] bg-[#FAF5EE] border border-[#DECDBB] px-2.5 py-1.5 rounded-lg">

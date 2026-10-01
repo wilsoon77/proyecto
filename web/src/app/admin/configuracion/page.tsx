@@ -37,6 +37,7 @@ import {
   Zap,
   Sparkles,
   AlertCircle,
+  X,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader"
@@ -50,7 +51,8 @@ import {
   assistantService,
   type AssistantDiagnostics,
   type TelegramDiagnostics,
-  type ProviderTestResult
+  type ProviderTestResult,
+  type NotificationDeliveryAudit,
 } from "@/lib/api"
 import { useNotifications } from "@/context/NotificationContext"
 import type { NotificationConfig } from "@/lib/api/types"
@@ -132,6 +134,18 @@ export default function ConfiguracionPage() {
   const [isSavingAssistant, setIsSavingAssistant] = useState(false)
   const [isSyncingWebhook, setIsSyncingWebhook] = useState(false)
 
+  // Estado para auditoría de prueba de alertas
+  const [testingKey, setTestingKey] = useState<string | null>(null)
+  const [auditModal, setAuditModal] = useState<{
+    isOpen: boolean
+    audit: NotificationDeliveryAudit | null
+    configTitle: string
+  }>({
+    isOpen: false,
+    audit: null,
+    configTitle: '',
+  })
+
   useEffect(() => {
     const tabParam = searchParams.get('tab')
     if (tabParam && ['general', 'pedidos', 'notificaciones', 'sucursales', 'asistente'].includes(tabParam)) {
@@ -194,13 +208,25 @@ export default function ConfiguracionPage() {
     }
   }
 
-  const handleTestConfig = async (key: string) => {
+  const handleTestConfig = async (key: string, title?: string) => {
+    setTestingKey(key)
     try {
-      await notificationsService.sendTestNotification(key)
-      showToast("Notificación de prueba enviada", "success")
+      const res = await notificationsService.sendTestNotification(key)
+      if (res.audit) {
+        setAuditModal({
+          isOpen: true,
+          audit: res.audit,
+          configTitle: title || (key === 'inventory.expiration_warning' ? 'Producto próximo a caducar' : 'Materia prima baja'),
+        })
+        showToast("Notificación de prueba enviada con auditoría", "success")
+      } else {
+        showToast("Notificación de prueba enviada", "success")
+      }
     } catch (error) {
       console.error("Error sending test notification:", error)
       showToast("Error al enviar notificación de prueba", "error")
+    } finally {
+      setTestingKey(null)
     }
   }
 
@@ -1156,11 +1182,19 @@ export default function ConfiguracionPage() {
                                     
                                     <button
                                       type="button"
-                                      onClick={() => handleTestConfig(cfg.key)}
-                                      className="px-3.5 py-1.5 bg-accent hover:bg-primary/10 text-primary font-semibold rounded-lg text-xs border border-primary/20 transition-colors"
-                                      title="Probar Alerta"
+                                      disabled={testingKey === cfg.key}
+                                      onClick={() => handleTestConfig(cfg.key, cfg.name || cfg.title)}
+                                      className="px-3.5 py-1.5 bg-accent hover:bg-primary/10 text-primary font-semibold rounded-lg text-xs border border-primary/20 transition-colors disabled:opacity-50 inline-flex items-center gap-1.5"
+                                      title="Probar Alerta y Ver Auditoria de Entrega"
                                     >
-                                      Probar
+                                      {testingKey === cfg.key ? (
+                                        <>
+                                          <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                                          <span>Probando...</span>
+                                        </>
+                                      ) : (
+                                        <span>Probar</span>
+                                      )}
                                     </button>
                                   </div>
                                 </div>
@@ -1596,6 +1630,191 @@ export default function ConfiguracionPage() {
           </div>
         </div>
       </div>
+
+      {/* Modal de Auditoria de Envio de Alertas */}
+      {auditModal.isOpen && auditModal.audit && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-[#E8DCCB] shadow-2xl p-5 sm:p-6 space-y-5 animate-in fade-in zoom-in-95 duration-200">
+            {/* Header del Modal */}
+            <div className="flex items-start justify-between border-b border-[#E8DCCB] pb-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#9E4D1A]">
+                    Auditoria de Entrega
+                  </span>
+                  <span className="text-xs text-[#8C522B] font-semibold">
+                    Clave: {auditModal.audit.configKey}
+                  </span>
+                </div>
+                <h3 className="text-lg font-bold text-[#2B170F] mt-1">
+                  {auditModal.configTitle}
+                </h3>
+                <p className="text-xs text-[#6E5545] mt-0.5">
+                  Desglose de recepcion canal por canal para los {auditModal.audit.totalEvaluatedUsers} usuarios con rol asignado ({auditModal.audit.targetRoles.join(", ")}).
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAuditModal({ isOpen: false, audit: null, configTitle: '' })}
+                className="text-[#8C522B] hover:text-[#2B170F] p-1.5 rounded-lg hover:bg-[#FAF5EE] transition"
+                title="Cerrar modal"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Resumen por Canal (4 Cards) */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+              {/* In-App */}
+              <div className="rounded-xl border border-blue-200 bg-blue-50/70 p-3">
+                <p className="font-bold text-blue-900 uppercase text-[10px]">In-App (Bandeja)</p>
+                <p className="text-xl font-bold text-blue-700 mt-1">
+                  {auditModal.audit.summary.inAppSent}
+                </p>
+                <p className="text-[11px] text-blue-800 font-medium">notificaciones creadas</p>
+              </div>
+
+              {/* WhatsApp */}
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3">
+                <p className="font-bold text-emerald-900 uppercase text-[10px]">WhatsApp</p>
+                <p className="text-xl font-bold text-emerald-700 mt-1">
+                  {auditModal.audit.summary.whatsappSent}
+                </p>
+                <p className="text-[11px] text-emerald-800 font-medium">
+                  {auditModal.audit.summary.whatsappSkippedDuplicate > 0
+                    ? `${auditModal.audit.summary.whatsappSkippedDuplicate} dup. evitado`
+                    : "sin duplicados"}
+                </p>
+              </div>
+
+              {/* Telegram */}
+              <div className="rounded-xl border border-sky-200 bg-sky-50/70 p-3">
+                <p className="font-bold text-sky-900 uppercase text-[10px]">Telegram</p>
+                <p className="text-xl font-bold text-sky-700 mt-1">
+                  {auditModal.audit.summary.telegramSent}
+                </p>
+                <p className="text-[11px] text-sky-800 font-medium">
+                  {auditModal.audit.summary.telegramNotLinked > 0
+                    ? `${auditModal.audit.summary.telegramNotLinked} sin vincular`
+                    : "vinculados"}
+                </p>
+              </div>
+
+              {/* Web Push */}
+              <div className="rounded-xl border border-purple-200 bg-purple-50/70 p-3">
+                <p className="font-bold text-purple-900 uppercase text-[10px]">Web Push</p>
+                <p className="text-xl font-bold text-purple-700 mt-1">
+                  {auditModal.audit.summary.pushSent}
+                </p>
+                <p className="text-[11px] text-purple-800 font-medium">
+                  {auditModal.audit.summary.pushNoSubscription > 0
+                    ? `${auditModal.audit.summary.pushNoSubscription} sin suscrip.`
+                    : "entregados"}
+                </p>
+              </div>
+            </div>
+
+            {/* Listado de Destinatarios */}
+            <div className="space-y-2">
+              <h4 className="text-xs font-bold text-[#2B170F] uppercase tracking-wider">
+                Destinatarios con Rol Asignado ({auditModal.audit.recipients.length})
+              </h4>
+              <div className="divide-y divide-[#E8DCCB] border border-[#E8DCCB] rounded-xl overflow-hidden bg-white max-h-64 overflow-y-auto">
+                {auditModal.audit.recipients.map((rec) => (
+                  <div key={rec.userId} className="p-3 hover:bg-[#FAF5EE]/40 transition text-xs space-y-1.5">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-[#2B170F]">{rec.name}</span>
+                        <span className="text-[10px] font-bold rounded-full bg-amber-100 text-[#9E4D1A] px-2 py-0.5">
+                          {rec.role}
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-[#6E5545] font-mono">{rec.email}</span>
+                    </div>
+
+                    {/* Chips de estado por canal */}
+                    <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                      {/* In-App */}
+                      <span className="rounded-md bg-blue-50 border border-blue-200 text-blue-700 px-2 py-0.5 font-medium">
+                        In-App: {rec.channels.inApp}
+                      </span>
+
+                      {/* WhatsApp */}
+                      {rec.channels.whatsapp === "ENVIADO" ? (
+                        <span className="rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700 px-2 py-0.5 font-medium">
+                          WhatsApp: Enviado ({rec.channels.whatsappPhone})
+                        </span>
+                      ) : rec.channels.whatsapp === "OMITIDO_DUPLICADO" ? (
+                        <span className="rounded-md bg-amber-50 border border-amber-200 text-amber-800 px-2 py-0.5 font-medium" title="Este telefono ya recibio la alerta en la misma tanda">
+                          WhatsApp: Omitido (duplicado evitado a {rec.channels.whatsappPhone})
+                        </span>
+                      ) : rec.channels.whatsapp === "SIN_TELEFONO" ? (
+                        <span className="rounded-md bg-stone-100 border border-stone-200 text-stone-500 px-2 py-0.5 font-medium">
+                          WhatsApp: Sin telefono registrado
+                        </span>
+                      ) : (
+                        <span className="rounded-md bg-stone-100 border border-stone-200 text-stone-500 px-2 py-0.5 font-medium">
+                          WhatsApp: {rec.channels.whatsapp}
+                        </span>
+                      )}
+
+                      {/* Telegram */}
+                      {rec.channels.telegram === "ENVIADO" ? (
+                        <span className="rounded-md bg-sky-50 border border-sky-200 text-sky-700 px-2 py-0.5 font-medium">
+                          Telegram: Enviado ({rec.channels.telegramChat})
+                        </span>
+                      ) : rec.channels.telegram === "OMITIDO_DUPLICADO" ? (
+                        <span className="rounded-md bg-amber-50 border border-amber-200 text-amber-800 px-2 py-0.5 font-medium">
+                          Telegram: Omitido (chat duplicado)
+                        </span>
+                      ) : rec.channels.telegram === "NO_VINCULADO" ? (
+                        <span className="rounded-md bg-stone-100 border border-stone-200 text-stone-500 px-2 py-0.5 font-medium">
+                          Telegram: No vinculado
+                        </span>
+                      ) : (
+                        <span className="rounded-md bg-stone-100 border border-stone-200 text-stone-500 px-2 py-0.5 font-medium">
+                          Telegram: {rec.channels.telegram}
+                        </span>
+                      )}
+
+                      {/* Push */}
+                      {rec.channels.push === "ENVIADO" ? (
+                        <span className="rounded-md bg-purple-50 border border-purple-200 text-purple-700 px-2 py-0.5 font-medium">
+                          Push: Enviado ({rec.channels.pushCount} disp.)
+                        </span>
+                      ) : (
+                        <span className="rounded-md bg-stone-100 border border-stone-200 text-stone-500 px-2 py-0.5 font-medium">
+                          Push: Sin suscripcion
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Caja de Ayuda Operativa */}
+            <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3 text-xs text-[#8C522B] flex items-start gap-2">
+              <Info className="h-4 w-4 shrink-0 text-[#D97706] mt-0.5" />
+              <p>
+                <strong>Para ampliar la cobertura:</strong> Para que un usuario reciba alertas por WhatsApp, asignele su numero telefonico en el modulo de{" "}
+                <Link href="/admin/usuarios" className="font-bold underline text-[#D97706]">Usuarios</Link>. Para Telegram, el usuario debe abrir el bot de la panaderia y presionar Iniciar (/start).
+              </p>
+            </div>
+
+            {/* Boton de Cierre */}
+            <div className="pt-2 text-right">
+              <button
+                type="button"
+                onClick={() => setAuditModal({ isOpen: false, audit: null, configTitle: '' })}
+                className="min-h-[44px] px-5 py-2.5 rounded-xl bg-[#2B170F] text-white font-bold text-xs hover:bg-[#42261B] transition shadow-xs"
+              >
+                Cerrar auditoria
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

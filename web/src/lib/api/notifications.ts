@@ -3,7 +3,7 @@
  */
 
 import api from './client'
-import type { Notification, NotificationConfig, SubscribePushDto, PaginatedResponse } from './types'
+import type { Notification, NotificationConfig, SubscribePushDto, PaginatedResponse, NotificationDeliveryAudit } from './types'
 
 export const notificationsService = {
   /**
@@ -83,8 +83,8 @@ export const notificationsService = {
   /**
    * Enviar notificación de prueba (ADMIN)
    */
-  async sendTestNotification(key: string): Promise<{ success: boolean; key: string }> {
-    return api.post<{ success: boolean; key: string }>('/notifications/test', { key })
+  async sendTestNotification(key: string): Promise<{ success: boolean; key: string; audit?: NotificationDeliveryAudit }> {
+    return api.post<{ success: boolean; key: string; audit?: NotificationDeliveryAudit }>('/notifications/test', { key })
   },
 
   /**

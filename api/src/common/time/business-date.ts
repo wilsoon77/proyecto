@@ -152,3 +152,39 @@ export function previousOperatingDateKeys(
   }
   return result.reverse();
 }
+
+const SPANISH_SHORT_MONTHS = [
+  'ene', 'feb', 'mar', 'abr', 'may', 'jun',
+  'jul', 'ago', 'sept', 'oct', 'nov', 'dic',
+];
+
+/**
+ * Formatea una fecha de caducidad en formato legible en español: '1 sept 2026'.
+ * Si recibe 'YYYY-MM-DD', preserva estrictamente el día calendario sin desfasar por zona horaria.
+ */
+export function formatHumanExpirationDate(value: string | Date | null | undefined): string {
+  if (!value) return '';
+  let date: Date;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+      const [year, month, day] = trimmed.split('-').map(Number);
+      date = new Date(Date.UTC(year, month - 1, day));
+      const dayNum = date.getUTCDate();
+      const monthStr = SPANISH_SHORT_MONTHS[date.getUTCMonth()];
+      const yearNum = date.getUTCFullYear();
+      return `${dayNum} ${monthStr} ${yearNum}`;
+    }
+    date = new Date(trimmed);
+  } else if (value instanceof Date) {
+    date = value;
+  } else {
+    date = new Date(String(value));
+  }
+
+  if (isNaN(date.getTime())) return String(value);
+  const dayNum = date.getDate();
+  const monthStr = SPANISH_SHORT_MONTHS[date.getMonth()];
+  const yearNum = date.getFullYear();
+  return `${dayNum} ${monthStr} ${yearNum}`;
+}

@@ -5,6 +5,40 @@ import webpush from 'web-push';
 import { TelegramDeliveryService } from '../telegram/telegram-delivery.service.js';
 import { WhatsAppDeliveryService } from '../whatsapp/whatsapp-delivery.service.js';
 import { AlertType } from '@prisma/client';
+import { formatHumanExpirationDate } from '../common/time/business-date.js';
+
+export interface NotificationDeliveryAuditRecipient {
+  userId: string;
+  name: string;
+  email: string;
+  role: string;
+  channels: {
+    inApp: 'ENVIADO' | 'FALLIDO' | 'DESHABILITADO';
+    whatsapp: 'ENVIADO' | 'OMITIDO_DUPLICADO' | 'SIN_TELEFONO' | 'NO_CONFIGURADO' | 'FALLIDO' | 'DESHABILITADO';
+    whatsappPhone?: string;
+    telegram: 'ENVIADO' | 'OMITIDO_DUPLICADO' | 'NO_VINCULADO' | 'NO_CONFIGURADO' | 'FALLIDO' | 'DESHABILITADO';
+    telegramChat?: string;
+    push: 'ENVIADO' | 'SIN_SUSCRIPCION' | 'NO_CONFIGURADO' | 'FALLIDO' | 'DESHABILITADO';
+    pushCount?: number;
+  };
+}
+
+export interface NotificationDeliveryAudit {
+  totalEvaluatedUsers: number;
+  targetRoles: string[];
+  configKey: string;
+  summary: {
+    inAppSent: number;
+    whatsappSent: number;
+    whatsappSkippedDuplicate: number;
+    whatsappNoPhone: number;
+    telegramSent: number;
+    telegramNotLinked: number;
+    pushSent: number;
+    pushNoSubscription: number;
+  };
+  recipients: NotificationDeliveryAuditRecipient[];
+}
 
 /**
  * Reglas de negocio que generan notificaciones automáticas.
@@ -302,7 +336,8 @@ export class NotificationsService {
   }
 
   /**
-   * Envía una notificación a todos los usuarios con ciertos roles
+   * Envia una notificacion a todos los usuarios con ciertos roles aplicando deduplicacion por canal.
+   * Evita duplicar mensajes de WhatsApp o Telegram si multiples usuarios comparten el mismo telefono o chat.
    */
   async sendToRoles(
     roles: string[],
@@ -310,7 +345,7 @@ export class NotificationsService {
     placeholders: Record<string, any>,
     url?: string,
     icon?: string
-  ): Promise<void> {
+  ): Promise<NotificationDeliveryAudit> {
     const requestedBranchId = Number(placeholders.branchId);
     const where: any = {
       role: { in: roles as any },
@@ -320,49 +355,241 @@ export class NotificationsService {
     if (Number.isInteger(requestedBranchId) && requestedBranchId > 0) {
       where.OR = [
         { role: 'ADMIN' },
-        // Los MANAGER son los dueños operativos y reciben las alertas de las
-        // dos sucursales. AssistantAccess controla el bot, no estas alertas.
         { role: 'MANAGER' },
         { branchId: requestedBranchId },
       ];
     }
 
-    const users = await this.prisma.user.findMany({
-      where,
-      select: { id: true },
+    const config = await this.prisma.notificationConfig.findUnique({
+      where: { key: configKey },
     });
 
-    const sendPromises = users.map((u) =>
-      this.sendToUser(u.id, configKey, placeholders, url, icon)
-    );
+    if (!config || !config.isEnabled) {
+      return {
+        totalEvaluatedUsers: 0,
+        targetRoles: roles,
+        configKey,
+        summary: {
+          inAppSent: 0,
+          whatsappSent: 0,
+          whatsappSkippedDuplicate: 0,
+          whatsappNoPhone: 0,
+          telegramSent: 0,
+          telegramNotLinked: 0,
+          pushSent: 0,
+          pushNoSubscription: 0,
+        },
+        recipients: [],
+      };
+    }
 
-    await Promise.all(sendPromises);
+    const rawChannels = (config as any).channels;
+    const defaultChannels = this.whatsapp.isConfigured()
+      ? ['IN_APP', 'PUSH', 'TELEGRAM', 'WHATSAPP']
+      : ['IN_APP', 'PUSH', 'TELEGRAM'];
+    const activeChannels: string[] = Array.isArray(rawChannels)
+      ? (rawChannels as string[])
+      : defaultChannels;
+
+    const formattedTitle = this.formatMessage(config.title, placeholders);
+    const formattedMessage = this.formatMessage(config.message, placeholders);
+
+    const users = await this.prisma.user.findMany({
+      where,
+      include: {
+        telegramLink: true,
+        pushSubscriptions: true,
+      },
+      orderBy: [{ role: 'asc' }, { firstName: 'asc' }],
+    });
+
+    const sentPhones = new Set<string>();
+    const sentTelegramChats = new Set<string>();
+    const sentPushEndpoints = new Set<string>();
+
+    const recipients: NotificationDeliveryAuditRecipient[] = [];
+
+    const summary = {
+      inAppSent: 0,
+      whatsappSent: 0,
+      whatsappSkippedDuplicate: 0,
+      whatsappNoPhone: 0,
+      telegramSent: 0,
+      telegramNotLinked: 0,
+      pushSent: 0,
+      pushNoSubscription: 0,
+    };
+
+    for (const u of users) {
+      const recipientName = [u.firstName, u.lastName].filter(Boolean).join(' ') || u.email;
+      const recAudit: NotificationDeliveryAuditRecipient = {
+        userId: u.id,
+        name: recipientName,
+        email: u.email,
+        role: u.role,
+        channels: {
+          inApp: 'DESHABILITADO',
+          whatsapp: 'DESHABILITADO',
+          telegram: 'DESHABILITADO',
+          push: 'DESHABILITADO',
+        },
+      };
+
+      // 1. In-App
+      if (activeChannels.includes('IN_APP')) {
+        try {
+          await this.prisma.notification.create({
+            data: {
+              userId: u.id,
+              type: configKey,
+              title: formattedTitle,
+              message: formattedMessage,
+              url,
+              icon: icon || this.getDefaultIcon(configKey),
+              metadata: placeholders,
+            },
+          });
+          recAudit.channels.inApp = 'ENVIADO';
+          summary.inAppSent += 1;
+        } catch {
+          recAudit.channels.inApp = 'FALLIDO';
+        }
+      }
+
+      // 2. Web Push
+      if (!activeChannels.includes('PUSH')) {
+        recAudit.channels.push = 'DESHABILITADO';
+      } else if (!u.pushSubscriptions || u.pushSubscriptions.length === 0) {
+        recAudit.channels.push = 'SIN_SUSCRIPCION';
+        summary.pushNoSubscription += 1;
+      } else {
+        const payload = JSON.stringify({
+          title: formattedTitle,
+          message: formattedMessage,
+          url: url || '/',
+          type: configKey,
+          soundType: config.soundType,
+        });
+
+        let sentCount = 0;
+        for (const sub of u.pushSubscriptions) {
+          if (sentPushEndpoints.has(sub.endpoint)) continue;
+          sentPushEndpoints.add(sub.endpoint);
+          try {
+            await webpush.sendNotification({
+              endpoint: sub.endpoint,
+              keys: { p256dh: sub.p256dh, auth: sub.auth },
+            }, payload);
+            sentCount += 1;
+          } catch (error: any) {
+            if (error.statusCode === 410 || error.statusCode === 404) {
+              await this.prisma.pushSubscription.delete({ where: { id: sub.id } }).catch(() => {});
+            }
+          }
+        }
+        recAudit.channels.push = sentCount > 0 ? 'ENVIADO' : 'FALLIDO';
+        recAudit.channels.pushCount = sentCount;
+        if (sentCount > 0) summary.pushSent += 1;
+      }
+
+      // 3. Telegram
+      if (!activeChannels.includes('TELEGRAM')) {
+        recAudit.channels.telegram = 'DESHABILITADO';
+      } else if (!this.telegram.isConfigured()) {
+        recAudit.channels.telegram = 'NO_CONFIGURADO';
+      } else if (!u.telegramLink || !u.telegramLink.active) {
+        recAudit.channels.telegram = 'NO_VINCULADO';
+        summary.telegramNotLinked += 1;
+      } else {
+        const chatId = u.telegramLink.chatId;
+        const tgName = u.telegramLink.username ? `@${u.telegramLink.username}` : `Chat ${chatId}`;
+        recAudit.channels.telegramChat = tgName;
+
+        if (sentTelegramChats.has(chatId)) {
+          recAudit.channels.telegram = 'OMITIDO_DUPLICADO';
+        } else {
+          sentTelegramChats.add(chatId);
+          try {
+            const formatted = this.telegram.formatAlert(formattedTitle, formattedMessage, configKey);
+            await this.telegram.sendToChat(chatId, formatted);
+            recAudit.channels.telegram = 'ENVIADO';
+            summary.telegramSent += 1;
+          } catch {
+            recAudit.channels.telegram = 'FALLIDO';
+          }
+        }
+      }
+
+      // 4. WhatsApp (con deduplicacion de telefonos compartidos)
+      if (!activeChannels.includes('WHATSAPP')) {
+        recAudit.channels.whatsapp = 'DESHABILITADO';
+      } else if (!this.whatsapp.isConfigured()) {
+        recAudit.channels.whatsapp = 'NO_CONFIGURADO';
+      } else if (!u.phone) {
+        recAudit.channels.whatsapp = 'SIN_TELEFONO';
+        summary.whatsappNoPhone += 1;
+      } else {
+        const cleanPhone = this.whatsapp.normalizePhoneNumber(u.phone);
+        recAudit.channels.whatsappPhone = cleanPhone;
+
+        if (sentPhones.has(cleanPhone)) {
+          recAudit.channels.whatsapp = 'OMITIDO_DUPLICADO';
+          summary.whatsappSkippedDuplicate += 1;
+        } else {
+          sentPhones.add(cleanPhone);
+          const sendRes = await this.whatsapp.sendTemplateAlert(
+            u.phone,
+            u.firstName || 'Administrador',
+            formattedTitle,
+            formattedMessage,
+          );
+          if (sendRes.ok) {
+            recAudit.channels.whatsapp = 'ENVIADO';
+            summary.whatsappSent += 1;
+          } else {
+            recAudit.channels.whatsapp = 'FALLIDO';
+          }
+        }
+      }
+
+      recipients.push(recAudit);
+    }
+
+    return {
+      totalEvaluatedUsers: users.length,
+      targetRoles: roles,
+      configKey,
+      summary,
+      recipients,
+    };
   }
 
   /**
-   * Despacha una notificación basándose en la configuración del evento
+   * Despacha una notificacion basandose en la configuracion del evento.
+   * Retorna la auditoria de entrega para analisis operativo y pruebas.
    */
   async sendByConfig(
     configKey: string,
     placeholders: Record<string, any>,
     url?: string,
     icon?: string
-  ): Promise<void> {
-    if (!isOperationalNotificationConfigKey(configKey)) return;
+  ): Promise<NotificationDeliveryAudit | null> {
+    if (!isOperationalNotificationConfigKey(configKey)) return null;
 
     const config = await this.prisma.notificationConfig.findUnique({
       where: { key: configKey },
     });
 
-    if (!config || !config.isEnabled) return;
+    if (!config || !config.isEnabled) return null;
 
     const targetRoles = config.targetRoles as string[];
     
-    // Si la notificación va dirigida a un cliente (CUSTOMER) y tenemos su userId, se la enviamos a él
+    // Si la notificacion va dirigida a un cliente (CUSTOMER) y tenemos su userId, se la enviamos a el
     if (targetRoles.includes('CUSTOMER') && placeholders.userId) {
       await this.sendToUser(placeholders.userId, configKey, placeholders, url, icon);
+      return null;
     } else {
-      await this.sendToRoles(targetRoles, configKey, placeholders, url, icon);
+      return this.sendToRoles(targetRoles, configKey, placeholders, url, icon);
     }
   }
 
@@ -517,16 +744,23 @@ export class NotificationsService {
   }
 
   /**
-   * Helper para formatear mensajes reemplazando placeholders
+   * Helper para formatear mensajes reemplazando placeholders.
+   * Si la clave es expiresAt o representa una fecha, aplica formato legible en espanol (ej. 1 sept 2026).
    */
   private formatMessage(text: string, placeholders: Record<string, any>): string {
     let formatted = text;
     for (const [key, val] of Object.entries(placeholders)) {
-      const stringVal = String(val);
+      let stringVal = String(val ?? '');
+      if (
+        (key === 'expiresAt' || key.toLowerCase().includes('date') || key.toLowerCase().includes('fecha')) &&
+        (typeof val === 'string' || val instanceof Date)
+      ) {
+        stringVal = formatHumanExpirationDate(val);
+      }
       formatted = formatted.replace(new RegExp(`{${key}}`, 'g'), stringVal);
       formatted = formatted.replace(new RegExp(`#{${key}}`, 'g'), stringVal);
     }
-    // Remover emojis genéricos si existiera alguno remanente en el texto
+    // Remover emojis genericos si existiera alguno remanente en el texto
     formatted = formatted.replace(/[\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD00-\uDFFF]/g, '');
     return formatted;
   }

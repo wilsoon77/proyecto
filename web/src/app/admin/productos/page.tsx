@@ -254,16 +254,16 @@ function AdminProductosContent() {
         entityName="productos"
         isLoading={isLoading}
       >
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full lg:w-auto flex-1">
           {/* Selector de Categoría */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-bold text-[#8C522B] uppercase tracking-wider hidden sm:inline">
+          <div className="flex items-center gap-1.5 w-full">
+            <span className="text-xs font-bold text-[#8C522B] uppercase tracking-wider hidden sm:inline shrink-0">
               Categoría:
             </span>
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="h-10 px-2.5 text-xs bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] font-semibold focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
+              className="w-full h-10 px-3 text-xs bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] font-semibold focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706] cursor-pointer"
               aria-label="Filtrar por categoría"
             >
               <option value="">Todas las categorías</option>
@@ -276,14 +276,14 @@ function AdminProductosContent() {
           </div>
 
           {/* Selector de Estado / Visibilidad */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-bold text-[#8C522B] uppercase tracking-wider hidden sm:inline">
+          <div className="flex items-center gap-1.5 w-full">
+            <span className="text-xs font-bold text-[#8C522B] uppercase tracking-wider hidden sm:inline shrink-0">
               Estado:
             </span>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="h-10 px-2.5 text-xs bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] font-semibold focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
+              className="w-full h-10 px-3 text-xs bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] font-semibold focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706] cursor-pointer"
               aria-label="Filtrar por estado de visibilidad"
             >
               <option value="all">Todos los estados</option>
@@ -564,17 +564,17 @@ function AdminProductosContent() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between px-6 py-3.5 border-t border-[#E8DCCB] bg-[#FAF5EE]/30">
-                <p className="text-xs font-semibold text-[#8C522B]">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 sm:px-6 py-3.5 border-t border-[#E8DCCB] bg-[#FAF5EE]/30">
+                <p className="text-xs font-semibold text-[#8C522B] text-center sm:text-left">
                   Página {currentPage} de {totalPages}
                 </p>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 w-full sm:w-auto">
                   <Button
                     variant="outline"
                     size="sm"
                     disabled={currentPage <= 1 || isLoading}
                     onClick={() => loadProducts(currentPage - 1, searchQuery, statusFilter, originFilter, categoryFilter)}
-                    className="border-[#DECDBB] text-[#2B170F] hover:bg-white rounded-lg h-8 px-2.5 text-xs font-bold"
+                    className="flex-1 sm:flex-initial justify-center border-[#DECDBB] text-[#2B170F] hover:bg-white rounded-lg h-9 sm:h-8 px-3 text-xs font-bold"
                   >
                     <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Anterior
                   </Button>
@@ -583,7 +583,7 @@ function AdminProductosContent() {
                     size="sm"
                     disabled={currentPage >= totalPages || isLoading}
                     onClick={() => loadProducts(currentPage + 1, searchQuery, statusFilter, originFilter, categoryFilter)}
-                    className="border-[#DECDBB] text-[#2B170F] hover:bg-white rounded-lg h-8 px-2.5 text-xs font-bold"
+                    className="flex-1 sm:flex-initial justify-center border-[#DECDBB] text-[#2B170F] hover:bg-white rounded-lg h-9 sm:h-8 px-3 text-xs font-bold"
                   >
                     Siguiente <ChevronRight className="h-3.5 w-3.5 ml-1" />
                   </Button>

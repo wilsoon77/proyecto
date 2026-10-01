@@ -325,11 +325,11 @@ export default function ConteoPage() {
 
       {/* Controles: Sucursal + Búsqueda */}
       <div className="bg-card rounded-xl shadow-sm border border-border p-4 mb-6">
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-2 min-w-[200px]">
-            <Store className="h-5 w-5 text-muted-foreground" />
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="flex items-center gap-2 w-full sm:w-auto sm:min-w-[220px]">
+            <Store className="h-5 w-5 text-muted-foreground shrink-0" />
             <select
-              className="flex-1 border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary bg-card font-medium"
+              className="flex-1 border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary bg-card font-medium cursor-pointer"
               value={selectedBranch}
               onChange={(e) => setSelectedBranch(e.target.value)}
               disabled={user?.role !== 'ADMIN' && user?.role !== 'MANAGER'}
@@ -341,7 +341,7 @@ export default function ConteoPage() {
             </select>
           </div>
 
-          <div className="relative flex-1 min-w-[200px]">
+          <div className="relative flex-1 w-full min-w-0">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
             <input
               type="text"
@@ -352,7 +352,7 @@ export default function ConteoPage() {
             />
           </div>
 
-          <div className="text-sm text-muted-foreground">
+          <div className="text-sm text-muted-foreground text-center sm:text-right shrink-0">
             {stats.touched} de {stats.total} modificados
           </div>
         </div>

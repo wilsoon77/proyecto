@@ -266,7 +266,7 @@ function OrdenesContent() {
         isLoading={isLoading}
       >
         {/* Selector de Sucursal */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full lg:w-auto">
           <span className="text-xs font-bold text-[#8C522B] uppercase tracking-wider hidden sm:inline">
             Sucursal:
           </span>
@@ -276,7 +276,7 @@ function OrdenesContent() {
               setBranchFilter(e.target.value)
               setPage(1)
             }}
-            className="h-10 px-3 text-xs sm:text-sm bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] font-medium focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
+            className="w-full sm:w-64 h-10 px-3 text-xs sm:text-sm bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] font-medium focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706] cursor-pointer"
           >
             <option value="ALL">Todas las sucursales</option>
             {branches.map(b => (
@@ -480,17 +480,17 @@ function OrdenesContent() {
             
             {/* ── Paginación ── */}
             {totalPages > 1 && (
-              <div className="px-6 py-3.5 border-t border-[#E8DCCB] bg-[#FAF5EE]/30 flex items-center justify-between">
-                <p className="text-xs font-semibold text-[#8C522B]">
+              <div className="px-4 sm:px-6 py-3.5 border-t border-[#E8DCCB] bg-[#FAF5EE]/30 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <p className="text-xs font-semibold text-[#8C522B] text-center sm:text-left">
                   Página {page} de {totalPages} ({total} órdenes)
                 </p>
-                <div className="flex gap-2">
+                <div className="flex gap-2 w-full sm:w-auto">
                   <Button 
                     variant="outline" 
                     size="sm"
                     disabled={page <= 1}
                     onClick={() => setPage(p => Math.max(1, p - 1))}
-                    className="border-[#DECDBB] text-[#2B170F] hover:bg-white rounded-lg h-8 px-2.5 text-xs font-bold"
+                    className="flex-1 sm:flex-initial justify-center border-[#DECDBB] text-[#2B170F] hover:bg-white rounded-lg h-9 sm:h-8 px-3 text-xs font-bold"
                   >
                     Anterior
                   </Button>
@@ -499,7 +499,7 @@ function OrdenesContent() {
                     size="sm"
                     disabled={page >= totalPages}
                     onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                    className="border-[#DECDBB] text-[#2B170F] hover:bg-white rounded-lg h-8 px-2.5 text-xs font-bold"
+                    className="flex-1 sm:flex-initial justify-center border-[#DECDBB] text-[#2B170F] hover:bg-white rounded-lg h-9 sm:h-8 px-3 text-xs font-bold"
                   >
                     Siguiente
                   </Button>

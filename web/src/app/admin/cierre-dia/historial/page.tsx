@@ -159,11 +159,11 @@ export default function DailyCloseHistoryPage() {
                 </table>
               </div>
               <div className="flex flex-col gap-3 border-t border-border px-4 py-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-                <span>{total} cierre{total === 1 ? "" : "s"} encontrado{total === 1 ? "" : "s"}</span>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((current) => current - 1)}>Anterior</Button>
-                  <span>Página {page} de {pageCount || 1}</span>
-                  <Button variant="outline" size="sm" disabled={page >= pageCount} onClick={() => setPage((current) => current + 1)}><RefreshCw className="h-4 w-4" /></Button>
+                <span className="text-center sm:text-left">{total} cierre{total === 1 ? "" : "s"} encontrado{total === 1 ? "" : "s"}</span>
+                <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
+                  <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((current) => current - 1)} className="flex-1 sm:flex-initial justify-center h-9 sm:h-8">Anterior</Button>
+                  <span className="text-xs sm:text-sm font-semibold px-2">Página {page} de {pageCount || 1}</span>
+                  <Button variant="outline" size="sm" disabled={page >= pageCount} onClick={() => setPage((current) => current + 1)} className="flex-1 sm:flex-initial justify-center h-9 sm:h-8">Siguiente</Button>
                 </div>
               </div>
             </>

@@ -397,16 +397,16 @@ export default function RecipesAdminPage() {
         entityName="recetas"
         isLoading={isLoading}
       >
-        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex items-center gap-2.5 w-full lg:w-auto flex-1">
           {/* Selector de Producto */}
-          <div className="flex items-center gap-1.5 flex-1 sm:flex-initial min-w-[150px]">
+          <div className="flex items-center gap-1.5 w-full lg:w-auto flex-1">
             <span className="text-[11px] font-bold text-[#8C522B] uppercase tracking-wider hidden lg:inline shrink-0">
               Producto:
             </span>
             <select
               value={selectedProductId}
               onChange={(e) => setSelectedProductId(e.target.value === "ALL" ? "ALL" : Number(e.target.value))}
-              className="w-full sm:w-auto h-10 px-3 bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-xs font-semibold text-[#2B170F] focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 cursor-pointer"
+              className="w-full lg:w-auto h-10 px-3 bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-xs font-semibold text-[#2B170F] focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 cursor-pointer"
             >
               <option value="ALL">Todos los productos</option>
               {products.map(p => (
@@ -416,14 +416,14 @@ export default function RecipesAdminPage() {
           </div>
 
           {/* Ordenar Por */}
-          <div className="flex items-center gap-1.5 flex-1 sm:flex-initial min-w-[140px]">
+          <div className="flex items-center gap-1.5 w-full lg:w-auto flex-1">
             <span className="text-[11px] font-bold text-[#8C522B] uppercase tracking-wider hidden lg:inline shrink-0">
               Orden:
             </span>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="w-full sm:w-auto h-10 px-3 bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-xs font-semibold text-[#2B170F] focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 cursor-pointer"
+              className="w-full lg:w-auto h-10 px-3 bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-xs font-semibold text-[#2B170F] focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 cursor-pointer"
             >
               <option value="name-asc">Nombre (A - Z)</option>
               <option value="trays-desc">Mayor rendimiento</option>
@@ -444,7 +444,7 @@ export default function RecipesAdminPage() {
                 setTrayFilter("ALL")
                 setSortBy("name-asc")
               }}
-              className="h-10 px-3 border-amber-300 text-[#D97706] hover:bg-amber-50 rounded-xl text-xs font-bold"
+              className="w-full sm:col-span-2 lg:w-auto h-10 px-3 border-amber-300 text-[#D97706] hover:bg-amber-50 rounded-xl text-xs font-bold justify-center"
             >
               <X className="h-3.5 w-3.5 mr-1" />
               Limpiar

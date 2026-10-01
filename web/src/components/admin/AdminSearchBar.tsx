@@ -78,7 +78,7 @@ export function AdminSearchBar({
 
         {/* Controles extra / Dropdowns secundarios */}
         {children && (
-          <div className="flex flex-wrap items-center gap-2 min-w-0">
+          <div className="w-full lg:w-auto flex flex-wrap items-center gap-2.5 min-w-0">
             {children}
           </div>
         )}
@@ -86,16 +86,16 @@ export function AdminSearchBar({
 
       {/* Píldoras / Chips de Estado y Contador */}
       {(chips && chips.length > 0) || showCount ? (
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 pt-2 border-t border-[#FAF0E6] min-w-0">
-          {/* Chips scrolleables */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-2.5 border-t border-[#FAF0E6] min-w-0">
+          {/* Chips scrolleables y responsivos */}
           {chips && chips.length > 0 && (
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none touch-pan-x min-w-0 flex-1">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none touch-pan-x min-w-0 flex-1 w-full sm:w-auto">
               {chips.map((chip) => (
                 <button
                   key={chip.id}
                   type="button"
                   onClick={chip.onClick}
-                  className={`h-9 px-3.5 text-xs font-bold rounded-xl whitespace-nowrap transition-all duration-150 flex items-center gap-1.5 cursor-pointer shrink-0 ${
+                  className={`h-9 px-3.5 text-xs font-bold rounded-xl whitespace-nowrap transition-all duration-150 flex items-center justify-center gap-1.5 cursor-pointer flex-1 sm:flex-initial min-w-fit shrink-0 ${
                     chip.active
                       ? "bg-[#D97706] text-white shadow-2xs"
                       : "bg-[#FAF5EE] text-[#6E5545] hover:bg-[#F3E9DC] hover:text-[#2B170F] border border-[#DECDBB]"
@@ -123,7 +123,7 @@ export function AdminSearchBar({
 
           {/* Contador humano de resultados */}
           {showCount && (
-            <div className="text-xs font-medium text-[#8C522B] shrink-0 self-end sm:self-center">
+            <div className="text-xs font-medium text-[#8C522B] shrink-0 w-full sm:w-auto text-center sm:text-right mt-0.5 sm:mt-0">
               {filteredCount !== undefined && totalCount !== undefined ? (
                 <span>
                   Mostrando <strong className="text-[#2B170F] font-bold">{filteredCount}</strong> de{" "}

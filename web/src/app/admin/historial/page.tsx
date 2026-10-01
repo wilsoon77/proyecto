@@ -270,7 +270,7 @@ export default function HistorialPage() {
           <Button
             variant="outline"
             onClick={() => setShowFilters(!showFilters)}
-            className={`gap-2 ${hasActiveFilters ? 'border-primary text-primary' : ''}`}
+            className={`w-full sm:w-auto h-10 gap-2 justify-center ${hasActiveFilters ? 'border-primary text-primary' : ''}`}
           >
             <Filter className="h-4 w-4" />
             Filtros
@@ -423,19 +423,20 @@ export default function HistorialPage() {
 
             {/* Pagination */}
             <div className="px-4 py-3 border-t border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs sm:text-sm">
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground text-center sm:text-left">
                 Mostrando {((pagination.page - 1) * pagination.pageSize) + 1} - {Math.min(pagination.page * pagination.pageSize, pagination.total)} de {pagination.total}
               </p>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handlePageChange(pagination.page - 1)}
                   disabled={pagination.page <= 1}
+                  className="flex-1 sm:flex-initial justify-center h-9 sm:h-8"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <span className="text-sm text-muted-foreground">
+                <span className="text-sm font-semibold text-muted-foreground px-2">
                   {pagination.page} / {pagination.totalPages}
                 </span>
                 <Button
@@ -443,6 +444,7 @@ export default function HistorialPage() {
                   size="sm"
                   onClick={() => handlePageChange(pagination.page + 1)}
                   disabled={pagination.page >= pagination.totalPages}
+                  className="flex-1 sm:flex-initial justify-center h-9 sm:h-8"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>

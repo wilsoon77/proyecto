@@ -348,14 +348,14 @@ export default function MateriasPrimasPage() {
         isLoading={isRawLoading}
       >
         {/* Selector de Sucursal */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-[#8C522B] uppercase tracking-wider hidden sm:inline">
+        <div className="flex items-center gap-2 w-full lg:w-auto">
+          <span className="text-xs font-bold text-[#8C522B] uppercase tracking-wider hidden xl:inline shrink-0">
             Sucursal:
           </span>
           <select
             value={selectedBranch}
             onChange={(e) => setSelectedBranch(e.target.value)}
-            className="h-10 px-3 text-xs sm:text-sm bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] font-medium focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
+            className="w-full sm:w-64 h-10 px-3 text-xs sm:text-sm bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] font-medium focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706] cursor-pointer"
           >
             <option value="all">Todas las sucursales</option>
             {branches.map(branch => (
@@ -635,17 +635,17 @@ export default function MateriasPrimasPage() {
 
           {/* ── Paginación Estandarizada ── */}
           {totalRawPages > 1 && (
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white rounded-2xl shadow-xs border border-[#E8DCCB] px-6 py-4">
-              <p className="text-xs font-semibold text-[#8C522B]">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white rounded-2xl shadow-xs border border-[#E8DCCB] px-4 sm:px-6 py-4">
+              <p className="text-xs font-semibold text-[#8C522B] w-full sm:w-auto text-center sm:text-left">
                 Página {currentPage} de {totalRawPages} ({filteredRawInventory.length} registros)
               </p>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
                 <Button
                   variant="outline"
                   size="sm"
                   disabled={currentPage <= 1}
                   onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                  className="border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] rounded-xl h-9 px-3 text-xs font-bold"
+                  className="flex-1 sm:flex-initial border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] rounded-xl h-10 sm:h-9 px-3 text-xs font-bold"
                 >
                   <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
                 </Button>
@@ -654,7 +654,7 @@ export default function MateriasPrimasPage() {
                   size="sm"
                   disabled={currentPage >= totalRawPages}
                   onClick={() => setCurrentPage(prev => Math.min(totalRawPages, prev + 1))}
-                  className="border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] rounded-xl h-9 px-3 text-xs font-bold"
+                  className="flex-1 sm:flex-initial border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] rounded-xl h-10 sm:h-9 px-3 text-xs font-bold"
                 >
                   Siguiente <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>

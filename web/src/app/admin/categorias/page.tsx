@@ -305,13 +305,13 @@ function AdminCategoriasContent() {
           <p className="text-xs font-semibold text-[#8C522B]">
             Página {currentPage} de {totalPages} ({filteredCategories.length} categorías)
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <Button
               variant="outline"
               size="sm"
               disabled={currentPage <= 1}
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-              className="border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] rounded-xl h-9 px-3 text-xs font-bold"
+              className="flex-1 sm:flex-initial justify-center border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] rounded-xl h-9 px-3 text-xs font-bold"
             >
               <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
             </Button>
@@ -320,7 +320,7 @@ function AdminCategoriasContent() {
               size="sm"
               disabled={currentPage >= totalPages}
               onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-              className="border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] rounded-xl h-9 px-3 text-xs font-bold"
+              className="flex-1 sm:flex-initial justify-center border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] rounded-xl h-9 px-3 text-xs font-bold"
             >
               Siguiente <ChevronRight className="h-4 w-4 ml-1" />
             </Button>

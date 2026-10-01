@@ -295,16 +295,16 @@ function ProductosInventarioContent() {
         entityName="productos"
         isLoading={isLoading}
       >
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 w-full lg:w-auto flex-1">
           {/* Selector de Sucursal */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-[#8C522B] uppercase tracking-wider hidden sm:inline">
+          <div className="flex items-center gap-2 w-full">
+            <span className="text-xs font-bold text-[#8C522B] uppercase tracking-wider hidden xl:inline shrink-0">
               Sucursal:
             </span>
             <select
               value={selectedBranch}
               onChange={(e) => handleBranchChange(e.target.value)}
-              className="h-10 px-3 text-xs sm:text-sm bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] font-medium focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
+              className="w-full h-10 px-3 text-xs sm:text-sm bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] font-medium focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706] cursor-pointer"
             >
               <option value="all">Todas las sucursales</option>
               {branches.map(branch => (
@@ -314,14 +314,14 @@ function ProductosInventarioContent() {
           </div>
 
           {/* Selector de Categoría */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-[#8C522B] uppercase tracking-wider hidden sm:inline">
+          <div className="flex items-center gap-2 w-full">
+            <span className="text-xs font-bold text-[#8C522B] uppercase tracking-wider hidden xl:inline shrink-0">
               Categoría:
             </span>
             <select
               value={categoryFilter}
               onChange={(e) => handleCategoryChange(e.target.value)}
-              className="h-10 px-3 text-xs sm:text-sm bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] font-medium focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
+              className="w-full h-10 px-3 text-xs sm:text-sm bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] font-medium focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706] cursor-pointer"
             >
               <option value="all">Todas las categorías</option>
               {categories.map(cat => (
@@ -331,14 +331,14 @@ function ProductosInventarioContent() {
           </div>
 
           {/* Selector de Origen (Producido vs Comprado) */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-[#8C522B] uppercase tracking-wider hidden sm:inline">
+          <div className="flex items-center gap-2 w-full sm:col-span-2 lg:col-span-1">
+            <span className="text-xs font-bold text-[#8C522B] uppercase tracking-wider hidden xl:inline shrink-0">
               Origen:
             </span>
             <select
               value={originFilter}
               onChange={(e) => handleOriginChange(e.target.value as OriginFilter)}
-              className="h-10 px-3 text-xs sm:text-sm bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] font-medium focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
+              className="w-full h-10 px-3 text-xs sm:text-sm bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] font-medium focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706] cursor-pointer"
             >
               <option value="all">Todos los orígenes</option>
               <option value="PRODUCIDO">Producido (Panadería)</option>
@@ -557,17 +557,17 @@ function ProductosInventarioContent() {
 
           {/* ── Paginación Estandarizada ── */}
           {totalPages > 1 && (
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white rounded-2xl shadow-xs border border-[#E8DCCB] px-6 py-4">
-              <p className="text-xs font-semibold text-[#8C522B]">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white rounded-2xl shadow-xs border border-[#E8DCCB] px-4 sm:px-6 py-4">
+              <p className="text-xs font-semibold text-[#8C522B] w-full sm:w-auto text-center sm:text-left">
                 Página {currentPage} de {totalPages} ({filteredInventory.length} registros)
               </p>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
                 <Button
                   variant="outline"
                   size="sm"
                   disabled={currentPage <= 1}
                   onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                  className="border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] rounded-xl h-9 px-3 text-xs font-bold"
+                  className="flex-1 sm:flex-initial border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] rounded-xl h-10 sm:h-9 px-3 text-xs font-bold"
                 >
                   <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
                 </Button>
@@ -576,7 +576,7 @@ function ProductosInventarioContent() {
                   size="sm"
                   disabled={currentPage >= totalPages}
                   onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                  className="border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] rounded-xl h-9 px-3 text-xs font-bold"
+                  className="flex-1 sm:flex-initial border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] rounded-xl h-10 sm:h-9 px-3 text-xs font-bold"
                 >
                   Siguiente <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>

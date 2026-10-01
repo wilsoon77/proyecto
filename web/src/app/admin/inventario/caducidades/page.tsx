@@ -352,14 +352,14 @@ export default function CaducidadesPage() {
         isLoading={isLoading}
       >
         {/* Selector de Sucursal */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full lg:w-auto">
           <span className="text-xs font-bold text-[#8C522B] uppercase tracking-wider hidden sm:inline">
             Sucursal:
           </span>
           <select
             value={branch}
             onChange={(event) => setBranch(event.target.value)}
-            className="h-10 px-3 text-xs sm:text-sm bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] font-medium focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
+            className="w-full sm:w-64 h-10 px-3 text-xs sm:text-sm bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] font-medium focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706] cursor-pointer"
           >
             <option value="">Todas las sucursales</option>
             {branches.map((item) => (
@@ -762,25 +762,25 @@ export default function CaducidadesPage() {
             </div>
 
             {/* Footer con Botones (Fijo en la base) */}
-            <div className="flex items-center justify-between gap-2 border-t border-[#E8DCCB] p-4 shrink-0 bg-white">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 border-t border-[#E8DCCB] p-4 shrink-0 bg-white">
               {selectedLotForEdit.isCustomAlert ? (
                 <Button
                   variant="outline"
                   type="button"
                   onClick={() => void handleRestoreProductAlerts()}
                   disabled={isSavingAlert}
-                  className="text-xs h-10 px-3 border-[#DECDBB]"
+                  className="w-full sm:w-auto text-xs h-10 px-3 border-[#DECDBB]"
                 >
                   Restaurar
                 </Button>
-              ) : <span />}
-              <div className="flex items-center gap-2">
+              ) : <span className="hidden sm:inline" />}
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-2 w-full sm:w-auto">
                 <Button
                   variant="outline"
                   type="button"
                   onClick={() => setSelectedLotForEdit(null)}
                   disabled={isSavingAlert}
-                  className="h-10 px-4 border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] font-bold text-xs"
+                  className="w-full sm:w-auto h-10 px-4 border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] font-bold text-xs"
                 >
                   Cancelar
                 </Button>
@@ -788,7 +788,7 @@ export default function CaducidadesPage() {
                   type="button"
                   onClick={() => void handleSaveAlertConfig()}
                   disabled={isSavingAlert}
-                  className="h-10 px-5 bg-[#D97706] hover:bg-[#B45309] text-white font-bold rounded-xl shadow-xs text-xs"
+                  className="w-full sm:w-auto h-10 px-5 bg-[#D97706] hover:bg-[#B45309] text-white font-bold rounded-xl shadow-xs text-xs"
                 >
                   {isSavingAlert && <RefreshCw className="h-4 w-4 mr-1.5 animate-spin" />}
                   Guardar Alertas

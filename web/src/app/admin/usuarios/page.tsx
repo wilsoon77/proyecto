@@ -287,14 +287,14 @@ function UsuariosContent() {
         isLoading={isLoading}
       >
         {/* Selector de Estado */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full lg:w-auto">
           <span className="text-xs font-bold text-[#8C522B] uppercase tracking-wider hidden sm:inline">
             Estado:
           </span>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as "ALL" | "ACTIVE" | "INACTIVE")}
-            className="h-10 px-3 text-xs sm:text-sm bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] font-medium focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
+            className="w-full sm:w-48 h-10 px-3 text-xs sm:text-sm bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] font-medium focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706] cursor-pointer"
           >
             <option value="ALL">Todos los estados</option>
             <option value="ACTIVE">Solo Activos</option>
@@ -540,13 +540,13 @@ function UsuariosContent() {
             <p className="text-xs font-semibold text-[#8C522B]">
               Página {currentPage} de {totalPages} ({filteredUsers.length} usuarios)
             </p>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
               <Button
                 variant="outline"
                 size="sm"
                 disabled={currentPage <= 1}
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                className="border-[#DECDBB] text-[#2B170F] hover:bg-white rounded-xl h-8 px-3 text-xs font-bold"
+                className="flex-1 sm:flex-initial justify-center border-[#DECDBB] text-[#2B170F] hover:bg-white rounded-xl h-9 sm:h-8 px-3 text-xs font-bold"
               >
                 <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Anterior
               </Button>
@@ -555,7 +555,7 @@ function UsuariosContent() {
                 size="sm"
                 disabled={currentPage >= totalPages}
                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                className="border-[#DECDBB] text-[#2B170F] hover:bg-white rounded-xl h-8 px-3 text-xs font-bold"
+                className="flex-1 sm:flex-initial justify-center border-[#DECDBB] text-[#2B170F] hover:bg-white rounded-xl h-9 sm:h-8 px-3 text-xs font-bold"
               >
                 Siguiente <ChevronRight className="h-3.5 w-3.5 ml-1" />
               </Button>

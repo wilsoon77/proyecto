@@ -621,11 +621,11 @@ export default function DailyClosePage() {
                 )}
               </div>
 
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs w-full sm:w-auto">
                 <button
                   type="button"
                   onClick={() => setFilterStatus("all")}
-                  className={`rounded-lg px-3 py-1.5 font-medium whitespace-nowrap transition-colors ${
+                  className={`flex-1 sm:flex-initial text-center rounded-lg px-3 py-1.5 font-medium whitespace-nowrap transition-colors ${
                     filterStatus === "all" ? "bg-stone-900 text-white" : "bg-stone-200/70 text-stone-700 hover:bg-stone-200"
                   }`}
                 >
@@ -634,7 +634,7 @@ export default function DailyClosePage() {
                 <button
                   type="button"
                   onClick={() => setFilterStatus("with_sales")}
-                  className={`rounded-lg px-3 py-1.5 font-medium whitespace-nowrap transition-colors ${
+                  className={`flex-1 sm:flex-initial text-center rounded-lg px-3 py-1.5 font-medium whitespace-nowrap transition-colors ${
                     filterStatus === "with_sales" ? "bg-blue-600 text-white" : "bg-stone-200/70 text-stone-700 hover:bg-stone-200"
                   }`}
                 >
@@ -643,7 +643,7 @@ export default function DailyClosePage() {
                 <button
                   type="button"
                   onClick={() => setFilterStatus("with_waste")}
-                  className={`rounded-lg px-3 py-1.5 font-medium whitespace-nowrap transition-colors ${
+                  className={`flex-1 sm:flex-initial text-center rounded-lg px-3 py-1.5 font-medium whitespace-nowrap transition-colors ${
                     filterStatus === "with_waste" ? "bg-amber-600 text-white" : "bg-stone-200/70 text-stone-700 hover:bg-stone-200"
                   }`}
                 >

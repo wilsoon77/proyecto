@@ -373,15 +373,23 @@ export class StockMovementsService {
         },
         ...(branch ? { OR: [{ fromBranchId: branch.id }, { toBranchId: branch.id }] } : {}),
       },
-      select: { type: true, quantity: true, createdAt: true },
+      select: {
+        type: true,
+        quantity: true,
+        createdAt: true,
+        product: { select: { basePrice: true } },
+      },
     });
 
-    const totals = new Map(dateKeysBetween(from, to).map((date) => [date, { date, produced: 0, sold: 0, waste: 0 }]));
+    const totals = new Map(dateKeysBetween(from, to).map((date) => [date, { date, produced: 0, sold: 0, waste: 0, revenue: 0 }]));
     for (const movement of movements) {
       const row = totals.get(formatBusinessDate(movement.createdAt));
       if (!row) continue;
       if (movement.type === StockMovementType.PRODUCCION) row.produced += movement.quantity;
-      if (movement.type === StockMovementType.VENTA) row.sold += movement.quantity;
+      if (movement.type === StockMovementType.VENTA) {
+        row.sold += movement.quantity;
+        row.revenue += Number((movement.quantity * Number(movement.product?.basePrice ?? 0)).toFixed(2));
+      }
       if (movement.type === StockMovementType.MERMA || movement.type === StockMovementType.PERDIDA_ROBO) {
         row.waste += movement.quantity;
       }
@@ -407,7 +415,16 @@ export class StockMovementsService {
       include: {
         items: {
           include: {
-            product: { select: { id: true, name: true, slug: true, basePrice: true, unitsPerTray: true } },
+            product: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                basePrice: true,
+                unitsPerTray: true,
+                category: { select: { id: true, name: true } },
+              },
+            },
           },
         },
       },
@@ -422,7 +439,16 @@ export class StockMovementsService {
         ...(branch ? { OR: [{ fromBranchId: branch.id }, { toBranchId: branch.id }] } : {}),
       },
       include: {
-        product: { select: { id: true, name: true, slug: true, basePrice: true, unitsPerTray: true } },
+        product: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            basePrice: true,
+            unitsPerTray: true,
+            category: { select: { id: true, name: true } },
+          },
+        },
       },
     });
 
@@ -430,6 +456,7 @@ export class StockMovementsService {
       productId: number;
       productName: string;
       productSlug: string;
+      categoryName: string;
       price: number;
       unitsPerTray: number | null;
       produced: number;
@@ -437,6 +464,7 @@ export class StockMovementsService {
       sold: number;
       waste: number;
       surplus: number;
+      revenue: number;
     }>();
 
     for (const m of movements) {
@@ -447,6 +475,7 @@ export class StockMovementsService {
           productId: m.productId,
           productName: m.product.name,
           productSlug: m.product.slug,
+          categoryName: m.product.category?.name || 'General',
           price: Number(m.product.basePrice),
           unitsPerTray: m.product.unitsPerTray,
           produced: 0,
@@ -454,6 +483,7 @@ export class StockMovementsService {
           sold: 0,
           waste: 0,
           surplus: 0,
+          revenue: 0,
         };
         productMap.set(m.productId, p);
       }
@@ -485,6 +515,7 @@ export class StockMovementsService {
             productId: ci.productId,
             productName: ci.product.name,
             productSlug: ci.product.slug,
+            categoryName: ci.product.category?.name || 'General',
             price: Number(ci.product.basePrice),
             unitsPerTray: ci.product.unitsPerTray,
             produced: 0,
@@ -492,6 +523,7 @@ export class StockMovementsService {
             sold: 0,
             waste: 0,
             surplus: ci.surplusQty,
+            revenue: 0,
           });
         }
       }
@@ -503,6 +535,7 @@ export class StockMovementsService {
       return {
         ...p,
         surplus,
+        revenue: Number((p.sold * p.price).toFixed(2)),
       };
     });
 

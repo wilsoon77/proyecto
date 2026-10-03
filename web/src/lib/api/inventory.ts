@@ -115,13 +115,14 @@ export interface StockMovementsListResponse {
 export interface OperationalActivityResponse {
   from: string
   to: string
-  data: Array<{ date: string; produced: number; sold: number; waste: number }>
+  data: Array<{ date: string; produced: number; sold: number; waste: number; revenue?: number }>
 }
 
 export interface DayBreakdownItem {
   productId: number
   productName: string
   productSlug: string
+  categoryName?: string
   price: number
   unitsPerTray: number | null
   produced: number
@@ -129,6 +130,7 @@ export interface DayBreakdownItem {
   sold: number
   waste: number
   surplus: number
+  revenue?: number
 }
 
 export interface DayBreakdownResponse {

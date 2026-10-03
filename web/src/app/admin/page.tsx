@@ -16,6 +16,7 @@ import {
   ChevronDown,
   ClipboardCheck,
   Clock,
+  Coins,
   ExternalLink,
   Factory,
   Info,
@@ -50,6 +51,7 @@ import type {
 } from "@/lib/api"
 import { useAuth } from "@/context/AuthContext"
 import TelegramAssistantButton from "@/components/admin/TelegramAssistantButton"
+import { FinancialDashboardView } from "@/components/admin/FinancialDashboardView"
 
 const ALERT_TYPES = new Set([
   "inventory.raw_material_low",
@@ -144,7 +146,8 @@ export default function AdminOperationPage() {
   const [rawMaterials, setRawMaterials] = useState<RawMaterialInventory[]>([])
   const [expiringLots, setExpiringLots] = useState<ExpirationLot[]>([])
   const [production, setProduction] = useState<ProductionLog[]>([])
-  const [activity, setActivity] = useState<Array<{ date: string; produced: number; sold: number; waste: number }>>([])
+  const [activity, setActivity] = useState<Array<{ date: string; produced: number; sold: number; waste: number; revenue?: number }>>([])
+  const [mainView, setMainView] = useState<"operation" | "financial">("operation")
   const [wasteMovements, setWasteMovements] = useState<StockMovement[]>([])
   const [todayCloseRecord, setTodayCloseRecord] = useState<DailyCloseRecord | null>(null)
   const [branches, setBranches] = useState<ApiBranch[]>([])
@@ -420,22 +423,23 @@ export default function AdminOperationPage() {
   }, [activity])
 
   // Agrupacion para la Grafica 2: Top Panes con Mayor Merma Real
-  const topWasteProducts = useMemo(() => {
+  const { topWasteProducts, totalWasteUnits } = useMemo(() => {
     const map = new Map<string, number>()
     wasteMovements.forEach((m) => {
       const name = m.productName || "Pan sin nombre"
       const qty = map.get(name) || 0
       map.set(name, qty + asNumber(m.quantity))
     })
-    const totalWasteFromMovements = Array.from(map.values()).reduce((sum, q) => sum + q, 0)
-    return Array.from(map.entries())
+    const totalWasteUnits = Array.from(map.values()).reduce((sum, q) => sum + q, 0)
+    const list = Array.from(map.entries())
       .map(([name, quantity]) => ({
         name,
         quantity,
-        percentage: totalWasteFromMovements > 0 ? (quantity / totalWasteFromMovements) * 100 : 0,
+        percentage: totalWasteUnits > 0 ? (quantity / totalWasteUnits) * 100 : 0,
       }))
       .sort((a, b) => b.quantity - a.quantity)
       .slice(0, 8)
+    return { topWasteProducts: list, totalWasteUnits }
   }, [wasteMovements])
 
   // Metricas del Desglose Diario Seleccionado (Drill-Down)
@@ -586,28 +590,66 @@ export default function AdminOperationPage() {
               {clock ? clock.toLocaleTimeString("es-GT", { hour: "2-digit", minute: "2-digit" }) : "--:--"}
             </span>
           </div>
-          <h1 className="mt-1 font-display text-2xl font-bold text-[#2B170F] sm:text-3xl">Operacion de la panaderia</h1>
+          <h1 className="mt-1 font-display text-2xl font-bold text-[#2B170F] sm:text-3xl">
+            {mainView === "operation" ? "Operacion de la panaderia" : "Ventas e Ingresos"}
+          </h1>
           <p className="mt-1 text-xs text-[#6E5545] sm:text-sm">
-            Control de inventario, ciclo del pan diario y alertas automaticas.
+            {mainView === "operation"
+              ? "Control de inventario, ciclo del pan diario y alertas automaticas."
+              : "Analisis de recaudacion en caja (Q), rentabilidad y desglose por producto."}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={checkExpirations}
-            disabled={isCheckingExpirations}
-            className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-[#DECDBB] bg-white px-4 py-2.5 text-xs font-bold text-[#2B170F] hover:border-[#D97706] hover:bg-[#FAF5EE] disabled:opacity-60 transition shadow-xs"
-          >
-            <RefreshCw className={"h-4 w-4 text-[#D97706] " + (isCheckingExpirations ? "animate-spin" : "")} />
-            <span className="hidden sm:inline">Revisar caducidades</span>
-            <span className="sm:hidden">Caducidades</span>
-          </button>
+          {mainView === "operation" && (
+            <button
+              type="button"
+              onClick={checkExpirations}
+              disabled={isCheckingExpirations}
+              className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-[#DECDBB] bg-white px-4 py-2.5 text-xs font-bold text-[#2B170F] hover:border-[#D97706] hover:bg-[#FAF5EE] disabled:opacity-60 transition shadow-xs"
+            >
+              <RefreshCw className={"h-4 w-4 text-[#D97706] " + (isCheckingExpirations ? "animate-spin" : "")} />
+              <span className="hidden sm:inline">Revisar caducidades</span>
+              <span className="sm:hidden">Caducidades</span>
+            </button>
+          )}
           <TelegramAssistantButton />
         </div>
       </div>
 
-      {/* Tarjetas Bento de Metricas Rapidas (Semaforo Operativo Nivel 1) */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Switcher de Vistas Principales: Operativo vs Financiero */}
+      <div className="flex items-center justify-between gap-3 border-b border-[#DECDBB] pb-4">
+        <div className="inline-flex p-1 rounded-2xl bg-[#EFE6DC] border border-[#DECDBB] w-full sm:w-auto shadow-inner">
+          <button
+            type="button"
+            onClick={() => setMainView("operation")}
+            className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 min-h-[44px] px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+              mainView === "operation"
+                ? "bg-[#D97706] text-white shadow-sm"
+                : "text-[#6E5545] hover:text-[#2B170F]"
+            }`}
+          >
+            <Factory className="h-4 w-4 shrink-0" />
+            <span>Operacion y Produccion</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMainView("financial")}
+            className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 min-h-[44px] px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+              mainView === "financial"
+                ? "bg-emerald-700 text-white shadow-sm"
+                : "text-[#6E5545] hover:text-[#2B170F]"
+            }`}
+          >
+            <Coins className="h-4 w-4 shrink-0" />
+            <span>Ventas e Ingresos (Q)</span>
+          </button>
+        </div>
+      </div>
+
+      {mainView === "operation" ? (
+        <>
+          {/* Tarjetas Bento de Metricas Rapidas (Semaforo Operativo Nivel 1) */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {/* Card 1: Caducidades de Comprados (< 30 dias) */}
         <Link
           href="/admin/inventario/caducidades?status=expiring"
@@ -1820,13 +1862,26 @@ export default function AdminOperationPage() {
               Productos con mayor descarte acumulado en el periodo para calibrar tandas de horneado
             </p>
           </div>
-          <Link
-            href="/admin/produccion"
-            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border border-[#DECDBB] bg-[#FAF5EE] px-3.5 py-2 text-xs font-bold text-[#8C522B] hover:text-[#D97706] hover:border-[#D97706] transition"
-          >
-            <span>Ajustar tandas en produccion</span>
-            <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex items-center gap-2 rounded-xl bg-red-50 border border-red-200/90 px-3 py-1.5 text-xs">
+              <span className="text-[#8C522B] font-semibold">Total de mermas:</span>
+              <span className="font-extrabold text-red-700 text-sm">
+                {totalWasteUnits.toLocaleString()} uds.
+              </span>
+              {totals.produced > 0 && (
+                <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-800">
+                  {((totalWasteUnits / totals.produced) * 100).toFixed(1)}% del horneado
+                </span>
+              )}
+            </div>
+            <Link
+              href="/admin/produccion"
+              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border border-[#DECDBB] bg-[#FAF5EE] px-3.5 py-2 text-xs font-bold text-[#8C522B] hover:text-[#D97706] hover:border-[#D97706] transition"
+            >
+              <span>Ajustar tandas en produccion</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
         </div>
 
         {topWasteProducts.length === 0 ? (
@@ -1835,6 +1890,24 @@ export default function AdminOperationPage() {
           </div>
         ) : (
           <div className="space-y-3.5 pt-1">
+            {/* Indicador de Total de Mermas del Periodo */}
+            <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl bg-red-50/70 border border-red-200/80 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-red-100 text-red-700 font-bold">
+                  <TrendingDown className="h-3.5 w-3.5" />
+                </span>
+                <span className="font-bold text-[#2B170F]">
+                  Descarte fisico total consolidado:
+                </span>
+                <span className="font-extrabold text-red-700 text-sm">
+                  {totalWasteUnits.toLocaleString()} unidades descartadas
+                </span>
+              </div>
+              <span className="text-[#8C522B] font-medium text-[11px]">
+                {topWasteProducts.length} {topWasteProducts.length === 1 ? "variedad con merma registrada" : "variedades con merma registrada"}
+              </span>
+            </div>
+
             {topWasteProducts.map((item, idx) => (
               <div key={item.name} className="space-y-1.5">
                 <div className="flex items-center justify-between text-xs">
@@ -2029,10 +2102,37 @@ export default function AdminOperationPage() {
           </div>
         )}
       </section>
+        </>
+      ) : (
+        <FinancialDashboardView
+          activity={activity}
+          branches={branches}
+          selectedBranchSlug={selectedBranchSlug}
+          setSelectedBranchSlug={setSelectedBranchSlug}
+          filterPreset={filterPreset}
+          setFilterPreset={setFilterPreset}
+          customStartDate={customStartDate}
+          setCustomStartDate={setCustomStartDate}
+          customEndDate={customEndDate}
+          setCustomEndDate={setCustomEndDate}
+          appliedCustomRange={appliedCustomRange}
+          dateError={dateError}
+          onApplyCustomRange={handleApplyCustomRange}
+          selectedDayDate={selectedDayDate}
+          setSelectedDayDate={setSelectedDayDate}
+          breakdownData={breakdownData}
+          isBreakdownLoading={isBreakdownLoading}
+          isGlobalRole={isGlobalRole}
+        />
+      )}
 
       {/* Pie de Pagina con Sincronizacion */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-[#8C522B] pt-2">
-        <p>Panel adaptado al ciclo operativo de panaderia tradicional y gestion de vencimientos de reventa.</p>
+        <p>
+          {mainView === "operation"
+            ? "Panel adaptado al ciclo operativo de panaderia tradicional y gestion de vencimientos de reventa."
+            : "Panel de control financiero de ventas, recaudacion monetaria en Quetzales y rendimiento por categoria."}
+        </p>
         <p>
           {lastUpdated ? "Ultima actualizacion: " + lastUpdated.toLocaleTimeString("es-GT") : "Sin actualizar"}
         </p>

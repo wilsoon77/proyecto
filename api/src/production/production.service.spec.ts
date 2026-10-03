@@ -165,7 +165,7 @@ describe('ProductionService', () => {
       mockPrisma.rawMaterialInventory.findUnique.mockResolvedValueOnce({ id: 1, quantity: 20 });
 
       await expect(
-        service.registerProduction({ recipeId: 1, traysProduced: 1 }, 'user-1'),
+        service.registerProduction({ recipeId: 1, traysProduced: 33 }, 'user-1'),
       ).rejects.toThrow('Materia prima insuficiente');
     });
 
@@ -202,7 +202,7 @@ describe('ProductionService', () => {
       mockPrisma.productionLog.create.mockResolvedValue({ id: 1 });
       mockPrisma.stockMovement.create.mockResolvedValue({});
 
-      await service.registerProduction({ recipeId: 1, traysProduced: 1 }, 'user-1');
+      await service.registerProduction({ recipeId: 1, traysProduced: 33 }, 'user-1');
 
       // Verify materia prima was deducted
       expect(mockPrisma.rawMaterialInventory.update).toHaveBeenCalledTimes(2);
@@ -215,6 +215,32 @@ describe('ProductionService', () => {
       expect(mockPrisma.rawMaterialInventory.update).toHaveBeenCalledWith({
         where: { id: 2 },
         data: { quantity: 48 },
+      });
+    });
+
+    it('deducts raw materials proportionally when traysProduced differs from standardTrays', async () => {
+      mockPrisma.recipe.findUnique.mockResolvedValue(RECIPE_FRANCES);
+      mockPrisma.user.findUnique.mockResolvedValue({ branchId: 1 });
+      mockPrisma.rawMaterialInventory.findUnique
+        .mockResolvedValueOnce({ id: 1, quantity: 200 })
+        .mockResolvedValueOnce({ id: 2, quantity: 50 });
+      mockPrisma.rawMaterialInventory.update.mockResolvedValue({});
+      mockPrisma.inventory.upsert.mockResolvedValue({});
+      mockPrisma.productionLog.create.mockResolvedValue({ id: 1 });
+      mockPrisma.stockMovement.create.mockResolvedValue({});
+
+      // 66 latas = 2 tandas completas (scaleFactor = 66 / 33 = 2)
+      await service.registerProduction({ recipeId: 1, traysProduced: 66 }, 'user-1');
+
+      // Harina: 200 - (50 * 2) = 100
+      expect(mockPrisma.rawMaterialInventory.update).toHaveBeenCalledWith({
+        where: { id: 1 },
+        data: { quantity: 100 },
+      });
+      // Levadura: 50 - (2 * 2) = 46
+      expect(mockPrisma.rawMaterialInventory.update).toHaveBeenCalledWith({
+        where: { id: 2 },
+        data: { quantity: 46 },
       });
     });
 

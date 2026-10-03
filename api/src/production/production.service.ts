@@ -112,7 +112,11 @@ export class ProductionService {
           );
         }
 
-        // 2. Restar materia prima del inventario de la sucursal
+        // 2. Restar materia prima del inventario de la sucursal de forma proporcional a las latas
+        const scaleFactor = recipe.standardTrays && recipe.standardTrays > 0
+          ? (traysProduced / recipe.standardTrays)
+          : 1;
+
         for (const ingredient of recipe.ingredients) {
           // Leer el inventario actual dentro de la transacción
           // Con Serializable, esto bloquea la fila para prevenir lecturas fantasma
@@ -132,14 +136,14 @@ export class ProductionService {
           }
 
           const currentQty = Number(inv.quantity);
-          const requiredQty = Number(ingredient.quantity);
+          const requiredQty = Number(ingredient.quantity) * scaleFactor;
           const newQty = currentQty - requiredQty;
 
           if (newQty < 0) {
             throw new BadRequestException(
               `Materia prima insuficiente: "${ingredient.rawMaterial.name}". ` +
-              `Necesitas ${requiredQty} ${ingredient.rawMaterial.baseUnit}, ` +
-              `solo hay ${currentQty} ${ingredient.rawMaterial.baseUnit}.`,
+              `Necesitas ${requiredQty.toFixed(2)} ${ingredient.rawMaterial.baseUnit}, ` +
+              `solo hay ${currentQty.toFixed(2)} ${ingredient.rawMaterial.baseUnit}.`,
             );
           }
 

@@ -4,7 +4,7 @@ import { CreateStockMovementDto, ReconcileInventoryDto, CreateBulkTransferDto } 
 import { InventoryLotSource, Prisma, StockMovementType } from '@prisma/client';
 import { LoggerService } from '../common/logger/logger.service.js';
 import { InventoryLotsService } from '../inventory/inventory-lots.service.js';
-import { addDays, businessDateStartUtc, dateKeysBetween, formatBusinessDate, todayBusinessDate } from '../common/time/business-date.js';
+import { addDays, businessDateStartUtc, dateKeysBetween, formatBusinessDate, parseDateOnly, todayBusinessDate } from '../common/time/business-date.js';
 import { calculateBaseQuantity } from '../products/presentation.helpers.js';
 
 @Injectable()
@@ -309,9 +309,28 @@ export class StockMovementsService {
     const pageSize = Math.max(1, Math.min(100, filters.pageSize ?? 10));
     const [total, data] = await this.prisma.$transaction([
       this.prisma.stockMovement.count({ where }),
-      this.prisma.stockMovement.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (page - 1) * pageSize, take: pageSize }),
+      this.prisma.stockMovement.findMany({
+        where,
+        include: {
+          product: { select: { id: true, name: true, slug: true } },
+          fromBranch: { select: { id: true, name: true, slug: true } },
+          toBranch: { select: { id: true, name: true, slug: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
     ]);
-    return { data, meta: { total, pageCount: Math.ceil(total / pageSize) || 0, page, pageSize } };
+    return {
+      data: data.map((m: any) => ({
+        ...m,
+        productName: m.product?.name ?? 'Sin nombre',
+        productSlug: m.product?.slug ?? null,
+        fromBranchName: m.fromBranch?.name ?? null,
+        toBranchName: m.toBranch?.name ?? null,
+      })),
+      meta: { total, pageCount: Math.ceil(total / pageSize) || 0, page, pageSize },
+    };
   }
 
   async activity(branchSlug?: string, days?: number, fromDate?: string, toDate?: string) {
@@ -369,6 +388,133 @@ export class StockMovementsService {
     }
 
     return { from, to, data: [...totals.values()] };
+  }
+
+  async dayBreakdown(date: string, branchSlug?: string) {
+    const validDate = /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : todayBusinessDate();
+    const branch = branchSlug
+      ? await this.prisma.branch.findUnique({ where: { slug: branchSlug }, select: { id: true, name: true, slug: true } })
+      : null;
+
+    const startUtc = businessDateStartUtc(validDate);
+    const endUtc = businessDateStartUtc(addDays(validDate, 1));
+
+    const dailyClose = await this.prisma.dailyClose.findFirst({
+      where: {
+        closeDate: parseDateOnly(validDate),
+        ...(branch ? { branchId: branch.id } : {}),
+      },
+      include: {
+        items: {
+          include: {
+            product: { select: { id: true, name: true, slug: true, basePrice: true, unitsPerTray: true } },
+          },
+        },
+      },
+    });
+
+    const movements = await this.prisma.stockMovement.findMany({
+      where: {
+        createdAt: {
+          gte: startUtc,
+          lt: endUtc,
+        },
+        ...(branch ? { OR: [{ fromBranchId: branch.id }, { toBranchId: branch.id }] } : {}),
+      },
+      include: {
+        product: { select: { id: true, name: true, slug: true, basePrice: true, unitsPerTray: true } },
+      },
+    });
+
+    const productMap = new Map<number, {
+      productId: number;
+      productName: string;
+      productSlug: string;
+      price: number;
+      unitsPerTray: number | null;
+      produced: number;
+      transferred: number;
+      sold: number;
+      waste: number;
+      surplus: number;
+    }>();
+
+    for (const m of movements) {
+      if (!m.product) continue;
+      let p = productMap.get(m.productId);
+      if (!p) {
+        p = {
+          productId: m.productId,
+          productName: m.product.name,
+          productSlug: m.product.slug,
+          price: Number(m.product.basePrice),
+          unitsPerTray: m.product.unitsPerTray,
+          produced: 0,
+          transferred: 0,
+          sold: 0,
+          waste: 0,
+          surplus: 0,
+        };
+        productMap.set(m.productId, p);
+      }
+
+      if (m.type === StockMovementType.PRODUCCION) {
+        p.produced += m.quantity;
+      } else if (m.type === StockMovementType.TRANSFERENCIA) {
+        if (branch && m.toBranchId === branch.id) {
+          p.transferred += m.quantity;
+          p.produced += m.quantity;
+        } else if (branch && m.fromBranchId === branch.id) {
+          p.transferred += m.quantity;
+        }
+      } else if (m.type === StockMovementType.VENTA) {
+        if (!branch || m.fromBranchId === branch.id) {
+          p.sold += m.quantity;
+        }
+      } else if (m.type === StockMovementType.MERMA || m.type === StockMovementType.PERDIDA_ROBO) {
+        if (!branch || m.fromBranchId === branch.id) {
+          p.waste += m.quantity;
+        }
+      }
+    }
+
+    if (dailyClose?.items) {
+      for (const ci of dailyClose.items) {
+        if (!productMap.has(ci.productId) && ci.product) {
+          productMap.set(ci.productId, {
+            productId: ci.productId,
+            productName: ci.product.name,
+            productSlug: ci.product.slug,
+            price: Number(ci.product.basePrice),
+            unitsPerTray: ci.product.unitsPerTray,
+            produced: 0,
+            transferred: 0,
+            sold: 0,
+            waste: 0,
+            surplus: ci.surplusQty,
+          });
+        }
+      }
+    }
+
+    const items = Array.from(productMap.values()).map((p) => {
+      const closeItem = dailyClose?.items.find((ci) => ci.productId === p.productId);
+      const surplus = closeItem ? closeItem.surplusQty : Math.max(0, p.produced - p.sold - p.waste);
+      return {
+        ...p,
+        surplus,
+      };
+    });
+
+    items.sort((a, b) => (b.produced + b.sold + b.waste) - (a.produced + a.sold + a.waste));
+
+    return {
+      date: validDate,
+      branchSlug: branch?.slug ?? null,
+      branchName: branch?.name ?? null,
+      dailyCloseId: dailyClose?.id ?? null,
+      items,
+    };
   }
 
   /**

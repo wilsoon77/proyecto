@@ -214,6 +214,22 @@ export class StockMovementsController {
     return this.service.activity(scopedBranchSlug, days ? Number(days) : undefined, from, to);
   }
 
+  @Get('day-breakdown')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'MANAGER')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Desglose de productos por día', description: 'Obtiene el detalle de horneado, ventas, sobrante y mermas por producto para una fecha específica.' })
+  @ApiQuery({ name: 'date', required: true, description: 'Fecha en formato YYYY-MM-DD' })
+  @ApiQuery({ name: 'branchSlug', required: false, description: 'Slug de sucursal; MANAGER puede consultar cualquiera de las dos' })
+  async dayBreakdown(
+    @Req() req: any,
+    @Query('date') date: string,
+    @Query('branchSlug') branchSlug?: string,
+  ) {
+    const scopedBranchSlug = await this.branchScope.resolveBranchSlug(req.user, branchSlug);
+    return this.service.dayBreakdown(date, scopedBranchSlug);
+  }
+
   private async scopeMovementDto(dto: CreateStockMovementDto, actor: any): Promise<CreateStockMovementDto> {
     if (actor?.role === 'ADMIN') return dto;
 

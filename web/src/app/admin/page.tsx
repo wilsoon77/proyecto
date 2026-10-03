@@ -16,14 +16,18 @@ import {
   ChevronDown,
   ClipboardCheck,
   Clock,
+  ExternalLink,
   Factory,
   Info,
+  Layers,
   LineChart,
   Package,
   RefreshCw,
+  Search,
   TrendingDown,
   TrendingUp,
   Wheat,
+  X,
 } from "lucide-react"
 import {
   branchesService,
@@ -36,6 +40,8 @@ import {
 import type {
   ApiBranch,
   DailyCloseRecord,
+  DayBreakdownItem,
+  DayBreakdownResponse,
   ExpirationLot,
   Notification,
   ProductionLog,
@@ -98,6 +104,22 @@ function formatExpirationDisplay(value?: string | null): string {
   return `${day} ${monthName} ${year}`
 }
 
+function formatLongDateSafe(isoDate: string): string {
+  const parts = isoDate.split("T")[0].split("-")
+  if (parts.length !== 3) return isoDate
+  const year = parseInt(parts[0], 10)
+  const month = parseInt(parts[1], 10)
+  const day = parseInt(parts[2], 10)
+  if (isNaN(year) || isNaN(month) || isNaN(day)) return isoDate
+  const d = new Date(year, month - 1, day, 12, 0, 0)
+  return d.toLocaleDateString("es-GT", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  })
+}
+
 function getBezierPath(points: Array<{ x: number; y: number }>): string {
   if (points.length === 0) return ""
   if (points.length === 1) return `M ${points[0].x} ${points[0].y}`
@@ -141,7 +163,51 @@ export default function AdminOperationPage() {
   const [selectedBranchSlug, setSelectedBranchSlug] = useState<string>("")
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
 
+  // Estado del Desglose Interactivo por Producto (Drill-Down)
+  const [selectedDayDate, setSelectedDayDate] = useState<string | null>(null)
+  const [breakdownData, setBreakdownData] = useState<DayBreakdownResponse | null>(null)
+  const [isBreakdownLoading, setIsBreakdownLoading] = useState(false)
+  const [breakdownTab, setBreakdownTab] = useState<"all" | "produced" | "sold" | "surplus" | "waste">("all")
+  const [breakdownSearch, setBreakdownSearch] = useState("")
+
   const isGlobalRole = user?.role === "ADMIN" || user?.role === "MANAGER"
+
+  // Carga reactiva del desglose por producto al seleccionar un día
+  useEffect(() => {
+    if (!selectedDayDate) {
+      setBreakdownData(null)
+      return
+    }
+
+    let isMounted = true
+    setIsBreakdownLoading(true)
+
+    const effectiveBranchSlug = isGlobalRole
+      ? (selectedBranchSlug || undefined)
+      : user?.branch?.slug
+
+    inventoryService
+      .getDayBreakdown({ date: selectedDayDate, branchSlug: effectiveBranchSlug })
+      .then((data) => {
+        if (isMounted) {
+          setBreakdownData(data)
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setBreakdownData(null)
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsBreakdownLoading(false)
+        }
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [selectedDayDate, selectedBranchSlug, isGlobalRole, user?.branch?.slug])
 
   const handleApplyCustomRange = () => {
     if (!customStartDate || !customEndDate) {
@@ -233,7 +299,7 @@ export default function AdminOperationPage() {
         type: "MERMA",
         from: fromDateStr,
         to: toDateStr,
-        pageSize: 100,
+        pageSize: 250,
       }),
       // Estado de cierre diario de la jornada actual
       dailyCloseService.list({
@@ -255,7 +321,12 @@ export default function AdminOperationPage() {
     const productionResult = results[3]
     if (productionResult.status === "fulfilled") setProduction(productionResult.value)
     const activityResult = results[4]
-    if (activityResult.status === "fulfilled") setActivity(activityResult.value.data)
+    if (activityResult.status === "fulfilled") {
+      setActivity(activityResult.value.data)
+      if (filterPreset === "day" && activityResult.value.data.length > 0) {
+        setSelectedDayDate(activityResult.value.data[0].date)
+      }
+    }
     const movementsResult = results[5]
     if (movementsResult.status === "fulfilled") setWasteMovements(movementsResult.value.data)
     const closeResult = results[6]
@@ -364,8 +435,48 @@ export default function AdminOperationPage() {
         percentage: totalWasteFromMovements > 0 ? (quantity / totalWasteFromMovements) * 100 : 0,
       }))
       .sort((a, b) => b.quantity - a.quantity)
-      .slice(0, 5)
+      .slice(0, 8)
   }, [wasteMovements])
+
+  // Metricas del Desglose Diario Seleccionado (Drill-Down)
+  const breakdownTotals = useMemo(() => {
+    if (!breakdownData?.items) {
+      return { produced: 0, sold: 0, surplus: 0, waste: 0 }
+    }
+    return breakdownData.items.reduce(
+      (acc, item) => ({
+        produced: acc.produced + item.produced,
+        sold: acc.sold + item.sold,
+        surplus: acc.surplus + item.surplus,
+        waste: acc.waste + item.waste,
+      }),
+      { produced: 0, sold: 0, surplus: 0, waste: 0 }
+    )
+  }, [breakdownData])
+
+  const breakdownFilteredItems = useMemo(() => {
+    if (!breakdownData?.items) return []
+    let list = [...breakdownData.items]
+
+    if (breakdownSearch.trim()) {
+      const q = breakdownSearch.toLowerCase().trim()
+      list = list.filter((item) => item.productName.toLowerCase().includes(q))
+    }
+
+    if (breakdownTab === "produced") {
+      list = list.filter((i) => i.produced > 0).sort((a, b) => b.produced - a.produced)
+    } else if (breakdownTab === "sold") {
+      list = list.filter((i) => i.sold > 0).sort((a, b) => b.sold - a.sold)
+    } else if (breakdownTab === "surplus") {
+      list = list.filter((i) => i.surplus > 0).sort((a, b) => b.surplus - a.surplus)
+    } else if (breakdownTab === "waste") {
+      list = list.filter((i) => i.waste > 0).sort((a, b) => b.waste - a.waste)
+    } else {
+      list.sort((a, b) => (b.produced + b.sold + b.waste) - (a.produced + a.sold + a.waste))
+    }
+
+    return list
+  }, [breakdownData, breakdownSearch, breakdownTab])
 
   const maxActivity = Math.max(
     1,
@@ -936,7 +1047,14 @@ export default function AdminOperationPage() {
 
                 return (
                   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 pt-1">
-                    <div className="rounded-xl border border-blue-200 bg-white p-4 shadow-2xs">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedDayDate(activity[0].date)
+                        setBreakdownTab("produced")
+                      }}
+                      className="rounded-xl border border-blue-200 bg-white p-4 shadow-2xs hover:border-blue-400 hover:shadow-xs transition text-left cursor-pointer group"
+                    >
                       <div className="flex items-center justify-between text-xs font-bold text-blue-800">
                         <span>HORNEADO</span>
                         <span className="h-2 w-2 rounded-full bg-blue-600" />
@@ -944,10 +1062,19 @@ export default function AdminOperationPage() {
                       <p className="mt-2 text-2xl font-bold text-blue-700">
                         {dayProd.toLocaleString()} <span className="text-xs font-normal text-blue-800">uds</span>
                       </p>
-                      <p className="mt-1 text-[11px] text-[#6E5545]">100% volumen elaborado</p>
-                    </div>
+                      <p className="mt-1 text-[11px] text-[#6E5545] group-hover:text-blue-700 font-medium transition">
+                        100% volumen &bull; Ver panes &rarr;
+                      </p>
+                    </button>
 
-                    <div className="rounded-xl border border-emerald-200 bg-white p-4 shadow-2xs">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedDayDate(activity[0].date)
+                        setBreakdownTab("sold")
+                      }}
+                      className="rounded-xl border border-emerald-200 bg-white p-4 shadow-2xs hover:border-emerald-400 hover:shadow-xs transition text-left cursor-pointer group"
+                    >
                       <div className="flex items-center justify-between text-xs font-bold text-emerald-800">
                         <span>VENTAS</span>
                         <span className="h-2 w-2 rounded-full bg-emerald-600" />
@@ -955,12 +1082,19 @@ export default function AdminOperationPage() {
                       <p className="mt-2 text-2xl font-bold text-emerald-700">
                         {daySold.toLocaleString()} <span className="text-xs font-normal text-emerald-800">uds</span>
                       </p>
-                      <p className="mt-1 text-[11px] text-emerald-700 font-bold">
-                        {dayProd > 0 ? ((daySold / dayProd) * 100).toFixed(1) : "0"}% colocado
+                      <p className="mt-1 text-[11px] text-emerald-700 font-bold group-hover:underline">
+                        {dayProd > 0 ? ((daySold / dayProd) * 100).toFixed(1) : "0"}% colocado &bull; Ver panes &rarr;
                       </p>
-                    </div>
+                    </button>
 
-                    <div className="rounded-xl border border-amber-200 bg-white p-4 shadow-2xs">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedDayDate(activity[0].date)
+                        setBreakdownTab("surplus")
+                      }}
+                      className="rounded-xl border border-amber-200 bg-white p-4 shadow-2xs hover:border-amber-400 hover:shadow-xs transition text-left cursor-pointer group"
+                    >
                       <div className="flex items-center justify-between text-xs font-bold text-amber-800">
                         <span>SOBRANTE MANANA</span>
                         <span className="h-2 w-2 rounded-full bg-amber-500" />
@@ -968,12 +1102,19 @@ export default function AdminOperationPage() {
                       <p className="mt-2 text-2xl font-bold text-amber-700">
                         {daySurplus.toLocaleString()} <span className="text-xs font-normal text-amber-800">uds</span>
                       </p>
-                      <p className="mt-1 text-[11px] text-amber-700 font-bold">
-                        {dayProd > 0 ? ((daySurplus / dayProd) * 100).toFixed(1) : "0"}% guardado
+                      <p className="mt-1 text-[11px] text-amber-700 font-bold group-hover:underline">
+                        {dayProd > 0 ? ((daySurplus / dayProd) * 100).toFixed(1) : "0"}% guardado &bull; Ver panes &rarr;
                       </p>
-                    </div>
+                    </button>
 
-                    <div className="rounded-xl border border-red-200 bg-white p-4 shadow-2xs">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedDayDate(activity[0].date)
+                        setBreakdownTab("waste")
+                      }}
+                      className="rounded-xl border border-red-200 bg-white p-4 shadow-2xs hover:border-red-400 hover:shadow-xs transition text-left cursor-pointer group"
+                    >
                       <div className="flex items-center justify-between text-xs font-bold text-red-800">
                         <span>MERMA REAL</span>
                         <span className="h-2 w-2 rounded-full bg-red-600" />
@@ -981,10 +1122,10 @@ export default function AdminOperationPage() {
                       <p className="mt-2 text-2xl font-bold text-red-600">
                         {dayWaste.toLocaleString()} <span className="text-xs font-normal text-red-800">uds</span>
                       </p>
-                      <p className="mt-1 text-[11px] text-red-600 font-bold">
-                        {dayProd > 0 ? ((dayWaste / dayProd) * 100).toFixed(1) : "0"}% descarte
+                      <p className="mt-1 text-[11px] text-red-600 font-bold group-hover:underline">
+                        {dayProd > 0 ? ((dayWaste / dayProd) * 100).toFixed(1) : "0"}% descarte &bull; Ver panes &rarr;
                       </p>
-                    </div>
+                    </button>
                   </div>
                 )
               })()}
@@ -1063,6 +1204,7 @@ export default function AdminOperationPage() {
                         : dateObj.toLocaleDateString("es-GT", { weekday: "short" }).replace(".", "")
                       const dayNum = dateObj.getDate()
                       const isHovered = hoveredIndex === idx
+                      const isSelected = selectedDayDate === day.date
                       const surplusDay = Math.max(0, day.produced - day.sold - day.waste)
 
                       return (
@@ -1070,11 +1212,18 @@ export default function AdminOperationPage() {
                           key={day.date}
                           onMouseEnter={() => setHoveredIndex(idx)}
                           onMouseLeave={() => setHoveredIndex(null)}
-                          onClick={() => setHoveredIndex(hoveredIndex === idx ? null : idx)}
+                          onClick={() => {
+                            setHoveredIndex(idx)
+                            setSelectedDayDate(selectedDayDate === day.date ? null : day.date)
+                          }}
                           className={`flex min-w-[50px] sm:min-w-[60px] flex-1 flex-col items-center justify-end gap-2 rounded-2xl transition-all p-1 cursor-pointer ${
-                            isHovered ? "bg-[#FAF0E6] shadow-2xs scale-[1.02]" : "hover:bg-[#FAF5EE]/70"
+                            isSelected
+                              ? "bg-[#FAF0E6] ring-2 ring-[#D97706] shadow-sm scale-[1.03]"
+                              : isHovered
+                              ? "bg-[#FAF0E6] shadow-2xs scale-[1.02]"
+                              : "hover:bg-[#FAF5EE]/70"
                           }`}
-                          title={`${day.date}: ${day.produced} horneadas, ${day.sold} vendidas, ${surplusDay} sobrante, ${day.waste} mermas`}
+                          title={`${day.date}: ${day.produced} horneadas, ${day.sold} vendidas, ${surplusDay} sobrante, ${day.waste} mermas. Clic para ver desglose por panes.`}
                         >
                           <div className="flex h-40 w-full items-end justify-center gap-0.5 sm:gap-1">
                             {/* Barra Horneado (Azul) */}
@@ -1230,6 +1379,7 @@ export default function AdminOperationPage() {
                         const ptSurplus = svgMetrics.pointsSurplus[idx]
                         const ptWaste = svgMetrics.pointsWaste[idx]
                         const isHovered = hoveredIndex === idx
+                        const isSelected = selectedDayDate === item.date
 
                         const dateObj = new Date(`${item.date}T12:00:00`)
                         const label = activity.length > 14
@@ -1245,19 +1395,22 @@ export default function AdminOperationPage() {
                             key={item.date}
                             onMouseEnter={() => setHoveredIndex(idx)}
                             onMouseLeave={() => setHoveredIndex(null)}
-                            onClick={() => setHoveredIndex(hoveredIndex === idx ? null : idx)}
+                            onClick={() => {
+                              setHoveredIndex(idx)
+                              setSelectedDayDate(selectedDayDate === item.date ? null : item.date)
+                            }}
                             className="cursor-pointer"
                           >
-                            {isHovered && (
+                            {(isHovered || isSelected) && (
                               <line
                                 x1={ptProd.x}
                                 y1={svgMetrics.paddingTop}
                                 x2={ptProd.x}
                                 y2={svgMetrics.baselineY}
-                                stroke="#8C522B"
-                                strokeOpacity="0.4"
-                                strokeWidth="1.5"
-                                strokeDasharray="2,2"
+                                stroke={isSelected ? "#D97706" : "#8C522B"}
+                                strokeOpacity={isSelected ? "0.85" : "0.4"}
+                                strokeWidth={isSelected ? "2" : "1.5"}
+                                strokeDasharray={isSelected ? "none" : "2,2"}
                               />
                             )}
 
@@ -1327,22 +1480,24 @@ export default function AdminOperationPage() {
         </div>
 
         {/* Tarjeta de Detalle en Hover / Seleccion */}
-        {hoveredIndex !== null && activity[hoveredIndex] && (() => {
-          const day = activity[hoveredIndex]
+        {(() => {
+          const activeIndex =
+            hoveredIndex !== null
+              ? hoveredIndex
+              : activity.findIndex((a) => a.date === selectedDayDate)
+          if (activeIndex < 0 || !activity[activeIndex]) return null
+          const day = activity[activeIndex]
           const surplusDay = Math.max(0, day.produced - day.sold - day.waste)
+          const isCurrentSelected = selectedDayDate === day.date
           return (
             <div className="rounded-2xl border border-[#DECDBB] bg-[#FAF5EE] p-3.5 text-xs flex flex-wrap items-center justify-between gap-3 animate-in fade-in shadow-2xs">
               <div className="flex items-center gap-2">
                 <CalendarDays className="h-4 w-4 text-[#D97706]" />
                 <span className="font-bold text-[#2B170F]">
-                  {new Date(`${day.date}T12:00:00`).toLocaleDateString("es-GT", {
-                    weekday: "long",
-                    day: "numeric",
-                    month: "long",
-                  })}
+                  {formatLongDateSafe(day.date)}
                 </span>
               </div>
-              <div className="flex flex-wrap items-center gap-4">
+              <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                 <span className="inline-flex items-center gap-1.5 font-bold text-blue-700">
                   <i className="h-2.5 w-2.5 rounded-full bg-blue-600" />
                   Horneado: <strong>{day.produced.toLocaleString()}</strong> uds
@@ -1359,10 +1514,269 @@ export default function AdminOperationPage() {
                   <i className="h-2.5 w-2.5 rounded-full bg-red-600" />
                   Merma real: <strong>{day.waste.toLocaleString()}</strong> uds
                 </span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedDayDate(isCurrentSelected ? null : day.date)}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#D97706] px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-[#B45309] transition cursor-pointer"
+                >
+                  <Layers className="h-3.5 w-3.5" />
+                  <span>{isCurrentSelected ? "Ocultar desglose" : "Explorar panes del día"}</span>
+                </button>
               </div>
             </div>
           )
         })()}
+
+        {/* PANEL DE DRILL-DOWN: DESGLOSE PRODUCTO POR PRODUCTO */}
+        {selectedDayDate && (
+          <div className="rounded-2xl border-2 border-[#D97706]/40 bg-gradient-to-b from-[#FFFDF9] to-[#FAF5EE] p-4 sm:p-6 shadow-sm space-y-4 animate-in fade-in-50 slide-in-from-top-2">
+            {/* Header del desglose */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-[#E8DCCB] pb-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-100 text-[#9E4D1A]">
+                    <Layers className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-base text-[#2B170F] capitalize">
+                      Desglose detallado por producto: {formatLongDateSafe(selectedDayDate)}
+                    </h3>
+                    <p className="text-xs text-[#6E5545]">
+                      Auditoría del ciclo diario por pan: horneado, vendido, sobrante guardado y merma descartada.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {breakdownData?.dailyCloseId && (
+                  <Link
+                    href={`/admin/cierre-dia/${breakdownData.dailyCloseId}`}
+                    className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-800 hover:bg-emerald-100 transition shadow-2xs"
+                  >
+                    <ClipboardCheck className="h-4 w-4 text-emerald-600" />
+                    <span>Cierre Oficial #{breakdownData.dailyCloseId}</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </Link>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setSelectedDayDate(null)}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#DECDBB] bg-white text-[#8C522B] hover:bg-[#FAF5EE] hover:text-[#2B170F] transition cursor-pointer"
+                  title="Cerrar desglose"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Pestañas de Filtro por Indicador */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl bg-[#F0E6D8]/60 border border-[#DECDBB]">
+                <button
+                  type="button"
+                  onClick={() => setBreakdownTab("all")}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                    breakdownTab === "all"
+                      ? "bg-white text-[#2B170F] shadow-xs"
+                      : "text-[#6E5545] hover:text-[#2B170F]"
+                  }`}
+                >
+                  <span>Todos los panes</span>
+                  {breakdownData && (
+                    <span className="rounded-full bg-[#E8DAC9] px-1.5 py-0.2 text-[10px] font-bold text-[#8C522B]">
+                      {breakdownFilteredItems.length}
+                    </span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBreakdownTab("produced")}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                    breakdownTab === "produced"
+                      ? "bg-blue-600 text-white shadow-xs"
+                      : "text-blue-700 hover:bg-blue-50"
+                  }`}
+                >
+                  <i className="h-2 w-2 rounded-full bg-blue-500" />
+                  <span>Horneado</span>
+                  {breakdownData && (
+                    <span className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold ${breakdownTab === "produced" ? "bg-blue-700 text-white" : "bg-blue-100 text-blue-800"}`}>
+                      {breakdownTotals.produced} uds
+                    </span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBreakdownTab("sold")}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                    breakdownTab === "sold"
+                      ? "bg-emerald-600 text-white shadow-xs"
+                      : "text-emerald-700 hover:bg-emerald-50"
+                  }`}
+                >
+                  <i className="h-2 w-2 rounded-full bg-emerald-500" />
+                  <span>Ventas</span>
+                  {breakdownData && (
+                    <span className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold ${breakdownTab === "sold" ? "bg-emerald-700 text-white" : "bg-emerald-100 text-emerald-800"}`}>
+                      {breakdownTotals.sold} uds
+                    </span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBreakdownTab("surplus")}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                    breakdownTab === "surplus"
+                      ? "bg-amber-500 text-white shadow-xs"
+                      : "text-amber-800 hover:bg-amber-50"
+                  }`}
+                >
+                  <i className="h-2 w-2 rounded-full bg-amber-400" />
+                  <span>Sobrante para mañana</span>
+                  {breakdownData && (
+                    <span className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold ${breakdownTab === "surplus" ? "bg-amber-600 text-white" : "bg-amber-100 text-amber-900"}`}>
+                      {breakdownTotals.surplus} uds
+                    </span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBreakdownTab("waste")}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                    breakdownTab === "waste"
+                      ? "bg-red-600 text-white shadow-xs"
+                      : "text-red-700 hover:bg-red-50"
+                  }`}
+                >
+                  <i className="h-2 w-2 rounded-full bg-red-500" />
+                  <span>Merma real</span>
+                  {breakdownData && (
+                    <span className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold ${breakdownTab === "waste" ? "bg-red-700 text-white" : "bg-red-100 text-red-800"}`}>
+                      {breakdownTotals.waste} uds
+                    </span>
+                  )}
+                </button>
+              </div>
+
+              {/* Buscador rápido */}
+              <div className="relative w-full sm:w-64">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#8C522B]" />
+                <input
+                  type="text"
+                  placeholder="Buscar pan..."
+                  value={breakdownSearch}
+                  onChange={(e) => setBreakdownSearch(e.target.value)}
+                  className="w-full rounded-xl border border-[#DECDBB] bg-white py-1.5 pl-8 pr-3 text-xs text-[#2B170F] placeholder-[#8C522B]/60 focus:border-[#D97706] focus:outline-none"
+                />
+                {breakdownSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setBreakdownSearch("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-[#8C522B] hover:text-[#2B170F]"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Listado / Tabla de productos */}
+            {isBreakdownLoading ? (
+              <div className="py-12 text-center text-xs text-[#6E5545] space-y-2">
+                <RefreshCw className="h-5 w-5 animate-spin mx-auto text-[#D97706]" />
+                <p>Cargando desglose de productos para esta fecha...</p>
+              </div>
+            ) : breakdownFilteredItems.length === 0 ? (
+              <div className="py-8 text-center text-xs text-[#6E5545] bg-white rounded-xl border border-dashed border-[#DECDBB]">
+                No se encontraron productos registrados con el filtro actual.
+              </div>
+            ) : (
+              <div className="overflow-x-auto rounded-xl border border-[#E8DCCB] bg-white shadow-2xs">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-[#FAF5EE] text-[11px] font-bold uppercase tracking-wider text-[#8C522B] border-b border-[#E8DCCB]">
+                    <tr>
+                      <th className="py-2.5 px-3">Producto / Pan</th>
+                      <th className="py-2.5 px-3 text-right">Precio Unit.</th>
+                      <th className="py-2.5 px-3 text-right">Horneado</th>
+                      <th className="py-2.5 px-3 text-right">Ventas</th>
+                      <th className="py-2.5 px-3 text-right">Sobrante</th>
+                      <th className="py-2.5 px-3 text-right">Merma Real</th>
+                      <th className="py-2.5 px-3 text-right">Impacto</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#E8DCCB]/60">
+                    {breakdownFilteredItems.map((item) => {
+                      const hasWaste = item.waste > 0
+                      const wastePct = item.produced > 0 ? (item.waste / item.produced) * 100 : 0
+                      return (
+                        <tr key={item.productId} className="hover:bg-[#FAF5EE]/50 transition-colors">
+                          <td className="py-2.5 px-3">
+                            <span className="font-bold text-[#2B170F] block">{item.productName}</span>
+                            {item.unitsPerTray && (
+                              <span className="text-[10px] text-[#8C522B]">
+                                Capacidad: {item.unitsPerTray} uds / lata
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-2.5 px-3 text-right text-[#6E5545] font-medium">
+                            Q {item.price.toFixed(2)}
+                          </td>
+                          <td className="py-2.5 px-3 text-right">
+                            {item.produced > 0 ? (
+                              <span className="inline-flex items-center gap-1 rounded-lg bg-blue-50 px-2 py-0.5 font-bold text-blue-700">
+                                {item.produced.toLocaleString()} uds
+                              </span>
+                            ) : (
+                              <span className="text-[#8C522B]/50">-</span>
+                            )}
+                          </td>
+                          <td className="py-2.5 px-3 text-right">
+                            {item.sold > 0 ? (
+                              <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2 py-0.5 font-bold text-emerald-700">
+                                {item.sold.toLocaleString()} uds
+                              </span>
+                            ) : (
+                              <span className="text-[#8C522B]/50">-</span>
+                            )}
+                          </td>
+                          <td className="py-2.5 px-3 text-right">
+                            {item.surplus > 0 ? (
+                              <span className="inline-flex items-center gap-1 rounded-lg bg-amber-50 px-2 py-0.5 font-bold text-amber-800">
+                                {item.surplus.toLocaleString()} uds
+                              </span>
+                            ) : (
+                              <span className="text-[#8C522B]/50">-</span>
+                            )}
+                          </td>
+                          <td className="py-2.5 px-3 text-right">
+                            {hasWaste ? (
+                              <span className="inline-flex items-center gap-1 rounded-lg bg-red-100 px-2 py-0.5 font-bold text-red-700">
+                                {item.waste.toLocaleString()} uds
+                              </span>
+                            ) : (
+                              <span className="text-emerald-700 text-[11px] font-semibold">0 uds</span>
+                            )}
+                          </td>
+                          <td className="py-2.5 px-3 text-right">
+                            {hasWaste ? (
+                              <span className="text-[11px] font-bold text-red-600">
+                                {wastePct.toFixed(1)}% descarte
+                              </span>
+                            ) : (
+                              <span className="text-[11px] font-medium text-emerald-600">
+                                100% aprovechado
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Leyenda Inferior */}
         <div className="flex flex-wrap items-center justify-between gap-4 border-t border-[#E8DCCB] pt-3 text-xs text-[#6E5545]">

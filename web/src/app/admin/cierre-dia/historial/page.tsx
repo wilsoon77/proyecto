@@ -10,7 +10,10 @@ import { Button } from "@/components/ui/button"
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader"
 
 function displayDate(value: string) {
-  const date = /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T12:00:00`) : new Date(value)
+  const datePart = (value || "").split("T")[0]
+  const [year, month, day] = datePart.split("-").map(Number)
+  if (!year || !month || !day) return value
+  const date = new Date(year, month - 1, day, 12, 0, 0)
   return date.toLocaleDateString("es-GT", { day: "2-digit", month: "short", year: "numeric" })
 }
 

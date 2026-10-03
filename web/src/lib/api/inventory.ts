@@ -118,7 +118,34 @@ export interface OperationalActivityResponse {
   data: Array<{ date: string; produced: number; sold: number; waste: number }>
 }
 
+export interface DayBreakdownItem {
+  productId: number
+  productName: string
+  productSlug: string
+  price: number
+  unitsPerTray: number | null
+  produced: number
+  transferred: number
+  sold: number
+  waste: number
+  surplus: number
+}
+
+export interface DayBreakdownResponse {
+  date: string
+  branchSlug: string | null
+  branchName: string | null
+  dailyCloseId: number | null
+  items: DayBreakdownItem[]
+}
+
 export const inventoryService = {
+  async getDayBreakdown(params: { date: string; branchSlug?: string }): Promise<DayBreakdownResponse> {
+    const searchParams = new URLSearchParams()
+    searchParams.set('date', params.date)
+    if (params.branchSlug) searchParams.set('branchSlug', params.branchSlug)
+    return api.get<DayBreakdownResponse>(`/stock-movements/day-breakdown?${searchParams.toString()}`)
+  },
   /**
    * Listar inventario con filtros opcionales
    */

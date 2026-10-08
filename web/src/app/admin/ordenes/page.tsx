@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { ordersService, branchesService, type OrderStatus } from "@/lib/api"
 import { formatCurrency, formatDateString } from "@/lib/utils"
+import { searchMatches } from "@/lib/search-utils"
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader"
 import { AdminSearchBar, type FilterChip } from "@/components/admin/AdminSearchBar"
 import { AdminEntityCard } from "@/components/admin/AdminEntityCard"
@@ -187,11 +188,10 @@ function OrdenesContent() {
   // Filtro de búsqueda local
   const filteredOrders = useMemo(() => {
     if (!searchTerm) return orders
-    const term = searchTerm.toLowerCase()
     return orders.filter(order => {
       return (
-        order.orderNumber.toLowerCase().includes(term) ||
-        order.items.some(item => item.productName.toLowerCase().includes(term))
+        searchMatches(order.orderNumber, searchTerm) ||
+        order.items.some(item => searchMatches(item.productName, searchTerm))
       )
     })
   }, [orders, searchTerm])

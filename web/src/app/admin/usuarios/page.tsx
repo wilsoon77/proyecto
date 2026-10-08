@@ -21,6 +21,7 @@ import { useToast } from "@/components/ui/toast"
 import { useAuth } from "@/context/AuthContext"
 import { usersService, type User, type UserRole } from "@/lib/api"
 import { formatDateString } from "@/lib/utils"
+import { searchMatches } from "@/lib/search-utils"
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader"
 import { AdminSearchBar, type FilterChip } from "@/components/admin/AdminSearchBar"
 import { AdminEntityCard } from "@/components/admin/AdminEntityCard"
@@ -146,12 +147,11 @@ function UsuariosContent() {
     return users.filter(user => {
       // Filtro por texto
       if (searchTerm) {
-        const term = searchTerm.toLowerCase()
         const matches = 
-          user.firstName.toLowerCase().includes(term) ||
-          user.lastName.toLowerCase().includes(term) ||
-          user.email.toLowerCase().includes(term) ||
-          user.phone?.toLowerCase().includes(term)
+          searchMatches(user.firstName, searchTerm) ||
+          searchMatches(user.lastName, searchTerm) ||
+          searchMatches(user.email, searchTerm) ||
+          searchMatches(user.phone, searchTerm)
         if (!matches) return false
       }
 

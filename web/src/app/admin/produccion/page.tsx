@@ -24,6 +24,7 @@ import { useAuth } from "@/context/AuthContext"
 import { branchesService, productionService } from "@/lib/api"
 import type { ApiBranch, Recipe, ProductionLog } from "@/lib/api"
 import { productionPresentations } from "@/lib/presentation-quantities"
+import { searchMatches } from "@/lib/search-utils"
 
 interface BatchItemState {
   recipeId: number
@@ -248,11 +249,10 @@ export default function ProduccionPage() {
 
       if (!searchQuery.trim()) return true
 
-      const query = searchQuery.toLowerCase()
-      const matchName = recipe.name.toLowerCase().includes(query)
-      const matchProduct = recipe.product.name.toLowerCase().includes(query)
+      const matchName = searchMatches(recipe.name, searchQuery)
+      const matchProduct = searchMatches(recipe.product.name, searchQuery)
       const matchIngredient = recipe.ingredients.some((ing) =>
-        ing.rawMaterial.name.toLowerCase().includes(query)
+        searchMatches(ing.rawMaterial.name, searchQuery)
       )
 
       return matchName || matchProduct || matchIngredient

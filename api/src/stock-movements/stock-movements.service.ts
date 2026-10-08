@@ -643,6 +643,7 @@ export class StockMovementsService {
             quantity: absQty,
             stockMovementId: movement.id,
             allowExpired: true,
+            allowPartial: true,
           });
         } else {
           await this.inventoryLotsService.createInboundLot(tx, {

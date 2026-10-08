@@ -28,6 +28,7 @@ import {
   type RawMaterial
 } from "@/lib/api"
 import type { ApiProduct } from "@/lib/api/types"
+import { searchMatches } from "@/lib/search-utils"
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader"
 import { AdminSearchBar } from "@/components/admin/AdminSearchBar"
 import { AdminEntityCard } from "@/components/admin/AdminEntityCard"
@@ -151,11 +152,10 @@ export default function RecipesAdminPage() {
 
     // Filtro por texto: nombre de receta, producto asociado o materias primas
     if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim()
       result = result.filter(r => 
-        r.name.toLowerCase().includes(query) || 
-        r.product.name.toLowerCase().includes(query) ||
-        r.ingredients.some(ing => ing.rawMaterial?.name?.toLowerCase().includes(query))
+        searchMatches(r.name, searchQuery) || 
+        searchMatches(r.product?.name, searchQuery) ||
+        r.ingredients.some(ing => searchMatches(ing.rawMaterial?.name, searchQuery))
       )
     }
 

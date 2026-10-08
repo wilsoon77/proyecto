@@ -91,6 +91,7 @@ export class InventoryLotsService {
       quantity: number;
       stockMovementId: number;
       allowExpired?: boolean;
+      allowPartial?: boolean;
     },
   ) {
     if (options.quantity <= 0) return [];
@@ -145,9 +146,11 @@ export class InventoryLotsService {
 
     const representedQuantity = lots.reduce((sum, lot) => sum + lot.availableQuantity, 0);
     if (tracksExpiration && representedQuantity < options.quantity) {
-      throw new BadRequestException(
-        'No hay suficientes unidades vigentes. Revisa los productos vencidos o registra una entrada con fecha.',
-      );
+      if (!options.allowPartial) {
+        throw new BadRequestException(
+          'No hay suficientes unidades vigentes. Revisa los productos vencidos o registra una entrada con fecha.',
+        );
+      }
     }
 
     // For products without lot history we preserve the legacy aggregate behavior.
@@ -187,7 +190,7 @@ export class InventoryLotsService {
     }
 
     if (remaining > 0) {
-      if (tracksExpiration) {
+      if (tracksExpiration && !options.allowPartial) {
         throw new BadRequestException('El inventario por lote no coincide con el inventario general');
       }
       return allocations;

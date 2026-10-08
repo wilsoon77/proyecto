@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import type { AssistantContext } from './assistant-policy.service.js';
 import { addDays, businessDateStartUtc, dateKeyToUtcDate, formatBusinessDate, todayBusinessDate } from '../common/time/business-date.js';
 import type { AssistantDateRange } from './assistant-query.js';
+import { generateAccentVariations } from '../common/utils/search-utils.js';
 
 type BranchArgs = { branch?: string };
 type DateRangeArgs = BranchArgs & { date?: unknown; fromDate?: unknown; toDate?: unknown };
@@ -117,8 +118,12 @@ export class AssistantReadService {
       });
     }
 
+    const variations = generateAccentVariations(query);
     const direct = await this.prisma.rawMaterial.findMany({
-      where: { isActive: true, name: { contains: query, mode: 'insensitive' } },
+      where: {
+        isActive: true,
+        OR: variations.map((term) => ({ name: { contains: term, mode: 'insensitive' } })),
+      },
       select: baseSelect,
       orderBy: { name: 'asc' },
       take: 50,
@@ -148,12 +153,13 @@ export class AssistantReadService {
       });
     }
 
+    const variations = generateAccentVariations(query);
     const direct = await this.prisma.product.findMany({
       where: {
-        OR: [
-          { name: { contains: query, mode: 'insensitive' } },
-          { slug: { contains: query, mode: 'insensitive' } },
-        ],
+        OR: variations.flatMap((term) => [
+          { name: { contains: term, mode: 'insensitive' } },
+          { slug: { contains: term, mode: 'insensitive' } },
+        ]),
       },
       select: baseSelect,
       orderBy: { name: 'asc' },

@@ -4,6 +4,7 @@ import { generateSlug } from '../common/utils/slug.util.js';
 import { ProductOrigin } from '@prisma/client';
 import { ProductPresentationInputDto } from './dto/presentation.dto.js';
 import { dateKeyToUtcDate, todayBusinessDate } from '../common/time/business-date.js';
+import { generateAccentVariations } from '../common/utils/search-utils.js';
 
 function normalizeOrigin(value: string | undefined, fallback: ProductOrigin): ProductOrigin {
   if (value === undefined) return fallback;
@@ -247,11 +248,11 @@ export class ProductsService {
       where.category = { isActive: true };
     }
     if (query.search) {
-      const s = query.search;
-      where.OR = [
-        { name: { contains: s, mode: 'insensitive' } },
-        { description: { contains: s, mode: 'insensitive' } },
-      ];
+      const variations = generateAccentVariations(query.search);
+      where.OR = variations.flatMap((term) => [
+        { name: { contains: term, mode: 'insensitive' } },
+        { description: { contains: term, mode: 'insensitive' } },
+      ]);
     }
     if (query.min !== undefined || query.max !== undefined) {
       where.basePrice = {};

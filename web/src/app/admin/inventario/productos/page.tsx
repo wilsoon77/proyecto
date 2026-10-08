@@ -22,6 +22,7 @@ import {
   type ApiCategory
 } from "@/lib/api"
 import { formatDateString } from "@/lib/utils"
+import { searchMatches } from "@/lib/search-utils"
 import { useToast } from "@/components/ui/toast"
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader"
 import { AdminSearchBar, type FilterChip } from "@/components/admin/AdminSearchBar"
@@ -186,12 +187,11 @@ function ProductosInventarioContent() {
       }
       // Búsqueda por texto
       if (searchQuery) {
-        const query = searchQuery.toLowerCase()
         return (
-          item.product.name.toLowerCase().includes(query) ||
-          item.branch.name.toLowerCase().includes(query) ||
-          item.product.slug.toLowerCase().includes(query) ||
-          (item.product.category?.name && item.product.category.name.toLowerCase().includes(query))
+          searchMatches(item.product.name, searchQuery) ||
+          searchMatches(item.branch.name, searchQuery) ||
+          searchMatches(item.product.slug, searchQuery) ||
+          searchMatches(item.product.category?.name, searchQuery)
         )
       }
       return true

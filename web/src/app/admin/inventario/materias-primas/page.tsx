@@ -24,6 +24,7 @@ import {
   type RawMaterialInventory
 } from "@/lib/api"
 import { useToast } from "@/components/ui/toast"
+import { searchMatches } from "@/lib/search-utils"
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader"
 import { AdminSearchBar, type FilterChip } from "@/components/admin/AdminSearchBar"
 import { AdminEntityCard } from "@/components/admin/AdminEntityCard"
@@ -149,9 +150,8 @@ export default function MateriasPrimasPage() {
       if (activeFilter === "low_stock" && (!item.isLow || !active)) return false
 
       if (searchQuery) {
-        const q = searchQuery.toLowerCase()
-        const matchName = item.rawMaterial.name.toLowerCase().includes(q)
-        const matchBranch = item.branch.name.toLowerCase().includes(q)
+        const matchName = searchMatches(item.rawMaterial.name, searchQuery)
+        const matchBranch = searchMatches(item.branch.name, searchQuery)
         if (!matchName && !matchBranch) return false
       }
 

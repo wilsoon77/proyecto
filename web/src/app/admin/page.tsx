@@ -52,6 +52,7 @@ import type {
 import { useAuth } from "@/context/AuthContext"
 import TelegramAssistantButton from "@/components/admin/TelegramAssistantButton"
 import { FinancialDashboardView } from "@/components/admin/FinancialDashboardView"
+import { searchMatches } from "@/lib/search-utils"
 
 const ALERT_TYPES = new Set([
   "inventory.raw_material_low",
@@ -423,7 +424,49 @@ export default function AdminOperationPage() {
   }, [activity])
 
   // Agrupacion para la Grafica 2: Top Panes con Mayor Merma Real
-  const { topWasteProducts, totalWasteUnits } = useMemo(() => {
+  // Si hay un dia seleccionado en la grafica (selectedDayDate), muestra el descarte real de ese dia;
+  // de lo contrario, muestra el descarte acumulado de todo el periodo seleccionado.
+  const { topWasteProducts, totalWasteUnits, isDayFiltered } = useMemo(() => {
+    if (selectedDayDate) {
+      if (breakdownData?.items) {
+        const wasteItems = breakdownData.items
+          .filter((item) => item.waste > 0)
+          .map((item) => ({
+            name: item.productName || "Pan sin nombre",
+            quantity: item.waste,
+          }))
+        const dayWasteTotal = wasteItems.reduce((sum, item) => sum + item.quantity, 0)
+        const list = wasteItems
+          .map((item) => ({
+            name: item.name,
+            quantity: item.quantity,
+            percentage: dayWasteTotal > 0 ? (item.quantity / dayWasteTotal) * 100 : 0,
+          }))
+          .sort((a, b) => b.quantity - a.quantity)
+          .slice(0, 8)
+        return { topWasteProducts: list, totalWasteUnits: dayWasteTotal, isDayFiltered: true }
+      }
+
+      const map = new Map<string, number>()
+      wasteMovements
+        .filter((m) => m.createdAt?.startsWith(selectedDayDate))
+        .forEach((m) => {
+          const name = m.productName || "Pan sin nombre"
+          const qty = map.get(name) || 0
+          map.set(name, qty + asNumber(m.quantity))
+        })
+      const dayWasteTotal = Array.from(map.values()).reduce((sum, q) => sum + q, 0)
+      const list = Array.from(map.entries())
+        .map(([name, quantity]) => ({
+          name,
+          quantity,
+          percentage: dayWasteTotal > 0 ? (quantity / dayWasteTotal) * 100 : 0,
+        }))
+        .sort((a, b) => b.quantity - a.quantity)
+        .slice(0, 8)
+      return { topWasteProducts: list, totalWasteUnits: dayWasteTotal, isDayFiltered: true }
+    }
+
     const map = new Map<string, number>()
     wasteMovements.forEach((m) => {
       const name = m.productName || "Pan sin nombre"
@@ -439,8 +482,8 @@ export default function AdminOperationPage() {
       }))
       .sort((a, b) => b.quantity - a.quantity)
       .slice(0, 8)
-    return { topWasteProducts: list, totalWasteUnits }
-  }, [wasteMovements])
+    return { topWasteProducts: list, totalWasteUnits, isDayFiltered: false }
+  }, [selectedDayDate, breakdownData, wasteMovements])
 
   // Metricas del Desglose Diario Seleccionado (Drill-Down)
   const breakdownTotals = useMemo(() => {
@@ -463,8 +506,7 @@ export default function AdminOperationPage() {
     let list = [...breakdownData.items]
 
     if (breakdownSearch.trim()) {
-      const q = breakdownSearch.toLowerCase().trim()
-      list = list.filter((item) => item.productName.toLowerCase().includes(q))
+      list = list.filter((item) => searchMatches(item.productName, breakdownSearch))
     }
 
     if (breakdownTab === "produced") {
@@ -1856,23 +1898,46 @@ export default function AdminOperationPage() {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-600">
                 <TrendingDown className="h-4 w-4" />
               </div>
-              <h2 className="font-bold text-base text-[#2B170F] sm:text-lg">Top panes con mayor merma real</h2>
+              <h2 className="font-bold text-base text-[#2B170F] sm:text-lg">
+                {isDayFiltered ? "Top panes con mayor merma del día" : "Top panes con mayor merma real"}
+              </h2>
             </div>
             <p className="text-xs text-[#6E5545] mt-0.5">
-              Productos con mayor descarte acumulado en el periodo para calibrar tandas de horneado
+              {isDayFiltered && selectedDayDate ? (
+                <span>
+                  Descarte físico registrado el <strong>{formatLongDateSafe(selectedDayDate)}</strong> para calibrar tandas de horneado
+                </span>
+              ) : (
+                "Productos con mayor descarte acumulado en el periodo para calibrar tandas de horneado"
+              )}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            {isDayFiltered && (
+              <button
+                type="button"
+                onClick={() => setSelectedDayDate(null)}
+                className="inline-flex min-h-[36px] items-center gap-1 rounded-xl border border-[#DECDBB] bg-[#FAF5EE] px-2.5 py-1.5 text-xs font-semibold text-[#8C522B] hover:text-[#2B170F] hover:bg-white transition cursor-pointer"
+                title="Quitar filtro del día y ver periodo acumulado"
+              >
+                <X className="h-3.5 w-3.5" />
+                <span>Ver periodo completo</span>
+              </button>
+            )}
             <div className="inline-flex items-center gap-2 rounded-xl bg-red-50 border border-red-200/90 px-3 py-1.5 text-xs">
-              <span className="text-[#8C522B] font-semibold">Total de mermas:</span>
+              <span className="text-[#8C522B] font-semibold">{isDayFiltered ? "Merma del día:" : "Total de mermas:"}</span>
               <span className="font-extrabold text-red-700 text-sm">
                 {totalWasteUnits.toLocaleString()} uds.
               </span>
-              {totals.produced > 0 && (
-                <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-800">
-                  {((totalWasteUnits / totals.produced) * 100).toFixed(1)}% del horneado
-                </span>
-              )}
+              {(() => {
+                const referenceProduced = isDayFiltered ? breakdownTotals.produced : totals.produced
+                if (referenceProduced <= 0) return null
+                return (
+                  <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-800">
+                    {((totalWasteUnits / referenceProduced) * 100).toFixed(1)}% del horneado
+                  </span>
+                )
+              })()}
             </div>
             <Link
               href="/admin/produccion"
@@ -1886,18 +1951,24 @@ export default function AdminOperationPage() {
 
         {topWasteProducts.length === 0 ? (
           <div className="py-8 text-center text-xs text-[#6E5545] bg-[#FAF5EE]/40 rounded-xl border border-dashed border-[#DECDBB]">
-            Excelente: No se registran descartes de merma en el periodo seleccionado. El amasijo y la venta estan balanceados.
+            {isDayFiltered && selectedDayDate ? (
+              <span>Excelente: No se registraron descartes de merma para el <strong>{formatLongDateSafe(selectedDayDate)}</strong>. El amasijo y la venta estuvieron balanceados.</span>
+            ) : (
+              "Excelente: No se registran descartes de merma en el periodo seleccionado. El amasijo y la venta estan balanceados."
+            )}
           </div>
         ) : (
           <div className="space-y-3.5 pt-1">
-            {/* Indicador de Total de Mermas del Periodo */}
+            {/* Indicador de Total de Mermas del Periodo o Día */}
             <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl bg-red-50/70 border border-red-200/80 text-xs">
               <div className="flex items-center gap-2">
                 <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-red-100 text-red-700 font-bold">
                   <TrendingDown className="h-3.5 w-3.5" />
                 </span>
                 <span className="font-bold text-[#2B170F]">
-                  Descarte fisico total consolidado:
+                  {isDayFiltered && selectedDayDate
+                    ? `Descarte físico del día (${formatLongDateSafe(selectedDayDate)}):`
+                    : "Descarte físico total consolidado:"}
                 </span>
                 <span className="font-extrabold text-red-700 text-sm">
                   {totalWasteUnits.toLocaleString()} unidades descartadas

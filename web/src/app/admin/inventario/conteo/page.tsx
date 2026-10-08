@@ -15,6 +15,7 @@ import { useToast } from "@/components/ui/toast"
 import { PresentationCountFields } from "@/components/admin/PresentationCountFields"
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader"
 import { baseQuantityFromCounts, breakdownBaseQuantity } from "@/lib/presentation-quantities"
+import { searchMatches } from "@/lib/search-utils"
 
 interface Branch {
   id: number
@@ -135,8 +136,7 @@ export default function ConteoPage() {
   // Filtrar entradas
   const filteredEntries = useMemo(() => {
     if (!searchQuery.trim()) return entries
-    const q = searchQuery.toLowerCase()
-    return entries.filter(e => e.productName.toLowerCase().includes(q))
+    return entries.filter(e => searchMatches(e.productName, searchQuery))
   }, [entries, searchQuery])
 
   // Estadísticas en tiempo real
@@ -173,6 +173,11 @@ export default function ConteoPage() {
   }
 
   const handleSubmit = async () => {
+    if (!selectedBranch || selectedBranch === "all") {
+      showToast('Selecciona una sucursal para realizar el conteo', 'error')
+      return
+    }
+
     const touchedEntries = entries.filter(e => e.touched)
     if (touchedEntries.length === 0) {
       showToast('No has modificado ningún producto', 'error')
@@ -192,10 +197,7 @@ export default function ConteoPage() {
         branchSlug: selectedBranch,
         items: touchedEntries.map(e => ({
           productId: e.productId,
-          actualQuantity: actualCount(e),
-          presentationCounts: e.presentations.length > 0 && Number(e.looseInput || 0) === 0
-            ? Object.entries(e.presentationInputs).filter(([, quantity]) => quantity !== "").map(([presentationId, quantity]) => ({ presentationId: Number(presentationId), quantity: Number(quantity) }))
-            : undefined,
+          actualQuantity: Math.max(0, Math.round(actualCount(e))),
         })),
         note: note || undefined,
       })
@@ -203,7 +205,7 @@ export default function ConteoPage() {
       showToast(`Reconciliación completada: ${res.totalAdjusted} ajustes realizados`, 'success')
     } catch (err: any) {
       const msg = err?.response?.data?.message || err?.message || 'Error al reconciliar'
-      showToast(Array.isArray(msg) ? msg[0] : msg, 'error')
+      showToast(Array.isArray(msg) ? msg.join(', ') : msg, 'error')
     } finally {
       setIsSubmitting(false)
     }

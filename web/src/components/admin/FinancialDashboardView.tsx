@@ -20,6 +20,7 @@ import {
   X,
 } from "lucide-react"
 import type { ApiBranch, DayBreakdownResponse } from "@/lib/api"
+import { searchMatches } from "@/lib/search-utils"
 
 interface FinancialDashboardViewProps {
   activity: Array<{ date: string; produced: number; sold: number; waste: number; revenue?: number }>
@@ -198,8 +199,7 @@ export function FinancialDashboardView({
     let list = [...itemsWithMetrics]
 
     if (financialSearch.trim()) {
-      const q = financialSearch.toLowerCase().trim()
-      list = list.filter((i) => i.productName.toLowerCase().includes(q))
+      list = list.filter((i) => searchMatches(i.productName, financialSearch))
     }
 
     if (selectedCategoryTab !== "ALL") {

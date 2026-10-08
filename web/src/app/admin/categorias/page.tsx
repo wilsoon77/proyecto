@@ -10,6 +10,7 @@ import { useToast } from "@/components/ui/toast"
 import { useAuth } from "@/context/AuthContext"
 import { categoriesService } from "@/lib/api"
 import type { ApiCategory } from "@/lib/api/types"
+import { searchMatches } from "@/lib/search-utils"
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader"
 import { AdminSearchBar, type FilterChip } from "@/components/admin/AdminSearchBar"
 import { AdminEntityCard } from "@/components/admin/AdminEntityCard"
@@ -99,11 +100,10 @@ function AdminCategoriasContent() {
     return categories.filter((cat) => {
       // Búsqueda por texto
       if (searchTerm) {
-        const term = searchTerm.toLowerCase()
         const matchesText =
-          cat.name.toLowerCase().includes(term) ||
-          cat.slug.toLowerCase().includes(term) ||
-          (cat.description && cat.description.toLowerCase().includes(term))
+          searchMatches(cat.name, searchTerm) ||
+          searchMatches(cat.slug, searchTerm) ||
+          searchMatches(cat.description, searchTerm)
         if (!matchesText) return false
       }
 

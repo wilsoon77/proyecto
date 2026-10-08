@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Search, X, Package, ShoppingCart, Users, Building2, Tag, Warehouse, Command, ArrowRight, Loader as Loader2 } from "lucide-react"
 import { productsService, branchesService, categoriesService } from "@/lib/api"
+import { searchMatches } from "@/lib/search-utils"
 
 interface SearchResult {
   id: string
@@ -84,18 +85,18 @@ export function GlobalSearch() {
       // Buscar en páginas primero
       const pageResults = PAGES.filter(
         page => 
-          page.title.toLowerCase().includes(q) || 
-          page.subtitle?.toLowerCase().includes(q)
+          searchMatches(page.title, searchQuery) || 
+          searchMatches(page.subtitle, searchQuery)
       )
 
       // Buscar en productos, sucursales, categorías en paralelo (sin cargar todos los usuarios)
       const [productsRes, branchesRes, categoriesRes] = await Promise.allSettled([
         productsService.list({ search: searchQuery, pageSize: 5 }),
         branchesService.list().then(branches =>
-          branches.filter((b: any) => b.name?.toLowerCase().includes(q)).slice(0, 3)
+          branches.filter((b: any) => searchMatches(b.name, searchQuery)).slice(0, 3)
         ),
         categoriesService.list().then(categories =>
-          categories.filter((c: any) => c.name?.toLowerCase().includes(q)).slice(0, 3)
+          categories.filter((c: any) => searchMatches(c.name, searchQuery)).slice(0, 3)
         ),
       ])
 

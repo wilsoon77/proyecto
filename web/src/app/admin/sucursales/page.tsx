@@ -10,6 +10,7 @@ import { useToast } from "@/components/ui/toast"
 import { useAuth } from "@/context/AuthContext"
 import { useQueryClient } from "@tanstack/react-query"
 import { branchesService } from "@/lib/api"
+import { searchMatches } from "@/lib/search-utils"
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader"
 import { AdminSearchBar } from "@/components/admin/AdminSearchBar"
 import { AdminEntityCard } from "@/components/admin/AdminEntityCard"
@@ -84,11 +85,10 @@ function SucursalesContent() {
 
   const filteredBranches = useMemo(() => {
     if (!searchTerm.trim()) return branches
-    const term = searchTerm.toLowerCase()
     return branches.filter((branch) =>
-      branch.name.toLowerCase().includes(term) ||
-      branch.address.toLowerCase().includes(term) ||
-      branch.slug.toLowerCase().includes(term)
+      searchMatches(branch.name, searchTerm) ||
+      searchMatches(branch.address, searchTerm) ||
+      searchMatches(branch.slug, searchTerm)
     )
   }, [branches, searchTerm])
 

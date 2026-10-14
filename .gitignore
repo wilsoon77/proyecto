@@ -46,6 +46,14 @@ web/build/
 web/dist/
 web/.turbo/
 web/audit-results/
+audit-results/
+web/playwright-report/
+web/test-results/
+api/benchmark_*.json
+api/scripts/benchmark_*.mjs
+api/scripts/measure_*.mjs
+api/scripts/query_*.mjs
+api/scripts/test_*.mjs
 web/scripts/run-responsiveness-audit.mjs
 web/scripts/test-local-auth.mjs
 

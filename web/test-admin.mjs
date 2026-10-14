@@ -2,7 +2,7 @@ import { chromium } from 'playwright';
 import fs from 'fs';
 import path from 'path';
 
-const url = 'https://proyecto-wilsoon77.vercel.app';
+const url = process.env.TEST_BASE_URL || 'https://www.panaderiasvetlana.app';
 const outputDir = 'c:/Users/wilso/Documents/FrameworksrProjects/React/proyecto-panaderia/documentation/pruebas_roles/capturas';
 
 if (!fs.existsSync(outputDir)) {

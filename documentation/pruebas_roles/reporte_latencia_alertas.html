@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reporte de Latencia y Detección de Alertas - Panadería Svetlana</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --primary: #2563eb;
+      --primary-light: #eff6ff;
+      --success: #16a34a;
+      --success-light: #f0fdf4;
+      --warning: #d97706;
+      --warning-light: #fffbeb;
+      --info: #0284c7;
+      --info-light: #f0f9ff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2.5rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    .header {
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .title-group h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 0.25rem;
+    }
+
+    .title-group p {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.35rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .badge-success {
+      background: var(--success-light);
+      color: var(--success);
+      border: 1px solid #bbf7d0;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-top: 1.5rem;
+      padding: 1rem;
+      background: var(--bg);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+
+    .meta-item strong {
+      display: block;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      margin-bottom: 0.15rem;
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .kpi-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      text-align: center;
+    }
+
+    .kpi-card.highlight {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+
+    .kpi-card.success {
+      border-color: var(--success);
+      background: var(--success-light);
+    }
+
+    .kpi-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+
+    .kpi-value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .kpi-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+
+    .section-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .chart-container {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .svg-chart {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .table-container {
+      overflow-x: auto;
+      margin-bottom: 2rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+      text-align: left;
+    }
+
+    th {
+      background: #f1f5f9;
+      color: var(--text);
+      font-weight: 600;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background: #f8fafc;
+    }
+
+    .num {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.8125rem;
+    }
+
+    .analysis-card {
+      background: var(--info-light);
+      border: 1px solid #bae6fd;
+      border-radius: 8px;
+      padding: 1.25rem;
+      font-size: 0.875rem;
+      color: #0369a1;
+      margin-bottom: 2rem;
+    }
+
+    .analysis-card h3 {
+      font-size: 0.9375rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: #075985;
+    }
+
+    .analysis-card ul {
+      margin-left: 1.25rem;
+      margin-top: 0.5rem;
+    }
+
+    .analysis-card li {
+      margin-bottom: 0.35rem;
+    }
+
+    .footer {
+      border-top: 1px solid var(--border);
+      padding-top: 1.5rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    @media print {
+      body {
+        padding: 0;
+        background: #fff;
+      }
+      .container {
+        border: none;
+        box-shadow: none;
+        padding: 0;
+        max-width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="header">
+      <div class="header-top">
+        <div class="title-group">
+          <h1>Reporte de Latencia y Detección de Alertas</h1>
+          <p>Auditoría técnica de tiempos de respuesta del sistema de inventarios y notificaciones</p>
+        </div>
+        <span class="badge badge-success">Veredicto: Aprobado (100 %)</span>
+      </div>
+
+      <div class="meta-grid">
+        <div class="meta-item">
+          <strong>Sistema Evaluado</strong>
+          Panadería Svetlana (Smart System)
+        </div>
+        <div class="meta-item">
+          <strong>Fecha y Hora de Auditoría</strong>
+          11 de octubre de 2026, 00:33:55 GMT-6
+        </div>
+        <div class="meta-item">
+          <strong>Herramienta / Motor</strong>
+          Node.js High-Resolution Timer (perf_hooks)
+        </div>
+        <div class="meta-item">
+          <strong>Entorno de Base de Datos</strong>
+          Supabase PostgreSQL 17.6 (us-east-1)
+        </div>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-grid">
+      <div class="kpi-card highlight">
+        <div class="kpi-label">Latencia Promedio</div>
+        <div class="kpi-value">834.74 ms</div>
+        <div class="kpi-sub">0.83 segundos de ciclo completo</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Latencia Mínima</div>
+        <div class="kpi-value">816.20 ms</div>
+        <div class="kpi-sub">Iteración 3</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Latencia Máxima</div>
+        <div class="kpi-value">897.56 ms</div>
+        <div class="kpi-sub">Iteración 1 (inicio frío)</div>
+      </div>
+      <div class="kpi-card success">
+        <div class="kpi-label">Meta del Proyecto</div>
+        <div class="kpi-value">&lt; 5 min</div>
+        <div class="kpi-sub">360x más rápido que el límite</div>
+      </div>
+    </div>
+
+    <!-- Gráfica SVG -->
+    <h2 class="section-title">Distribución de Latencias por Iteración (ms)</h2>
+    <div class="chart-container">
+      <svg class="svg-chart" viewBox="0 0 800 240" xmlns="http://www.w3.org/2000/svg">
+        <!-- Ejes y rejilla -->
+        <line x1="60" y1="20" x2="60" y2="180" stroke="#cbd5e1" stroke-width="1.5" />
+        <line x1="60" y1="180" x2="760" y2="180" stroke="#cbd5e1" stroke-width="1.5" />
+        
+        <!-- Líneas guía horizontales (escala 0 a 1000 ms) -->
+        <line x1="60" y1="140" x2="760" y2="140" stroke="#f1f5f9" stroke-width="1" stroke-dasharray="4" />
+        <text x="50" y="144" font-size="10" fill="#94a3b8" text-anchor="end">250 ms</text>
+
+        <line x1="60" y1="100" x2="760" y2="100" stroke="#f1f5f9" stroke-width="1" stroke-dasharray="4" />
+        <text x="50" y="104" font-size="10" fill="#94a3b8" text-anchor="end">500 ms</text>
+
+        <line x1="60" y1="60" x2="760" y2="60" stroke="#f1f5f9" stroke-width="1" stroke-dasharray="4" />
+        <text x="50" y="64" font-size="10" fill="#94a3b8" text-anchor="end">750 ms</text>
+
+        <line x1="60" y1="20" x2="760" y2="20" stroke="#f1f5f9" stroke-width="1" stroke-dasharray="4" />
+        <text x="50" y="24" font-size="10" fill="#94a3b8" text-anchor="end">1000 ms</text>
+
+        <!-- Barras Iteración 1: Total 897.56 ms (DB: 467.78, Canal: 429.77) -->
+        <!-- Altura escala: 160 px para 1000 ms -> 0.16 px/ms -->
+        <!-- Iteración 1: x = 110. DB h = 74.8, Canal h = 68.8 -->
+        <rect x="110" y="105.2" width="60" height="74.8" fill="#3b82f6" rx="2" />
+        <rect x="110" y="36.4" width="60" height="68.8" fill="#0ea5e9" rx="2" />
+        <text x="140" y="30" font-size="11" font-weight="700" fill="#0f172a" text-anchor="middle">897.6 ms</text>
+        <text x="140" y="198" font-size="11" fill="#64748b" text-anchor="middle">Iteración 1</text>
+
+        <!-- Barras Iteración 2: Total 821.32 ms (DB: 412.0, Canal: 409.3) -->
+        <rect x="240" y="114.1" width="60" height="65.9" fill="#3b82f6" rx="2" />
+        <rect x="240" y="48.6" width="60" height="65.5" fill="#0ea5e9" rx="2" />
+        <text x="270" y="42" font-size="11" font-weight="700" fill="#0f172a" text-anchor="middle">821.3 ms</text>
+        <text x="270" y="198" font-size="11" fill="#64748b" text-anchor="middle">Iteración 2</text>
+
+        <!-- Barras Iteración 3: Total 816.20 ms (DB: 407.4, Canal: 408.8) -->
+        <rect x="370" y="114.8" width="60" height="65.2" fill="#3b82f6" rx="2" />
+        <rect x="370" y="49.4" width="60" height="65.4" fill="#0ea5e9" rx="2" />
+        <text x="400" y="43" font-size="11" font-weight="700" fill="#0f172a" text-anchor="middle">816.2 ms</text>
+        <text x="400" y="198" font-size="11" fill="#64748b" text-anchor="middle">Iteración 3</text>
+
+        <!-- Barras Iteración 4: Total 820.99 ms (DB: 416.9, Canal: 404.1) -->
+        <rect x="500" y="113.3" width="60" height="66.7" fill="#3b82f6" rx="2" />
+        <rect x="500" y="48.6" width="60" height="64.7" fill="#0ea5e9" rx="2" />
+        <text x="530" y="42" font-size="11" font-weight="700" fill="#0f172a" text-anchor="middle">821.0 ms</text>
+        <text x="530" y="198" font-size="11" fill="#64748b" text-anchor="middle">Iteración 4</text>
+
+        <!-- Barras Iteración 5: Total 817.62 ms (DB: 405.2, Canal: 412.5) -->
+        <rect x="630" y="115.2" width="60" height="64.8" fill="#3b82f6" rx="2" />
+        <rect x="630" y="49.2" width="60" height="66.0" fill="#0ea5e9" rx="2" />
+        <text x="660" y="43" font-size="11" font-weight="700" fill="#0f172a" text-anchor="middle">817.6 ms</text>
+        <text x="660" y="198" font-size="11" fill="#64748b" text-anchor="middle">Iteración 5</text>
+
+        <!-- Leyenda -->
+        <rect x="260" y="218" width="12" height="12" fill="#3b82f6" rx="2" />
+        <text x="280" y="228" font-size="11" fill="#475569">Persistencia en BD (t1 - t0)</text>
+        
+        <rect x="450" y="218" width="12" height="12" fill="#0ea5e9" rx="2" />
+        <text x="470" y="228" font-size="11" fill="#475569">Despacho a Canal (t2 - t1)</text>
+      </svg>
+    </div>
+
+    <!-- Tabla Detallada -->
+    <h2 class="section-title">Registro Detallado de Mediciones Cronometradas</h2>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Condición Evaluada</th>
+            <th>Persistencia en BD</th>
+            <th>Despacho a Canal</th>
+            <th>Latencia Total</th>
+            <th>SLA Objetivo</th>
+            <th>Resultado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="num">01</td>
+            <td>Insumo bajo mínimo (Harina Especial)</td>
+            <td class="num">467.78 ms</td>
+            <td class="num">429.77 ms</td>
+            <td class="num"><strong>897.56 ms</strong></td>
+            <td class="num">&lt; 300,000 ms</td>
+            <td><span class="badge badge-success">Aprobado</span></td>
+          </tr>
+          <tr>
+            <td class="num">02</td>
+            <td>Insumo bajo mínimo (Harina Especial)</td>
+            <td class="num">411.99 ms</td>
+            <td class="num">409.32 ms</td>
+            <td class="num"><strong>821.32 ms</strong></td>
+            <td class="num">&lt; 300,000 ms</td>
+            <td><span class="badge badge-success">Aprobado</span></td>
+          </tr>
+          <tr>
+            <td class="num">03</td>
+            <td>Insumo bajo mínimo (Harina Especial)</td>
+            <td class="num">407.43 ms</td>
+            <td class="num">408.77 ms</td>
+            <td class="num"><strong>816.20 ms</strong></td>
+            <td class="num">&lt; 300,000 ms</td>
+            <td><span class="badge badge-success">Aprobado</span></td>
+          </tr>
+          <tr>
+            <td class="num">04</td>
+            <td>Insumo bajo mínimo (Harina Especial)</td>
+            <td class="num">416.90 ms</td>
+            <td class="num">404.09 ms</td>
+            <td class="num"><strong>820.99 ms</strong></td>
+            <td class="num">&lt; 300,000 ms</td>
+            <td><span class="badge badge-success">Aprobado</span></td>
+          </tr>
+          <tr>
+            <td class="num">05</td>
+            <td>Insumo bajo mínimo (Harina Especial)</td>
+            <td class="num">405.16 ms</td>
+            <td class="num">412.46 ms</td>
+            <td class="num"><strong>817.62 ms</strong></td>
+            <td class="num">&lt; 300,000 ms</td>
+            <td><span class="badge badge-success">Aprobado</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Diagnóstico y Conclusiones Técnicas -->
+    <div class="analysis-card">
+      <h3>Diagnóstico de Rendimiento y Cumplimiento de SLA</h3>
+      <p>
+        El sistema opera mediante detección reactiva por evento en la base de datos PostgreSQL de Supabase. El ciclo completo transcurre en <strong>0.83 segundos promedio</strong>, distribuido equitativamente entre la escritura atómica del registro de notificación (~420 ms) y la entrega hacia el canal de mensajería (~412 ms).
+      </p>
+      <ul>
+        <li><strong>Cumplimiento de la meta de ingeniería:</strong> El objetivo de diseño requería un tiempo de alerta inferior a 5 minutos (300 segundos). El resultado real demuestra una respuesta instantánea menor a 1 segundo, superando la meta por un factor de 360 veces.</li>
+        <li><strong>Consistencia temporal:</strong> La desviación estándar entre iteraciones es de apenas 34.6 milisegundos, evidenciando un comportamiento predecible bajo condiciones reales de producción.</li>
+        <li><strong>Políticas preventivas programadas (@Cron):</strong> Para caducidades de lotes, el planificador ejecuta el barrido a las 07:00 a. m. en menos de 300 ms; y para órdenes pendientes abandonadas, el proceso de expiración se ejecuta de forma fija cada 10 minutos.</li>
+      </ul>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <span>Sistema de Información Panadería Svetlana - Capítulo VI: Pruebas y Rendimiento</span>
+      <span>Generado con Node.js High-Resolution Timer (perf_hooks)</span>
+    </div>
+  </div>
+
+</body>
+</html>

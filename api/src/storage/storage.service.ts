@@ -1,159 +1,141 @@
 /**
- * Servicio de Storage con Appwrite
- * Maneja la subida y gestión de imágenes de productos
- * Usa la API REST directamente para compatibilidad con todas las versiones de Node
+ * Servicio de Storage con Supabase
+ * Maneja la subida y gestion de imagenes de productos
  */
 
 import { Injectable, BadRequestException } from '@nestjs/common';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 @Injectable()
 export class StorageService {
+  private supabase: SupabaseClient | null = null;
   private bucketId: string;
-  private endpoint: string;
-  private projectId: string;
-  private apiKey: string;
+  private supabaseUrl: string;
   private configured: boolean = false;
 
   constructor() {
-    this.endpoint = process.env.APPWRITE_ENDPOINT || '';
-    this.projectId = process.env.APPWRITE_PROJECT_ID || '';
-    this.apiKey = process.env.APPWRITE_API_KEY || '';
-    this.bucketId = process.env.APPWRITE_BUCKET_ID || 'products';
+    this.supabaseUrl = (process.env.SUPABASE_URL || '').trim();
+    const serviceRoleKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
+    this.bucketId = (process.env.SUPABASE_PRODUCTS_BUCKET || process.env.SUPABASE_STORAGE_BUCKET || 'products').trim();
 
-    if (this.endpoint && this.projectId && this.apiKey && this.bucketId) {
+    if (this.supabaseUrl && serviceRoleKey) {
+      this.supabase = createClient(this.supabaseUrl, serviceRoleKey);
       this.configured = true;
-      console.log('✅ Appwrite Storage configured:', { endpoint: this.endpoint, bucketId: this.bucketId });
+      console.log('[StorageService] Supabase Storage configurado:', { url: this.supabaseUrl, bucketId: this.bucketId });
     } else {
-      console.warn('⚠️ Appwrite Storage not configured. Missing environment variables.');
+      console.warn('[StorageService] Supabase Storage no configurado. Faltan variables SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY.');
     }
   }
 
   /**
-   * Verifica si el servicio está configurado
+   * Verifica si el servicio esta configurado
    */
   isConfigured(): boolean {
     return this.configured;
   }
 
   /**
-   * Genera un ID único similar a Appwrite
+   * Genera un identificador unico para el archivo
    */
   private generateId(): string {
-    return 'unique_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
+    return 'prod_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
   }
 
   /**
-   * Sube una imagen y retorna la URL pública usando API REST
-   * @param file - Archivo de multer
+   * Sube una imagen y retorna la URL publica
+   * @param file - Archivo proveniente de multer
    */
   async uploadImage(
     file: { buffer: Buffer; originalname: string; mimetype: string },
   ): Promise<{ fileId: string; url: string }> {
-    if (!this.isConfigured()) {
-      throw new BadRequestException('Storage service not configured. Set APPWRITE environment variables.');
+    if (!this.isConfigured() || !this.supabase) {
+      throw new BadRequestException('El servicio de almacenamiento no esta configurado.');
     }
 
-    // Validar tipo de archivo
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'];
     if (!allowedTypes.includes(file.mimetype)) {
-      throw new BadRequestException('Invalid file type. Allowed: JPEG, PNG, WebP, GIF');
+      throw new BadRequestException('Tipo de archivo no permitido. Permitidos: JPEG, PNG, WebP, GIF, AVIF.');
     }
 
-    // Validar tamaño (max 5MB)
     const maxSize = 5 * 1024 * 1024;
     if (file.buffer.length > maxSize) {
-      throw new BadRequestException('File too large. Maximum size: 5MB');
+      throw new BadRequestException('El archivo supera el tamano maximo permitido de 5MB.');
     }
 
-    const fileId = this.generateId();
     const ext = file.originalname.split('.').pop() || 'jpg';
-    const filename = `${fileId}.${ext}`;
+    const fileId = `${this.generateId()}.${ext}`;
 
     try {
-      // Crear FormData para la API REST de Appwrite
-      const formData = new FormData();
-      // Convertir Buffer a Uint8Array para compatibilidad con Blob
-      const uint8Array = new Uint8Array(file.buffer);
-      const blob = new Blob([uint8Array], { type: file.mimetype });
-      formData.append('fileId', fileId);
-      formData.append('file', blob, filename);
+      const { error } = await this.supabase.storage
+        .from(this.bucketId)
+        .upload(fileId, file.buffer, {
+          contentType: file.mimetype,
+          upsert: true,
+        });
 
-      console.log('📁 Uploading file via REST API:', { name: filename, size: file.buffer.length, type: file.mimetype });
-
-      // Llamar a la API REST de Appwrite directamente
-      const response = await fetch(
-        `${this.endpoint}/storage/buckets/${this.bucketId}/files`,
-        {
-          method: 'POST',
-          headers: {
-            'X-Appwrite-Project': this.projectId,
-            'X-Appwrite-Key': this.apiKey,
-          },
-          body: formData,
-        }
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Appwrite API error:', response.status, errorText);
-        throw new Error(`Appwrite error: ${response.status} - ${errorText}`);
+      if (error) {
+        console.error('[StorageService] Error al subir a Supabase Storage:', error.message);
+        throw new Error(`Error de subida en Supabase Storage: ${error.message}`);
       }
 
-      const result = await response.json();
-      console.log('✅ File uploaded to Appwrite:', result.$id);
-
-      // Construir URL pública
-      const url = this.getPublicUrl(result.$id);
+      const url = this.getPublicUrl(fileId);
 
       return {
-        fileId: result.$id,
+        fileId,
         url,
       };
     } catch (error) {
-      console.error('❌ Error uploading to Appwrite:', error);
-      throw new BadRequestException('Failed to upload image. Check Appwrite configuration.');
+      console.error('[StorageService] Error subiendo imagen:', error);
+      throw new BadRequestException('Fallo al subir la imagen a Supabase Storage.');
     }
   }
 
   /**
-   * Elimina una imagen por su ID usando API REST
+   * Elimina una imagen por su ID / path en el bucket
    */
   async deleteImage(fileId: string): Promise<void> {
-    if (!this.isConfigured()) {
+    if (!this.isConfigured() || !this.supabase) {
       return;
     }
 
     try {
-      const response = await fetch(
-        `${this.endpoint}/storage/buckets/${this.bucketId}/files/${fileId}`,
-        {
-          method: 'DELETE',
-          headers: {
-            'X-Appwrite-Project': this.projectId,
-            'X-Appwrite-Key': this.apiKey,
-          },
-        }
-      );
+      const filesToDelete = [fileId];
+      if (!fileId.includes('.')) {
+        filesToDelete.push(
+          `${fileId}.jpg`,
+          `${fileId}.png`,
+          `${fileId}.webp`,
+          `${fileId}.gif`
+        );
+      }
 
-      if (!response.ok) {
-        console.error('Error deleting from Appwrite:', response.status);
+      const { error } = await this.supabase.storage
+        .from(this.bucketId)
+        .remove(filesToDelete);
+
+      if (error) {
+        console.error('[StorageService] Error al eliminar imagen de Supabase Storage:', error.message);
       }
     } catch (error) {
-      console.error('Error deleting from Appwrite:', error);
+      console.error('[StorageService] Excepcion al eliminar imagen:', error);
     }
   }
 
   /**
-   * Obtiene la URL pública de una imagen
+   * Obtiene la URL publica de una imagen
    */
   getPublicUrl(fileId: string): string {
-    return `${this.endpoint}/storage/buckets/${this.bucketId}/files/${fileId}/view?project=${this.projectId}`;
+    if (!this.supabase) {
+      return `${this.supabaseUrl}/storage/v1/object/public/${this.bucketId}/${fileId}`;
+    }
+    const { data } = this.supabase.storage.from(this.bucketId).getPublicUrl(fileId);
+    return data.publicUrl;
   }
 
   /**
-   * Obtiene URL de preview (thumbnail) de una imagen
+   * Obtiene URL de preview (en Supabase Next.js se encarga de la optimizacion)
    */
-  getPreviewUrl(fileId: string, width = 400, height = 400): string {
-    return `${this.endpoint}/storage/buckets/${this.bucketId}/files/${fileId}/preview?project=${this.projectId}&width=${width}&height=${height}`;
+  getPreviewUrl(fileId: string, _width = 400, _height = 400): string {
+    return this.getPublicUrl(fileId);
   }
 }

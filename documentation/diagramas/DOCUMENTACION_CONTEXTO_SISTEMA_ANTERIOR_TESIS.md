@@ -1,59 +1,63 @@
 # Especificación del Diagrama de Contexto del Sistema Anterior (Situación As-Is)
 
-> **Documento Técnico para Memoria de Tesis / Proyecto de Graduación**  
-> **Tema:** Diagnóstico de Procesos Tradicionales Previos a la Automatización — *Panadería Svetlana*  
-> **Estándar de Modelado:** Diagrama de Contexto del Sistema Tradicional (As-Is / Flujo Manual)  
+> **Documento Académico y Técnico para Memoria de Tesis / Proyecto de Graduación**  
+> **Tema:** Diagnóstico y Exposición del Flujo Operativo Tradicional Previo a la Automatización — *Panadería Svetlana*  
+> **Estándar de Modelado:** Diagrama de Contexto del Sistema Tradicional (As-Is / Flujo Manual Simplificado)  
 > **Formato de Citas y Figuras:** Normas APA 7.ª edición  
 
 ---
 
-## 1. Definición del Contexto Operativo Previo (Situación As-Is)
+## 1. Definición del Contexto Operativo Previo (Diagnóstico As-Is)
 
-El **Diagrama de Contexto del Sistema Anterior (Modelo As-Is)** describe el flujo operativo y de comunicación tradicional que regía en *Panadería Svetlana* con anterioridad a la concepción e implementación de la plataforma web automatizada. 
+El **Diagrama de Contexto del Sistema Anterior (Modelo As-Is)** sintetiza visualmente la realidad operativa que regía en *Panadería Svetlana* con anterioridad al desarrollo de la solución informática.
 
-Su propósito en la memoria de tesis es establecer la **línea base de diagnóstico**, delimitando formalmente la frontera de los procesos manuales (basados en papel, memoria humana y comunicación telefónica desestructurada) e identificando los actores y fuentes de datos que originaban cuellos de botella, quiebres imprevistos de inventario, pérdidas financieras por mermas no detectadas y falta de trazabilidad gerencial.
+Para facilitar su exposición técnica ante el comité evaluador y agilizar su comprensión en la memoria de tesis, este modelo adopta un **enfoque simplificado y directo**: en lugar de extensos párrafos teóricos, cada nodo expone con precisión el **problema operativo concreto** sin elementos ajenos al alcance del sistema desarrollado.
+
+El diagrama delimita cómo operaban las dos sedes: cobro en efectivo sin registro ni comprobante, pedidos informales (papel o memoria), horneado centralizado en la matriz con aviso informal de sobrantes al panadero por llamada o WhatsApp, traslado de pan a ciegas hacia la sucursal secundaria, control empírico de insumos y caducidades, y supervisión retardada mediante un informe semanal manuscrito en cuaderno para los dueños.
 
 ---
 
-## 2. Representación Gráfica (APA 7)
+## 2. Representación Gráfica del Proceso Anterior (Normas APA 7)
 
-**Figura 2**  
-*Diagrama de Contexto del Sistema Anterior: Flujos de Información y Procesos Manuales Tradicionales en Panadería Svetlana*
+A continuación se presenta la figura técnica en formato limpio y sintetizado para inserción en la tesis o diapositivas de defensa:
+
+#### **Figura 2**  
+*Diagrama de Contexto del Sistema Anterior: Flujos Operativos y Problemática Manual en Panadería Svetlana*
 
 ![Diagrama de Contexto del Sistema Anterior](renders/DIAGRAMA_CONTEXTO_SISTEMA_ANTERIOR.png)
 
-> **Nota.** Diagrama de contexto del proceso tradicional (*As-Is*) que delimita la frontera operativa previa de la *Panadería Svetlana*. Se representan las interacciones entre los actores operativos (*Cliente Tradicional, Personal de Mostrador, Maestro Panadero y Administración General*) y las entidades físicas de soporte (*Proveedores Locales, Bodega Manual, Archivo Físico en Papel y Sucursales Desconectadas*), evidenciando los puntos de vulnerabilidad operativa generados por la ausencia de un software transaccional centralizado.  
-> *Fuente: Elaboración propia (2026).*
+> **Nota.** El diagrama ilustra el flujo operativo tradicional (*As-Is*) simplificado de *Panadería Svetlana* previo a la implementación del sistema web. Se exponen los puntos críticos de dolor identificados: cobro exclusivo en efectivo en mostrador sin registro de transacciones ni emisión de comprobante; pedidos de palabra o en papel suelto; horneado centralizado en la Sucursal Principal con comunicación nocturna de sobrantes al panadero por llamada/WhatsApp para calcular la producción del día siguiente de forma empírica; traslado de pan hacia la Sucursal Secundaria sin control de salida ni entrada de stock; detección manual tardía de materias primas agotadas y caducidades en estante; y rendición de cuentas a los dueños mediante un informe semanal manuscrito en cuaderno con 7 días de retraso. Elaboración propia (2026).
 
 ---
 
-## 3. Matriz de Entidades, Flujos Tradicionales y Deficiencias Detectadas
+## 3. Matriz Sintética de Diagnóstico (Problema por Nodo)
 
-**Tabla 2**  
-*Matriz de Actores, Entidades Externas, Canales Tradicionales y Puntos de Dolor Operativos*
+Para su exposición oral en la defensa de tesis, cada nodo del diagrama se defiende con base en el problema operativo que justificó la solución digital:
 
-| Entidad / Actor | Tipo | Canal Tradicional | Flujo de Entrada / Salida Manual | Deficiencias y Puntos de Dolor (Diagnóstico) |
-|---|---|---|---|---|
-| **Cliente Tradicional** | Actor Humano (Consumidor) | Presencial / Llamada telefónica | Consulta verbal de disponibilidad; apartado de producto en papelitos; pago exclusivo en efectivo en mostrador. | Incertidumbre sobre existencias; desplazamientos innecesarios a la tienda; pedidos apartados no reclamados sin penalización ni trazabilidad. |
-| **Personal de Mostrador** (`Cajero / Despacho`) | Actor Humano (Operativo) | Libretas de papel / Boletas físicas | Cobro manual en mostrador; anotación en cuaderno de ventas; conteo visual nocturno de bandejas sobrantes. | Cálculos propensos a error humano; boletas ilegibles o extraviadas; arqueo de caja limitado al efectivo sin cruce contra el pan horneado. |
-| **Maestro Panadero** | Actor Humano (Producción) | Pizarra / Solicitud verbal | Dosificación de recetas por memoria/experiencia; pedidos verbales de sacos de harina; apunte de latas horneadas en pizarra. | Falta de estandarización en recetas; consumo de materia prima no registrado; quiebres sorpresivos de insumos en plena madrugada. |
-| **Propietario / Administración** | Actor Humano (Directivo) | Llamadas / Recojo físico semanal | Llamadas telefónicas diarias para pedir el saldo de caja; recolección física de cuadernos; sumatorias manuales en calculadora. | Cero visibilidad en tiempo real; consolidación de balances demorada por días; imposibilidad de auditar discrepancias o robo hormiga. |
-| **Proveedores Locales** | Entidad Externa | Facturas físicas / Teléfono | Emisión de facturas y notas de entrega en papel; recepción de pedidos de compra de emergencia por desabastecimiento. | Compras reactivas sin planificación previa; falta de historial de precios y fluctuaciones de costos; desaprovechamiento de economías de escala. |
-| **Bodega de Insumos** | Entidad Física (Almacén) | Inspección ocular aleatoria | Almacenamiento empírico de sacos y cajas; revisión de fechas de caducidad "a ojo" durante limpiezas esporádicas. | Inexistencia del algoritmo FEFO (*First-Expired, First-Out*); descomposición y caducidad oculta de insumos; compras duplicadas innecesarias. |
-| **Archivo en Papel** | Soporte de Registro | Cuadernos y estantes físicos | Archivo de libretas de cierre, notas de pedidos y facturas acumuladas en carpetas y sobres de manila en la sucursal. | Deterioro por humedad, manchas de grasa o extravío de hojas; auditoría histórica casi inviable; vulnerabilidad ante pérdida total por siniestro. |
-| **Sucursales Desconectadas** | Sedes Físicas (Silos) | Mensajes de chat / Cuadernos | Operación aislada en cada sede física; traslados informales de pan y materias primas anotados en hojas sueltas. | Silos operativos sin inventario cruzado; desbalance de existencias (sobrantes en una sede mientras en la otra hay desabastecimiento). |
+#### **Tabla 2**  
+*Resumen de Nodos y Problemática Operativa del Sistema Tradicional*
+
+| Nodo / Actor del Diagrama | Acción / Flujo Manual | Problema Crítico Identificado | Solución Implementada en el Nuevo Sistema |
+|---|---|---|---|
+| **Dueños / Administración** | Reciben informe semanal en cuaderno y realizan llamadas esporádicas a la matriz. | **Supervisión desfasada:** Cero visibilidad en tiempo real de ventas diarias, ganancias netas o mermas. | **Panel Operación en Tiempo Real + Bot de Telegram** para consultas instantáneas de ventas e inventario. |
+| **Cliente** | Compra presencial en mostrador; pedidos por llamada telefónica o visita verbal. | **Incertidumbre de stock:** Pago solo en efectivo sin comprobante; pedidos de palabra que no se reclaman. | **Tienda Web con Carrito y Reserva:** Catálogo online con selección de sucursal y franja de retiro. |
+| **Maestro Panadero** | Hornea solo en matriz; recibe el sobrante del día anterior por llamada o mensaje de WhatsApp. | **Horneado a ciegas:** Dosifica ingredientes de forma empírica; desconoce quiebres de insumos con anticipación. | **Módulo de Recetas por Amasijo y Latas:** Cálculo exacto de formulación y producción transaccional ACID. |
+| **Sucursal Principal (Matriz)** | Vende en mostrador sin registrar; hornea para ambas tiendas; despacha pan a secundaria. | **Despacho a ciegas:** Sin registro de salida; insumos agotados y caducidades revisadas solo a mano. | **Control de Stock y Cierre Diario:** Venta residual automática y alertas de stock crítico de materia prima. |
+| **Sucursal Secundaria** | Recibe pan de la matriz; vende sin software; elabora informe semanal en cuaderno físico. | **Información desfasada 7 días:** Recibe pan sin validar cantidades y caducidades detectadas a mano. | **Aislamiento Multi-Sucursal (`BranchScopeGuard`):** Inventario por sucursal con trazabilidad de stock. |
+| **Traslado entre Sucursales** | Envío físico diario de canastas/latas de pan horneado de matriz a secundaria. | **Pérdida total de trazabilidad:** Si falta pan o hay merma, es imposible saber en cuál sucursal ocurrió. | **Gestión Centralizada de Inventario:** Control de existencias diferenciadas por sede física. |
 
 ---
 
-## 4. Frontera y Análisis de Deficiencias del Proceso Manual
+## 4. Comparativa Directa: Flujo Manual vs. Módulos del Sistema Desarrollado
 
-El análisis de la frontera del sistema anterior revela cuatro pilares críticos de ineficiencia operativa que justificaron el desarrollo del nuevo software:
+#### **Tabla 3**  
+*Mapeo de Transformación: Diagnóstico As-Is vs. Módulos To-Be*
 
-1. **Dependencia Exclusiva del Soporte en Papel:**  
-   La totalidad de los registros de ventas, apartados y turnos descansaba en libretas manuscritas. La falta de persistencia digital impedía generar reportes comparativos y exponía a la empresa a pérdidas irreparables de información.
-2. **Ausencia del Algoritmo de Venta Residual:**  
-   Al no disponer de un punto de venta (POS) automatizado, el cierre nocturno consistía únicamente en contar el dinero en gaveta. No existía la ecuación fundamental de deducción matemática ($\text{Venta} = \text{Stock Teórico} - \text{Conteo Físico} - \text{Merma}$), imposibilitando cuantificar el pan regalado, deteriorado o sustraído.
-3. **Producción Empírica sin Descuento de Materia Prima:**  
-   Los amasijos se ejecutaban sin un recetario maestro digitalizado. Los ingredientes salían de bodega sin rebajar un kardex centralizado, provocando desabastecimientos repentinos y mermas por sobreproducción.
-4. **Desconexión Territorial y Falta de Supervisión Remota:**  
-   La administración general carecía de canales automáticos para supervisar las sucursales. La toma de decisiones dependía de reportes verbales tardíos, mientras que los clientes no disponían de un canal web para reservar sus productos con certeza.
+| Punto Operativo | Situación Manual Anterior (As-Is) | Solución Automatizada (To-Be) | Módulo del Sistema |
+|---|---|---|---|
+| **Ventas en Mostrador** | Efectivo sin comprobante ni registro; arqueo contando gaveta. | Venta por diferencia residual: $\text{Venta} = \text{Inicial} + \text{Producción} - \text{Final} - \text{Merma}$. | `DailyCloseService` (Cierre Diario) |
+| **Toma de Pedidos** | Anotados en papel o retenidos de memoria; alta tasa de olvidos. | Carrito de compras web y reserva para retiro en tienda con franja horaria. | `OrdersModule` (Reservas B2C) |
+| **Aviso al Panadero** | Llamada/WhatsApp nocturno informando el sobrante; cálculo empírico. | Recetas por amasijo y latas con descuento atómico de materia prima. | `ProductionModule` (Producción ACID) |
+| **Insumos y Caducidad** | Insumos agotados y caducidades detectados solo al revisar a mano. | Inventario de materia prima con alertas mínimas y lotes con método FEFO. | `RawMaterial` & `InventoryLot` |
+| **Traslado a Secundaria** | Pan horneado en matriz y enviado a secundaria sin registro alguno. | Inventario separado por sucursal con control de acceso por roles (RBAC). | `BranchScopeGuard` (Multi-Sucursal) |
+| **Reportes para Dueños** | Cuaderno semanal manuscrito llevado físicamente a los dueños. | Panel gerencial con KPIs en tiempo real y asistente privado en Telegram. | Panel Operación + Telegram Bot |

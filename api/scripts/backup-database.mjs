@@ -4,6 +4,7 @@ import { createWriteStream, existsSync, statSync, unlinkSync, mkdirSync, readFil
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
+import { createClient } from '@supabase/supabase-js';
 
 // Cargar variables de entorno si existen localmente
 dotenv.config();
@@ -12,17 +13,16 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // ─────────────────────────────────────────────────────────────
-// CONFIGURACIÓN
+// CONFIGURACION
 // ─────────────────────────────────────────────────────────────
 
-const APPWRITE_ENDPOINT = (process.env.APPWRITE_ENDPOINT || 'https://nyc.cloud.appwrite.io/v1').replace(/\/$/, '').trim();
-const APPWRITE_PROJECT_ID = (process.env.APPWRITE_PROJECT_ID || '').trim().replace(/^["']|["']$/g, '');
-const APPWRITE_API_KEY = (process.env.APPWRITE_API_KEY || '').trim().replace(/^["']|["']$/g, '');
-const APPWRITE_BACKUP_BUCKET_ID = (process.env.APPWRITE_BACKUP_BUCKET_ID || '').trim().replace(/^["']|["']$/g, '');
+const SUPABASE_URL = (process.env.SUPABASE_URL || '').trim().replace(/\/$/, '');
+const SUPABASE_SERVICE_ROLE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim().replace(/^["']|["']$/g, '');
+const SUPABASE_BACKUP_BUCKET_ID = (process.env.SUPABASE_BACKUP_BUCKET_ID || 'database-backups').trim().replace(/^["']|["']$/g, '');
 const RETENTION_DAYS = Number.parseInt(process.env.BACKUP_RETENTION_DAYS || '30', 10);
 
 /**
- * Resuelve y sanea la URL de conexión para pg_dump.
+ * Resuelve y sanea la URL de conexion para pg_dump.
  * - Prioridad: SUPABASE_BACKUP_URL > DIRECT_URL > DATABASE_URL.
  * - Si DATABASE_URL usa el puerto 6543 (transaction pooler), lo convierte al Session Pooler (puerto 5432).
  * - Elimina rigurosamente cualquier query parameter que no sea reconocido por libpq/pg_dump
@@ -44,11 +44,11 @@ function getBackupDatabaseUrl() {
 
     // Si viene en el Transaction Pooler (puerto 6543), cambiar al Session Pooler (puerto 5432)
     if (parsed.port === '6543') {
-      console.log('ℹ️  Convirtiendo connection pooler (6543) a session pooler (5432) para pg_dump...');
+      console.log('Convirtiendo connection pooler (6543) a session pooler (5432) para pg_dump...');
       parsed.port = '5432';
     }
 
-    // Parámetros soportados nativamente por libpq en cadenas de conexión URI:
+    // Parametros soportados nativamente por libpq en cadenas de conexion URI:
     const ALLOWED_LIBPQ_PARAMS = new Set([
       'sslmode',
       'sslrootcert',
@@ -70,7 +70,7 @@ function getBackupDatabaseUrl() {
       'target_session_attrs',
     ]);
 
-    // Eliminar cualquier parámetro ajeno a libpq (como connection_limit, schema, pgbouncer, pool_timeout)
+    // Eliminar cualquier parametro ajeno a libpq (como connection_limit, schema, pgbouncer, pool_timeout)
     for (const [key] of Array.from(parsed.searchParams.entries())) {
       if (!ALLOWED_LIBPQ_PARAMS.has(key.toLowerCase())) {
         parsed.searchParams.delete(key);
@@ -84,7 +84,7 @@ function getBackupDatabaseUrl() {
 
     return parsed.toString();
   } catch (err) {
-    console.warn('⚠️  No se pudo parsear como URL estándar. Aplicando saneamiento manual:', err.message);
+    console.warn('No se pudo parsear como URL estandar. Aplicando saneamiento manual:', err.message);
     let sanitized = rawUrl.replace(':6543', ':5432');
     sanitized = sanitized.replace(/[?&](pgbouncer|connection_limit|pool_timeout|schema)=[^&]*/gi, '');
     if (!sanitized.includes('?')) {
@@ -97,7 +97,7 @@ function getBackupDatabaseUrl() {
 }
 
 /**
- * Verifica si pg_dump está disponible en el entorno del sistema.
+ * Verifica si pg_dump esta disponible en el entorno del sistema.
  */
 function isPgDumpAvailable() {
   try {
@@ -115,9 +115,9 @@ function isPgDumpAvailable() {
  */
 function dumpWithPgDump(dbUrl, outputPath) {
   return new Promise((resolve, reject) => {
-    console.log('📦 Ejecutando pg_dump nativo...');
+    console.log('Ejecutando pg_dump nativo...');
 
-    // Excluir esquemas internos de extensiones y gestión de Supabase para evitar conflictos
+    // Excluir esquemas internos de extensiones y gestion de Supabase para evitar conflictos
     const args = [
       '--dbname=' + dbUrl,
       '--clean',
@@ -166,17 +166,17 @@ function dumpWithPgDump(dbUrl, outputPath) {
 
     pgDumpProcess.on('close', (code) => {
       if (code !== 0) {
-        reject(new Error(`pg_dump finalizó con código de salida ${code}. Error: ${stderrData}`));
+        reject(new Error(`pg_dump finalizo con codigo de salida ${code}. Error: ${stderrData}`));
       }
     });
   });
 }
 
 /**
- * Fallback usando Prisma si pg_dump no está instalado localmente.
+ * Fallback usando Prisma si pg_dump no esta instalado localmente.
  */
 async function dumpWithPrismaFallback(outputPath) {
-  console.log('ℹ️  pg_dump no detectado en el host. Utilizando fallback con Prisma Client...');
+  console.log('pg_dump no detectado en el host. Utilizando fallback con Prisma Client...');
   const { PrismaClient } = await import('@prisma/client');
   const prisma = new PrismaClient();
 
@@ -231,129 +231,115 @@ async function dumpWithPrismaFallback(outputPath) {
       outputStream.on('error', reject);
     });
 
-    console.log('✅ Respaldo generado mediante Prisma.');
+    console.log('Respaldo generado mediante Prisma.');
   } finally {
     await prisma.$disconnect();
   }
 }
 
 /**
- * Sube el archivo de backup a Appwrite Storage y aplica la política de rotación.
- * Utiliza la API REST nativa de Appwrite para máxima confiabilidad y portabilidad.
+ * Sube el archivo de backup a Supabase Storage y aplica la politica de rotacion.
  */
 async function uploadAndRotate(filePath, fileName) {
-  if (!APPWRITE_API_KEY || !APPWRITE_PROJECT_ID || !APPWRITE_BACKUP_BUCKET_ID) {
-    throw new Error('Variables de entorno APPWRITE_API_KEY, APPWRITE_PROJECT_ID o APPWRITE_BACKUP_BUCKET_ID ausentes.');
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error('Variables de entorno SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY ausentes.');
   }
 
-  console.log(`ℹ️  Conectando a Appwrite Storage (${APPWRITE_ENDPOINT})...`);
-  console.log(`ℹ️  Project ID: ${APPWRITE_PROJECT_ID ? `${APPWRITE_PROJECT_ID.slice(0, 4)}... (longitud: ${APPWRITE_PROJECT_ID.length})` : 'VACÍO'}`);
-  console.log(`ℹ️  API Key: ${APPWRITE_API_KEY ? `Configurada (longitud: ${APPWRITE_API_KEY.length}, prefijo: ${APPWRITE_API_KEY.slice(0, 9)})` : 'VACÍA'}`);
-  console.log(`ℹ️  Bucket ID: ${APPWRITE_BACKUP_BUCKET_ID ? `${APPWRITE_BACKUP_BUCKET_ID.slice(0, 4)}... (longitud: ${APPWRITE_BACKUP_BUCKET_ID.length})` : 'VACÍO'}`);
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+  console.log(`Conectando a Supabase Storage (${SUPABASE_URL})...`);
+  console.log(`Bucket de Backups: [${SUPABASE_BACKUP_BUCKET_ID}]`);
+
+  // Asegurar que el bucket privado existe
+  const { data: buckets } = await supabase.storage.listBuckets();
+  if (buckets && !buckets.find((b) => b.id === SUPABASE_BACKUP_BUCKET_ID)) {
+    console.log(`Creando bucket privado [${SUPABASE_BACKUP_BUCKET_ID}] en Supabase...`);
+    const { error: createErr } = await supabase.storage.createBucket(SUPABASE_BACKUP_BUCKET_ID, {
+      public: false,
+      fileSizeLimit: 52428800, // 50MB
+    });
+    if (createErr) {
+      console.warn('Advertencia al crear bucket:', createErr.message);
+    }
+  }
 
   const buffer = readFileSync(filePath);
-  const blob = new Blob([new Uint8Array(buffer)], { type: 'application/gzip' });
 
-  const formData = new FormData();
-  formData.append('fileId', 'unique()');
-  formData.append('file', blob, fileName);
+  console.log(`Subiendo archivo ${fileName} a Supabase Bucket [${SUPABASE_BACKUP_BUCKET_ID}]...`);
+  const { data: uploadData, error: uploadErr } = await supabase.storage
+    .from(SUPABASE_BACKUP_BUCKET_ID)
+    .upload(fileName, buffer, {
+      contentType: 'application/gzip',
+      upsert: true,
+    });
 
-  console.log(`📤 Subiendo archivo ${fileName} a Appwrite Bucket [${APPWRITE_BACKUP_BUCKET_ID}]...`);
-  const uploadRes = await fetch(
-    `${APPWRITE_ENDPOINT}/storage/buckets/${APPWRITE_BACKUP_BUCKET_ID}/files`,
-    {
-      method: 'POST',
-      headers: {
-        'X-Appwrite-Project': APPWRITE_PROJECT_ID,
-        'X-Appwrite-Key': APPWRITE_API_KEY,
-      },
-      body: formData,
-    },
-  );
-
-  if (!uploadRes.ok) {
-    const errorText = await uploadRes.text();
-    if (uploadRes.status === 401) {
-      throw new Error(
-        `Error al subir a Appwrite (401 No autorizado): ${errorText}\n` +
-        '👉 Solución: Revisa en GitHub Secrets que APPWRITE_API_KEY sea la clave de API generada en Appwrite Console con el permiso "Storage > files.write" y "files.read", sin espacios ni comillas.'
-      );
-    }
-    throw new Error(`Error al subir a Appwrite (${uploadRes.status}): ${errorText}`);
+  if (uploadErr) {
+    throw new Error(`Error al subir a Supabase Storage: ${uploadErr.message}`);
   }
 
-  const uploaded = await uploadRes.json();
-  const fileId = uploaded.$id;
-  console.log(`✅ Archivo respaldado con éxito en Appwrite! (File ID: ${fileId})`);
+  console.log(`Archivo respaldado con exito en Supabase Storage! (Path: ${uploadData.path})`);
 
-  // Rotación: eliminar backups más antiguos que RETENTION_DAYS
-  console.log(`🧹 Verificando política de retención (${RETENTION_DAYS} días)...`);
+  // Rotacion: eliminar backups mas antiguos que RETENTION_DAYS
+  console.log(`Verificando politica de retencion (${RETENTION_DAYS} dias)...`);
   try {
-    const listRes = await fetch(
-      `${APPWRITE_ENDPOINT}/storage/buckets/${APPWRITE_BACKUP_BUCKET_ID}/files`,
-      {
-        headers: {
-          'X-Appwrite-Project': APPWRITE_PROJECT_ID,
-          'X-Appwrite-Key': APPWRITE_API_KEY,
-        },
-      },
-    );
+    const { data: fileList, error: listErr } = await supabase.storage
+      .from(SUPABASE_BACKUP_BUCKET_ID)
+      .list('', { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
 
-    if (listRes.ok) {
-      const list = await listRes.json();
+    if (listErr) {
+      console.warn('No fue posible listar archivos para rotacion:', listErr.message);
+    } else if (fileList && fileList.length > 0) {
       const now = Date.now();
-      let deletedCount = 0;
+      const filesToDelete = [];
 
-      for (const file of list.files) {
-        if (file.$id === fileId) continue; // No borrar el archivo recién subido
+      for (const file of fileList) {
+        if (file.name === fileName) continue; // No borrar el archivo recien subido
 
-        const fileDate = new Date(file.$createdAt).getTime();
+        const fileDate = new Date(file.created_at).getTime();
         const ageDays = (now - fileDate) / (1000 * 60 * 60 * 24);
 
         if (ageDays > RETENTION_DAYS) {
-          console.log(`🗑️  Eliminando respaldo antiguo: ${file.name} (antigüedad: ${ageDays.toFixed(1)} días)...`);
-          await fetch(
-            `${APPWRITE_ENDPOINT}/storage/buckets/${APPWRITE_BACKUP_BUCKET_ID}/files/${file.$id}`,
-            {
-              method: 'DELETE',
-              headers: {
-                'X-Appwrite-Project': APPWRITE_PROJECT_ID,
-                'X-Appwrite-Key': APPWRITE_API_KEY,
-              },
-            },
-          );
-          deletedCount++;
+          console.log(`Eliminando respaldo antiguo: ${file.name} (antiguedad: ${ageDays.toFixed(1)} dias)...`);
+          filesToDelete.push(file.name);
         }
       }
 
-      if (deletedCount > 0) {
-        console.log(`✨ Se eliminaron ${deletedCount} respaldos antiguos por política de retención.`);
+      if (filesToDelete.length > 0) {
+        const { error: delErr } = await supabase.storage
+          .from(SUPABASE_BACKUP_BUCKET_ID)
+          .remove(filesToDelete);
+
+        if (delErr) {
+          console.warn('Advertencia al eliminar archivos antiguos:', delErr.message);
+        } else {
+          console.log(`Se eliminaron ${filesToDelete.length} respaldos antiguos por politica de retencion.`);
+        }
       } else {
-        console.log(`👍 Todos los respaldos existentes están dentro del período de ${RETENTION_DAYS} días.`);
+        console.log(`Todos los respaldos existentes estan dentro del periodo de ${RETENTION_DAYS} dias.`);
       }
     }
   } catch (rotError) {
-    console.warn('⚠️ No fue posible completar la rotación de archivos antiguos:', rotError.message);
+    console.warn('No fue posible completar la rotacion de archivos antiguos:', rotError.message);
   }
 
-  return { fileId };
+  return { fileId: uploadData.path };
 }
 
 // ─────────────────────────────────────────────────────────────
-// EJECUCIÓN PRINCIPAL
+// EJECUCION PRINCIPAL
 // ─────────────────────────────────────────────────────────────
 
 async function main() {
   const startTime = Date.now();
   console.log('====================================================');
-  console.log('🛡️  INICIANDO SISTEMA DE BACKUP AUTOMÁTICO');
-  console.log(`📅 Fecha/Hora: ${new Date().toISOString()}`);
-  console.log(`⏳ Retención configurada: ${RETENTION_DAYS} días`);
+  console.log('INICIANDO SISTEMA DE BACKUP AUTOMATICO (SUPABASE)');
+  console.log(`Fecha/Hora: ${new Date().toISOString()}`);
+  console.log(`Retencion configurada: ${RETENTION_DAYS} dias`);
   console.log('====================================================');
 
   const dbUrl = getBackupDatabaseUrl();
   if (!dbUrl) {
-    throw new Error('No se encontró URL de base de datos (SUPABASE_BACKUP_URL o DATABASE_URL).');
+    throw new Error('No se encontro URL de base de datos (SUPABASE_BACKUP_URL o DATABASE_URL).');
   }
 
   const tmpDir = path.resolve(__dirname, '../temp_backups');
@@ -372,8 +358,8 @@ async function main() {
         await dumpWithPgDump(dbUrl, outputPath);
         dumpSuccess = true;
       } catch (dumpErr) {
-        console.warn(`⚠️  pg_dump nativo reportó un problema (${dumpErr.message}).`);
-        console.warn('🔄 Activando respaldo de seguridad con Prisma Client fallback...');
+        console.warn(`pg_dump nativo reporto un problema (${dumpErr.message}).`);
+        console.warn('Activando respaldo de seguridad con Prisma Client fallback...');
         if (existsSync(outputPath)) {
           try { unlinkSync(outputPath); } catch {}
         }
@@ -386,28 +372,28 @@ async function main() {
 
     const stats = statSync(outputPath);
     const sizeKb = (stats.size / 1024).toFixed(2);
-    console.log(`📁 Archivo comprimido generado: ${fileName} (${sizeKb} KB)`);
+    console.log(`Archivo comprimido generado: ${fileName} (${sizeKb} KB)`);
 
-    // Subir a Appwrite y rotar
+    // Subir a Supabase Storage y rotar
     const { fileId } = await uploadAndRotate(outputPath, fileName);
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
     console.log('====================================================');
-    console.log(`🎉 BACKUP COMPLETADO SATISFACTORIAMENTE en ${elapsed}s`);
-    console.log(`💾 Appwrite File ID: ${fileId}`);
+    console.log(`BACKUP COMPLETADO SATISFACTORIAMENTE en ${elapsed}s`);
+    console.log(`Supabase Storage File Path: ${fileId}`);
     console.log('====================================================');
 
     // Registrar resumen si corre en GitHub Actions
     if (process.env.GITHUB_STEP_SUMMARY) {
       const { appendFileSync } = await import('node:fs');
       const summary = `
-### 🛡️ Respaldo de Base de Datos Exitoso
+### Respaldo de Base de Datos Exitoso
 - **Archivo:** \`${fileName}\`
-- **Tamaño:** \`${sizeKb} KB\`
-- **Destino:** Appwrite Storage (Bucket: \`${APPWRITE_BACKUP_BUCKET_ID}\`)
-- **Appwrite File ID:** \`${fileId}\`
-- **Retención aplicada:** \`${RETENTION_DAYS} días\`
-- **Duración:** \`${elapsed} segundos\`
+- **Tamano:** \`${sizeKb} KB\`
+- **Destino:** Supabase Storage (Bucket: \`${SUPABASE_BACKUP_BUCKET_ID}\`)
+- **Supabase Path:** \`${fileId}\`
+- **Retencion aplicada:** \`${RETENTION_DAYS} dias\`
+- **Duracion:** \`${elapsed} segundos\`
 `;
       appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary, 'utf8');
     }
@@ -416,13 +402,13 @@ async function main() {
     if (existsSync(outputPath)) {
       try {
         unlinkSync(outputPath);
-        console.log('🧹 Archivo temporal local eliminado.');
+        console.log('Archivo temporal local eliminado.');
       } catch {}
     }
   }
 }
 
 main().catch((err) => {
-  console.error('❌ Error fatal en el proceso de respaldo:', err.message);
+  console.error('Error fatal en el proceso de respaldo:', err.message);
   process.exit(1);
 });

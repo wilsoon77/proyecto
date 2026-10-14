@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useBranches } from "@/hooks/use-branches"
 import { useSystemConfig } from "@/context/SystemConfigContext"
+import { getBranchGoogleMapsUrl } from "@/lib/branches"
 
 const fieldClass = "public-focus h-12 rounded-xl border-input bg-background text-sm placeholder:text-muted-foreground/80"
 
@@ -190,9 +191,7 @@ export default function ContactoPage() {
           </div>
           <div className="mt-8 grid gap-4 md:grid-cols-2">
             {branches.map((branch) => {
-              const mapsUrl = branch.latitude && branch.longitude
-                ? `https://www.google.com/maps/search/?api=1&query=${branch.latitude},${branch.longitude}`
-                : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${branch.name}, ${branch.address}, Guatemala`)}`
+              const mapsUrl = getBranchGoogleMapsUrl(branch)
 
               return (
                 <div key={branch.id} className="rounded-3xl border border-[#DECDBB] bg-[#F3E9DC] p-6 shadow-sm">
@@ -232,7 +231,7 @@ export default function ContactoPage() {
             })}
           </div>
           <div className="mt-8 overflow-hidden rounded-3xl border border-[#DECDBB] bg-white p-3 shadow-sm">
-            <MultiBranchMap />
+            <MultiBranchMap branches={branches} />
           </div>
         </div>
       </section>

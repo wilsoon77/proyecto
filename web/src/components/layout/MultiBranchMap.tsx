@@ -1,7 +1,12 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { STATIC_BRANCHES } from "@/lib/branches"
+import { STATIC_BRANCHES, getBranchGoogleMapsUrl } from "@/lib/branches"
+import type { ApiBranch } from "@/lib/api/types"
+
+interface MultiBranchMapProps {
+  branches?: ApiBranch[]
+}
 
 interface LeafletMap {
   setView(center: [number, number], zoom: number): LeafletMap
@@ -33,9 +38,21 @@ declare global {
   }
 }
 
-export default function MultiBranchMap() {
+export default function MultiBranchMap({ branches }: MultiBranchMapProps) {
   const mapRef = useRef<HTMLDivElement>(null)
   const [mapLoaded, setMapLoaded] = useState(false)
+
+  // Determinar sucursales a mostrar (BD dinamicas o fallback estatico)
+  const activeBranches = branches && branches.length > 0
+    ? branches.map((b) => ({
+        name: b.name,
+        address: b.address,
+        phone: b.phone || '',
+        lat: b.latitude || 14.664106,
+        lng: b.longitude || -90.845432,
+        mapsUrl: getBranchGoogleMapsUrl(b),
+      }))
+    : STATIC_BRANCHES
 
   useEffect(() => {
     let mapInstance: LeafletMap | null = null
@@ -64,7 +81,7 @@ export default function MultiBranchMap() {
       const L = window.L
       if (!L || !mapRef.current) return
 
-      // Prevenir inicialización duplicada
+      // Prevenir inicializacion duplicada
       if (mapRef.current.hasChildNodes()) {
         mapRef.current.innerHTML = ""
       }
@@ -82,7 +99,7 @@ export default function MultiBranchMap() {
         maxZoom: 19,
       }).addTo(map)
 
-      // Icono personalizado para las sucursales de la panadería
+      // Icono personalizado para las sucursales de la panaderia
       const customIcon = L.divIcon({
         className: "custom-map-pin",
         html: `
@@ -112,17 +129,22 @@ export default function MultiBranchMap() {
 
       const bounds: [number, number][] = []
 
-      // Agregar marcadores para ambas sucursales de Chimaltenango simultáneamente
-      STATIC_BRANCHES.forEach((b) => {
+      // Agregar marcadores para ambas sucursales de Chimaltenango simultaneamente
+      activeBranches.forEach((b) => {
         bounds.push([b.lat, b.lng])
 
         const marker = L.marker([b.lat, b.lng], { icon: customIcon }).addTo(map)
         
+        // Mostrar telefono unicamente si existe valor no vacio
+        const phoneHtml = b.phone && b.phone.trim()
+          ? `<p style="margin: 2px 0; font-size: 12px; color: #c35a42; font-weight: 600;">Tel: ${b.phone.trim()}</p>`
+          : ""
+
         const popupContent = `
           <div style="font-family: sans-serif; padding: 4px; max-width: 220px;">
             <strong style="font-size: 14px; color: #111827; display: block; font-family: serif;">${b.name}</strong>
             <p style="margin: 4px 0; font-size: 12px; color: #4b5563; line-height: 1.3;">${b.address}</p>
-            <p style="margin: 2px 0; font-size: 12px; color: #c35a42; font-weight: 600;">Tel: ${b.phone}</p>
+            ${phoneHtml}
             <a href="${b.mapsUrl}" target="_blank" rel="noreferrer" style="
               display: inline-block;
               margin-top: 6px;
@@ -156,11 +178,11 @@ export default function MultiBranchMap() {
         mapInstance.remove()
       }
     }
-  }, [])
+  }, [branches])
 
   return (
     <div className="space-y-4">
-      {/* Visualizador del Mapa con los 2 Marcadores en Chimaltenango */}
+      {/* Visualizador del Mapa con los Marcadores en Chimaltenango */}
       <div className="relative overflow-hidden rounded-2xl border border-border bg-secondary shadow-sm">
         <div ref={mapRef} className="h-[450px] w-full z-0" />
 
@@ -174,7 +196,7 @@ export default function MultiBranchMap() {
         <div className="absolute right-3 top-3 z-10 space-y-1 rounded-xl border border-border bg-card/95 px-3 py-2 text-xs shadow-sm backdrop-blur">
           <p className="flex items-center gap-1.5 font-bold text-foreground">
             <span className="inline-block h-2.5 w-2.5 rounded-full bg-primary" />
-            2 sucursales activas
+            {activeBranches.length} {activeBranches.length === 1 ? 'sucursal activa' : 'sucursales activas'}
           </p>
           <p className="text-[11px] text-muted-foreground">Chimaltenango, Guatemala</p>
         </div>

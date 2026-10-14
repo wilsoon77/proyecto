@@ -6,6 +6,7 @@ import { branchesService } from "@/lib/api"
 import type { ApiBranch } from "@/lib/api/types"
 import { Button } from "@/components/ui/button"
 import { useSystemConfig } from "@/context/SystemConfigContext"
+import { getBranchGoogleMapsUrl } from "@/lib/branches"
 
 // Centro por defecto: Guatemala City
 const DEFAULT_CENTER = { lat: 14.6349, lng: -90.5069 }
@@ -66,10 +67,7 @@ export default function SucursalesPage() {
 
   // URL para abrir en Google Maps
   const getGoogleMapsUrl = (branch: ApiBranch) => {
-    if (branch.latitude && branch.longitude) {
-      return `https://www.google.com/maps/search/?api=1&query=${branch.latitude},${branch.longitude}`
-    }
-    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(branch.address)}`
+    return getBranchGoogleMapsUrl(branch)
   }
 
   if (isLoading) {

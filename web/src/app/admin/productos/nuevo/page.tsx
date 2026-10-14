@@ -143,7 +143,7 @@ function NuevoProductoContent() {
     }
     reader.readAsDataURL(file)
 
-    // Subir imagen a Appwrite
+    // Subir imagen a Supabase Storage
     setIsUploading(true)
     setError("")
 

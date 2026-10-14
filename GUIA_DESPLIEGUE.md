@@ -6,7 +6,7 @@ Este documento describe cómo desplegar el proyecto de Panadería usando:
 - **Frontend (Next.js)**: Vercel
 - **Backend (NestJS)**: Render
 - **Base de Datos**: Supabase PostgreSQL
-- **Almacenamiento de Imágenes**: Appwrite
+- **Almacenamiento de Imágenes**: Supabase Storage
 
 ---
 
@@ -15,40 +15,31 @@ Este documento describe cómo desplegar el proyecto de Panadería usando:
 Antes de comenzar, asegúrate de tener:
 - Cuenta en [Vercel](https://vercel.com) (gratuita)
 - Cuenta en [Render](https://render.com) (gratuita)
-- Cuenta en [Supabase](https://supabase.com) (ya tienes la base de datos)
-- Cuenta en [Appwrite](https://appwrite.io) (tienes suscripción)
+- Cuenta en [Supabase](https://supabase.com) (base de datos y almacenamiento)
 - Repositorio en GitHub con el código del proyecto
 
 ---
 
-## 1. Configurar Appwrite (Storage)
+## 1. Configurar Supabase Storage
 
-### Paso 1: Crear proyecto en Appwrite
-1. Ve a la [Consola de Appwrite](https://cloud.appwrite.io)
-2. Crea un nuevo proyecto: **"Panadería"**
-3. Anota el **Project ID** (ej: `507f1f77bcf86cd799439011`)
+### Paso 1: Crear Bucket para imágenes de catálogo
+1. Ve a tu proyecto en [Supabase Dashboard](https://supabase.com/dashboard)
+2. Ve a **Storage** → **New bucket**
+3. Nombre: `products`
+4. Marca la casilla **Public bucket** (para que las imágenes sean accesibles en la web)
+5. Guarda los cambios
 
-### Paso 2: Crear Bucket para imágenes
-1. Ve a **Storage** → **Create Bucket**
-2. Nombre: `product-images`
-3. Permisos: 
-   - Marcar "Read" para **Any** (imágenes públicas)
-   - Desmarcar "Write" para Any (solo API puede subir)
-4. Anota el **Bucket ID**
-
-### Paso 3: Crear API Key
-1. Ve a **Settings** → **API Keys**
-2. Crea una nueva API Key con estos scopes:
-   - `files.read`
-   - `files.write`
-3. Guarda la API Key de forma segura
+### Paso 2: Crear Bucket para respaldos de base de datos
+1. En **Storage**, crea otro bucket:
+2. Nombre: `database-backups`
+3. Deja la casilla **Public bucket** desmarcada (bucket privado)
 
 ### Variables a usar:
 ```env
-APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1
-APPWRITE_PROJECT_ID=tu_project_id
-APPWRITE_API_KEY=tu_api_key_secreta
-APPWRITE_BUCKET_ID=product-images
+SUPABASE_URL=https://tu_proyecto.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=tu_service_role_key
+SUPABASE_STORAGE_BUCKET=products
+SUPABASE_BACKUP_BUCKET_ID=database-backups
 ```
 
 ---
@@ -88,10 +79,10 @@ En la sección **Environment**, agrega:
 | `HCAPTCHA_SECRET` | (secret privado de hCaptcha) |
 | `HCAPTCHA_ALLOWED_HOSTNAMES` | `tu-dominio.com` (separar varios con coma) |
 | `SENTRY_DSN` | (opcional) |
-| `APPWRITE_ENDPOINT` | `https://cloud.appwrite.io/v1` |
-| `APPWRITE_PROJECT_ID` | (tu project ID) |
-| `APPWRITE_API_KEY` | (tu API key) |
-| `APPWRITE_BUCKET_ID` | (tu bucket ID) |
+| `SUPABASE_URL` | `https://[REF].supabase.co` |
+| `SUPABASE_SERVICE_ROLE_KEY` | (tu service role key secreta de Supabase) |
+| `SUPABASE_STORAGE_BUCKET` | `products` |
+| `SUPABASE_BACKUP_BUCKET_ID` | `database-backups` |
 
 ### Paso 4: Desplegar
 1. Click en **Create Web Service**
@@ -187,7 +178,7 @@ CORS_ORIGINS=https://panaderia-web.vercel.app
 ### Monitoreo
 - **Render**: Dashboard muestra logs y métricas
 - **Vercel**: Analytics y Web Vitals disponibles
-- **Appwrite**: Storage usage visible en dashboard
+- **Supabase**: Base de datos y Storage visibles en dashboard
 
 ---
 
@@ -206,8 +197,8 @@ CORS_ORIGINS=https://panaderia-web.vercel.app
 - Verifica que `prisma generate` se ejecute antes de `build`
 
 ### Imágenes no cargan
-- Verifica permisos del bucket en Appwrite (Read: Any)
-- Confirma que `APPWRITE_BUCKET_ID` es correcto
+- Verifica que el bucket `products` esté configurado como público en Supabase Storage
+- Confirma que `SUPABASE_STORAGE_BUCKET` y `SUPABASE_URL` estén correctamente configurados
 
 ---
 

@@ -13,7 +13,7 @@ Sistema operativo para una panadería de dos sucursales: producción por amasijo
 | Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS v3, shadcn/ui |
 | Backend | NestJS 10, TypeScript, Prisma ORM |
 | Base de datos | PostgreSQL (Supabase) |
-| Almacenamiento | Appwrite (imágenes de productos) |
+| Almacenamiento | Supabase Storage (imágenes de productos) |
 | Monitoreo | Sentry (web y api) |
 | Auth Frontend | hCaptcha para registro/login |
 | Despliegue | Render (API) + Vercel (Web) |
@@ -73,11 +73,11 @@ RETENTION_REFRESH_TOKENS_DAYS=30
 RETENTION_TELEGRAM_UPDATES_DAYS=30
 RETENTION_AUDIT_LOGS_DAYS=365
 
-# Appwrite (Almacenamiento de imágenes)
-APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1
-APPWRITE_PROJECT_ID=tu_project_id
-APPWRITE_API_KEY=tu_api_key
-APPWRITE_BUCKET_ID=product-images
+# Supabase Storage (Almacenamiento de imágenes y backups)
+SUPABASE_URL=https://tu_proyecto.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=tu_service_role_key
+SUPABASE_STORAGE_BUCKET=products
+SUPABASE_BACKUP_BUCKET_ID=database-backups
 ```
 
 ## Variables de entorno (Web)
@@ -101,15 +101,15 @@ npm run test             # Ejecutar tests
 ```
 
 ## Módulos del Backend
-Auth, Products, Categories, Branches, Users, Orders, Inventory, StockMovements, Operation, Health, Metrics, Storage (Appwrite), Supabase, Audit, Recipes, Production, RawMaterials, Telegram.
+Auth, Products, Categories, Branches, Users, Orders, Inventory, StockMovements, Operation, Health, Metrics, Storage (Supabase Storage), Supabase, Audit, Recipes, Production, RawMaterials, Telegram.
 
 ## Proveedores de infraestructura
 
 - **Supabase Auth:** registro, login con contraseña y OAuth cuando `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` están configurados. La API emite sus propios access/refresh tokens para proteger sus endpoints.
 - **PostgreSQL de Supabase:** datos operativos, inventario, lotes, recetas, cierres, pedidos, notificaciones y auditoría; Prisma administra el esquema y las migraciones.
-- **Appwrite Storage:** imágenes del catálogo. No almacena credenciales ni inventario.
+- **Supabase Storage:** imágenes del catálogo y backups de la base de datos.
 
-El catálogo puede seguir funcionando sin Appwrite usando las URLs existentes, pero las cargas nuevas requieren sus variables configuradas.
+El catálogo puede seguir funcionando sin subidas nuevas usando las URLs existentes, pero las cargas nuevas requieren sus variables configuradas.
 
 ## Roles del sistema
 | Rol | Acceso |
@@ -128,7 +128,7 @@ Las rutas de listado devuelven `{ data, meta }` y además cabeceras:
 - **API**: Render — Build: `npm ci && npm run prisma:generate && npm run build`, Start: `npm run start:prod`
 - **Web**: Vercel — Root directory: `web/`, Framework: Next.js
 - **DB**: Supabase PostgreSQL
-- **Storage**: Appwrite (imágenes)
+- **Storage**: Supabase Storage (imágenes y backups)
 
 Para detalles completos, ver `GUIA_DESPLIEGUE.md`.
 

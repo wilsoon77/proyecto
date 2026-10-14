@@ -12,7 +12,7 @@ Backend operativo para una panadería de dos sucursales: catálogo, pedidos para
 - PostgreSQL (Supabase en la nube)
 - TypeScript estricto
 - Validación con class-validator / class-transformer
-- Almacenamiento de imágenes: Appwrite (node-appwrite)
+- Almacenamiento de imágenes: Supabase Storage (@supabase/supabase-js)
 - Logging: nestjs-pino + pino-pretty
 - Métricas: prom-client (Prometheus)
 - Seguridad: Helmet, CORS, ThrottlerModule (Rate Limiting), JWT Access+Refresh tokens, bcrypt
@@ -37,7 +37,7 @@ Backend operativo para una panadería de dos sucursales: catálogo, pedidos para
 | `ProductionModule` | Registro de producción (logs de horneos) |
 | `RawMaterialsModule` | Gestión de materia prima |
 | `TasksModule` | Expiración automática de reservas PENDING no confirmadas |
-| `StorageModule` | Upload/gestión de imágenes (Appwrite) |
+| `StorageModule` | Upload/gestión de imágenes (Supabase Storage) |
 | `SupabaseModule` | Integración con Supabase Auth |
 | `AuditModule` | Registro de auditoría de acciones |
 | `HealthModule` | Health check (`/health`) |

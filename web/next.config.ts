@@ -47,33 +47,6 @@ const nextConfig: NextConfig = {
         hostname: '*.supabase.co',
         pathname: '/storage/v1/object/public/**',
       },
-      // Appwrite Cloud - varios datacenters
-      {
-        protocol: 'https',
-        hostname: 'nyc.cloud.appwrite.io',
-        pathname: '/v1/storage/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'fra.cloud.appwrite.io',
-        pathname: '/v1/storage/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'sgp.cloud.appwrite.io',
-        pathname: '/v1/storage/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'cloud.appwrite.io',
-        pathname: '/v1/storage/**',
-      },
-      // Wildcard para cualquier subdominio de appwrite.io
-      {
-        protocol: 'https',
-        hostname: '*.cloud.appwrite.io',
-        pathname: '/v1/storage/**',
-      },
       // Unsplash para imágenes de prueba
       {
         protocol: 'https',

@@ -45,14 +45,14 @@ services:
         sync: false
       - key: SENTRY_DSN
         sync: false
-      - key: APPWRITE_ENDPOINT
+      - key: SUPABASE_URL
         sync: false
-      - key: APPWRITE_PROJECT_ID
+      - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
-      - key: APPWRITE_API_KEY
-        sync: false
-      - key: APPWRITE_BUCKET_ID
-        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: products
+      - key: SUPABASE_BACKUP_BUCKET_ID
+        value: database-backups
     
     # Health check
     healthCheckPath: /health

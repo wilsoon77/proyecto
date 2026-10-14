@@ -222,7 +222,7 @@ También se identificaron riesgos altos en el almacenamiento de tokens, anti-bot
 
 **Impacto:** un upload grande o malformado puede agotar memoria; la superficie coincide además con vulnerabilidades altas transitivas de Multer detectadas por auditoría.
 
-**Acción propuesta:** establecer `limits.fileSize` y número de archivos en Multer, validar firma binaria con una librería actualizada, re-encodear imágenes, limitar dimensiones y añadir antivirus/escaneo si se escala el uso. Mantener Appwrite con permisos mínimos y URLs firmadas si las imágenes no son públicas.
+**Acción propuesta:** establecer `limits.fileSize` y número de archivos en Multer, validar firma binaria con una librería actualizada, re-encodear imágenes, limitar dimensiones y añadir antivirus/escaneo si se escala el uso. Mantener Supabase Storage con permisos mínimos y URLs firmadas si las imágenes no son públicas.
 
 ### UX-01 — permisos visibles de interfaz y permisos reales no coinciden
 

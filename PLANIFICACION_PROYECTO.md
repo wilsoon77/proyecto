@@ -62,7 +62,7 @@
   - No se utiliza base de datos complementaria (sin MongoDB) ni capa de cache externa (sin Redis) para mantener la infraestructura simple y sostenible.
 
 ### ALMACENAMIENTO DE ARCHIVOS
-- **Almacenamiento en la Nube (Appwrite)**
+- **Almacenamiento en la Nube (Supabase Storage)**
   - Imagenes de productos e insumos
   - Optimizacion automatica de imagenes
 
@@ -111,7 +111,7 @@ La ejecucion se divide en 8 Sprints de 2 semanas cada uno:
 
 * **Sprint 2 (Julio - Semanas 3 y 4): Modulo de Catalogo y Productos**
   - CRUD de productos y categorias en panel administrativo.
-  - Integracion con Appwrite para subida de imagenes.
+  - Integracion con Supabase Storage para subida de imagenes.
   - Frontend: Landing page y catalogo responsive publico.
 
 * **Sprint 3 (Agosto - Semanas 1 y 2): Inventario y Materia Prima**
@@ -148,9 +148,8 @@ La ejecucion se divide en 8 Sprints de 2 semanas cada uno:
 
 ## COSTOS ESTIMADOS (Fase de Desarrollo)
 - Vercel (Hosting Web): Plan Gratuito
-- Supabase (PostgreSQL): Plan Gratuito (Free Tier)
+- Supabase (PostgreSQL y Almacenamiento): Plan Gratuito (Free Tier)
 - Render/Railway (API): Plan Gratuito / Bajo Costo (~$5-7/mes)
-- Appwrite (Almacenamiento de Imagenes): Plan Gratuito
 - Resend (Emailing): Plan Gratuito
 - Dominio: ~$10-15/ano
 **Costo total desarrollo: ~$10-25**

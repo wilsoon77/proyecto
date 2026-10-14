@@ -189,7 +189,7 @@ Aunque la planificacion en Jira se estructura como si el proyecto iniciara desde
 
 ---
 
-### STORY 2.3 — Gestion de Imagenes (Cloudinary/Appwrite)
+### STORY 2.3 — Gestion de Imagenes (Supabase Storage)
 **Epic:** EP-03 | **Estimacion:** M (3 pts)
 
 | # | Subtarea | Responsable | Est. |

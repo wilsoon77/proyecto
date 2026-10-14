@@ -9,10 +9,12 @@ export interface BranchLocation {
   mapsUrl: string
 }
 
-// Enlaces a los puntos de las sucursales en Google Maps
+// Enlaces oficiales verificados en Google Maps
 export const GOOGLE_MAPS_BRANCH_URLS: Record<string, string> = {
-  central: "https://maps.app.goo.gl/T9saBh42VUrirRSYA",
-  secundaria: "https://maps.app.goo.gl/hZDJzWiRhHeunxrp7",
+  central: "https://maps.app.goo.gl/tYQE6vyCkmRYVH8Y8",
+  "1": "https://maps.app.goo.gl/tYQE6vyCkmRYVH8Y8",
+  secundaria: "https://maps.app.goo.gl/iZKaQ5AcNq1ntgRVA",
+  "33": "https://maps.app.goo.gl/iZKaQ5AcNq1ntgRVA",
 }
 
 export function getBranchGoogleMapsUrl(branch: {
@@ -23,9 +25,11 @@ export function getBranchGoogleMapsUrl(branch: {
   address?: string
   name?: string
 }): string {
-  const key = (branch.slug || String(branch.id || '')).toLowerCase()
-  if (GOOGLE_MAPS_BRANCH_URLS[key]) {
-    return GOOGLE_MAPS_BRANCH_URLS[key]
+  if (branch.slug && GOOGLE_MAPS_BRANCH_URLS[branch.slug.toLowerCase()]) {
+    return GOOGLE_MAPS_BRANCH_URLS[branch.slug.toLowerCase()]
+  }
+  if (branch.id && GOOGLE_MAPS_BRANCH_URLS[String(branch.id)]) {
+    return GOOGLE_MAPS_BRANCH_URLS[String(branch.id)]
   }
 
   if (branch.latitude && branch.longitude) {
@@ -42,8 +46,8 @@ export const STATIC_BRANCHES: BranchLocation[] = [
     address: "Aldea Buena Vista, Zona 8, Sector Sur, Chimaltenango",
     phone: "",
     schedule: "Lunes a Sábado: 6:00 AM - 8:00 PM",
-    lat: 14.664106,
-    lng: -90.845432,
+    lat: 14.6641582,
+    lng: -90.8454365,
     mapsUrl: GOOGLE_MAPS_BRANCH_URLS.central,
   },
   {
@@ -52,8 +56,8 @@ export const STATIC_BRANCHES: BranchLocation[] = [
     address: "Frente a Pradera Chimaltenango, Chimaltenango",
     phone: "",
     schedule: "Lunes a Sábado: 6:00 AM - 8:00 PM",
-    lat: 14.6597265,
-    lng: -90.809855,
+    lat: 14.6597067,
+    lng: -90.8097663,
     mapsUrl: GOOGLE_MAPS_BRANCH_URLS.secundaria,
   },
 ]

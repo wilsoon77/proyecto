@@ -43,6 +43,7 @@
 | **CU-04** | **Control de Caducidades (FEFO)** | [CU-04_control_caducidades_fefo.html](CU-04_control_caducidades_fefo.html) | [Render CU-04](renders/CU-04_control_caducidades_fefo.png) | Encargado Bodega, Cron Job Diario, `InventoryLot` | Creación de lotes con fecha de vencimiento, semáforo preventivo (7 días), consumo por método FEFO, bajas por merma. |
 | **CU-05** | **Asistente Gerencial vía Telegram** | [CU-05_asistente_telegram_bot.html](CU-05_asistente_telegram_bot.html) | [Render CU-05](renders/CU-05_asistente_telegram_bot.png) | Dueño (`ADMIN`), Webhook Telegram, Motor IA | Autenticación OTP de chat privado, consultas en lenguaje natural (*Tool Calling*), alertas push de cierre de turno. |
 | **CU-06** | **Seguridad y Control Multi-Sucursal** | [CU-06_seguridad_rbac_multisucursal.html](CU-06_seguridad_rbac_multisucursal.html) | [Render CU-06](renders/CU-06_seguridad_rbac_multisucursal.png) | Usuario / Cliente, Super Admin, Guards NestJS | Autenticación JWT + Refresh Tokens, asignación de roles RBAC, aislamiento de datos con `BranchScopeGuard`. |
+| **CU-07** | **Panel de Operaciones y Dashboard** | [CU-07_panel_operaciones_dashboard.html](CU-07_panel_operaciones_dashboard.html) | [Render CU-07](renders/CU-07_panel_operaciones_dashboard.png) | Administrador (ADMIN), Encargado (MANAGER) | KPIs en tiempo real (producción, cierre, insumos críticos), semáforo FEFO, selector de gráfica (barras/líneas/área), filtros por sede/tiempo y desglose interactivo por producto (*drill-down*). |
 
 ---
 

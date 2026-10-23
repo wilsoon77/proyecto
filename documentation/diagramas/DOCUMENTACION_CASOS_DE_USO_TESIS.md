@@ -33,6 +33,7 @@ Para asegurar rigor metodológico y trazabilidad arquitectónica, se aplicaron l
 | **CU-04** | Control de Caducidades (FEFO) | Encargado Bodega (`MANAGER` / `ADMIN`) | Cron Job Diario (00:00 UTC), Tabla `InventoryLot` | Registrar Compra, Generar Lote, Monitorear Semáforo, Aplicar Salida FEFO, Registrar Merma, Consultar Reporte | **RN-CAD01:** Despacho prioritario del lote con vencimiento más próximo (*First-Expired, First-Out*) y semáforo preventivo a 7 días. |
 | **CU-05** | Asistente Gerencial Telegram Bot | Dueño / Gerente (`ADMIN`) | API Telegram Webhook, Motor Tool Calling (NestJS/Gemini) | Vincular Cuenta Telegram, Consultar Métricas, Ejecutar Tool Calling, Consultar Alertas, Recibir Alerta de Cierre | **RN-BOT01:** Acceso exclusivo a usuarios `ADMIN` validado por OTP/Chat ID; ejecución segura de lectura transaccional por llamadas a funciones. |
 | **CU-06** | Seguridad, RBAC y Multi-Sucursal | Usuario / Cliente, Super Administrador | Guards NestJS (`JWT & RolesGuard`) | Iniciar Sesión, Validar Token JWT, Gestionar Personal, Asignar Sucursal, Aislar Datos, Recuperar Contraseña | **RN-SEC01:** Aislamiento estricto de ámbito por sucursal (`BranchScopeGuard`) para evitar acceso cruzado entre sedes no autorizadas. |
+| **CU-07** | Panel de Operaciones y Dashboard | Administrador (`ADMIN`), Encargado (`MANAGER`) | Motor PostgreSQL (Prisma), Servicio de Alertas | Consultar Dashboard Central, Filtrar por Sucursal, Filtrar Rango Temporal, Monitorear KPIs del Día, Conmutar Tipo de Gráfica, Explorar Desglose por Producto, Supervisar Lotes por Vencer, Conmutar Vista Financiera, Consultar Alertas Críticas | **RN-OP01:** Consolidación multi-sucursal en tiempo real, filtros dinámicos por sede/período y desglose interactivo (*drill-down*) de unidades y mermas. |
 
 *Nota.* Matriz elaborada con base en los requerimientos funcionales del sistema. *Fuente: Elaboración propia (2026).*
 
@@ -201,9 +202,43 @@ Establece los límites perimetrales de acceso, autenticación mediante tokens cr
 
 ---
 
+
+---
+
+### 3.7. Proceso de Panel de Operaciones, Dashboard y Filtros Multi-Sucursal (CU-07)
+
+**Figura 7**  
+*Diagrama de Casos de Uso: Panel de Operaciones, Dashboard y Filtros Multi-Sucursal*
+
+![Diagrama CU-07](renders/CU-07_panel_operaciones_dashboard.png)
+
+#### Descripción Técnica del Proceso
+Modela la interacción gerencial y operativa con la pantalla principal administrativa (`/admin`). Proporciona una interfaz unificada para supervisar los cuatro pilares operativos del negocio (producción diaria, venta residual por cierre, semáforo preventivo de caducidades FEFO y alertas de insumos bajo stock mínimo). Incorpora controles de filtrado multidimensional: selección de sucursal (con aislamiento estricto RBAC), selector de presets temporales (hoy, 7 días, 30 días o rango personalizado con validación de fechas), selector de tipo de visualización gráfica (barras, líneas curvas Bézier o área sombreada), y un modal interactivo de desglose por producto (*drill-down*) para auditar unidades producidas, vendidas, sobrantes y descartadas por merma.
+
+#### Especificación de Casos de Uso
+
+| Caso de Uso | Tipo | Actor | Descripción Operativa |
+|---|---|---|---|
+| **Consultar Dashboard Operativo Central** | Base / Primario | Administrador / Encargado | Caso de uso principal que consolida y renderiza los indicadores operativos del día y la gráfica de actividad. |
+| **Filtrar por Sucursal** | «include» | Administrador / Encargado | Conmuta entre la vista global consolidada o una sede específica, restringido por `BranchScopeGuard` para encargados. |
+| **Filtrar Rango Temporal** | «include» | Administrador / Encargado | Aplica ventanas de análisis histórico: día actual (1 d), semana (7 d), mes (30 d) o fechas personalizadas. |
+| **Monitorear KPIs del Día** | «include» | Administrador / Encargado | Muestra tarjetas con unidades producidas, balance de venta residual, insumos bajo mínimo y lotes en riesgo. |
+| **Supervisar Lotes por Vencer** | «include» | Administrador / Encargado | Despliega el semáforo preventivo clasificando lotes urgentes (≤ 3 días) y en advertencia (≤ 7 días) bajo método FEFO. |
+| **Conmutar Tipo de Gráfica** | «extend» | Administrador / Encargado | Permite alternar la representación visual de la actividad diaria entre barras, líneas o área sombreada. |
+| **Explorar Desglose por Producto** | «extend» | Administrador / Encargado | Al hacer clic en un día de la gráfica, abre un modal interactivo con filtros por tipo (producido, vendido, merma) y buscador de texto. |
+| **Conmutar Vista Financiera** | «extend» | Administrador | Alterna del enfoque de unidades operativas al desglose de ingresos brutos, costos de insumos y margen estimado. |
+| **Consultar Alertas Críticas** | «extend» | Administrador / Encargado | Acceso directo a insumos que cruzaron el umbral mínimo (`raw_material_low`) y productos en fecha límite (`expiration_warning`). |
+| **Ejecutar Chequeo en Vivo** | «extend» | Administrador / Encargado | Invoca el endpoint para verificar el estado de caducidad de lotes al instante sin aguardar la ejecución del Cron Job nocturno. |
+
+> **Nota.** Diagrama de casos de uso UML correspondiente al Panel de Operaciones y Dashboard Multi-Sucursal. Modela la interacción entre los actores directivos y operativos con los servicios de persistencia, agregación de métricas y filtrado multidimensional.  
+> *Fuente: Elaboración propia (2026).*
+
+---
+
 ## 4. Conclusiones y Trazabilidad con Requerimientos
 
-La especificación de los 6 diagramas de casos de uso garantiza la cobertura integral de los requerimientos funcionales del sistema *Panadería Svetlana*:
+La especificación de los 7 diagramas de casos de uso garantiza la cobertura integral de los requerimientos funcionales del sistema *Panadería Svetlana*:
 1. **Desacoplamiento Operativo:** El proceso de cierre residual (`CU-01`) resuelve la problemática de inventarios sin imponer la carga de un POS individual.
 2. **Eficiencia en Costos:** El módulo de producción (`CU-02`) y caducidades (`CU-04`) asegura la rentabilidad del negocio al mitigar mermas y sobrecostos.
 3. **Omnicanalidad Segura:** El módulo de reservas (`CU-03`) y el asistente inteligente (`CU-05`) potencian las ventas y la toma de decisiones directiva bajo un esquema de seguridad perimetral robusto (`CU-06`).
+4. **Visibilidad Ejecutiva e Inteligencia Operativa:** El panel de operaciones y dashboard multi-sucursal (`CU-07`) centraliza la supervisión en tiempo real con filtrado multidimensional, semáforo preventivo y desglose granular por producto (*drill-down*).

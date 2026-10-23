@@ -60,3 +60,8 @@ web/scripts/test-local-auth.mjs
 # Documentation outputs
 documentation/.cache/
 documentation/build/
+__pycache__/
+*.py[cod]
+
+# Local seeds
+api/scripts/local_seeds/

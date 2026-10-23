@@ -1,9 +1,10 @@
-import * as XLSX from "xlsx"
+import ExcelJS from "exceljs"
 
 export interface OperationalReportData {
   branchName: string
   periodLabel: string
   dateRange: { from: string; to: string }
+  hideInactiveDays?: boolean
   activity: Array<{
     date: string
     produced: number
@@ -38,10 +39,6 @@ export interface OperationalReportData {
   }>
 }
 
-function formatCurrency(val: number): string {
-  return `Q ${val.toLocaleString("es-GT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-}
-
 function getDayName(isoDate: string): string {
   const parts = isoDate.split("T")[0].split("-")
   if (parts.length !== 3) return ""
@@ -53,8 +50,11 @@ function getDayName(isoDate: string): string {
   return d.toLocaleDateString("es-GT", { weekday: "long" })
 }
 
-export function exportOperationalReportToExcel(data: OperationalReportData): void {
-  const wb = XLSX.utils.book_new()
+export async function exportOperationalReportToExcel(data: OperationalReportData): Promise<void> {
+  const workbook = new ExcelJS.Workbook()
+  workbook.creator = "Panaderia Svetlana"
+  workbook.created = new Date()
+
   const generationTimestamp = new Date().toLocaleString("es-GT", {
     day: "2-digit",
     month: "2-digit",
@@ -63,205 +63,466 @@ export function exportOperationalReportToExcel(data: OperationalReportData): voi
     minute: "2-digit",
   })
 
-  // ----------------------------------------------------
-  // HOJA 1: RESUMEN OPERATIVO Y VENTAS
-  // ----------------------------------------------------
-  const sheet1Rows: Array<Array<string | number>> = []
+  // Estilos Comunes
+  const fontFamily = "Calibri"
+  const borderThin: Partial<ExcelJS.Borders> = {
+    top: { style: "thin", color: { argb: "FFDECDBB" } },
+    bottom: { style: "thin", color: { argb: "FFDECDBB" } },
+    left: { style: "thin", color: { argb: "FFDECDBB" } },
+    right: { style: "thin", color: { argb: "FFDECDBB" } },
+  }
+  const borderDoubleBottom: Partial<ExcelJS.Borders> = {
+    top: { style: "thin", color: { argb: "FF9A3412" } },
+    bottom: { style: "double", color: { argb: "FF9A3412" } },
+    left: { style: "thin", color: { argb: "FFDECDBB" } },
+    right: { style: "thin", color: { argb: "FFDECDBB" } },
+  }
 
-  // Encabezado institucional
-  sheet1Rows.push(["PANADERIA SVETLANA — REPORTE OPERATIVO Y FINANCIERO"])
-  sheet1Rows.push([`Sucursal: ${data.branchName}`])
-  sheet1Rows.push([`Periodo: ${data.periodLabel} (${data.dateRange.from} al ${data.dateRange.to})`])
-  sheet1Rows.push([`Fecha y hora de emision: ${generationTimestamp}`])
-  sheet1Rows.push([])
+  // Filtrar dias sin actividad si el flag esta activo
+  const filteredActivity = data.hideInactiveDays !== false
+    ? data.activity.filter(
+        (a) => a.produced > 0 || a.sold > 0 || a.waste > 0 || (a.revenue !== undefined && a.revenue > 0)
+      )
+    : data.activity
 
-  // Resumen Ejecutivo (KPIs)
-  sheet1Rows.push(["RESUMEN EJECUTIVO DEL PERIODO"])
-  sheet1Rows.push(["Indicador Clave", "Valor", "Unidad / Formato"])
-  sheet1Rows.push(["Total Horneado / Producido", data.totals.produced, "piezas"])
-  sheet1Rows.push(["Total Ventas en Mostrador", data.totals.sold, "piezas"])
-  sheet1Rows.push(["Total Sobrante para Dia Siguiente", data.totals.surplus, "piezas"])
-  sheet1Rows.push(["Total Merma / Descarte Fisico", data.totals.waste, "piezas"])
-  const wastePercent = data.totals.produced > 0
-    ? Number(((data.totals.waste / data.totals.produced) * 100).toFixed(2))
-    : 0
-  sheet1Rows.push(["Indice de Merma", `${wastePercent}%`, "porcentaje sobre produccion"])
-  sheet1Rows.push(["Recaudacion Total Estimada", formatCurrency(data.totals.totalRevenue), "Quetzales (Q)"])
-  sheet1Rows.push([])
+  // =========================================================================
+  // HOJA 1: RESUMEN GENERAL Y DETALLE DIARIO
+  // =========================================================================
+  const ws1 = workbook.addWorksheet("Resumen General", {
+    views: [{ showGridLines: true }],
+  })
 
-  // Tabla Detallada Dia a Dia
-  sheet1Rows.push(["DETALLE DIARIO DE OPERACIONES"])
-  sheet1Rows.push([
+  // Columnas Hoja 1
+  ws1.columns = [
+    { key: "c1", width: 15 },
+    { key: "c2", width: 20 },
+    { key: "c3", width: 20 },
+    { key: "c4", width: 18 },
+    { key: "c5", width: 18 },
+    { key: "c6", width: 18 },
+    { key: "c7", width: 14 },
+    { key: "c8", width: 22 },
+  ]
+
+  // Fila 1: Banner Principal
+  ws1.mergeCells("A1:H1")
+  const bannerCell = ws1.getCell("A1")
+  bannerCell.value = "PANADERIA SVETLANA — REPORTE OPERATIVO Y FINANCIERO"
+  bannerCell.font = { name: fontFamily, size: 14, bold: true, color: { argb: "FFFFFFFF" } }
+  bannerCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2B170F" } }
+  bannerCell.alignment = { vertical: "middle", horizontal: "center" }
+  ws1.getRow(1).height = 36
+
+  // Fila 2-4: Metadatos
+  const metaStyle = { font: { name: fontFamily, size: 10, color: { argb: "FF5C3D2E" } } }
+  ws1.mergeCells("A2:H2")
+  ws1.getCell("A2").value = `Sucursal: ${data.branchName}  |  Periodo: ${data.periodLabel} (${data.dateRange.from} al ${data.dateRange.to})`
+  ws1.getCell("A2").font = metaStyle.font
+  ws1.getCell("A2").alignment = { vertical: "middle", horizontal: "left" }
+
+  ws1.mergeCells("A3:H3")
+  ws1.getCell("A3").value = `Fecha de emision: ${generationTimestamp}  |  Filtro dias sin actividad: ${data.hideInactiveDays !== false ? "Omitidos" : "Incluidos"}`
+  ws1.getCell("A3").font = metaStyle.font
+  ws1.getCell("A3").alignment = { vertical: "middle", horizontal: "left" }
+
+  // Fila 5: Titulo Resumen Ejecutivo
+  ws1.mergeCells("A5:C5")
+  const execTitle = ws1.getCell("A5")
+  execTitle.value = "INDICADORES CLAVE DEL PERIODO"
+  execTitle.font = { name: fontFamily, size: 11, bold: true, color: { argb: "FFFFFFFF" } }
+  execTitle.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF9A3412" } }
+  execTitle.alignment = { vertical: "middle", horizontal: "left", indent: 1 }
+  ws1.getRow(5).height = 24
+
+  // KPIs Rows
+  const kpiData = [
+    { label: "Total Horneado / Producido", val: data.totals.produced, fmt: "#,##0 piezas" },
+    { label: "Total Ventas en Mostrador", val: data.totals.sold, fmt: "#,##0 piezas" },
+    { label: "Total Sobrante para Siguiente Turno", val: data.totals.surplus, fmt: "#,##0 piezas" },
+    { label: "Total Merma / Descarte Fisico", val: data.totals.waste, fmt: "#,##0 piezas" },
+    {
+      label: "Indice de Merma General",
+      val: data.totals.produced > 0 ? data.totals.waste / data.totals.produced : 0,
+      fmt: "0.0%",
+    },
+    { label: "Recaudacion Total Estimada", val: data.totals.totalRevenue, fmt: '"Q "#,##0.00' },
+  ]
+
+  kpiData.forEach((kpi, idx) => {
+    const rowNum = 6 + idx
+    const row = ws1.getRow(rowNum)
+    row.height = 20
+
+    const cellA = ws1.getCell(`A${rowNum}`)
+    cellA.value = kpi.label
+    cellA.font = { name: fontFamily, size: 10, bold: true, color: { argb: "FF2B170F" } }
+    cellA.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: idx % 2 === 0 ? "FFFAF5EE" : "FFFFFFFF" },
+    }
+    cellA.border = borderThin
+
+    const cellB = ws1.getCell(`B${rowNum}`)
+    cellB.value = kpi.val
+    cellB.numFmt = kpi.fmt
+    cellB.font = { name: fontFamily, size: 10, bold: true, color: { argb: "FF9A3412" } }
+    cellB.alignment = { horizontal: "right" }
+    cellB.fill = cellA.fill
+    cellB.border = borderThin
+
+    const cellC = ws1.getCell(`C${rowNum}`)
+    cellC.value = idx === 5 ? "Quetzales (Q)" : idx === 4 ? "Tasa descarte" : "Unidades"
+    cellC.font = { name: fontFamily, size: 9, italic: true, color: { argb: "FF6E5545" } }
+    cellC.fill = cellA.fill
+    cellC.border = borderThin
+  })
+
+  // Fila 13: Titulo Tabla Detalle
+  const tableTitleRow = 13
+  ws1.mergeCells(`A${tableTitleRow}:H${tableTitleRow}`)
+  const detailTitle = ws1.getCell(`A${tableTitleRow}`)
+  detailTitle.value = "DETALLE DIARIO DE OPERACIONES"
+  detailTitle.font = { name: fontFamily, size: 11, bold: true, color: { argb: "FFFFFFFF" } }
+  detailTitle.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2B170F" } }
+  detailTitle.alignment = { vertical: "middle", horizontal: "left", indent: 1 }
+  ws1.getRow(tableTitleRow).height = 24
+
+  // Fila 14: Encabezados de Columna
+  const headerRow = ws1.getRow(14)
+  headerRow.height = 26
+  const headers = [
     "Fecha",
-    "Dia de la semana",
+    "Dia",
     "Horneado (piezas)",
     "Ventas (piezas)",
     "Sobrante (piezas)",
     "Merma (piezas)",
     "% Merma",
-    "Ingresos (Q)",
-  ])
+    "Ingresos Estimados",
+  ]
 
-  data.activity.forEach((item) => {
-    const dayName = getDayName(item.date)
-    const daySurplus = Math.max(0, item.produced - item.sold - item.waste)
-    const dayWastePct = item.produced > 0
-      ? `${((item.waste / item.produced) * 100).toFixed(1)}%`
-      : "0.0%"
-    const dayRevenue = item.revenue !== undefined ? item.revenue : item.sold * 0.85
-
-    sheet1Rows.push([
-      item.date,
-      dayName.charAt(0).toUpperCase() + dayName.slice(1),
-      item.produced,
-      item.sold,
-      daySurplus,
-      item.waste,
-      dayWastePct,
-      Number(dayRevenue.toFixed(2)),
-    ])
+  headers.forEach((h, colIdx) => {
+    const cell = headerRow.getCell(colIdx + 1)
+    cell.value = h
+    cell.font = { name: fontFamily, size: 10, bold: true, color: { argb: "FFFFFFFF" } }
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF9A3412" } }
+    cell.alignment = { vertical: "middle", horizontal: colIdx >= 2 ? "right" : "left" }
+    cell.border = borderThin
   })
 
-  // Fila de totales diarios
-  sheet1Rows.push([
-    "TOTALES",
-    "-",
-    data.totals.produced,
-    data.totals.sold,
-    data.totals.surplus,
-    data.totals.waste,
-    `${wastePercent}%`,
-    Number(data.totals.totalRevenue.toFixed(2)),
-  ])
+  // Filas de Datos de Actividad Diaria
+  let currentRow = 15
+  filteredActivity.forEach((day, idx) => {
+    const row = ws1.getRow(currentRow)
+    row.height = 20
+    const dayName = getDayName(day.date)
+    const daySurplus = Math.max(0, day.produced - day.sold - day.waste)
+    const dayWasteRatio = day.produced > 0 ? day.waste / day.produced : 0
+    const dayRevenue = day.revenue !== undefined ? day.revenue : day.sold * 0.85
+    const isZebra = idx % 2 === 1
+    const bgArgb = isZebra ? "FFFAF5EE" : "FFFFFFFF"
 
-  const wsSummary = XLSX.utils.aoa_to_sheet(sheet1Rows)
-  wsSummary["!cols"] = [
-    { wch: 14 },
-    { wch: 18 },
-    { wch: 18 },
-    { wch: 18 },
-    { wch: 18 },
-    { wch: 16 },
-    { wch: 12 },
-    { wch: 18 },
-  ]
-  XLSX.utils.book_append_sheet(wb, wsSummary, "Resumen General")
+    const c1 = row.getCell(1)
+    c1.value = day.date
+    c1.alignment = { horizontal: "center" }
 
-  // ----------------------------------------------------
+    const c2 = row.getCell(2)
+    c2.value = dayName.charAt(0).toUpperCase() + dayName.slice(1)
+
+    const c3 = row.getCell(3)
+    c3.value = day.produced
+    c3.numFmt = "#,##0"
+
+    const c4 = row.getCell(4)
+    c4.value = day.sold
+    c4.numFmt = "#,##0"
+
+    const c5 = row.getCell(5)
+    c5.value = daySurplus
+    c5.numFmt = "#,##0"
+
+    const c6 = row.getCell(6)
+    c6.value = day.waste
+    c6.numFmt = "#,##0"
+
+    const c7 = row.getCell(7)
+    c7.value = dayWasteRatio
+    c7.numFmt = "0.0%"
+
+    const c8 = row.getCell(8)
+    c8.value = Number(dayRevenue.toFixed(2))
+    c8.numFmt = '"Q "#,##0.00'
+    c8.font = { name: fontFamily, size: 10, bold: true, color: { argb: "FF166534" } }
+
+    for (let c = 1; c <= 8; c++) {
+      const cell = row.getCell(c)
+      if (c !== 8) {
+        cell.font = { name: fontFamily, size: 10, color: { argb: "FF2B170F" } }
+      }
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: bgArgb } }
+      cell.border = borderThin
+      if (c >= 3 && c <= 8) {
+        cell.alignment = { horizontal: "right" }
+      }
+    }
+
+    currentRow++
+  })
+
+  // Fila de Totales
+  const totalRow = ws1.getRow(currentRow)
+  totalRow.height = 24
+  totalRow.getCell(1).value = "TOTALES"
+  totalRow.getCell(2).value = `${filteredActivity.length} dias reportados`
+  totalRow.getCell(3).value = data.totals.produced
+  totalRow.getCell(3).numFmt = "#,##0"
+  totalRow.getCell(4).value = data.totals.sold
+  totalRow.getCell(4).numFmt = "#,##0"
+  totalRow.getCell(5).value = data.totals.surplus
+  totalRow.getCell(5).numFmt = "#,##0"
+  totalRow.getCell(6).value = data.totals.waste
+  totalRow.getCell(6).numFmt = "#,##0"
+  totalRow.getCell(7).value = data.totals.produced > 0 ? data.totals.waste / data.totals.produced : 0
+  totalRow.getCell(7).numFmt = "0.0%"
+  totalRow.getCell(8).value = Number(data.totals.totalRevenue.toFixed(2))
+  totalRow.getCell(8).numFmt = '"Q "#,##0.00'
+
+  for (let c = 1; c <= 8; c++) {
+    const cell = totalRow.getCell(c)
+    cell.font = { name: fontFamily, size: 10, bold: true, color: { argb: "FF2B170F" } }
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFEF3C7" } }
+    cell.border = borderDoubleBottom
+    if (c >= 3 && c <= 8) {
+      cell.alignment = { horizontal: "right" }
+    }
+  }
+
+  // =========================================================================
   // HOJA 2: DESGLOSE POR PRODUCTO (Si esta disponible)
-  // ----------------------------------------------------
+  // =========================================================================
   if (data.breakdownItems && data.breakdownItems.length > 0) {
-    const sheet2Rows: Array<Array<string | number>> = []
+    const ws2 = workbook.addWorksheet("Productos y Ventas", {
+      views: [{ showGridLines: true }],
+    })
 
-    sheet2Rows.push(["DESGLOSE POR PRODUCTO"])
-    sheet2Rows.push([`Fecha de analisis: ${data.breakdownDate || data.dateRange.to}`])
-    sheet2Rows.push([`Sucursal: ${data.branchName}`])
-    sheet2Rows.push([])
+    ws2.columns = [
+      { key: "p1", width: 28 },
+      { key: "p2", width: 16 },
+      { key: "p3", width: 18 },
+      { key: "p4", width: 16 },
+      { key: "p5", width: 16 },
+      { key: "p6", width: 16 },
+      { key: "p7", width: 18 },
+      { key: "p8", width: 22 },
+    ]
 
-    sheet2Rows.push([
+    // Banner Hoja 2
+    ws2.mergeCells("A1:H1")
+    const b2 = ws2.getCell("A1")
+    b2.value = "DESGLOSE DE VENTAS Y HORNEADO POR VARIEDAD DE PRODUCTO"
+    b2.font = { name: fontFamily, size: 13, bold: true, color: { argb: "FFFFFFFF" } }
+    b2.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2B170F" } }
+    b2.alignment = { vertical: "middle", horizontal: "center" }
+    ws2.getRow(1).height = 32
+
+    ws2.mergeCells("A2:H2")
+    ws2.getCell("A2").value = `Fecha de corte: ${data.breakdownDate || data.dateRange.to}  |  Sucursal: ${data.branchName}`
+    ws2.getCell("A2").font = metaStyle.font
+    ws2.getCell("A2").alignment = { vertical: "middle", horizontal: "left" }
+
+    // Encabezados Hoja 2
+    const h2Row = ws2.getRow(4)
+    h2Row.height = 24
+    const prodHeaders = [
       "Producto",
       "Categoria",
       "Horneado (piezas)",
       "Ventas (piezas)",
       "Merma (piezas)",
       "Sobrante (piezas)",
-      "Precio Unitario (Q)",
-      "Ingresos Totales (Q)",
-    ])
+      "Precio Unitario",
+      "Recaudacion Total",
+    ]
 
-    let totalBreakdownProduced = 0
-    let totalBreakdownSold = 0
-    let totalBreakdownWaste = 0
-    let totalBreakdownSurplus = 0
-    let totalBreakdownRevenue = 0
-
-    data.breakdownItems.forEach((p) => {
-      totalBreakdownProduced += p.produced
-      totalBreakdownSold += p.sold
-      totalBreakdownWaste += p.waste
-      totalBreakdownSurplus += p.surplus
-      totalBreakdownRevenue += p.revenue
-
-      sheet2Rows.push([
-        p.productName,
-        p.categoryName || "General",
-        p.produced,
-        p.sold,
-        p.waste,
-        p.surplus,
-        Number(p.price.toFixed(2)),
-        Number(p.revenue.toFixed(2)),
-      ])
+    prodHeaders.forEach((ph, colIdx) => {
+      const cell = h2Row.getCell(colIdx + 1)
+      cell.value = ph
+      cell.font = { name: fontFamily, size: 10, bold: true, color: { argb: "FFFFFFFF" } }
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF9A3412" } }
+      cell.alignment = { vertical: "middle", horizontal: colIdx >= 2 ? "right" : "left" }
+      cell.border = borderThin
     })
 
-    sheet2Rows.push([
-      "TOTALES",
-      "-",
-      totalBreakdownProduced,
-      totalBreakdownSold,
-      totalBreakdownWaste,
-      totalBreakdownSurplus,
-      "-",
-      Number(totalBreakdownRevenue.toFixed(2)),
-    ])
+    let r2 = 5
+    let totProd = 0, totSold = 0, totWaste = 0, totSurplus = 0, totRev = 0
 
-    const wsProducts = XLSX.utils.aoa_to_sheet(sheet2Rows)
-    wsProducts["!cols"] = [
-      { wch: 28 },
-      { wch: 16 },
-      { wch: 18 },
-      { wch: 16 },
-      { wch: 16 },
-      { wch: 16 },
-      { wch: 18 },
-      { wch: 20 },
-    ]
-    XLSX.utils.book_append_sheet(wb, wsProducts, "Productos y Ventas")
+    data.breakdownItems.forEach((item, idx) => {
+      totProd += item.produced
+      totSold += item.sold
+      totWaste += item.waste
+      totSurplus += item.surplus
+      totRev += item.revenue
+
+      const row = ws2.getRow(r2)
+      row.height = 20
+      const isZebra = idx % 2 === 1
+      const bgArgb = isZebra ? "FFFAF5EE" : "FFFFFFFF"
+
+      row.getCell(1).value = item.productName
+      row.getCell(2).value = item.categoryName || "General"
+      row.getCell(3).value = item.produced
+      row.getCell(3).numFmt = "#,##0"
+      row.getCell(4).value = item.sold
+      row.getCell(4).numFmt = "#,##0"
+      row.getCell(5).value = item.waste
+      row.getCell(5).numFmt = "#,##0"
+      row.getCell(6).value = item.surplus
+      row.getCell(6).numFmt = "#,##0"
+      row.getCell(7).value = item.price
+      row.getCell(7).numFmt = '"Q "#,##0.00'
+      row.getCell(8).value = Number(item.revenue.toFixed(2))
+      row.getCell(8).numFmt = '"Q "#,##0.00'
+
+      for (let c = 1; c <= 8; c++) {
+        const cell = row.getCell(c)
+        cell.font = { name: fontFamily, size: 10, color: { argb: "FF2B170F" } }
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: bgArgb } }
+        cell.border = borderThin
+        if (c >= 3) cell.alignment = { horizontal: "right" }
+      }
+      r2++
+    })
+
+    // Totales Hoja 2
+    const totRow2 = ws2.getRow(r2)
+    totRow2.height = 24
+    totRow2.getCell(1).value = "TOTALES"
+    totRow2.getCell(2).value = `${data.breakdownItems.length} variedades`
+    totRow2.getCell(3).value = totProd
+    totRow2.getCell(3).numFmt = "#,##0"
+    totRow2.getCell(4).value = totSold
+    totRow2.getCell(4).numFmt = "#,##0"
+    totRow2.getCell(5).value = totWaste
+    totRow2.getCell(5).numFmt = "#,##0"
+    totRow2.getCell(6).value = totSurplus
+    totRow2.getCell(6).numFmt = "#,##0"
+    totRow2.getCell(7).value = "-"
+    totRow2.getCell(8).value = Number(totRev.toFixed(2))
+    totRow2.getCell(8).numFmt = '"Q "#,##0.00'
+
+    for (let c = 1; c <= 8; c++) {
+      const cell = totRow2.getCell(c)
+      cell.font = { name: fontFamily, size: 10, bold: true, color: { argb: "FF2B170F" } }
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFEF3C7" } }
+      cell.border = borderDoubleBottom
+      if (c >= 3) cell.alignment = { horizontal: "right" }
+    }
   }
 
-  // ----------------------------------------------------
-  // HOJA 3: INVENTARIO DE MATERIAS PRIMAS
-  // ----------------------------------------------------
+  // =========================================================================
+  // HOJA 3: MATERIAS PRIMAS E INSUMOS
+  // =========================================================================
   if (data.rawMaterials && data.rawMaterials.length > 0) {
-    const sheet3Rows: Array<Array<string | number>> = []
+    const ws3 = workbook.addWorksheet("Materias Primas", {
+      views: [{ showGridLines: true }],
+    })
 
-    sheet3Rows.push(["INVENTARIO DE MATERIAS PRIMAS E INSUMOS"])
-    sheet3Rows.push([`Sucursal: ${data.branchName}`])
-    sheet3Rows.push([`Fecha de corte: ${generationTimestamp}`])
-    sheet3Rows.push([])
+    ws3.columns = [
+      { key: "m1", width: 32 },
+      { key: "m2", width: 18 },
+      { key: "m3", width: 18 },
+      { key: "m4", width: 18 },
+      { key: "m5", width: 28 },
+    ]
 
-    sheet3Rows.push([
+    // Banner Hoja 3
+    ws3.mergeCells("A1:E1")
+    const b3 = ws3.getCell("A1")
+    b3.value = "ESTADO DE INVENTARIO DE MATERIAS PRIMAS"
+    b3.font = { name: fontFamily, size: 13, bold: true, color: { argb: "FFFFFFFF" } }
+    b3.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2B170F" } }
+    b3.alignment = { vertical: "middle", horizontal: "center" }
+    ws3.getRow(1).height = 32
+
+    ws3.mergeCells("A2:E2")
+    ws3.getCell("A2").value = `Fecha de corte: ${generationTimestamp}  |  Sucursal: ${data.branchName}`
+    ws3.getCell("A2").font = metaStyle.font
+
+    // Encabezados Hoja 3
+    const h3Row = ws3.getRow(4)
+    h3Row.height = 24
+    const matHeaders = [
       "Insumo / Materia Prima",
       "Stock Actual",
       "Unidad de Medida",
       "Stock Minimo",
       "Estado de Abastecimiento",
-    ])
+    ]
 
-    data.rawMaterials.forEach((rm) => {
-      sheet3Rows.push([
-        rm.name,
-        rm.currentStock,
-        rm.unit,
-        rm.minimumStock,
-        rm.isLow ? "ALERTA: STOCK BAJO" : "OPTIMO",
-      ])
+    matHeaders.forEach((mh, colIdx) => {
+      const cell = h3Row.getCell(colIdx + 1)
+      cell.value = mh
+      cell.font = { name: fontFamily, size: 10, bold: true, color: { argb: "FFFFFFFF" } }
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF9A3412" } }
+      cell.alignment = { vertical: "middle", horizontal: colIdx === 1 || colIdx === 3 ? "right" : "left" }
+      cell.border = borderThin
     })
 
-    const wsMaterials = XLSX.utils.aoa_to_sheet(sheet3Rows)
-    wsMaterials["!cols"] = [
-      { wch: 30 },
-      { wch: 16 },
-      { wch: 18 },
-      { wch: 16 },
-      { wch: 26 },
-    ]
-    XLSX.utils.book_append_sheet(wb, wsMaterials, "Materias Primas")
+    let r3 = 5
+    data.rawMaterials.forEach((rm, idx) => {
+      const row = ws3.getRow(r3)
+      row.height = 20
+      const isZebra = idx % 2 === 1
+      const bgArgb = isZebra ? "FFFAF5EE" : "FFFFFFFF"
+
+      row.getCell(1).value = rm.name
+      row.getCell(2).value = rm.currentStock
+      row.getCell(2).numFmt = "#,##0"
+      row.getCell(2).alignment = { horizontal: "right" }
+      row.getCell(3).value = rm.unit
+      row.getCell(4).value = rm.minimumStock
+      row.getCell(4).numFmt = "#,##0"
+      row.getCell(4).alignment = { horizontal: "right" }
+
+      const statusCell = row.getCell(5)
+      statusCell.value = rm.isLow ? "ALERTA: STOCK BAJO" : "OPTIMO"
+      statusCell.alignment = { horizontal: "center" }
+      statusCell.font = {
+        name: fontFamily,
+        size: 10,
+        bold: true,
+        color: { argb: rm.isLow ? "FF991B1B" : "FF166534" },
+      }
+      statusCell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: rm.isLow ? "FFFEE2E2" : "FFDCFCE7" },
+      }
+
+      for (let c = 1; c <= 4; c++) {
+        const cell = row.getCell(c)
+        cell.font = { name: fontFamily, size: 10, color: { argb: "FF2B170F" } }
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: bgArgb } }
+        cell.border = borderThin
+      }
+      statusCell.border = borderThin
+      r3++
+    })
   }
 
-  // Sanitizar nombre de archivo para compatibilidad
+  // Generar archivo en el navegador
   const cleanBranch = data.branchName.replace(/[^a-zA-Z0-9]/g, "_")
   const fileName = `Reporte_Panaderia_${cleanBranch}_${data.dateRange.from}_a_${data.dateRange.to}.xlsx`
 
-  XLSX.writeFile(wb, fileName)
+  const buffer = await workbook.xlsx.writeBuffer()
+  const blob = new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  })
+  const url = window.URL.createObjectURL(blob)
+  const anchor = document.createElement("a")
+  anchor.href = url
+  anchor.download = fileName
+  anchor.click()
+  window.URL.revokeObjectURL(url)
 }

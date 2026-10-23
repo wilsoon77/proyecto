@@ -41,6 +41,8 @@ interface FinancialDashboardViewProps {
   breakdownData: DayBreakdownResponse | null
   isBreakdownLoading: boolean
   isGlobalRole: boolean
+  hideInactiveDays: boolean
+  setHideInactiveDays: (hide: boolean) => void
 }
 
 type FinancialChartType = "bars" | "lines" | "area" | "donut" | "table"
@@ -99,6 +101,8 @@ export function FinancialDashboardView({
   breakdownData,
   isBreakdownLoading,
   isGlobalRole,
+  hideInactiveDays,
+  setHideInactiveDays,
 }: FinancialDashboardViewProps) {
   const [financialChartType, setFinancialChartType] = useState<FinancialChartType>("bars")
   const [financialSearch, setFinancialSearch] = useState("")
@@ -106,16 +110,24 @@ export function FinancialDashboardView({
   const [financialSortBy, setFinancialSortBy] = useState<"revenue" | "sold" | "price">("revenue")
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
 
+  // Filtrado de dias sin actividad segun el check
+  const displayActivity = useMemo(() => {
+    if (!hideInactiveDays) return activity
+    return activity.filter(
+      (item) => !(item.produced === 0 && item.sold === 0 && item.waste === 0 && (!item.revenue || item.revenue === 0))
+    )
+  }, [activity, hideInactiveDays])
+
   const hasAutoSelectedRef = useRef(false)
   useEffect(() => {
-    if (!hasAutoSelectedRef.current && !selectedDayDate && activity.length > 0) {
-      const latest = [...activity].reverse().find((a) => (a.revenue !== undefined ? a.revenue > 0 : a.sold > 0))
+    if (!hasAutoSelectedRef.current && !selectedDayDate && displayActivity.length > 0) {
+      const latest = [...displayActivity].reverse().find((a) => (a.revenue !== undefined ? a.revenue > 0 : a.sold > 0))
       if (latest) {
         hasAutoSelectedRef.current = true
         setSelectedDayDate(latest.date)
       }
     }
-  }, [activity, selectedDayDate, setSelectedDayDate])
+  }, [displayActivity, selectedDayDate, setSelectedDayDate])
 
   // Metricas Monetarias Totales del Periodo
   const financialTotals = useMemo(() => {
@@ -123,7 +135,7 @@ export function FinancialDashboardView({
     let totalSold = 0
     let activeDaysCount = 0
 
-    activity.forEach((curr) => {
+    displayActivity.forEach((curr) => {
       const rev = curr.revenue !== undefined ? curr.revenue : curr.sold * 0.85
       totalRevenue += rev
       totalSold += curr.sold
@@ -140,7 +152,7 @@ export function FinancialDashboardView({
       avgDailyRevenue,
       avgPerUnit,
     }
-  }, [activity])
+  }, [displayActivity])
 
   // Desglose de productos del dia seleccionado
   const itemsWithMetrics = useMemo(() => {
@@ -226,14 +238,16 @@ export function FinancialDashboardView({
 
   // Metricas de Grafica SVG
   const maxRevenue = useMemo(() => {
-    const raw = Math.max(0, ...activity.map((a) => (a.revenue !== undefined ? a.revenue : a.sold * 0.85)))
+    const raw = Math.max(0, ...displayActivity.map((a) => (a.revenue !== undefined ? a.revenue : a.sold * 0.85)))
     if (raw <= 0) return 500
     return Math.ceil(raw / 100) * 100
-  }, [activity])
+  }, [displayActivity])
 
   const svgMetrics = useMemo(() => {
-    const count = activity.length
-    const width = 800
+    const count = displayActivity.length
+    const columnWidth = count > 20 ? 50 : count > 10 ? 60 : count > 3 ? 75 : 120
+    const computedWidth = Math.max(680, count * columnWidth)
+    const width = computedWidth
     const height = 280
     const paddingLeft = 65
     const paddingRight = 24
@@ -243,7 +257,7 @@ export function FinancialDashboardView({
     const innerHeight = height - paddingTop - paddingBottom
     const stepX = count > 1 ? innerWidth / (count - 1) : innerWidth / 2
 
-    const pointsRevenue = activity.map((item, idx) => {
+    const pointsRevenue = displayActivity.map((item, idx) => {
       const rev = item.revenue !== undefined ? item.revenue : item.sold * 0.85
       return {
         x: count === 1 ? paddingLeft + innerWidth / 2 : paddingLeft + idx * stepX,
@@ -285,7 +299,7 @@ export function FinancialDashboardView({
       pathRevenue,
       areaRevenue,
     }
-  }, [activity, maxRevenue])
+  }, [displayActivity, maxRevenue])
 
   return (
     <div className="space-y-6">
@@ -477,6 +491,17 @@ export function FinancialDashboardView({
               </button>
             </div>
 
+            {/* Checkbox Omitir dias sin actividad */}
+            <label className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-[#DECDBB] bg-[#FAF5EE] text-xs font-semibold text-[#6E5545] cursor-pointer hover:bg-[#F3EBE1] transition select-none">
+              <input
+                type="checkbox"
+                checked={hideInactiveDays}
+                onChange={(e) => setHideInactiveDays(e.target.checked)}
+                className="h-4 w-4 rounded border-[#DECDBB] text-emerald-600 focus:ring-emerald-600 accent-emerald-600"
+              />
+              <span>Omitir dias sin actividad</span>
+            </label>
+
             {/* Selector de Modo de Grafica: Barras / Lineas / Area / Circular / Tabla */}
             <div className="flex w-full sm:w-auto rounded-xl border border-[#DECDBB] bg-[#FAF5EE] p-0.5 text-xs font-semibold overflow-x-auto">
               <button
@@ -590,7 +615,7 @@ export function FinancialDashboardView({
         )}
 
         {/* CONTENEDOR SEGUN TIPO DE GRAFICA FINANCIERA */}
-        {activity.length === 0 ? (
+        {displayActivity.length === 0 ? (
           <div className="py-12 text-center text-sm text-[#6E5545] bg-[#FAF5EE]/40 rounded-2xl border border-dashed border-[#DECDBB]">
             No hay registros de ventas monetarias para el periodo o sucursal seleccionada.
           </div>
@@ -707,7 +732,7 @@ export function FinancialDashboardView({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E8DCCB]">
-                  {activity.map((row) => {
+                  {displayActivity.map((row) => {
                     const rev = row.revenue !== undefined ? row.revenue : row.sold * 0.85
                     const avg = row.sold > 0 ? rev / row.sold : 0
                     const isSelected = selectedDayDate === row.date
@@ -760,169 +785,181 @@ export function FinancialDashboardView({
             </div>
           </div>
         ) : (
-          /* MODO 3: GRAFICAS CONTINUAS (BARRAS, LINEAS, AREA) */
-          <div className="space-y-3">
-            <div className="relative w-full overflow-x-auto">
-              <svg
-                viewBox={`0 0 ${svgMetrics.width} ${svgMetrics.height}`}
-                className="w-full h-64 sm:h-72 select-none"
-              >
-                {/* Lineas Guia Y */}
-                {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
-                  const y = svgMetrics.paddingTop + svgMetrics.innerHeight * (1 - ratio)
-                  const labelValue = Math.round(maxRevenue * ratio)
-                  return (
-                    <g key={ratio}>
-                      <line
-                        x1={svgMetrics.paddingLeft}
-                        y1={y}
-                        x2={svgMetrics.width - svgMetrics.paddingRight}
-                        y2={y}
-                        stroke="#E8DCCB"
-                        strokeDasharray={ratio === 0 ? "none" : "3,3"}
-                        strokeWidth={ratio === 0 ? "1.5" : "1"}
-                      />
-                      <text
-                        x={svgMetrics.paddingLeft - 8}
-                        y={y + 3.5}
-                        textAnchor="end"
-                        fontSize="10"
-                        fontWeight="600"
-                        fill="#8C522B"
-                      >
-                        Q{labelValue}
-                      </text>
-                    </g>
-                  )
-                })}
-
-                {/* Area Suave de Ingresos */}
-                {financialChartType === "area" && svgMetrics.areaRevenue && (
-                  <path
-                    d={svgMetrics.areaRevenue}
-                    fill="url(#financialRevenueGradient)"
-                    opacity="0.65"
-                  />
-                )}
-
-                {/* Linea Continua de Ingresos */}
-                {(financialChartType === "lines" || financialChartType === "area") &&
-                  svgMetrics.pathRevenue && (
-                    <path
-                      d={svgMetrics.pathRevenue}
-                      fill="none"
-                      stroke="#059669"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                    />
-                  )}
-
-                {/* Barras Verticales de Ingresos */}
-                {financialChartType === "bars" &&
-                  activity.map((item, idx) => {
-                    const pt = svgMetrics.pointsRevenue[idx]
-                    const barHeight = Math.max(4, svgMetrics.baselineY - pt.y)
-                    const barWidth = Math.max(12, Math.min(36, svgMetrics.innerWidth / activity.length - 8))
-                    const isSelected = selectedDayDate === item.date
-                    const isHovered = hoveredIndex === idx
-
-                    return (
-                      <g
-                        key={item.date}
-                        className="cursor-pointer"
-                        onMouseEnter={() => setHoveredIndex(idx)}
-                        onMouseLeave={() => setHoveredIndex(null)}
-                        onClick={() => setSelectedDayDate(isSelected ? null : item.date)}
-                      >
-                        <rect
-                          x={pt.x - barWidth / 2}
-                          y={pt.y}
-                          width={barWidth}
-                          height={barHeight}
-                          rx="6"
-                          fill={isSelected ? "#D97706" : isHovered ? "#047857" : "#059669"}
-                          className="transition-all duration-200"
-                        />
-                        {/* Etiqueta flotante del monto en la barra */}
-                        {(isHovered || isSelected || activity.length <= 7) && (
+          /* MODO 3: GRAFICAS CONTINUAS (BARRAS, LINEAS, AREA) CON DESPLAZAMIENTO FLUIDO EN MOVIL */
+          <div className="space-y-2">
+            {displayActivity.length > 10 && (
+              <div className="flex items-center justify-between text-[11px] text-[#8C522B] px-1">
+                <span>Mostrando {displayActivity.length} dias de facturacion</span>
+                <span className="hidden sm:inline-flex items-center gap-1 text-emerald-700 font-semibold">
+                  &larr; Desliza horizontalmente para explorar el historial &rarr;
+                </span>
+              </div>
+            )}
+            <div className="overflow-x-auto pb-3 scrollbar-thin scrollbar-thumb-[#DECDBB] hover:scrollbar-thumb-[#B45309]/50">
+              <div style={{ minWidth: `${svgMetrics.width}px` }}>
+                <div className="relative h-64 sm:h-72 w-full">
+                  <svg
+                    viewBox={`0 0 ${svgMetrics.width} ${svgMetrics.height}`}
+                    className="h-full w-full select-none overflow-visible"
+                  >
+                    {/* Lineas Guia Y */}
+                    {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
+                      const y = svgMetrics.paddingTop + svgMetrics.innerHeight * (1 - ratio)
+                      const labelValue = Math.round(maxRevenue * ratio)
+                      return (
+                        <g key={ratio}>
+                          <line
+                            x1={svgMetrics.paddingLeft}
+                            y1={y}
+                            x2={svgMetrics.width - svgMetrics.paddingRight}
+                            y2={y}
+                            stroke="#E8DCCB"
+                            strokeDasharray={ratio === 0 ? "none" : "3,3"}
+                            strokeWidth={ratio === 0 ? "1.5" : "1"}
+                          />
                           <text
-                            x={pt.x}
-                            y={pt.y - 6}
-                            textAnchor="middle"
+                            x={svgMetrics.paddingLeft - 8}
+                            y={y + 3.5}
+                            textAnchor="end"
                             fontSize="10"
-                            fontWeight="bold"
-                            fill={isSelected ? "#D97706" : "#047857"}
+                            fontWeight="600"
+                            fill="#8C522B"
                           >
-                            Q{Math.round(pt.revenue)}
+                            Q{labelValue}
                           </text>
-                        )}
-                      </g>
-                    )
-                  })}
+                        </g>
+                      )
+                    })}
 
-                {/* Puntos y Etiquetas X */}
-                {activity.map((item, idx) => {
-                  const pt = svgMetrics.pointsRevenue[idx]
-                  const isSelected = selectedDayDate === item.date
-                  const isHovered = hoveredIndex === idx
-                  const dateObj = new Date(`${item.date}T12:00:00`)
-                  const dayName = dateObj.toLocaleDateString("es-GT", { weekday: "short" }).replace(".", "")
-                  const dayNum = dateObj.getDate()
+                    {/* Area Suave de Ingresos */}
+                    {financialChartType === "area" && svgMetrics.areaRevenue && (
+                      <path
+                        d={svgMetrics.areaRevenue}
+                        fill="url(#financialRevenueGradient)"
+                        opacity="0.65"
+                      />
+                    )}
 
-                  return (
-                    <g
-                      key={item.date}
-                      className="cursor-pointer"
-                      onMouseEnter={() => setHoveredIndex(idx)}
-                      onMouseLeave={() => setHoveredIndex(null)}
-                      onClick={() => setSelectedDayDate(isSelected ? null : item.date)}
-                    >
-                      {/* Puntos para Lineas/Area */}
-                      {(financialChartType === "lines" || financialChartType === "area") && (
-                        <circle
-                          cx={pt.x}
-                          cy={pt.y}
-                          r={isHovered ? "6" : isSelected ? "5.5" : "3.5"}
-                          fill={isSelected ? "#D97706" : "#059669"}
-                          stroke="#ffffff"
-                          strokeWidth="2"
+                    {/* Linea Continua de Ingresos */}
+                    {(financialChartType === "lines" || financialChartType === "area") &&
+                      svgMetrics.pathRevenue && (
+                        <path
+                          d={svgMetrics.pathRevenue}
+                          fill="none"
+                          stroke="#059669"
+                          strokeWidth="3"
+                          strokeLinecap="round"
                         />
                       )}
 
-                      {/* Etiqueta del Eje X */}
-                      <text
-                        x={pt.x}
-                        y={svgMetrics.baselineY + 16}
-                        textAnchor="middle"
-                        fontSize="10"
-                        fontWeight={isSelected ? "bold" : "600"}
-                        fill={isSelected ? "#D97706" : "#2B170F"}
-                      >
-                        {dayNum}
-                      </text>
-                      <text
-                        x={pt.x}
-                        y={svgMetrics.baselineY + 28}
-                        textAnchor="middle"
-                        fontSize="9"
-                        fontWeight="500"
-                        fill="#8C522B"
-                        className="uppercase"
-                      >
-                        {dayName}
-                      </text>
-                    </g>
-                  )
-                })}
+                    {/* Barras Verticales de Ingresos */}
+                    {financialChartType === "bars" &&
+                      displayActivity.map((item, idx) => {
+                        const pt = svgMetrics.pointsRevenue[idx]
+                        const barHeight = Math.max(4, svgMetrics.baselineY - pt.y)
+                        const barWidth = Math.max(14, Math.min(38, (svgMetrics.innerWidth / displayActivity.length) * 0.55))
+                        const isSelected = selectedDayDate === item.date
+                        const isHovered = hoveredIndex === idx
 
-                {/* Gradiente para Modo Area */}
-                <defs>
-                  <linearGradient id="financialRevenueGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#059669" stopOpacity="0.4" />
-                    <stop offset="100%" stopColor="#059669" stopOpacity="0.0" />
-                  </linearGradient>
-                </defs>
-              </svg>
+                        return (
+                          <g
+                            key={item.date}
+                            className="cursor-pointer"
+                            onMouseEnter={() => setHoveredIndex(idx)}
+                            onMouseLeave={() => setHoveredIndex(null)}
+                            onClick={() => setSelectedDayDate(isSelected ? null : item.date)}
+                          >
+                            <rect
+                              x={pt.x - barWidth / 2}
+                              y={pt.y}
+                              width={barWidth}
+                              height={barHeight}
+                              rx="6"
+                              fill={isSelected ? "#D97706" : isHovered ? "#047857" : "#059669"}
+                              className="transition-all duration-200"
+                            />
+                            {/* Etiqueta flotante del monto en la barra */}
+                            {(isHovered || isSelected || displayActivity.length <= 7) && (
+                              <text
+                                x={pt.x}
+                                y={pt.y - 6}
+                                textAnchor="middle"
+                                fontSize="10"
+                                fontWeight="bold"
+                                fill={isSelected ? "#D97706" : "#047857"}
+                              >
+                                Q{Math.round(pt.revenue)}
+                              </text>
+                            )}
+                          </g>
+                        )
+                      })}
+
+                    {/* Puntos y Etiquetas X */}
+                    {displayActivity.map((item, idx) => {
+                      const pt = svgMetrics.pointsRevenue[idx]
+                      const isSelected = selectedDayDate === item.date
+                      const isHovered = hoveredIndex === idx
+                      const dateObj = new Date(`${item.date}T12:00:00`)
+                      const dayName = dateObj.toLocaleDateString("es-GT", { weekday: "short" }).replace(".", "")
+                      const dayNum = dateObj.getDate()
+
+                      return (
+                        <g
+                          key={item.date}
+                          className="cursor-pointer"
+                          onMouseEnter={() => setHoveredIndex(idx)}
+                          onMouseLeave={() => setHoveredIndex(null)}
+                          onClick={() => setSelectedDayDate(isSelected ? null : item.date)}
+                        >
+                          {/* Puntos para Lineas/Area */}
+                          {(financialChartType === "lines" || financialChartType === "area") && (
+                            <circle
+                              cx={pt.x}
+                              cy={pt.y}
+                              r={isHovered ? "6" : isSelected ? "5.5" : "3.5"}
+                              fill={isSelected ? "#D97706" : "#059669"}
+                              stroke="#ffffff"
+                              strokeWidth="2"
+                            />
+                          )}
+
+                          {/* Etiqueta del Eje X */}
+                          <text
+                            x={pt.x}
+                            y={svgMetrics.baselineY + 16}
+                            textAnchor="middle"
+                            fontSize="10"
+                            fontWeight={isSelected ? "bold" : "600"}
+                            fill={isSelected ? "#D97706" : "#2B170F"}
+                          >
+                            {dayNum}
+                          </text>
+                          <text
+                            x={pt.x}
+                            y={svgMetrics.baselineY + 28}
+                            textAnchor="middle"
+                            fontSize="9"
+                            fontWeight="500"
+                            fill="#8C522B"
+                            className="uppercase"
+                          >
+                            {dayName}
+                          </text>
+                        </g>
+                      )
+                    })}
+
+                    {/* Gradiente para Modo Area */}
+                    <defs>
+                      <linearGradient id="financialRevenueGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#059669" stopOpacity="0.4" />
+                        <stop offset="100%" stopColor="#059669" stopOpacity="0.0" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                </div>
+              </div>
             </div>
           </div>
         )}

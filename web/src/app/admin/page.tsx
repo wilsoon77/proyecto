@@ -24,8 +24,10 @@ import {
   Layers,
   LineChart,
   Package,
+  PieChart,
   RefreshCw,
   Search,
+  Table2,
   TrendingDown,
   TrendingUp,
   Wheat,
@@ -62,7 +64,7 @@ const ALERT_TYPES = new Set([
   "inventory.expiration_warning",
 ])
 
-type ChartType = "bars" | "lines" | "area"
+type ChartType = "bars" | "lines" | "area" | "donut" | "table"
 type FilterPreset = "day" | "week" | "month" | "custom"
 
 function getTodayIsoString(): string {
@@ -171,6 +173,7 @@ export default function AdminOperationPage() {
   const [dateError, setDateError] = useState<string | null>(null)
   const [selectedBranchSlug, setSelectedBranchSlug] = useState<string>("")
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
+  const [hideInactiveDays, setHideInactiveDays] = useState<boolean>(true)
 
   // Estado del Desglose Interactivo por Producto (Drill-Down)
   const [selectedDayDate, setSelectedDayDate] = useState<string | null>(null)
@@ -407,6 +410,14 @@ export default function AdminOperationPage() {
     return expiringLots.reduce((sum, l) => sum + asNumber(l.availableQuantity), 0)
   }, [expiringLots])
 
+  // Filtrado de dias sin actividad segun preferencia
+  const displayActivity = useMemo(() => {
+    if (!hideInactiveDays) return activity
+    return activity.filter(
+      (item) => !(item.produced === 0 && item.sold === 0 && item.waste === 0 && (!item.revenue || item.revenue === 0))
+    )
+  }, [activity, hideInactiveDays])
+
   // Metricas acumuladas del periodo seleccionado
   // Se distingue claramente:
   // - Horneado = Produccion total elaborada
@@ -414,7 +425,7 @@ export default function AdminOperationPage() {
   // - Sobrante = Pan bueno guardado para venta matutina del dia siguiente (Horneado - Ventas - Merma)
   // - Merma = Descarte fisico real (pan quemado, caido o inservible)
   const totals = useMemo(() => {
-    return activity.reduce(
+    return displayActivity.reduce(
       (acc, curr) => {
         const surplusDay = Math.max(0, curr.produced - curr.sold - curr.waste)
         return {
@@ -426,12 +437,52 @@ export default function AdminOperationPage() {
       },
       { produced: 0, sold: 0, waste: 0, surplus: 0 }
     )
-  }, [activity])
+  }, [displayActivity])
+
+  // Datos para la Grafica Circular (Donut) del Ciclo del Pan
+  const operationalDonutData = useMemo(() => {
+    let prod = totals.produced
+    let sold = totals.sold
+    let waste = totals.waste
+    let surplus = totals.surplus
+    let title = "Distribucion del Pan Producido (Acumulado del Periodo)"
+
+    if (selectedDayDate) {
+      const day = displayActivity.find((d) => d.date === selectedDayDate)
+      if (day) {
+        prod = day.produced
+        sold = day.sold
+        waste = day.waste
+        surplus = Math.max(0, day.produced - day.sold - day.waste)
+        title = `Distribucion de la Jornada: ${formatLongDateSafe(day.date)}`
+      }
+    }
+
+    const soldPct = prod > 0 ? (sold / prod) * 100 : 0
+    const surplusPct = prod > 0 ? (surplus / prod) * 100 : 0
+    const wastePct = prod > 0 ? (waste / prod) * 100 : 0
+
+    return {
+      prod,
+      sold,
+      waste,
+      surplus,
+      soldPct,
+      surplusPct,
+      wastePct,
+      title,
+      slices: [
+        { name: "Ventas en mostrador", quantity: sold, percentage: soldPct, color: "#059669" },
+        { name: "Sobrante para manana", quantity: surplus, percentage: surplusPct, color: "#D97706" },
+        { name: "Merma descartada", quantity: waste, percentage: wastePct, color: "#DC2626" },
+      ],
+    }
+  }, [totals, selectedDayDate, displayActivity])
 
   // Agrupacion para la Grafica 2: Top Panes con Mayor Merma Real
   // Si hay un dia seleccionado en la grafica (selectedDayDate), muestra el descarte real de ese dia;
   // de lo contrario, muestra el descarte acumulado de todo el periodo seleccionado.
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     setIsExporting(true)
     try {
       const activeBranch = selectedBranchSlug
@@ -487,10 +538,11 @@ export default function AdminOperationPage() {
         isLow: rm.isLow,
       }))
 
-      exportOperationalReportToExcel({
+      await exportOperationalReportToExcel({
         branchName,
         periodLabel,
         dateRange: { from: fromDate, to: toDate },
+        hideInactiveDays,
         activity,
         totals: {
           ...totals,
@@ -610,7 +662,7 @@ export default function AdminOperationPage() {
 
   const maxActivity = Math.max(
     1,
-    ...activity.flatMap((item) => {
+    ...displayActivity.flatMap((item) => {
       const surplus = Math.max(0, item.produced - item.sold - item.waste)
       return [item.produced, item.sold, item.waste, surplus]
     })
@@ -618,7 +670,7 @@ export default function AdminOperationPage() {
 
   // Coordenadas calculadas para la grafica SVG
   const svgMetrics = useMemo(() => {
-    const count = activity.length
+    const count = displayActivity.length
     const columnWidth = count > 20 ? 46 : count > 10 ? 54 : count > 3 ? 72 : 120
     const computedWidth = Math.max(720, count * columnWidth)
     const width = computedWidth
@@ -632,17 +684,17 @@ export default function AdminOperationPage() {
 
     const stepX = count > 1 ? innerWidth / (count - 1) : innerWidth / 2
 
-    const pointsProduced = activity.map((item, idx) => ({
+    const pointsProduced = displayActivity.map((item, idx) => ({
       x: count === 1 ? paddingLeft + innerWidth / 2 : paddingLeft + idx * stepX,
       y: paddingTop + innerHeight - (maxActivity > 0 ? (item.produced / maxActivity) * innerHeight : 0),
     }))
 
-    const pointsSold = activity.map((item, idx) => ({
+    const pointsSold = displayActivity.map((item, idx) => ({
       x: count === 1 ? paddingLeft + innerWidth / 2 : paddingLeft + idx * stepX,
       y: paddingTop + innerHeight - (maxActivity > 0 ? (item.sold / maxActivity) * innerHeight : 0),
     }))
 
-    const pointsSurplus = activity.map((item, idx) => {
+    const pointsSurplus = displayActivity.map((item, idx) => {
       const surplus = Math.max(0, item.produced - item.sold - item.waste)
       return {
         x: count === 1 ? paddingLeft + innerWidth / 2 : paddingLeft + idx * stepX,
@@ -650,7 +702,7 @@ export default function AdminOperationPage() {
       }
     })
 
-    const pointsWaste = activity.map((item, idx) => ({
+    const pointsWaste = displayActivity.map((item, idx) => ({
       x: count === 1 ? paddingLeft + innerWidth / 2 : paddingLeft + idx * stepX,
       y: paddingTop + innerHeight - (maxActivity > 0 ? (item.waste / maxActivity) * innerHeight : 0),
     }))
@@ -701,7 +753,7 @@ export default function AdminOperationPage() {
       areaSurplus,
       areaWaste,
     }
-  }, [activity, maxActivity])
+  }, [displayActivity, maxActivity])
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-16">
@@ -1033,8 +1085,19 @@ export default function AdminOperationPage() {
               </button>
             </div>
 
-            {/* Selector de Tipo de Grafica (Barras / Lineas / Area) */}
-            <div className="flex w-full sm:w-auto rounded-xl border border-[#DECDBB] bg-[#FAF5EE] p-0.5 text-xs font-semibold">
+            {/* Checkbox Omitir dias sin actividad */}
+            <label className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-[#DECDBB] bg-[#FAF5EE] text-xs font-semibold text-[#6E5545] cursor-pointer hover:bg-[#F3EBE1] transition select-none">
+              <input
+                type="checkbox"
+                checked={hideInactiveDays}
+                onChange={(e) => setHideInactiveDays(e.target.checked)}
+                className="h-4 w-4 rounded border-[#DECDBB] text-[#D97706] focus:ring-[#D97706] accent-[#D97706]"
+              />
+              <span>Omitir dias sin actividad</span>
+            </label>
+
+            {/* Selector de Tipo de Grafica (Barras / Lineas / Area / Circular / Tabla) */}
+            <div className="flex w-full sm:w-auto rounded-xl border border-[#DECDBB] bg-[#FAF5EE] p-0.5 text-xs font-semibold overflow-x-auto">
               <button
                 type="button"
                 onClick={() => setChartType("bars")}
@@ -1073,6 +1136,32 @@ export default function AdminOperationPage() {
               >
                 <TrendingUp className="h-3.5 w-3.5 shrink-0" />
                 <span>Area</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setChartType("donut")}
+                className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 min-h-[40px] px-2.5 sm:px-3 py-2 rounded-lg transition ${
+                  chartType === "donut"
+                    ? "bg-white text-[#D97706] font-bold shadow-2xs"
+                    : "text-[#6E5545] hover:text-[#2B170F]"
+                }`}
+                title="Grafica Circular de Distribucion del Pan"
+              >
+                <PieChart className="h-3.5 w-3.5 shrink-0" />
+                <span>Circular</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setChartType("table")}
+                className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 min-h-[40px] px-2.5 sm:px-3 py-2 rounded-lg transition ${
+                  chartType === "table"
+                    ? "bg-white text-[#D97706] font-bold shadow-2xs"
+                    : "text-[#6E5545] hover:text-[#2B170F]"
+                }`}
+                title="Vista de Tabla Operativa"
+              >
+                <Table2 className="h-3.5 w-3.5 shrink-0" />
+                <span>Tabla</span>
               </button>
             </div>
           </div>
@@ -1114,7 +1203,7 @@ export default function AdminOperationPage() {
 
               {appliedCustomRange && (
                 <span className="text-[11px] text-[#8C522B] font-semibold bg-white/70 px-2.5 py-1.5 rounded-md border border-[#DECDBB] text-center w-full sm:w-auto">
-                  Activo: {appliedCustomRange.from} al {appliedCustomRange.to} ({activity.length} dias)
+                  Activo: {appliedCustomRange.from} al {appliedCustomRange.to} ({displayActivity.length} {hideInactiveDays ? "dias con actividad" : "dias"})
                 </span>
               )}
             </div>
@@ -1191,11 +1280,200 @@ export default function AdminOperationPage() {
 
         {/* CONTENEDOR DE GRAFICA / BALANCE */}
         <div className="pt-2">
-          {activity.length === 0 ? (
+          {displayActivity.length === 0 ? (
             <div className="py-12 text-center text-sm text-[#6E5545] bg-[#FAF5EE]/40 rounded-2xl border border-dashed border-[#DECDBB]">
               No hay movimientos registrados para el periodo o sucursal seleccionada.
             </div>
-          ) : activity.length === 1 ? (
+          ) : chartType === "donut" ? (
+            /* 1. MODO CIRCULAR / DONUT (Ciclo del Pan) */
+            <div className="rounded-2xl border border-[#E8DCCB] bg-[#FAF5EE]/40 p-4 sm:p-6 space-y-4">
+              <div className="flex flex-col sm:flex-row items-center justify-between border-b border-[#E8DCCB] pb-3 gap-2">
+                <div>
+                  <h3 className="font-bold text-sm sm:text-base text-[#2B170F]">
+                    {operationalDonutData.title}
+                  </h3>
+                  <p className="text-xs text-[#6E5545]">
+                    Proporcion de ventas, pan guardado para manana y descarte fisico
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {selectedDayDate && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedDayDate(null)}
+                      className="text-xs font-bold text-[#8C522B] hover:text-[#D97706] underline cursor-pointer"
+                    >
+                      Ver acumulado total
+                    </button>
+                  )}
+                  <span className="rounded-full bg-blue-100 text-blue-800 px-3 py-1 text-xs font-bold">
+                    Horneado: {operationalDonutData.prod.toLocaleString()} piezas
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex flex-col md:flex-row items-center justify-around gap-6 pt-2">
+                {/* SVG Donut */}
+                <div className="relative flex items-center justify-center">
+                  <svg width="240" height="240" viewBox="0 0 240 240" className="transform -rotate-90">
+                    {(() => {
+                      const radius = 80
+                      const circumference = 2 * Math.PI * radius
+                      let accumulatedOffset = 0
+
+                      return operationalDonutData.slices.map((slice) => {
+                        const strokeDasharray = `${(slice.percentage / 100) * circumference} ${circumference}`
+                        const strokeDashoffset = -accumulatedOffset
+                        accumulatedOffset += (slice.percentage / 100) * circumference
+
+                        return (
+                          <circle
+                            key={slice.name}
+                            cx="120"
+                            cy="120"
+                            r={radius}
+                            fill="transparent"
+                            stroke={slice.color}
+                            strokeWidth="32"
+                            strokeDasharray={strokeDasharray}
+                            strokeDashoffset={strokeDashoffset}
+                            className="transition-all duration-500 hover:opacity-80"
+                          />
+                        )
+                      })
+                    })()}
+                  </svg>
+
+                  {/* Centro del Donut */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#8C522B]">
+                      Horneado
+                    </span>
+                    <span className="text-xl font-bold text-[#2B170F]">
+                      {operationalDonutData.prod.toLocaleString()}
+                    </span>
+                    <span className="text-[10px] text-[#6E5545] font-semibold">piezas (100%)</span>
+                  </div>
+                </div>
+
+                {/* Leyenda Interactiva al Lado */}
+                <div className="flex-1 w-full max-w-md space-y-2.5">
+                  {operationalDonutData.slices.map((item) => (
+                    <div
+                      key={item.name}
+                      className="flex items-center justify-between p-2.5 rounded-xl bg-white border border-[#E8DCCB] shadow-2xs text-xs"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="h-3 w-3 rounded-full shrink-0"
+                          style={{ backgroundColor: item.color }}
+                        />
+                        <span className="font-bold text-[#2B170F]">{item.name}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-[#6E5545] text-[11px]">{item.quantity.toLocaleString()} uds</span>
+                        <span className="inline-block w-12 text-right font-bold text-[#8C522B] text-[11px]">
+                          {item.percentage.toFixed(1)}%
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+
+                  <div className="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-200 text-xs flex items-center justify-between">
+                    <span className="text-emerald-800 font-bold">Aprovechamiento util:</span>
+                    <span className="text-emerald-700 font-bold">
+                      {(operationalDonutData.soldPct + operationalDonutData.surplusPct).toFixed(1)}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : chartType === "table" ? (
+            /* 2. MODO TABLA OPERATIVA */
+            <div className="rounded-2xl border border-[#E8DCCB] overflow-hidden bg-white shadow-2xs">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-[#FAF5EE] text-[#8C522B] border-b border-[#E8DCCB]">
+                    <tr>
+                      <th className="py-3 px-4 font-bold">Fecha de Jornada</th>
+                      <th className="py-3 px-4 font-bold text-right text-blue-800">Horneado</th>
+                      <th className="py-3 px-4 font-bold text-right text-emerald-800">Ventas</th>
+                      <th className="py-3 px-4 font-bold text-right text-amber-800">Sobrante</th>
+                      <th className="py-3 px-4 font-bold text-right text-red-700">Merma Real</th>
+                      <th className="py-3 px-4 font-bold text-center">% Merma</th>
+                      <th className="py-3 px-4 font-bold text-center">Accion</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#E8DCCB]">
+                    {displayActivity.map((row) => {
+                      const surplusDay = Math.max(0, row.produced - row.sold - row.waste)
+                      const wasteRatio = row.produced > 0 ? (row.waste / row.produced) * 100 : 0
+                      const isSelected = selectedDayDate === row.date
+                      const dateObj = new Date(`${row.date}T12:00:00`)
+
+                      return (
+                        <tr
+                          key={row.date}
+                          className={`transition hover:bg-[#FAF5EE]/60 ${
+                            isSelected ? "bg-amber-50/80 font-semibold" : ""
+                          }`}
+                        >
+                          <td className="py-3 px-4">
+                            <span className="font-bold text-[#2B170F]">
+                              {dateObj.toLocaleDateString("es-GT", {
+                                weekday: "short",
+                                day: "numeric",
+                                month: "long",
+                                year: "numeric",
+                              })}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-right font-medium text-blue-700">
+                            {row.produced.toLocaleString()} uds
+                          </td>
+                          <td className="py-3 px-4 text-right font-medium text-emerald-700">
+                            {row.sold.toLocaleString()} uds
+                          </td>
+                          <td className="py-3 px-4 text-right font-medium text-amber-700">
+                            {surplusDay.toLocaleString()} uds
+                          </td>
+                          <td className="py-3 px-4 text-right font-medium text-red-600">
+                            {row.waste.toLocaleString()} uds
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <span
+                              className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                wasteRatio <= 3
+                                  ? "bg-emerald-100 text-emerald-800"
+                                  : wasteRatio <= 6
+                                  ? "bg-amber-100 text-amber-800"
+                                  : "bg-red-100 text-red-800"
+                              }`}
+                            >
+                              {wasteRatio.toFixed(1)}%
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedDayDate(isSelected ? null : row.date)}
+                              className={`min-h-[36px] px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                                isSelected
+                                  ? "bg-[#D97706] text-white"
+                                  : "bg-[#FAF5EE] text-[#8C522B] border border-[#DECDBB] hover:border-[#D97706]"
+                              }`}
+                            >
+                              {isSelected ? "Seleccionado" : "Ver panes"}
+                            </button>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : displayActivity.length === 1 ? (
             /* VISTA ESPECIALIZADA: 1 DIA (Balance Diario del Ciclo del Pan) */
             <div className="rounded-2xl border border-[#E8DCCB] bg-[#FAF5EE]/50 p-5 space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#E8DCCB] pb-3">
@@ -1204,7 +1482,7 @@ export default function AdminOperationPage() {
                     Jornada Operativa
                   </span>
                   <h3 className="font-display text-lg font-bold text-[#2B170F]">
-                    {new Date(`${activity[0].date}T12:00:00`).toLocaleDateString("es-GT", {
+                    {new Date(`${displayActivity[0].date}T12:00:00`).toLocaleDateString("es-GT", {
                       weekday: "long",
                       day: "numeric",
                       month: "long",
@@ -1219,9 +1497,9 @@ export default function AdminOperationPage() {
 
               {/* 4 Columnas Proporcionales del Dia */}
               {(() => {
-                const dayProd = activity[0].produced
-                const daySold = activity[0].sold
-                const dayWaste = activity[0].waste
+                const dayProd = displayActivity[0].produced
+                const daySold = displayActivity[0].sold
+                const dayWaste = displayActivity[0].waste
                 const daySurplus = Math.max(0, dayProd - daySold - dayWaste)
 
                 return (
@@ -1229,7 +1507,7 @@ export default function AdminOperationPage() {
                     <button
                       type="button"
                       onClick={() => {
-                        setSelectedDayDate(activity[0].date)
+                        setSelectedDayDate(displayActivity[0].date)
                         setBreakdownTab("produced")
                       }}
                       className="rounded-xl border border-blue-200 bg-white p-4 shadow-2xs hover:border-blue-400 hover:shadow-xs transition text-left cursor-pointer group"
@@ -1249,7 +1527,7 @@ export default function AdminOperationPage() {
                     <button
                       type="button"
                       onClick={() => {
-                        setSelectedDayDate(activity[0].date)
+                        setSelectedDayDate(displayActivity[0].date)
                         setBreakdownTab("sold")
                       }}
                       className="rounded-xl border border-emerald-200 bg-white p-4 shadow-2xs hover:border-emerald-400 hover:shadow-xs transition text-left cursor-pointer group"
@@ -1269,7 +1547,7 @@ export default function AdminOperationPage() {
                     <button
                       type="button"
                       onClick={() => {
-                        setSelectedDayDate(activity[0].date)
+                        setSelectedDayDate(displayActivity[0].date)
                         setBreakdownTab("surplus")
                       }}
                       className="rounded-xl border border-amber-200 bg-white p-4 shadow-2xs hover:border-amber-400 hover:shadow-xs transition text-left cursor-pointer group"
@@ -1289,7 +1567,7 @@ export default function AdminOperationPage() {
                     <button
                       type="button"
                       onClick={() => {
-                        setSelectedDayDate(activity[0].date)
+                        setSelectedDayDate(displayActivity[0].date)
                         setBreakdownTab("waste")
                       }}
                       className="rounded-xl border border-red-200 bg-white p-4 shadow-2xs hover:border-red-400 hover:shadow-xs transition text-left cursor-pointer group"
@@ -1310,10 +1588,10 @@ export default function AdminOperationPage() {
               })()}
 
               {/* Barra Comparativa Horizontal del Dia */}
-              {activity[0].produced > 0 && (() => {
-                const dayProd = activity[0].produced
-                const daySold = activity[0].sold
-                const dayWaste = activity[0].waste
+              {displayActivity[0].produced > 0 && (() => {
+                const dayProd = displayActivity[0].produced
+                const daySold = displayActivity[0].sold
+                const dayWaste = displayActivity[0].waste
                 const daySurplus = Math.max(0, dayProd - daySold - dayWaste)
                 const soldPct = (daySold / dayProd) * 100
                 const surplusPct = (daySurplus / dayProd) * 100
@@ -1365,20 +1643,20 @@ export default function AdminOperationPage() {
           ) : chartType === "bars" ? (
             /* 1. MODO BARRAS (Horneado, Ventas, Sobrante, Merma) */
             <div className="space-y-2">
-              {activity.length > 10 && (
+              {displayActivity.length > 10 && (
                 <div className="flex items-center justify-between text-[11px] text-[#8C522B] px-1">
-                  <span>Mostrando {activity.length} dias en el rango seleccionado</span>
+                  <span>Mostrando {displayActivity.length} dias en el rango seleccionado</span>
                   <span className="hidden sm:inline-flex items-center gap-1 text-[#D97706] font-semibold">
                     &larr; Desliza horizontalmente para explorar el historial &rarr;
                   </span>
                 </div>
               )}
               <div className="overflow-x-auto pb-3 scrollbar-thin scrollbar-thumb-[#DECDBB] hover:scrollbar-thumb-[#B45309]/50">
-                <div style={{ minWidth: `${Math.max(680, activity.length * (activity.length > 20 ? 56 : 72))}px` }}>
+                <div style={{ minWidth: `${Math.max(680, displayActivity.length * (displayActivity.length > 20 ? 56 : 72))}px` }}>
                   <div className="flex h-56 items-end gap-1.5 sm:gap-2.5 border-b border-[#E8DCCB] pb-2 px-1">
-                    {activity.map((day, idx) => {
+                    {displayActivity.map((day, idx) => {
                       const dateObj = new Date(`${day.date}T12:00:00`)
-                      const label = activity.length > 14
+                      const label = displayActivity.length > 14
                         ? dateObj.toLocaleDateString("es-GT", { month: "short" }).replace(".", "")
                         : dateObj.toLocaleDateString("es-GT", { weekday: "short" }).replace(".", "")
                       const dayNum = dateObj.getDate()
@@ -1440,9 +1718,9 @@ export default function AdminOperationPage() {
           ) : (
             /* 2. MODO LINEAS / AREA SUAVE */
             <div className="space-y-2">
-              {activity.length > 10 && (
+              {displayActivity.length > 10 && (
                 <div className="flex items-center justify-between text-[11px] text-[#8C522B] px-1">
-                  <span>Mostrando {activity.length} dias de actividad</span>
+                  <span>Mostrando {displayActivity.length} dias de actividad</span>
                   <span className="hidden sm:inline-flex items-center gap-1 text-[#D97706] font-semibold">
                     &larr; Desliza horizontalmente para explorar el historial &rarr;
                   </span>
@@ -1552,7 +1830,7 @@ export default function AdminOperationPage() {
                       )}
 
                       {/* Puntos y Etiquetas X */}
-                      {activity.map((item, idx) => {
+                      {displayActivity.map((item, idx) => {
                         const ptProd = svgMetrics.pointsProduced[idx]
                         const ptSold = svgMetrics.pointsSold[idx]
                         const ptSurplus = svgMetrics.pointsSurplus[idx]
@@ -1561,13 +1839,13 @@ export default function AdminOperationPage() {
                         const isSelected = selectedDayDate === item.date
 
                         const dateObj = new Date(`${item.date}T12:00:00`)
-                        const label = activity.length > 14
+                        const label = displayActivity.length > 14
                           ? dateObj.toLocaleDateString("es-GT", { month: "short" }).replace(".", "")
                           : dateObj.toLocaleDateString("es-GT", { weekday: "short" }).replace(".", "")
                         const dayNum = dateObj.getDate()
 
-                        const stepTick = activity.length > 24 ? 3 : activity.length > 14 ? 2 : 1
-                        const showTick = idx === 0 || idx === activity.length - 1 || idx % stepTick === 0
+                        const stepTick = displayActivity.length > 24 ? 3 : displayActivity.length > 14 ? 2 : 1
+                        const showTick = idx === 0 || idx === displayActivity.length - 1 || idx % stepTick === 0
 
                         return (
                           <g
@@ -1663,9 +1941,9 @@ export default function AdminOperationPage() {
           const activeIndex =
             hoveredIndex !== null
               ? hoveredIndex
-              : activity.findIndex((a) => a.date === selectedDayDate)
-          if (activeIndex < 0 || !activity[activeIndex]) return null
-          const day = activity[activeIndex]
+              : displayActivity.findIndex((a) => a.date === selectedDayDate)
+          if (activeIndex < 0 || !displayActivity[activeIndex]) return null
+          const day = displayActivity[activeIndex]
           const surplusDay = Math.max(0, day.produced - day.sold - day.waste)
           const isCurrentSelected = selectedDayDate === day.date
           return (
@@ -2289,6 +2567,8 @@ export default function AdminOperationPage() {
           breakdownData={breakdownData}
           isBreakdownLoading={isBreakdownLoading}
           isGlobalRole={isGlobalRole}
+          hideInactiveDays={hideInactiveDays}
+          setHideInactiveDays={setHideInactiveDays}
         />
       )}
 

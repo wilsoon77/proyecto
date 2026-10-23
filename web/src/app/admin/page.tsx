@@ -17,6 +17,7 @@ import {
   ClipboardCheck,
   Clock,
   Coins,
+  Download,
   ExternalLink,
   Factory,
   Info,
@@ -53,6 +54,8 @@ import { useAuth } from "@/context/AuthContext"
 import TelegramAssistantButton from "@/components/admin/TelegramAssistantButton"
 import { FinancialDashboardView } from "@/components/admin/FinancialDashboardView"
 import { searchMatches } from "@/lib/search-utils"
+import { useToast } from "@/components/ui/toast"
+import { exportOperationalReportToExcel } from "@/lib/excel-export"
 
 const ALERT_TYPES = new Set([
   "inventory.raw_material_low",
@@ -143,6 +146,8 @@ function getBezierPath(points: Array<{ x: number; y: number }>): string {
 
 export default function AdminOperationPage() {
   const { user } = useAuth()
+  const { showToast } = useToast()
+  const [isExporting, setIsExporting] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [rawMaterials, setRawMaterials] = useState<RawMaterialInventory[]>([])
   const [expiringLots, setExpiringLots] = useState<ExpirationLot[]>([])
@@ -426,6 +431,85 @@ export default function AdminOperationPage() {
   // Agrupacion para la Grafica 2: Top Panes con Mayor Merma Real
   // Si hay un dia seleccionado en la grafica (selectedDayDate), muestra el descarte real de ese dia;
   // de lo contrario, muestra el descarte acumulado de todo el periodo seleccionado.
+  const handleExportExcel = () => {
+    setIsExporting(true)
+    try {
+      const activeBranch = selectedBranchSlug
+        ? branches.find((b) => b.slug === selectedBranchSlug)
+        : null
+
+      const branchName = activeBranch ? activeBranch.name : "Todas las sucursales"
+
+      const periodLabel =
+        filterPreset === "day"
+          ? "Hoy"
+          : filterPreset === "week"
+          ? "Ultimos 7 dias"
+          : filterPreset === "month"
+          ? "Mes actual"
+          : "Rango personalizado"
+
+      const fromDate =
+        filterPreset === "custom" && appliedCustomRange
+          ? appliedCustomRange.from
+          : activity.length > 0
+          ? activity[0].date
+          : getTodayIsoString()
+
+      const toDate =
+        filterPreset === "custom" && appliedCustomRange
+          ? appliedCustomRange.to
+          : activity.length > 0
+          ? activity[activity.length - 1].date
+          : getTodayIsoString()
+
+      const totalRevenue = activity.reduce((sum, curr) => {
+        const rev = curr.revenue !== undefined ? curr.revenue : curr.sold * 0.85
+        return sum + rev
+      }, 0)
+
+      const breakdownItems = breakdownData?.items?.map((item) => ({
+        productName: item.productName || "Producto",
+        categoryName: item.categoryName || "General",
+        produced: item.produced,
+        sold: item.sold,
+        waste: item.waste,
+        surplus: item.surplus,
+        price: item.price,
+        revenue: item.revenue !== undefined ? item.revenue : Number((item.sold * item.price).toFixed(2)),
+      }))
+
+      const rawMaterialsList = rawMaterials.map((rm) => ({
+        name: rm.rawMaterial?.name || "Insumo",
+        currentStock: asNumber(rm.quantity),
+        unit: rm.rawMaterial?.baseUnit || "LB",
+        minimumStock: rm.rawMaterial?.minStock ? asNumber(rm.rawMaterial.minStock) : 0,
+        isLow: rm.isLow,
+      }))
+
+      exportOperationalReportToExcel({
+        branchName,
+        periodLabel,
+        dateRange: { from: fromDate, to: toDate },
+        activity,
+        totals: {
+          ...totals,
+          totalRevenue,
+        },
+        breakdownItems,
+        breakdownDate: breakdownData?.date || selectedDayDate,
+        rawMaterials: rawMaterialsList,
+      })
+
+      showToast("Reporte descargado exitosamente en formato Excel (.xlsx)", "success")
+    } catch (err) {
+      console.error("Error al exportar reporte Excel:", err)
+      showToast("No fue posible generar el archivo Excel", "error")
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   const { topWasteProducts, totalWasteUnits, isDayFiltered } = useMemo(() => {
     if (selectedDayDate) {
       if (breakdownData?.items) {
@@ -654,6 +738,17 @@ export default function AdminOperationPage() {
               <span className="sm:hidden">Caducidades</span>
             </button>
           )}
+          <button
+            type="button"
+            onClick={handleExportExcel}
+            disabled={isExporting || activity.length === 0}
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-emerald-600/30 bg-emerald-50 px-4 py-2.5 text-xs font-bold text-emerald-800 hover:bg-emerald-100 hover:border-emerald-600/50 disabled:opacity-60 transition shadow-xs cursor-pointer"
+            title="Exportar reporte operativo y financiero a Excel (.xlsx)"
+          >
+            <Download className={`h-4 w-4 text-emerald-700 ${isExporting ? "animate-pulse" : ""}`} />
+            <span className="hidden sm:inline">{isExporting ? "Generando Excel..." : "Exportar a Excel"}</span>
+            <span className="sm:hidden">{isExporting ? "..." : "Excel"}</span>
+          </button>
           <TelegramAssistantButton />
         </div>
       </div>

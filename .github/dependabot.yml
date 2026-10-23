@@ -1,18 +1,76 @@
 version: 2
 updates:
-  - package-ecosystem: npm
-    directory: /api
+  # Backend NestJS (API)
+  - package-ecosystem: "npm"
+    directory: "/api"
     schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
+      interval: "monthly"
+      day: "monday"
+      time: "07:00"
+      timezone: "America/Guatemala"
+    open-pull-requests-limit: 3
+    # Evitar breaking changes accidentales ignorando versiones mayores automaticas
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    # Agrupar actualizaciones para evitar un PR individual por cada paquete
+    groups:
+      dependencies:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+      security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "backend"
 
-  - package-ecosystem: npm
-    directory: /web
+  # Frontend Next.js (Web)
+  - package-ecosystem: "npm"
+    directory: "/web"
     schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
+      interval: "monthly"
+      day: "monday"
+      time: "07:00"
+      timezone: "America/Guatemala"
+    open-pull-requests-limit: 3
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    groups:
+      dependencies:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+      security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "frontend"
 
-  - package-ecosystem: github-actions
-    directory: /
+  # GitHub Actions Workflows
+  - package-ecosystem: "github-actions"
+    directory: "/"
     schedule:
-      interval: monthly
+      interval: "monthly"
+      day: "monday"
+      time: "07:00"
+      timezone: "America/Guatemala"
+    open-pull-requests-limit: 2
+    groups:
+      actions:
+        patterns:
+          - "*"
+    labels:
+      - "ci"
+      - "github-actions"

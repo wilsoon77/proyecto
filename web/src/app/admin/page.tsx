@@ -1018,20 +1018,21 @@ export default function AdminOperationPage() {
           )}
         </div>
 
-        {/* Barra de Filtros de Periodo y Selector de Grafica (Fila Dedicada Responsiva) */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-          {/* Lado Izquierdo: Presets: Dia, Semana, Mes, Personalizado + Checkbox Omitir dias sin actividad */}
-          <div className="flex flex-wrap items-center gap-2.5">
-            <div className="flex w-full sm:w-auto rounded-xl border border-[#DECDBB] bg-[#FAF5EE] p-0.5 text-xs font-semibold">
+        {/* Barra Unificada de Filtros y Selector de Grafica (Toolbar) */}
+        <div className="w-full rounded-2xl bg-[#FAF5EE]/70 border border-[#DECDBB] p-2 sm:p-2.5 flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+          {/* Lado Izquierdo: Presets de Periodo + Checkbox en UNA sola linea continua */}
+          <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap shrink-0">
+            {/* Presets: Dia, Semana, Mes, Personalizado */}
+            <div className="flex w-full sm:w-auto rounded-xl border border-[#DECDBB] bg-white p-0.5 text-xs font-semibold shrink-0 shadow-2xs">
               <button
                 type="button"
                 onClick={() => {
                   setFilterPreset("day")
                   setHoveredIndex(null)
                 }}
-                className={`flex-1 sm:flex-initial inline-flex items-center justify-center min-h-[40px] px-2.5 sm:px-3 py-2 rounded-lg transition ${
+                className={`flex-1 sm:flex-initial inline-flex items-center justify-center min-h-[38px] px-3 sm:px-3.5 py-1.5 rounded-lg transition shrink-0 whitespace-nowrap ${
                   filterPreset === "day"
-                    ? "bg-white text-[#D97706] font-bold shadow-2xs"
+                    ? "bg-[#FAF5EE] text-[#D97706] font-bold shadow-2xs"
                     : "text-[#6E5545] hover:text-[#2B170F]"
                 }`}
                 title="Ver balance del dia actual"
@@ -1044,9 +1045,9 @@ export default function AdminOperationPage() {
                   setFilterPreset("week")
                   setHoveredIndex(null)
                 }}
-                className={`flex-1 sm:flex-initial inline-flex items-center justify-center min-h-[40px] px-2.5 sm:px-3 py-2 rounded-lg transition ${
+                className={`flex-1 sm:flex-initial inline-flex items-center justify-center min-h-[38px] px-3 sm:px-3.5 py-1.5 rounded-lg transition shrink-0 whitespace-nowrap ${
                   filterPreset === "week"
-                    ? "bg-white text-[#D97706] font-bold shadow-2xs"
+                    ? "bg-[#FAF5EE] text-[#D97706] font-bold shadow-2xs"
                     : "text-[#6E5545] hover:text-[#2B170F]"
                 }`}
                 title="Ver ultimos 7 dias"
@@ -1059,9 +1060,9 @@ export default function AdminOperationPage() {
                   setFilterPreset("month")
                   setHoveredIndex(null)
                 }}
-                className={`flex-1 sm:flex-initial inline-flex items-center justify-center min-h-[40px] px-2.5 sm:px-3 py-2 rounded-lg transition ${
+                className={`flex-1 sm:flex-initial inline-flex items-center justify-center min-h-[38px] px-3 sm:px-3.5 py-1.5 rounded-lg transition shrink-0 whitespace-nowrap ${
                   filterPreset === "month"
-                    ? "bg-white text-[#D97706] font-bold shadow-2xs"
+                    ? "bg-[#FAF5EE] text-[#D97706] font-bold shadow-2xs"
                     : "text-[#6E5545] hover:text-[#2B170F]"
                 }`}
                 title="Ver ultimos 30 dias"
@@ -1074,9 +1075,9 @@ export default function AdminOperationPage() {
                   setFilterPreset("custom")
                   setHoveredIndex(null)
                 }}
-                className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 min-h-[40px] px-2.5 sm:px-3 py-2 rounded-lg transition ${
+                className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 min-h-[38px] px-3 sm:px-3.5 py-1.5 rounded-lg transition shrink-0 whitespace-nowrap ${
                   filterPreset === "custom"
-                    ? "bg-white text-[#D97706] font-bold shadow-2xs"
+                    ? "bg-[#FAF5EE] text-[#D97706] font-bold shadow-2xs"
                     : "text-[#6E5545] hover:text-[#2B170F]"
                 }`}
                 title="Seleccionar rango de fechas libre"
@@ -1088,7 +1089,7 @@ export default function AdminOperationPage() {
             </div>
 
             {/* Checkbox Omitir dias sin actividad */}
-            <label className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-[#DECDBB] bg-[#FAF5EE] text-xs font-semibold text-[#6E5545] cursor-pointer hover:bg-[#F3EBE1] transition select-none min-h-[40px]">
+            <label className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-[#DECDBB] bg-white text-xs font-semibold text-[#6E5545] cursor-pointer hover:bg-[#FAF5EE] transition select-none min-h-[38px] shrink-0 whitespace-nowrap shadow-2xs">
               <input
                 type="checkbox"
                 checked={hideInactiveDays}
@@ -1100,13 +1101,13 @@ export default function AdminOperationPage() {
           </div>
 
           {/* Lado Derecho: Selector de Tipo de Grafica (Barras / Lineas / Area / Circular / Tabla) */}
-          <div className="flex w-full md:w-auto rounded-xl border border-[#DECDBB] bg-[#FAF5EE] p-0.5 text-xs font-semibold overflow-x-auto">
+          <div className="flex w-full xl:w-auto rounded-xl border border-[#DECDBB] bg-white p-0.5 text-xs font-semibold shrink-0 shadow-2xs overflow-x-auto no-scrollbar xl:overflow-visible">
             <button
               type="button"
               onClick={() => setChartType("bars")}
-              className={`flex-1 sm:flex-initial shrink-0 inline-flex items-center justify-center gap-1.5 min-h-[40px] px-2.5 sm:px-3 py-2 rounded-lg transition ${
+              className={`flex-1 xl:flex-initial shrink-0 whitespace-nowrap inline-flex items-center justify-center gap-1.5 min-h-[38px] px-3 sm:px-3.5 py-1.5 rounded-lg transition ${
                 chartType === "bars"
-                  ? "bg-white text-[#D97706] font-bold shadow-2xs"
+                  ? "bg-[#FAF5EE] text-[#D97706] font-bold shadow-2xs"
                   : "text-[#6E5545] hover:text-[#2B170F]"
               }`}
               title="Vista de Barras"
@@ -1117,9 +1118,9 @@ export default function AdminOperationPage() {
             <button
               type="button"
               onClick={() => setChartType("lines")}
-              className={`flex-1 sm:flex-initial shrink-0 inline-flex items-center justify-center gap-1.5 min-h-[40px] px-2.5 sm:px-3 py-2 rounded-lg transition ${
+              className={`flex-1 xl:flex-initial shrink-0 whitespace-nowrap inline-flex items-center justify-center gap-1.5 min-h-[38px] px-3 sm:px-3.5 py-1.5 rounded-lg transition ${
                 chartType === "lines"
-                  ? "bg-white text-[#D97706] font-bold shadow-2xs"
+                  ? "bg-[#FAF5EE] text-[#D97706] font-bold shadow-2xs"
                   : "text-[#6E5545] hover:text-[#2B170F]"
               }`}
               title="Vista de Lineas"
@@ -1130,9 +1131,9 @@ export default function AdminOperationPage() {
             <button
               type="button"
               onClick={() => setChartType("area")}
-              className={`flex-1 sm:flex-initial shrink-0 inline-flex items-center justify-center gap-1.5 min-h-[40px] px-2.5 sm:px-3 py-2 rounded-lg transition ${
+              className={`flex-1 xl:flex-initial shrink-0 whitespace-nowrap inline-flex items-center justify-center gap-1.5 min-h-[38px] px-3 sm:px-3.5 py-1.5 rounded-lg transition ${
                 chartType === "area"
-                  ? "bg-white text-[#D97706] font-bold shadow-2xs"
+                  ? "bg-[#FAF5EE] text-[#D97706] font-bold shadow-2xs"
                   : "text-[#6E5545] hover:text-[#2B170F]"
               }`}
               title="Vista de Area Suave"
@@ -1143,9 +1144,9 @@ export default function AdminOperationPage() {
             <button
               type="button"
               onClick={() => setChartType("donut")}
-              className={`flex-1 sm:flex-initial shrink-0 inline-flex items-center justify-center gap-1.5 min-h-[40px] px-2.5 sm:px-3 py-2 rounded-lg transition ${
+              className={`flex-1 xl:flex-initial shrink-0 whitespace-nowrap inline-flex items-center justify-center gap-1.5 min-h-[38px] px-3 sm:px-3.5 py-1.5 rounded-lg transition ${
                 chartType === "donut"
-                  ? "bg-white text-[#D97706] font-bold shadow-2xs"
+                  ? "bg-[#FAF5EE] text-[#D97706] font-bold shadow-2xs"
                   : "text-[#6E5545] hover:text-[#2B170F]"
               }`}
               title="Grafica Circular de Distribucion del Pan"
@@ -1156,9 +1157,9 @@ export default function AdminOperationPage() {
             <button
               type="button"
               onClick={() => setChartType("table")}
-              className={`flex-1 sm:flex-initial shrink-0 inline-flex items-center justify-center gap-1.5 min-h-[40px] px-2.5 sm:px-3 py-2 rounded-lg transition ${
+              className={`flex-1 xl:flex-initial shrink-0 whitespace-nowrap inline-flex items-center justify-center gap-1.5 min-h-[38px] px-3 sm:px-3.5 py-1.5 rounded-lg transition ${
                 chartType === "table"
-                  ? "bg-white text-[#D97706] font-bold shadow-2xs"
+                  ? "bg-[#FAF5EE] text-[#D97706] font-bold shadow-2xs"
                   : "text-[#6E5545] hover:text-[#2B170F]"
               }`}
               title="Vista de Tabla Operativa"

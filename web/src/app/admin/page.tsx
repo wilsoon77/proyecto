@@ -982,8 +982,8 @@ export default function AdminOperationPage() {
 
       {/* SECCION 1: CICLO DEL PAN DIARIO (Movimiento Operativo) */}
       <section className="rounded-2xl border border-[#E8DCCB] bg-white p-5 shadow-xs sm:p-6 space-y-4">
-        {/* Barra Superior con Titulo y Controles */}
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between border-b border-[#E8DCCB] pb-4">
+        {/* Encabezado: Titulo y Selector de Sucursal */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-[#E8DCCB] pb-3">
           <div>
             <div className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#FAF0E6] text-[#D97706]">
@@ -996,30 +996,32 @@ export default function AdminOperationPage() {
             </p>
           </div>
 
-          {/* Barra de Filtros y Selector de Grafica */}
-          <div className="flex flex-col sm:flex-row sm:flex-wrap lg:flex-nowrap items-stretch sm:items-center gap-2.5 w-full lg:w-auto">
-            {/* Filtro de Sucursal (Para roles globales) */}
-            {isGlobalRole && (
-              <div className="relative flex items-center w-full sm:w-auto">
-                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8C522B] pointer-events-none" />
-                <select
-                  value={selectedBranchSlug}
-                  onChange={(e) => setSelectedBranchSlug(e.target.value)}
-                  className="w-full sm:w-auto min-h-[44px] pl-9 pr-8 text-xs font-semibold bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] hover:border-[#D97706] focus:outline-none focus:ring-1 focus:ring-[#D97706] appearance-none cursor-pointer transition"
-                  title="Filtrar por sucursal"
-                >
-                  <option value="">Todas las sucursales</option>
-                  {branches.map((b) => (
-                    <option key={b.id} value={b.slug}>
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#8C522B] pointer-events-none" />
-              </div>
-            )}
+          {/* Filtro de Sucursal (Para roles globales) */}
+          {isGlobalRole && (
+            <div className="relative flex items-center w-full sm:w-auto shrink-0">
+              <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8C522B] pointer-events-none" />
+              <select
+                value={selectedBranchSlug}
+                onChange={(e) => setSelectedBranchSlug(e.target.value)}
+                className="w-full sm:w-auto min-h-[44px] pl-9 pr-8 text-xs font-semibold bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-[#2B170F] hover:border-[#D97706] focus:outline-none focus:ring-1 focus:ring-[#D97706] appearance-none cursor-pointer transition"
+                title="Filtrar por sucursal"
+              >
+                <option value="">Todas las sucursales</option>
+                {branches.map((b) => (
+                  <option key={b.id} value={b.slug}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#8C522B] pointer-events-none" />
+            </div>
+          )}
+        </div>
 
-            {/* Presets: Dia, Semana, Mes, Personalizado */}
+        {/* Barra de Filtros de Periodo y Selector de Grafica (Fila Dedicada Responsiva) */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          {/* Lado Izquierdo: Presets: Dia, Semana, Mes, Personalizado + Checkbox Omitir dias sin actividad */}
+          <div className="flex flex-wrap items-center gap-2.5">
             <div className="flex w-full sm:w-auto rounded-xl border border-[#DECDBB] bg-[#FAF5EE] p-0.5 text-xs font-semibold">
               <button
                 type="button"
@@ -1086,7 +1088,7 @@ export default function AdminOperationPage() {
             </div>
 
             {/* Checkbox Omitir dias sin actividad */}
-            <label className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-[#DECDBB] bg-[#FAF5EE] text-xs font-semibold text-[#6E5545] cursor-pointer hover:bg-[#F3EBE1] transition select-none">
+            <label className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-[#DECDBB] bg-[#FAF5EE] text-xs font-semibold text-[#6E5545] cursor-pointer hover:bg-[#F3EBE1] transition select-none min-h-[40px]">
               <input
                 type="checkbox"
                 checked={hideInactiveDays}
@@ -1095,75 +1097,75 @@ export default function AdminOperationPage() {
               />
               <span>Omitir dias sin actividad</span>
             </label>
+          </div>
 
-            {/* Selector de Tipo de Grafica (Barras / Lineas / Area / Circular / Tabla) */}
-            <div className="flex w-full sm:w-auto rounded-xl border border-[#DECDBB] bg-[#FAF5EE] p-0.5 text-xs font-semibold overflow-x-auto">
-              <button
-                type="button"
-                onClick={() => setChartType("bars")}
-                className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 min-h-[40px] px-2.5 sm:px-3 py-2 rounded-lg transition ${
-                  chartType === "bars"
-                    ? "bg-white text-[#D97706] font-bold shadow-2xs"
-                    : "text-[#6E5545] hover:text-[#2B170F]"
-                }`}
-                title="Vista de Barras"
-              >
-                <BarChart3 className="h-3.5 w-3.5 shrink-0" />
-                <span>Barras</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setChartType("lines")}
-                className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 min-h-[40px] px-2.5 sm:px-3 py-2 rounded-lg transition ${
-                  chartType === "lines"
-                    ? "bg-white text-[#D97706] font-bold shadow-2xs"
-                    : "text-[#6E5545] hover:text-[#2B170F]"
-                }`}
-                title="Vista de Lineas"
-              >
-                <LineChart className="h-3.5 w-3.5 shrink-0" />
-                <span>Lineas</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setChartType("area")}
-                className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 min-h-[40px] px-2.5 sm:px-3 py-2 rounded-lg transition ${
-                  chartType === "area"
-                    ? "bg-white text-[#D97706] font-bold shadow-2xs"
-                    : "text-[#6E5545] hover:text-[#2B170F]"
-                }`}
-                title="Vista de Area Suave"
-              >
-                <TrendingUp className="h-3.5 w-3.5 shrink-0" />
-                <span>Area</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setChartType("donut")}
-                className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 min-h-[40px] px-2.5 sm:px-3 py-2 rounded-lg transition ${
-                  chartType === "donut"
-                    ? "bg-white text-[#D97706] font-bold shadow-2xs"
-                    : "text-[#6E5545] hover:text-[#2B170F]"
-                }`}
-                title="Grafica Circular de Distribucion del Pan"
-              >
-                <PieChart className="h-3.5 w-3.5 shrink-0" />
-                <span>Circular</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setChartType("table")}
-                className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 min-h-[40px] px-2.5 sm:px-3 py-2 rounded-lg transition ${
-                  chartType === "table"
-                    ? "bg-white text-[#D97706] font-bold shadow-2xs"
-                    : "text-[#6E5545] hover:text-[#2B170F]"
-                }`}
-                title="Vista de Tabla Operativa"
-              >
-                <Table2 className="h-3.5 w-3.5 shrink-0" />
-                <span>Tabla</span>
-              </button>
-            </div>
+          {/* Lado Derecho: Selector de Tipo de Grafica (Barras / Lineas / Area / Circular / Tabla) */}
+          <div className="flex w-full md:w-auto rounded-xl border border-[#DECDBB] bg-[#FAF5EE] p-0.5 text-xs font-semibold overflow-x-auto">
+            <button
+              type="button"
+              onClick={() => setChartType("bars")}
+              className={`flex-1 sm:flex-initial shrink-0 inline-flex items-center justify-center gap-1.5 min-h-[40px] px-2.5 sm:px-3 py-2 rounded-lg transition ${
+                chartType === "bars"
+                  ? "bg-white text-[#D97706] font-bold shadow-2xs"
+                  : "text-[#6E5545] hover:text-[#2B170F]"
+              }`}
+              title="Vista de Barras"
+            >
+              <BarChart3 className="h-3.5 w-3.5 shrink-0" />
+              <span>Barras</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setChartType("lines")}
+              className={`flex-1 sm:flex-initial shrink-0 inline-flex items-center justify-center gap-1.5 min-h-[40px] px-2.5 sm:px-3 py-2 rounded-lg transition ${
+                chartType === "lines"
+                  ? "bg-white text-[#D97706] font-bold shadow-2xs"
+                  : "text-[#6E5545] hover:text-[#2B170F]"
+              }`}
+              title="Vista de Lineas"
+            >
+              <LineChart className="h-3.5 w-3.5 shrink-0" />
+              <span>Lineas</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setChartType("area")}
+              className={`flex-1 sm:flex-initial shrink-0 inline-flex items-center justify-center gap-1.5 min-h-[40px] px-2.5 sm:px-3 py-2 rounded-lg transition ${
+                chartType === "area"
+                  ? "bg-white text-[#D97706] font-bold shadow-2xs"
+                  : "text-[#6E5545] hover:text-[#2B170F]"
+              }`}
+              title="Vista de Area Suave"
+            >
+              <TrendingUp className="h-3.5 w-3.5 shrink-0" />
+              <span>Area</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setChartType("donut")}
+              className={`flex-1 sm:flex-initial shrink-0 inline-flex items-center justify-center gap-1.5 min-h-[40px] px-2.5 sm:px-3 py-2 rounded-lg transition ${
+                chartType === "donut"
+                  ? "bg-white text-[#D97706] font-bold shadow-2xs"
+                  : "text-[#6E5545] hover:text-[#2B170F]"
+              }`}
+              title="Grafica Circular de Distribucion del Pan"
+            >
+              <PieChart className="h-3.5 w-3.5 shrink-0" />
+              <span>Circular</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setChartType("table")}
+              className={`flex-1 sm:flex-initial shrink-0 inline-flex items-center justify-center gap-1.5 min-h-[40px] px-2.5 sm:px-3 py-2 rounded-lg transition ${
+                chartType === "table"
+                  ? "bg-white text-[#D97706] font-bold shadow-2xs"
+                  : "text-[#6E5545] hover:text-[#2B170F]"
+              }`}
+              title="Vista de Tabla Operativa"
+            >
+              <Table2 className="h-3.5 w-3.5 shrink-0" />
+              <span>Tabla</span>
+            </button>
           </div>
         </div>
 

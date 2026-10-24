@@ -136,16 +136,16 @@ export async function exportOperationalReportToExcel(data: OperationalReportData
 
   // KPIs Rows
   const kpiData = [
-    { label: "Total Horneado / Producido", val: data.totals.produced, fmt: "#,##0 piezas" },
-    { label: "Total Ventas en Mostrador", val: data.totals.sold, fmt: "#,##0 piezas" },
-    { label: "Total Sobrante para Siguiente Turno", val: data.totals.surplus, fmt: "#,##0 piezas" },
-    { label: "Total Merma / Descarte Fisico", val: data.totals.waste, fmt: "#,##0 piezas" },
+    { label: "Total Horneado / Producido", val: data.totals.produced, fmt: "#,##0" },
+    { label: "Total Ventas en Mostrador", val: data.totals.sold, fmt: "#,##0" },
+    { label: "Total Sobrante para Siguiente Turno", val: data.totals.surplus, fmt: "#,##0" },
+    { label: "Total Merma / Descarte Fisico", val: data.totals.waste, fmt: "#,##0" },
     {
       label: "Indice de Merma General",
       val: data.totals.produced > 0 ? data.totals.waste / data.totals.produced : 0,
       fmt: "0.0%",
     },
-    { label: "Recaudacion Total Estimada", val: data.totals.totalRevenue, fmt: '"Q "#,##0.00' },
+    { label: "Recaudacion Total Estimada", val: data.totals.totalRevenue, fmt: '"Q" #,##0.00' },
   ]
 
   kpiData.forEach((kpi, idx) => {
@@ -252,7 +252,7 @@ export async function exportOperationalReportToExcel(data: OperationalReportData
 
     const c8 = row.getCell(8)
     c8.value = Number(dayRevenue.toFixed(2))
-    c8.numFmt = '"Q "#,##0.00'
+    c8.numFmt = '"Q" #,##0.00'
     c8.font = { name: fontFamily, size: 10, bold: true, color: { argb: "FF166534" } }
 
     for (let c = 1; c <= 8; c++) {
@@ -286,7 +286,7 @@ export async function exportOperationalReportToExcel(data: OperationalReportData
   totalRow.getCell(7).value = data.totals.produced > 0 ? data.totals.waste / data.totals.produced : 0
   totalRow.getCell(7).numFmt = "0.0%"
   totalRow.getCell(8).value = Number(data.totals.totalRevenue.toFixed(2))
-  totalRow.getCell(8).numFmt = '"Q "#,##0.00'
+  totalRow.getCell(8).numFmt = '"Q" #,##0.00'
 
   for (let c = 1; c <= 8; c++) {
     const cell = totalRow.getCell(c)
@@ -380,9 +380,9 @@ export async function exportOperationalReportToExcel(data: OperationalReportData
       row.getCell(6).value = item.surplus
       row.getCell(6).numFmt = "#,##0"
       row.getCell(7).value = item.price
-      row.getCell(7).numFmt = '"Q "#,##0.00'
+      row.getCell(7).numFmt = '"Q" #,##0.00'
       row.getCell(8).value = Number(item.revenue.toFixed(2))
-      row.getCell(8).numFmt = '"Q "#,##0.00'
+      row.getCell(8).numFmt = '"Q" #,##0.00'
 
       for (let c = 1; c <= 8; c++) {
         const cell = row.getCell(c)
@@ -409,7 +409,7 @@ export async function exportOperationalReportToExcel(data: OperationalReportData
     totRow2.getCell(6).numFmt = "#,##0"
     totRow2.getCell(7).value = "-"
     totRow2.getCell(8).value = Number(totRev.toFixed(2))
-    totRow2.getCell(8).numFmt = '"Q "#,##0.00'
+    totRow2.getCell(8).numFmt = '"Q" #,##0.00'
 
     for (let c = 1; c <= 8; c++) {
       const cell = totRow2.getCell(c)

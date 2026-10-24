@@ -485,11 +485,67 @@ export default function AdminOperationPage() {
   const handleExportExcel = async () => {
     setIsExporting(true)
     try {
-      const activeBranch = selectedBranchSlug
-        ? branches.find((b) => b.slug === selectedBranchSlug)
+      // 1. Determinar slug efectivo de sucursal priorizando filtro activo o asignacion de usuario
+      const effectiveSlug = (
+        isGlobalRole
+          ? selectedBranchSlug
+          : (user?.branch?.slug || selectedBranchSlug)
+      ) || (typeof window !== "undefined" ? localStorage.getItem("selectedBranch") || "" : "")
+
+      // 2. Cargar lista de sucursales si esta vacia
+      let branchList = branches
+      if (!branchList || branchList.length === 0) {
+        try {
+          branchList = await branchesService.list()
+        } catch {
+          branchList = []
+        }
+      }
+
+      // 3. Resolver la sucursal activa
+      let activeBranch = effectiveSlug
+        ? branchList.find(
+            (b) =>
+              b.slug?.toLowerCase().trim() === effectiveSlug.toLowerCase().trim() ||
+              String(b.id) === effectiveSlug.trim() ||
+              b.name?.toLowerCase().trim() === effectiveSlug.toLowerCase().trim()
+          ) || null
         : null
 
-      const branchName = activeBranch ? activeBranch.name : "Todas las sucursales"
+      if (!activeBranch && user?.branch && (user.branch.slug === effectiveSlug || String(user.branch.id) === effectiveSlug || (!effectiveSlug && !isGlobalRole))) {
+        activeBranch = {
+          id: user.branch.id,
+          name: user.branch.name,
+          slug: user.branch.slug,
+          address: "",
+          createdAt: "",
+        }
+      }
+
+      // 4. Nombre resuelto de la sucursal con fallbacks conocidos para evitar falsos "Todas las sucursales"
+      let branchName = "Todas las sucursales"
+      if (activeBranch) {
+        branchName = activeBranch.name
+      } else if (effectiveSlug) {
+        const normSlug = effectiveSlug.toLowerCase().trim()
+        if (normSlug === "central" || normSlug === "1") {
+          branchName = "Panaderia Buena Vista"
+        } else if (normSlug === "secundaria" || normSlug === "33") {
+          branchName = "Panaderia Secundaria"
+        } else {
+          branchName = effectiveSlug.charAt(0).toUpperCase() + effectiveSlug.slice(1)
+        }
+      } else if (!isGlobalRole && user?.branch?.name) {
+        branchName = user.branch.name
+      }
+
+      const effectiveBranchId = activeBranch
+        ? activeBranch.id
+        : effectiveSlug === "central" || effectiveSlug === "1"
+        ? 1
+        : effectiveSlug === "secundaria" || effectiveSlug === "33"
+        ? 33
+        : user?.branchId ?? undefined
 
       const periodLabel =
         filterPreset === "day"
@@ -500,26 +556,61 @@ export default function AdminOperationPage() {
           ? "Mes actual"
           : "Rango personalizado"
 
+      const todayStr = getTodayIsoString()
       const fromDate =
-        filterPreset === "custom" && appliedCustomRange
+        filterPreset === "day"
+          ? (activity[0]?.date || todayStr)
+          : filterPreset === "week"
+          ? (activity[0]?.date || getPastIsoString(7))
+          : filterPreset === "month"
+          ? (activity[0]?.date || getPastIsoString(30))
+          : filterPreset === "custom" && appliedCustomRange
           ? appliedCustomRange.from
           : activity.length > 0
           ? activity[0].date
-          : getTodayIsoString()
+          : todayStr
 
       const toDate =
         filterPreset === "custom" && appliedCustomRange
           ? appliedCustomRange.to
           : activity.length > 0
           ? activity[activity.length - 1].date
-          : getTodayIsoString()
+          : todayStr
 
-      const totalRevenue = activity.reduce((sum, curr) => {
+      const targetActivity = hideInactiveDays ? displayActivity : activity
+
+      const totalRevenue = targetActivity.reduce((sum, curr) => {
         const rev = curr.revenue !== undefined ? curr.revenue : curr.sold * 0.85
         return sum + rev
       }, 0)
 
-      const breakdownItems = breakdownData?.items?.map((item) => ({
+      // Cargar desglose de productos (Hoja 2) si no estaba cargado
+      let exportBreakdown = breakdownData
+      const targetBreakdownDate =
+        selectedDayDate ||
+        (filterPreset === "day" && activity.length > 0
+          ? activity[0].date
+          : activity.length > 0
+          ? activity[activity.length - 1].date
+          : todayStr)
+
+      if (!exportBreakdown?.items || exportBreakdown.items.length === 0) {
+        try {
+          exportBreakdown = await inventoryService.getDayBreakdown({
+            date: targetBreakdownDate,
+            branchSlug: effectiveSlug || undefined,
+          })
+        } catch {
+          exportBreakdown = null
+        }
+      }
+
+      // Si el backend devolvio el nombre de la sucursal en el desglose y seguiamos en fallback, aprovecharlo
+      if (exportBreakdown?.branchName && branchName === "Todas las sucursales" && effectiveSlug) {
+        branchName = exportBreakdown.branchName
+      }
+
+      const breakdownItems = exportBreakdown?.items?.map((item) => ({
         productName: item.productName || "Producto",
         categoryName: item.categoryName || "General",
         produced: item.produced,
@@ -530,12 +621,27 @@ export default function AdminOperationPage() {
         revenue: item.revenue !== undefined ? item.revenue : Number((item.sold * item.price).toFixed(2)),
       }))
 
-      const rawMaterialsList = rawMaterials.map((rm) => ({
+      // Materias primas (Hoja 3): filtrar por la sucursal activa si aplica
+      let rawMaterialsSource = rawMaterials
+      if (rawMaterialsSource.length === 0) {
+        try {
+          rawMaterialsSource = await rawMaterialsService.getInventory(effectiveBranchId)
+        } catch {
+          rawMaterialsSource = []
+        }
+      }
+
+      const filteredRawMaterials = effectiveBranchId
+        ? rawMaterialsSource.filter((rm) => rm.branch?.id === effectiveBranchId)
+        : rawMaterialsSource
+
+      const rawMaterialsList = filteredRawMaterials.map((rm) => ({
         name: rm.rawMaterial?.name || "Insumo",
         currentStock: asNumber(rm.quantity),
         unit: rm.rawMaterial?.baseUnit || "LB",
         minimumStock: rm.rawMaterial?.minStock ? asNumber(rm.rawMaterial.minStock) : 0,
         isLow: rm.isLow,
+        branchName: rm.branch?.name,
       }))
 
       await exportOperationalReportToExcel({
@@ -549,7 +655,7 @@ export default function AdminOperationPage() {
           totalRevenue,
         },
         breakdownItems,
-        breakdownDate: breakdownData?.date || selectedDayDate,
+        breakdownDate: exportBreakdown?.date || targetBreakdownDate,
         rawMaterials: rawMaterialsList,
       })
 

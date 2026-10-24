@@ -36,6 +36,7 @@ export interface OperationalReportData {
     unit: string
     minimumStock: number
     isLow: boolean
+    branchName?: string
   }>
 }
 
@@ -115,8 +116,13 @@ export async function exportOperationalReportToExcel(data: OperationalReportData
 
   // Fila 2-4: Metadatos
   const metaStyle = { font: { name: fontFamily, size: 10, color: { argb: "FF5C3D2E" } } }
+  const dateRangeText =
+    data.dateRange.from === data.dateRange.to
+      ? data.dateRange.from
+      : `${data.dateRange.from} al ${data.dateRange.to}`
+
   ws1.mergeCells("A2:H2")
-  ws1.getCell("A2").value = `Sucursal: ${data.branchName}  |  Periodo: ${data.periodLabel} (${data.dateRange.from} al ${data.dateRange.to})`
+  ws1.getCell("A2").value = `Sucursal: ${data.branchName}  |  Periodo: ${data.periodLabel} (${dateRangeText})`
   ws1.getCell("A2").font = metaStyle.font
   ws1.getCell("A2").alignment = { vertical: "middle", horizontal: "left" }
 
@@ -428,92 +434,198 @@ export async function exportOperationalReportToExcel(data: OperationalReportData
       views: [{ showGridLines: true }],
     })
 
-    ws3.columns = [
-      { key: "m1", width: 32 },
-      { key: "m2", width: 18 },
-      { key: "m3", width: 18 },
-      { key: "m4", width: 18 },
-      { key: "m5", width: 28 },
-    ]
+    const hasBranchCol = data.rawMaterials.some((r) => !!r.branchName) && data.branchName === "Todas las sucursales"
 
-    // Banner Hoja 3
-    ws3.mergeCells("A1:E1")
-    const b3 = ws3.getCell("A1")
-    b3.value = "ESTADO DE INVENTARIO DE MATERIAS PRIMAS"
-    b3.font = { name: fontFamily, size: 13, bold: true, color: { argb: "FFFFFFFF" } }
-    b3.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2B170F" } }
-    b3.alignment = { vertical: "middle", horizontal: "center" }
-    ws3.getRow(1).height = 32
+    if (hasBranchCol) {
+      ws3.columns = [
+        { key: "m1", width: 32 },
+        { key: "mb", width: 24 },
+        { key: "m2", width: 18 },
+        { key: "m3", width: 18 },
+        { key: "m4", width: 18 },
+        { key: "m5", width: 28 },
+      ]
 
-    ws3.mergeCells("A2:E2")
-    ws3.getCell("A2").value = `Fecha de corte: ${generationTimestamp}  |  Sucursal: ${data.branchName}`
-    ws3.getCell("A2").font = metaStyle.font
+      // Banner Hoja 3
+      ws3.mergeCells("A1:F1")
+      const b3 = ws3.getCell("A1")
+      b3.value = "ESTADO DE INVENTARIO DE MATERIAS PRIMAS"
+      b3.font = { name: fontFamily, size: 13, bold: true, color: { argb: "FFFFFFFF" } }
+      b3.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2B170F" } }
+      b3.alignment = { vertical: "middle", horizontal: "center" }
+      ws3.getRow(1).height = 32
 
-    // Encabezados Hoja 3
-    const h3Row = ws3.getRow(4)
-    h3Row.height = 24
-    const matHeaders = [
-      "Insumo / Materia Prima",
-      "Stock Actual",
-      "Unidad de Medida",
-      "Stock Minimo",
-      "Estado de Abastecimiento",
-    ]
+      ws3.mergeCells("A2:F2")
+      ws3.getCell("A2").value = `Fecha de corte: ${generationTimestamp}  |  Sucursal: ${data.branchName}`
+      ws3.getCell("A2").font = metaStyle.font
+      ws3.getCell("A2").alignment = { vertical: "middle", horizontal: "left" }
 
-    matHeaders.forEach((mh, colIdx) => {
-      const cell = h3Row.getCell(colIdx + 1)
-      cell.value = mh
-      cell.font = { name: fontFamily, size: 10, bold: true, color: { argb: "FFFFFFFF" } }
-      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF9A3412" } }
-      cell.alignment = { vertical: "middle", horizontal: colIdx === 1 || colIdx === 3 ? "right" : "left" }
-      cell.border = borderThin
-    })
+      // Encabezados Hoja 3
+      const h3Row = ws3.getRow(4)
+      h3Row.height = 24
+      const matHeaders = [
+        "Insumo / Materia Prima",
+        "Sucursal",
+        "Stock Actual",
+        "Unidad de Medida",
+        "Stock Minimo",
+        "Estado de Abastecimiento",
+      ]
 
-    let r3 = 5
-    data.rawMaterials.forEach((rm, idx) => {
-      const row = ws3.getRow(r3)
-      row.height = 20
-      const isZebra = idx % 2 === 1
-      const bgArgb = isZebra ? "FFFAF5EE" : "FFFFFFFF"
-
-      row.getCell(1).value = rm.name
-      row.getCell(2).value = rm.currentStock
-      row.getCell(2).numFmt = "#,##0"
-      row.getCell(2).alignment = { horizontal: "right" }
-      row.getCell(3).value = rm.unit
-      row.getCell(4).value = rm.minimumStock
-      row.getCell(4).numFmt = "#,##0"
-      row.getCell(4).alignment = { horizontal: "right" }
-
-      const statusCell = row.getCell(5)
-      statusCell.value = rm.isLow ? "ALERTA: STOCK BAJO" : "OPTIMO"
-      statusCell.alignment = { horizontal: "center" }
-      statusCell.font = {
-        name: fontFamily,
-        size: 10,
-        bold: true,
-        color: { argb: rm.isLow ? "FF991B1B" : "FF166534" },
-      }
-      statusCell.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: rm.isLow ? "FFFEE2E2" : "FFDCFCE7" },
-      }
-
-      for (let c = 1; c <= 4; c++) {
-        const cell = row.getCell(c)
-        cell.font = { name: fontFamily, size: 10, color: { argb: "FF2B170F" } }
-        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: bgArgb } }
+      matHeaders.forEach((mh, colIdx) => {
+        const cell = h3Row.getCell(colIdx + 1)
+        cell.value = mh
+        cell.font = { name: fontFamily, size: 10, bold: true, color: { argb: "FFFFFFFF" } }
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF9A3412" } }
+        cell.alignment = { vertical: "middle", horizontal: colIdx === 2 || colIdx === 4 ? "right" : "left" }
         cell.border = borderThin
-      }
-      statusCell.border = borderThin
-      r3++
-    })
+      })
+
+      let r3 = 5
+      data.rawMaterials.forEach((rm, idx) => {
+        const row = ws3.getRow(r3)
+        row.height = 20
+        const isZebra = idx % 2 === 1
+        const bgArgb = isZebra ? "FFFAF5EE" : "FFFFFFFF"
+
+        row.getCell(1).value = rm.name
+        row.getCell(2).value = rm.branchName || "General"
+
+        row.getCell(3).value = rm.currentStock
+        row.getCell(3).numFmt = Number.isInteger(rm.currentStock) ? "#,##0" : "#,##0.00"
+        row.getCell(3).alignment = { horizontal: "right" }
+
+        row.getCell(4).value = rm.unit
+
+        row.getCell(5).value = rm.minimumStock
+        row.getCell(5).numFmt = Number.isInteger(rm.minimumStock) ? "#,##0" : "#,##0.00"
+        row.getCell(5).alignment = { horizontal: "right" }
+
+        const statusCell = row.getCell(6)
+        statusCell.value = rm.isLow ? "ALERTA: STOCK BAJO" : "OPTIMO"
+        statusCell.alignment = { horizontal: "center" }
+        statusCell.font = {
+          name: fontFamily,
+          size: 10,
+          bold: true,
+          color: { argb: rm.isLow ? "FF991B1B" : "FF166534" },
+        }
+        statusCell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: rm.isLow ? "FFFEE2E2" : "FFDCFCE7" },
+        }
+
+        for (let c = 1; c <= 5; c++) {
+          const cell = row.getCell(c)
+          cell.font = { name: fontFamily, size: 10, color: { argb: "FF2B170F" } }
+          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: bgArgb } }
+          cell.border = borderThin
+        }
+        statusCell.border = borderThin
+        r3++
+      })
+    } else {
+      // 5 Columnas tradicionales cuando esta filtrado a una sucursal unica
+      ws3.columns = [
+        { key: "m1", width: 32 },
+        { key: "m2", width: 18 },
+        { key: "m3", width: 18 },
+        { key: "m4", width: 18 },
+        { key: "m5", width: 28 },
+      ]
+
+      // Banner Hoja 3
+      ws3.mergeCells("A1:E1")
+      const b3 = ws3.getCell("A1")
+      b3.value = "ESTADO DE INVENTARIO DE MATERIAS PRIMAS"
+      b3.font = { name: fontFamily, size: 13, bold: true, color: { argb: "FFFFFFFF" } }
+      b3.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2B170F" } }
+      b3.alignment = { vertical: "middle", horizontal: "center" }
+      ws3.getRow(1).height = 32
+
+      ws3.mergeCells("A2:E2")
+      ws3.getCell("A2").value = `Fecha de corte: ${generationTimestamp}  |  Sucursal: ${data.branchName}`
+      ws3.getCell("A2").font = metaStyle.font
+      ws3.getCell("A2").alignment = { vertical: "middle", horizontal: "left" }
+
+      // Encabezados Hoja 3
+      const h3Row = ws3.getRow(4)
+      h3Row.height = 24
+      const matHeaders = [
+        "Insumo / Materia Prima",
+        "Stock Actual",
+        "Unidad de Medida",
+        "Stock Minimo",
+        "Estado de Abastecimiento",
+      ]
+
+      matHeaders.forEach((mh, colIdx) => {
+        const cell = h3Row.getCell(colIdx + 1)
+        cell.value = mh
+        cell.font = { name: fontFamily, size: 10, bold: true, color: { argb: "FFFFFFFF" } }
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF9A3412" } }
+        cell.alignment = { vertical: "middle", horizontal: colIdx === 1 || colIdx === 3 ? "right" : "left" }
+        cell.border = borderThin
+      })
+
+      let r3 = 5
+      data.rawMaterials.forEach((rm, idx) => {
+        const row = ws3.getRow(r3)
+        row.height = 20
+        const isZebra = idx % 2 === 1
+        const bgArgb = isZebra ? "FFFAF5EE" : "FFFFFFFF"
+
+        row.getCell(1).value = rm.name
+        row.getCell(2).value = rm.currentStock
+        row.getCell(2).numFmt = Number.isInteger(rm.currentStock) ? "#,##0" : "#,##0.00"
+        row.getCell(2).alignment = { horizontal: "right" }
+        row.getCell(3).value = rm.unit
+        row.getCell(4).value = rm.minimumStock
+        row.getCell(4).numFmt = Number.isInteger(rm.minimumStock) ? "#,##0" : "#,##0.00"
+        row.getCell(4).alignment = { horizontal: "right" }
+
+        const statusCell = row.getCell(5)
+        statusCell.value = rm.isLow ? "ALERTA: STOCK BAJO" : "OPTIMO"
+        statusCell.alignment = { horizontal: "center" }
+        statusCell.font = {
+          name: fontFamily,
+          size: 10,
+          bold: true,
+          color: { argb: rm.isLow ? "FF991B1B" : "FF166534" },
+        }
+        statusCell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: rm.isLow ? "FFFEE2E2" : "FFDCFCE7" },
+        }
+
+        for (let c = 1; c <= 4; c++) {
+          const cell = row.getCell(c)
+          cell.font = { name: fontFamily, size: 10, color: { argb: "FF2B170F" } }
+          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: bgArgb } }
+          cell.border = borderThin
+        }
+        statusCell.border = borderThin
+        r3++
+      })
+    }
   }
 
   // Generar archivo en el navegador
-  const cleanBranch = data.branchName.replace(/[^a-zA-Z0-9]/g, "_")
-  const fileName = `Reporte_Panaderia_${cleanBranch}_${data.dateRange.from}_a_${data.dateRange.to}.xlsx`
+  const cleanBranch = (data.branchName || "General")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9_-]/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_+|_+$/g, "")
+
+  const dateSuffix =
+    data.dateRange.from === data.dateRange.to
+      ? data.dateRange.from
+      : `${data.dateRange.from}_a_${data.dateRange.to}`
+
+  const fileName = `Reporte_Panaderia_${cleanBranch}_${dateSuffix}.xlsx`
 
   const buffer = await workbook.xlsx.writeBuffer()
   const blob = new Blob([buffer], {

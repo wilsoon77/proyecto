@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import {
   AlertTriangle,
   ArrowRight,
@@ -147,8 +148,16 @@ function getBezierPath(points: Array<{ x: number; y: number }>): string {
 }
 
 export default function AdminOperationPage() {
+  const router = useRouter()
   const { user } = useAuth()
   const { showToast } = useToast()
+
+  useEffect(() => {
+    if (user?.role === "BAKER") {
+      router.replace("/admin/produccion")
+    }
+  }, [user, router])
+
   const [isExporting, setIsExporting] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [rawMaterials, setRawMaterials] = useState<RawMaterialInventory[]>([])
@@ -860,6 +869,14 @@ export default function AdminOperationPage() {
       areaWaste,
     }
   }, [displayActivity, maxActivity])
+
+  if (user?.role === "BAKER") {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-[#D97706] border-t-transparent" />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-16">

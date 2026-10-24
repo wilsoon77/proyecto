@@ -14,8 +14,10 @@ import {
   Check,
   Trash2,
   ListChecks,
-  AlertTriangle,
   Store,
+  ChevronDown,
+  ChevronUp,
+  FileText,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader"
@@ -52,6 +54,8 @@ export default function ProduccionPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [activeFilterTab, setActiveFilterTab] = useState<"all" | "in_batch">("all")
   const [showReviewModal, setShowReviewModal] = useState(false)
+  const [expandedIngredients, setExpandedIngredients] = useState<Record<number, boolean>>({})
+  const [showTodayHistory, setShowTodayHistory] = useState(true)
   const [batchProgress, setBatchProgress] = useState<{
     current: number
     total: number
@@ -98,6 +102,10 @@ export default function ProduccionPage() {
   useEffect(() => {
     loadData()
   }, [loadData])
+
+  const toggleIngredients = (recipeId: number) => {
+    setExpandedIngredients((prev) => ({ ...prev, [recipeId]: !prev[recipeId] }))
+  }
 
   // Helper para presentaciones de producción de cada receta
   const getRecipePresentationData = useCallback((recipe: Recipe) => {
@@ -329,7 +337,6 @@ export default function ProduccionPage() {
           `Registro parcial: ${response.successCount} registrados, ${response.failedCount} con error.`,
           "error"
         )
-        // Mantener solo los que fallaron para que el usuario pueda corregirlos
         const failedIds = new Set(
           response.results.filter((r) => !r.success).map((r) => r.recipeId)
         )
@@ -368,40 +375,74 @@ export default function ProduccionPage() {
     )
   }
 
+  const isBaker = user?.role === "BAKER"
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-32">
-      {/* ─── Encabezado Estandarizado ─── */}
+      {/* ─── Encabezado Estandarizado y Consciente de Rol ─── */}
       <AdminPageHeader
         title="Registro de Horneado"
-        description="Selecciona los amasijos producidos, ajusta las latas de cada uno y registra la tanda completa en una sola acción"
+        description={
+          isBaker
+            ? `Bienvenido, ${user?.firstName || "Panadero"}. Selecciona las recetas horneadas en el taller y registra las latas producidas.`
+            : "Selecciona los amasijos producidos, ajusta las latas de cada uno y registra la tanda completa en una sola acción"
+        }
         icon={<Flame className="h-6 w-6 text-[#D97706]" />}
-        breadcrumbs={[
-          { label: "Operación", href: "/admin" },
-          { label: "Horneado" },
-        ]}
-        secondaryAction={{
-          label: "Ver Recetas",
-          href: "/admin/recetas",
-          icon: <ChefHat className="h-4 w-4 mr-1.5" />,
-          variant: "outline",
-        }}
+        breadcrumbs={
+          isBaker
+            ? [{ label: "Producción" }, { label: "Registro de Horneado" }]
+            : [{ label: "Operación", href: "/admin" }, { label: "Horneado" }]
+        }
+        secondaryAction={
+          !isBaker
+            ? {
+                label: "Ver Recetas",
+                href: "/admin/recetas",
+                icon: <ChefHat className="h-4 w-4 mr-1.5" />,
+                variant: "outline",
+              }
+            : undefined
+        }
       />
 
-      {/* ─── Selector de Sucursal (ADMIN / MANAGER) ─── */}
-      {(user?.role === "ADMIN" || user?.role === "MANAGER") && (
-        <div className="rounded-2xl border border-[#DECDBB] bg-[#FAF5EE] p-4 shadow-xs">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            <div className="flex items-center gap-2 shrink-0">
-              <Store className="h-5 w-5 text-[#8C522B]" />
-              <label htmlFor="production-branch" className="text-xs font-bold uppercase tracking-wider text-[#2B170F]">
-                Sucursal destino:
-              </label>
+      {/* ─── Identificador de Sucursal / Selector ─── */}
+      {isBaker ? (
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-2xl bg-white border border-[#E8DCCB] shadow-2xs">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-[#FAF0E6] flex items-center justify-center text-[#D97706] shrink-0 border border-[#DECDBB]/60">
+              <Store className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#8C522B]">Taller de Horneado Activo</p>
+              <p className="text-sm font-bold text-[#2B170F]">{user?.branch?.name || "Panadería Buena Vista (Central)"}</p>
+            </div>
+          </div>
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#FAF5EE] border border-[#DECDBB] text-xs font-semibold text-[#8C522B]">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+            <span>Turno de Producción en Vivo</span>
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-[#DECDBB] bg-white p-4 sm:p-5 shadow-2xs">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-[#FAF0E6] flex items-center justify-center text-[#D97706] shrink-0 border border-[#DECDBB]/60">
+                <Store className="h-5 w-5" />
+              </div>
+              <div>
+                <label htmlFor="production-branch" className="text-xs font-bold uppercase tracking-wider text-[#2B170F] block">
+                  Sucursal destino del horneado:
+                </label>
+                <p className="text-[11px] text-[#8C522B]">
+                  Se descontarán materias primas y se sumará el producto terminado en esta sede.
+                </p>
+              </div>
             </div>
             <select
               id="production-branch"
               value={branchId ?? ""}
               onChange={(e) => setBranchId(e.target.value ? Number(e.target.value) : null)}
-              className="w-full sm:w-72 h-11 px-3 text-xs sm:text-sm border border-[#DECDBB] rounded-xl bg-white text-[#2B170F] font-semibold focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706] cursor-pointer"
+              className="w-full sm:w-72 h-11 px-3.5 text-xs sm:text-sm font-bold border border-[#DECDBB] rounded-xl bg-[#FAF5EE] text-[#2B170F] focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706] cursor-pointer"
               required
             >
               <option value="">Selecciona una sucursal...</option>
@@ -411,31 +452,85 @@ export default function ProduccionPage() {
                 </option>
               ))}
             </select>
-            <span className="text-[11px] text-[#8C522B] sm:ml-auto">
-              Se descontarán materias primas y se sumará el producto terminado en esta sucursal.
-            </span>
           </div>
         </div>
       )}
 
+      {/* ─── Métricas Rápidas del Taller ─── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+        <div className="bg-white rounded-2xl border border-[#E8DCCB] p-4 shadow-2xs flex items-center gap-3.5">
+          <div className="h-11 w-11 rounded-xl bg-[#FAF0E6] text-[#D97706] flex items-center justify-center shrink-0 border border-[#DECDBB]/60">
+            <Clock className="h-5 w-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#8C522B]">Horneado Hoy</p>
+            <p className="text-base sm:text-lg font-bold text-[#2B170F]">
+              {todayTotalTrays} <span className="text-xs font-medium text-[#6E5545]">latas</span>
+            </p>
+            <p className="text-xs text-[#D97706] font-semibold truncate">
+              {todayTotalUnits.toLocaleString()} piezas terminadas
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-[#E8DCCB] p-4 shadow-2xs flex items-center gap-3.5">
+          <div className="h-11 w-11 rounded-xl bg-[#FAF5EE] text-[#8C522B] flex items-center justify-center shrink-0 border border-[#DECDBB]">
+            <ChefHat className="h-5 w-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#8C522B]">Fórmulas Activas</p>
+            <p className="text-base sm:text-lg font-bold text-[#2B170F]">
+              {recipes.filter((r) => r.isActive).length} <span className="text-xs font-medium text-[#6E5545]">recetas</span>
+            </p>
+            <p className="text-xs text-[#6E5545] truncate">
+              Disponibles para producción
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-[#E8DCCB] p-4 shadow-2xs flex items-center gap-3.5">
+          <div
+            className={`h-11 w-11 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+              totalSelectedRecipes > 0
+                ? "bg-[#D97706] text-white shadow-2xs"
+                : "bg-[#FAF5EE] text-[#DECDBB] border border-[#DECDBB]"
+            }`}
+          >
+            <Flame className="h-5 w-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#8C522B]">En Esta Tanda</p>
+            <p className="text-base sm:text-lg font-bold text-[#2B170F]">
+              {totalSelectedRecipes}{" "}
+              <span className="text-xs font-medium text-[#6E5545]">
+                amasijo{totalSelectedRecipes !== 1 ? "s" : ""}
+              </span>
+            </p>
+            <p className="text-xs text-[#D97706] font-semibold truncate">
+              {totalTraysCalculated.toFixed(1)} latas ({totalUnitsCalculated.toLocaleString()} piezas)
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* ─── Buscador y Filtros Rápidos de Fórmulas ─── */}
-      <div className="bg-white rounded-2xl border border-[#E8DCCB] p-4 shadow-xs space-y-3">
+      <div className="bg-white rounded-2xl border border-[#E8DCCB] p-4 sm:p-5 shadow-2xs space-y-3.5">
         <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
           {/* Buscador */}
           <div className="relative flex-1 min-w-0">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8C522B]" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8C522B]" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar por receta, pan o materia prima..."
-              className="w-full pl-9 pr-9 h-11 bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-xs sm:text-sm text-[#2B170F] font-medium placeholder:text-[#8C522B]/60 focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
+              placeholder="Buscar por pan, fórmula o ingrediente..."
+              className="w-full pl-10 pr-10 h-11 bg-[#FAF5EE] border border-[#DECDBB] rounded-xl text-xs sm:text-sm text-[#2B170F] font-medium placeholder:text-[#8C522B]/60 focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706] transition-all"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8C522B] hover:text-[#2B170F]"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#8C522B] hover:text-[#2B170F]"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -470,7 +565,7 @@ export default function ProduccionPage() {
               <button
                 type="button"
                 onClick={() => setBatchItems({})}
-                className="h-11 px-3 text-xs font-bold text-red-600 hover:bg-red-50 border border-red-200 rounded-xl transition-all"
+                className="h-11 px-3.5 text-xs font-bold text-red-600 hover:bg-red-50 border border-red-200 rounded-xl transition-all cursor-pointer"
                 title="Limpiar toda la tanda"
               >
                 Limpiar
@@ -480,21 +575,24 @@ export default function ProduccionPage() {
         </div>
 
         {/* Nota Global de la Tanda */}
-        <div className="pt-2 border-t border-[#FAF0E6]">
-          <input
-            type="text"
-            value={batchGlobalNote}
-            onChange={(e) => setBatchGlobalNote(e.target.value)}
-            placeholder="Nota general para la tanda (opcional, ej: Horneada mañana, turno tarde...)"
-            className="w-full px-3.5 h-10 text-xs bg-[#FAF5EE]/70 border border-[#DECDBB]/80 rounded-xl text-[#2B170F] placeholder:text-[#8C522B]/50 focus:outline-none focus:ring-2 focus:ring-[#D97706]/30"
-          />
+        <div className="pt-2.5 border-t border-[#FAF0E6] flex items-center gap-2">
+          <div className="relative flex-1">
+            <FileText className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#8C522B]/70" />
+            <input
+              type="text"
+              value={batchGlobalNote}
+              onChange={(e) => setBatchGlobalNote(e.target.value)}
+              placeholder="Nota general para este horneado (opcional, ej: Horneada mañana, turno tarde, pan bien dorado...)"
+              className="w-full pl-9 pr-3.5 h-10 text-xs bg-[#FAF5EE]/70 border border-[#DECDBB]/80 rounded-xl text-[#2B170F] placeholder:text-[#8C522B]/50 focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 focus:border-[#D97706]"
+            />
+          </div>
         </div>
       </div>
 
       {/* ─── Catálogo de Amasijos Disponibles ─── */}
       <div>
         <div className="flex items-center justify-between mb-3 px-1">
-          <h2 className="text-sm font-bold text-[#2B170F] uppercase tracking-wider">
+          <h2 className="text-xs sm:text-sm font-bold text-[#2B170F] uppercase tracking-wider">
             Amasijos Disponibles para Hornear
           </h2>
           <span className="text-xs text-[#8C522B] font-medium">
@@ -535,28 +633,33 @@ export default function ProduccionPage() {
                 ? currentQuantity / presentationsPerTray
                 : currentQuantity
 
+              const isExpanded = Boolean(expandedIngredients[recipe.id])
+              const displayFormulaTitle =
+                recipe.name.replace(/^Amasijo\s*(Estándar|Estandar)?\s*[-–—:]?\s*/i, "").trim() ||
+                "Fórmula Estándar"
+
               return (
                 <div
                   key={recipe.id}
                   className={`rounded-2xl p-4 sm:p-5 border-2 transition-all flex flex-col justify-between ${
                     isInBatch
-                      ? "border-[#D97706] bg-[#FAF0E6]/40 shadow-xs ring-1 ring-[#D97706]/30"
-                      : "border-[#E8DCCB] bg-white hover:border-[#DECDBB] hover:shadow-2xs"
+                      ? "border-[#D97706] bg-[#FFFDF8] shadow-md ring-2 ring-[#D97706]/20"
+                      : "border-[#E8DCCB] bg-white hover:border-[#DECDBB] hover:shadow-xs"
                   }`}
                 >
                   {/* Encabezado de la Tarjeta */}
                   <div>
-                    <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
-                        <p className="font-bold text-[#2B170F] text-base truncate" title={recipe.name}>
-                          {recipe.name}
-                        </p>
-                        <p className="text-xs text-[#6E5545] truncate mt-0.5">
-                          Producto: <strong className="text-[#2B170F]">{recipe.product.name}</strong>
+                        <h3 className="font-bold text-[#2B170F] text-base sm:text-lg leading-snug truncate" title={recipe.product.name}>
+                          {recipe.product.name}
+                        </h3>
+                        <p className="text-xs text-[#8C522B] font-medium truncate mt-0.5">
+                          {displayFormulaTitle}
                         </p>
                       </div>
                       <span
-                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold shrink-0 ${
+                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold shrink-0 transition-all ${
                           isInBatch
                             ? "bg-[#D97706] text-white shadow-2xs"
                             : "bg-[#FAF5EE] text-[#8C522B] border border-[#DECDBB]"
@@ -567,52 +670,87 @@ export default function ProduccionPage() {
                             <Check className="h-3.5 w-3.5" /> En Tanda
                           </>
                         ) : (
-                          <>Fórmula: {recipe.standardTrays} latas</>
+                          <>
+                            {recipe.standardTrays} {unitLabel}
+                          </>
                         )}
                       </span>
                     </div>
 
                     {/* Rendimiento Base y Razón de Conversión */}
-                    <div className="mt-2 text-xs text-[#8C522B] flex flex-wrap gap-x-3 gap-y-1">
+                    <div className="mt-2.5 flex items-center flex-wrap gap-2 text-xs text-[#6E5545] pb-2.5 border-b border-[#E8DCCB]/60">
                       {recipe.product.unitsPerTray && (
-                        <span>
-                          Rinde: <strong>{recipe.product.unitsPerTray} uds/lata</strong>
+                        <span className="font-medium text-[#2B170F]">
+                          Rinde: <strong className="font-bold">{recipe.product.unitsPerTray} uds/lata</strong>
                         </span>
                       )}
                       {hasPresentation && (
-                        <span className="text-[#D97706] font-medium">
-                          ({presentationsPerTray} {unitLabel.toLowerCase()}/lata)
+                        <span className="text-[#D97706] font-semibold text-[11px] bg-[#FAF0E6] px-2 py-0.5 rounded-md border border-[#DECDBB]/50">
+                          {presentationsPerTray} {unitLabel.toLowerCase()}/lata
                         </span>
                       )}
                     </div>
 
-                    {/* Ingredientes de la fórmula */}
-                    <div className="mt-3 flex flex-wrap gap-1.5 max-h-16 overflow-y-auto pr-1">
-                      {recipe.ingredients.map((ing) => (
-                        <span
-                          key={ing.rawMaterialId}
-                          className="text-[10px] font-semibold bg-[#FAF5EE] text-[#8C522B] border border-[#E8DCCB] px-2 py-0.5 rounded-lg"
-                        >
-                          {ing.rawMaterial.name}: {Number(ing.quantity)} {ing.rawMaterial.baseUnit}
+                    {/* Ingredientes de la fórmula (Sin scrollbar invasivo) */}
+                    <div className="mt-3">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#8C522B]">
+                          Materias primas
                         </span>
-                      ))}
+                        {recipe.ingredients.length > 4 && (
+                          <button
+                            type="button"
+                            onClick={() => toggleIngredients(recipe.id)}
+                            className="text-[10px] font-bold text-[#D97706] hover:underline cursor-pointer flex items-center gap-0.5"
+                          >
+                            {isExpanded ? (
+                              <>Menos <ChevronUp className="h-3 w-3" /></>
+                            ) : (
+                              <>+{recipe.ingredients.length - 4} más <ChevronDown className="h-3 w-3" /></>
+                            )}
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="flex flex-wrap gap-1.5">
+                        {(isExpanded ? recipe.ingredients : recipe.ingredients.slice(0, 4)).map((ing) => (
+                          <span
+                            key={ing.rawMaterialId}
+                            className="text-[11px] font-medium bg-[#FAF5EE] text-[#6E5545] border border-[#E8DCCB] px-2 py-0.5 rounded-lg flex items-center gap-1 shadow-2xs"
+                          >
+                            <span className="text-[#2B170F] font-semibold">{ing.rawMaterial.name}:</span>
+                            <span>
+                              {Number(ing.quantity)} {ing.rawMaterial.baseUnit}
+                            </span>
+                          </span>
+                        ))}
+                        {!isExpanded && recipe.ingredients.length > 4 && (
+                          <button
+                            type="button"
+                            onClick={() => toggleIngredients(recipe.id)}
+                            className="text-[11px] font-bold text-[#D97706] bg-[#FAF0E6] hover:bg-[#FCE8D5] border border-[#DECDBB] px-2 py-0.5 rounded-lg transition-colors cursor-pointer"
+                          >
+                            +{recipe.ingredients.length - 4} más
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
 
                   {/* ─── Control de Cantidad (Independiente por Amasijo) ─── */}
-                  <div className="mt-4 pt-3 border-t border-[#E8DCCB]/60">
+                  <div className="mt-4 pt-3.5 border-t border-[#E8DCCB]/60">
                     {!isInBatch ? (
                       <Button
                         type="button"
                         onClick={() => handleToggleRecipe(recipe)}
                         variant="outline"
-                        className="w-full h-11 border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] hover:border-[#D97706] font-bold text-xs rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
+                        className="w-full h-11 border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] hover:border-[#D97706] hover:text-[#D97706] font-bold text-xs rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-2xs transition-all active:scale-[0.98]"
                       >
                         <Plus className="h-4 w-4 text-[#D97706]" />
                         Agregar a la Tanda ({recipe.standardTrays} {unitLabel})
                       </Button>
                     ) : (
-                      <div className="space-y-2">
+                      <div className="space-y-2.5">
                         <div className="flex items-center gap-2">
                           {/* Botón Decrementar */}
                           <button
@@ -634,7 +772,7 @@ export default function ProduccionPage() {
                                 updateRecipeQuantity(recipe, parseInt(e.target.value) || 0)
                               }
                               placeholder="0"
-                              className="w-full h-11 text-center font-bold text-lg bg-white border-2 border-[#D97706] rounded-xl text-[#2B170F] focus:outline-none shadow-inner"
+                              className="w-full h-11 text-center font-black text-xl bg-white border-2 border-[#D97706] rounded-xl text-[#2B170F] focus:outline-none focus:ring-2 focus:ring-[#D97706]/20 shadow-inner"
                             />
                             <span className="text-[10px] font-bold text-[#8C522B] uppercase tracking-wider block text-center mt-0.5">
                               {unitLabel}
@@ -663,8 +801,8 @@ export default function ProduccionPage() {
                         </div>
 
                         {/* Resultado Total en Piezas del Amasijo */}
-                        <div className="bg-white/80 rounded-xl px-3 py-1.5 border border-[#DECDBB]/50 flex items-center justify-between text-xs">
-                          <span className="text-[#8C522B]">Salida calculada:</span>
+                        <div className="bg-[#FAF5EE] rounded-xl px-3 py-1.5 border border-[#DECDBB] flex items-center justify-between text-xs">
+                          <span className="text-[#8C522B] font-medium">Salida estimada:</span>
                           <span className="font-bold text-[#D97706]">
                             {calculatedPieces.toLocaleString()} piezas ({calculatedTrays.toFixed(1)} latas)
                           </span>
@@ -680,59 +818,79 @@ export default function ProduccionPage() {
       </div>
 
       {/* ─── HISTORIAL DE HOY (COLAPSABLE / RESUMEN) ─── */}
-      <div className="bg-white rounded-2xl border border-[#E8DCCB] shadow-xs overflow-hidden">
-        <div className="px-5 py-4 border-b border-[#E8DCCB] bg-[#FAF5EE] flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-[#8C522B]" />
-            <h2 className="font-bold text-xs sm:text-sm text-[#2B170F]">Producción Registrada Hoy</h2>
+      <div className="bg-white rounded-2xl border border-[#E8DCCB] shadow-2xs overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setShowTodayHistory((prev) => !prev)}
+          className="w-full px-5 py-4 border-b border-[#E8DCCB] bg-[#FAF5EE] flex items-center justify-between cursor-pointer hover:bg-[#F3E9DC]/60 transition-colors"
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="h-8 w-8 rounded-lg bg-[#FAF0E6] text-[#D97706] flex items-center justify-center border border-[#DECDBB]/60">
+              <Clock className="h-4 w-4" />
+            </div>
+            <div className="text-left">
+              <h2 className="font-bold text-xs sm:text-sm text-[#2B170F]">Producción Registrada Hoy</h2>
+              <p className="text-[11px] text-[#8C522B]">
+                {todayLogs.length} registro{todayLogs.length !== 1 ? "s" : ""} de horneado completado{todayLogs.length !== 1 ? "s" : ""}
+              </p>
+            </div>
           </div>
-          <div className="flex gap-3 text-xs font-bold">
-            <span className="text-[#6E5545]">
-              <span className="text-[#2B170F]">{todayTotalTrays}</span> latas
-            </span>
-            <span className="text-[#D97706]">
-              {todayTotalUnits.toLocaleString()} uds
-            </span>
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:flex gap-3 text-xs font-bold">
+              <span className="text-[#6E5545]">
+                <span className="text-[#2B170F] font-bold">{todayTotalTrays}</span> latas
+              </span>
+              <span className="text-[#D97706]">
+                {todayTotalUnits.toLocaleString()} uds
+              </span>
+            </div>
+            {showTodayHistory ? (
+              <ChevronUp className="h-4 w-4 text-[#8C522B]" />
+            ) : (
+              <ChevronDown className="h-4 w-4 text-[#8C522B]" />
+            )}
           </div>
-        </div>
+        </button>
 
-        {todayLogs.length === 0 ? (
-          <div className="p-8 text-center text-[#6E5545]">
-            <Flame className="h-8 w-8 mx-auto mb-2 text-[#DECDBB]" />
-            <p className="text-xs font-bold text-[#2B170F]">Aún no se ha registrado producción hoy</p>
-            <p className="text-[11px] text-[#6E5545] mt-0.5">Los amasijos registrados aparecerán aquí.</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-[#E8DCCB] max-h-72 overflow-y-auto">
-            {todayLogs.map((log) => (
-              <div
-                key={log.id}
-                className="px-4 sm:px-5 py-3.5 flex items-center justify-between gap-3 hover:bg-[#FAF5EE]/40 transition-colors min-w-0"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="font-bold text-xs text-[#2B170F] truncate">{log.recipe.name}</p>
-                  <p className="text-[11px] text-[#6E5545] truncate">
-                    {log.recipe.product.name} • {log.user.firstName} {log.user.lastName} •{" "}
-                    {new Date(log.createdAt).toLocaleTimeString("es-GT", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                    {log.note ? ` • Nota: ${log.note}` : ""}
-                  </p>
+        {showTodayHistory && (
+          todayLogs.length === 0 ? (
+            <div className="p-8 text-center text-[#6E5545]">
+              <Flame className="h-8 w-8 mx-auto mb-2 text-[#DECDBB]" />
+              <p className="text-xs font-bold text-[#2B170F]">Aún no se ha registrado producción hoy</p>
+              <p className="text-[11px] text-[#6E5545] mt-0.5">Los amasijos registrados aparecerán aquí.</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-[#E8DCCB] max-h-72 overflow-y-auto">
+              {todayLogs.map((log) => (
+                <div
+                  key={log.id}
+                  className="px-4 sm:px-5 py-3.5 flex items-center justify-between gap-3 hover:bg-[#FAF5EE]/40 transition-colors min-w-0"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-xs text-[#2B170F] truncate">{log.recipe.name}</p>
+                    <p className="text-[11px] text-[#6E5545] truncate">
+                      {log.recipe.product.name} • {log.user.firstName} {log.user.lastName} •{" "}
+                      {new Date(log.createdAt).toLocaleTimeString("es-GT", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                      {log.note ? ` • Nota: ${log.note}` : ""}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="font-bold text-xs text-[#2B170F]">
+                      {log.presentationQuantity && log.presentationName
+                        ? `${log.presentationQuantity} ${log.presentationName}`
+                        : `${log.traysProduced} latas`}
+                    </p>
+                    <p className="text-[11px] text-[#D97706] font-bold">
+                      {log.unitsProduced.toLocaleString()} uds
+                    </p>
+                  </div>
                 </div>
-                <div className="text-right shrink-0">
-                  <p className="font-bold text-xs text-[#2B170F]">
-                    {log.presentationQuantity && log.presentationName
-                      ? `${log.presentationQuantity} ${log.presentationName}`
-                      : `${log.traysProduced} latas`}
-                  </p>
-                  <p className="text-[11px] text-[#D97706] font-bold">
-                    {log.unitsProduced.toLocaleString()} uds
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )
         )}
       </div>
 
@@ -752,7 +910,7 @@ export default function ProduccionPage() {
                 <p className="text-sm sm:text-base font-bold text-[#2B170F] truncate">
                   <span className="text-[#D97706] font-black">{totalSelectedRecipes}</span> amasijo
                   {totalSelectedRecipes !== 1 ? "s" : ""} ·{" "}
-                  <span className="text-[#2B170F]">{totalTraysCalculated.toFixed(1)}</span> latas (
+                  <span className="text-[#2B170F] font-bold">{totalTraysCalculated.toFixed(1)}</span> latas (
                   {totalUnitsCalculated.toLocaleString()} piezas)
                 </p>
               </div>
@@ -764,7 +922,7 @@ export default function ProduccionPage() {
                 type="button"
                 variant="outline"
                 onClick={() => setShowReviewModal(true)}
-                className="flex-1 sm:flex-initial h-12 px-4 border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] font-bold text-xs rounded-xl shadow-xs"
+                className="flex-1 sm:flex-initial h-12 px-4 border-[#DECDBB] text-[#2B170F] hover:bg-[#FAF5EE] font-bold text-xs rounded-xl shadow-xs cursor-pointer"
               >
                 <ListChecks className="h-4 w-4 mr-1.5 text-[#8C522B]" />
                 Ver Detalle ({totalSelectedRecipes})
@@ -811,7 +969,7 @@ export default function ProduccionPage() {
               <button
                 type="button"
                 onClick={() => setShowReviewModal(false)}
-                className="p-1.5 text-[#8C522B] hover:text-[#2B170F] rounded-lg hover:bg-[#FAF5EE]"
+                className="p-1.5 text-[#8C522B] hover:text-[#2B170F] rounded-lg hover:bg-[#FAF5EE] cursor-pointer"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -848,7 +1006,7 @@ export default function ProduccionPage() {
                       <button
                         type="button"
                         onClick={() => updateRecipeQuantity(recipe, 0)}
-                        className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg"
+                        className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg cursor-pointer"
                         title="Quitar de la tanda"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -868,7 +1026,7 @@ export default function ProduccionPage() {
                   value={batchGlobalNote}
                   onChange={(e) => setBatchGlobalNote(e.target.value)}
                   placeholder="Ej: Amasijos primera horneada mañana..."
-                  className="w-full px-3.5 h-10 text-xs bg-white border border-[#DECDBB] rounded-xl text-[#2B170F]"
+                  className="w-full px-3.5 h-10 text-xs bg-white border border-[#DECDBB] rounded-xl text-[#2B170F] focus:outline-none focus:ring-2 focus:ring-[#D97706]/30"
                 />
               </div>
             </div>
@@ -879,7 +1037,7 @@ export default function ProduccionPage() {
                 type="button"
                 variant="outline"
                 onClick={() => setShowReviewModal(false)}
-                className="h-10 px-4 border-[#DECDBB] text-xs font-bold"
+                className="h-10 px-4 border-[#DECDBB] text-xs font-bold cursor-pointer"
               >
                 Volver
               </Button>
@@ -887,7 +1045,7 @@ export default function ProduccionPage() {
                 type="button"
                 onClick={handleRegisterBatch}
                 disabled={isSubmitting}
-                className="h-10 px-5 bg-[#D97706] hover:bg-[#B45309] text-white font-bold text-xs rounded-xl shadow-xs"
+                className="h-10 px-5 bg-[#D97706] hover:bg-[#B45309] text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer"
               >
                 {isSubmitting ? (
                   <>

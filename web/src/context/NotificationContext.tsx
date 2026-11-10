@@ -327,12 +327,33 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     if (isLoggedIn) {
       isFirstLoadRef.current = true
-      refreshHistory()
+      const initialTimer = setTimeout(() => {
+        void refreshHistory()
+      }, 0)
 
-      // Poll every 30 seconds
+      // Sondeo eficiente: cada 120 segundos y solo con la pestaña visible
       pollIntervalRef.current = setInterval(() => {
-        refreshHistory()
-      }, 30000)
+        if (typeof document !== 'undefined' && document.visibilityState !== 'visible') {
+          return
+        }
+        void refreshHistory()
+      }, 120000)
+
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+          void refreshHistory()
+        }
+      }
+
+      document.addEventListener('visibilitychange', handleVisibilityChange)
+
+      return () => {
+        clearTimeout(initialTimer)
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current)
+        }
+        document.removeEventListener('visibilitychange', handleVisibilityChange)
+      }
     } else {
       setNotifications([])
       setUnreadCount(0)

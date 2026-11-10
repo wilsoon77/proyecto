@@ -3,7 +3,7 @@ import { CatalogClient } from '@/components/products/CatalogClient'
 import { getPublicCatalog, getPublicCategories } from '@/lib/catalog/public-api'
 import type { ProductFilters } from '@/lib/api/types'
 
-export const revalidate = 60
+export const revalidate = 300
 
 export const metadata: Metadata = {
   title: 'Productos | Panadería Svetlana',

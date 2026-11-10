@@ -34,6 +34,27 @@ function getBackendPath(path: string[]): string | null {
   return `/${normalized}`
 }
 
+function getEdgeCacheControl(backendPath: string, method: string, hasAuth: boolean): string | null {
+  if (method !== 'GET') return null
+
+  // Rutas públicas de configuración, sucursales y categorías (cacheadas en Edge CDN)
+  if (
+    backendPath === '/system-config/public' || 
+    backendPath === '/branches' || 
+    backendPath.startsWith('/branches/') ||
+    backendPath === '/categories'
+  ) {
+    return 'public, s-maxage=300, stale-while-revalidate=600'
+  }
+
+  // Catálogo público de productos sin sesión administrativa
+  if (!hasAuth && (backendPath === '/products' || (backendPath.startsWith('/products/') && !backendPath.startsWith('/products/admin')))) {
+    return 'public, s-maxage=60, stale-while-revalidate=300'
+  }
+
+  return null
+}
+
 async function proxy(request: NextRequest, context: RouteContext) {
   const { path } = await context.params
   const backendPath = getBackendPath(path)
@@ -65,6 +86,7 @@ async function proxy(request: NextRequest, context: RouteContext) {
       method: request.method,
       headers,
       body: requestBody && requestBody.byteLength ? requestBody.slice(0) : undefined,
+      signal: request.signal,
     })
   }
 
@@ -80,8 +102,24 @@ async function proxy(request: NextRequest, context: RouteContext) {
     }
 
     const response = await responseFromBackend(upstream)
-    response.headers.set('Cache-Control', 'private, no-store')
-    response.headers.set('Vary', 'Cookie')
+
+    const edgeCache = getEdgeCacheControl(backendPath, request.method, Boolean(session.accessToken))
+    if (edgeCache && upstream.ok) {
+      response.headers.set('Cache-Control', edgeCache)
+      if (
+        backendPath === '/system-config/public' || 
+        backendPath === '/branches' || 
+        backendPath === '/categories'
+      ) {
+        response.headers.delete('Vary')
+      } else {
+        response.headers.set('Vary', 'Accept, Accept-Encoding')
+      }
+    } else {
+      response.headers.set('Cache-Control', 'private, no-store')
+      response.headers.set('Vary', 'Cookie')
+    }
+
     if (refreshedSession) {
       setSessionCookies(response, refreshedSession, isRememberMeSession(request))
     } else if (upstream.status === 401 && session.refreshToken) {

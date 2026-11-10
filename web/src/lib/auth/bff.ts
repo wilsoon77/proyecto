@@ -7,6 +7,7 @@ export const ACCESS_COOKIE = 'panaderia_access'
 export const REFRESH_COOKIE = 'panaderia_refresh'
 export const CSRF_COOKIE = 'panaderia_csrf'
 export const REMEMBER_COOKIE = 'panaderia_remember'
+export const SESSION_HINT_COOKIE = 'panaderia_session_hint'
 
 const ACCESS_MAX_AGE_SECONDS = 15 * 60
 const DEFAULT_REFRESH_MAX_AGE_SECONDS = 7 * 24 * 60 * 60
@@ -80,6 +81,7 @@ export function setSessionCookies(
   response.cookies.set(ACCESS_COOKIE, session.token, sessionCookieOptions(ACCESS_MAX_AGE_SECONDS))
   response.cookies.set(REFRESH_COOKIE, session.refreshToken, sessionCookieOptions(refreshMaxAge))
   response.cookies.set(CSRF_COOKIE, randomUUID(), csrfCookieOptions(refreshMaxAge))
+  response.cookies.set(SESSION_HINT_COOKIE, '1', csrfCookieOptions(refreshMaxAge))
 
   // Persist rememberMe preference so the BFF proxy can use it during automatic refresh
   if (rememberMe) {
@@ -102,6 +104,7 @@ export function clearSessionCookies(response: NextResponse) {
   response.cookies.set(REFRESH_COOKIE, '', { ...expired, httpOnly: true })
   response.cookies.set(CSRF_COOKIE, '', { ...expired, httpOnly: false })
   response.cookies.set(REMEMBER_COOKIE, '', { ...expired, httpOnly: false })
+  response.cookies.set(SESSION_HINT_COOKIE, '', { ...expired, httpOnly: false })
 }
 
 export function setCsrfCookie(response: NextResponse) {
@@ -155,7 +158,9 @@ export async function responseFromBackend(upstream: Response): Promise<NextRespo
   }
   headers.set('X-Content-Type-Options', 'nosniff')
 
-  return new NextResponse(await upstream.arrayBuffer(), {
+  const body = [204, 205, 304].includes(upstream.status) ? null : upstream.body
+
+  return new NextResponse(body, {
     status: upstream.status,
     headers,
   })

@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from "react"
-import { authService, ensureCsrfToken } from "@/lib/api"
+import { authService } from "@/lib/api"
 import { notificationsService } from "@/lib/api/notifications"
 import type { ApiUser, LoginDto, RegisterDto, UpdateMeDto } from "@/lib/api/types"
 
@@ -26,8 +26,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // La sesión se consulta desde el BFF; el navegador no puede leer tokens.
   useEffect(() => {
     const loadUser = async () => {
+      // Si el navegador no tiene ninguna cookie de sesion ni hint, es un visitante anonimo.
+      // Evitamos llamar a /api/bff/auth/me y despertar al backend para recibir un 401.
+      const cookieStr = typeof document !== 'undefined' ? document.cookie : ''
+      const hasPossibleSession = 
+        cookieStr.includes('panaderia_session_hint') || 
+        cookieStr.includes('panaderia_remember') ||
+        cookieStr.includes('panaderia_csrf')
+
+      if (!hasPossibleSession) {
+        setUser(null)
+        setIsLoading(false)
+        return
+      }
+
       try {
-        await ensureCsrfToken()
         const userData = await authService.me()
         if (userData) {
           setUser(userData)
@@ -35,8 +48,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         console.error('Error cargando la sesión:', error)
         setUser(null)
+      } finally {
+        setIsLoading(false)
       }
-      setIsLoading(false)
     }
 
     loadUser()

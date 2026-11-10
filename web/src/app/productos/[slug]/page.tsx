@@ -9,7 +9,7 @@ import { SITE_URL } from '@/lib/constants'
 
 const siteUrl = SITE_URL
 
-export const revalidate = 60
+export const revalidate = 300
 export const dynamicParams = true
 
 type PageProps = {

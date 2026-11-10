@@ -6,6 +6,8 @@ import { SITE_URL } from '@/lib/constants'
 
 const siteUrl = SITE_URL
 
+export const revalidate = 3600
+
 export const metadata: Metadata = {
   title: 'Sucursales | Panadería Svetlana',
   description: 'Encuentra la sucursal de Panadería Svetlana más cercana en Chimaltenango, Guatemala.',

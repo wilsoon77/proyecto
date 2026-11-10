@@ -2,7 +2,8 @@ import 'server-only'
 
 import type { ApiBranch, ApiCategory, ApiProduct, PaginatedResponse, ProductFilters } from '@/lib/api/types'
 
-const REVALIDATE_SECONDS = 60
+const REVALIDATE_SECONDS = 300
+const REVALIDATE_STATIC_SECONDS = 3600
 
 function getApiBaseUrl() {
   return (process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000').replace(/\/$/, '')
@@ -21,11 +22,11 @@ function buildProductQuery(filters: ProductFilters) {
   return params.toString()
 }
 
-async function publicFetch<T>(path: string, tags: string[]): Promise<T | null> {
+async function publicFetch<T>(path: string, tags: string[], revalidateSeconds = REVALIDATE_SECONDS): Promise<T | null> {
   try {
     const response = await fetch(`${getApiBaseUrl()}${path}`, {
       headers: { Accept: 'application/json' },
-      next: { revalidate: REVALIDATE_SECONDS, tags },
+      next: { revalidate: revalidateSeconds, tags },
     })
 
     if (!response.ok) return null
@@ -39,7 +40,7 @@ async function publicFetch<T>(path: string, tags: string[]): Promise<T | null> {
 
 export async function getPublicCatalog(filters: ProductFilters): Promise<PaginatedResponse<ApiProduct>> {
   const query = buildProductQuery(filters)
-  const result = await publicFetch<PaginatedResponse<ApiProduct>>(`/products${query ? `?${query}` : ''}`, ['catalog'])
+  const result = await publicFetch<PaginatedResponse<ApiProduct>>(`/products${query ? `?${query}` : ''}`, ['catalog'], REVALIDATE_SECONDS)
   const page = filters.page ?? 1
   const pageSize = filters.pageSize ?? 12
   return result ?? {
@@ -49,16 +50,16 @@ export async function getPublicCatalog(filters: ProductFilters): Promise<Paginat
 }
 
 export async function getPublicCategories(): Promise<ApiCategory[]> {
-  return (await publicFetch<ApiCategory[]>('/categories', ['catalog-categories'])) ?? []
+  return (await publicFetch<ApiCategory[]>('/categories', ['catalog-categories'], REVALIDATE_STATIC_SECONDS)) ?? []
 }
 
 export async function getPublicBranches(): Promise<ApiBranch[]> {
-  return (await publicFetch<ApiBranch[]>('/branches', ['public-branches'])) ?? []
+  return (await publicFetch<ApiBranch[]>('/branches', ['public-branches'], REVALIDATE_STATIC_SECONDS)) ?? []
 }
 
 export async function getPublicProduct(slug: string, branch?: string): Promise<ApiProduct | null> {
   const params = branch ? `?branch=${encodeURIComponent(branch)}` : ''
-  return publicFetch<ApiProduct>(`/products/${encodeURIComponent(slug)}${params}`, ['catalog', `product:${slug}`])
+  return publicFetch<ApiProduct>(`/products/${encodeURIComponent(slug)}${params}`, ['catalog', `product:${slug}`], REVALIDATE_SECONDS)
 }
 
 export async function getRelatedPublicProducts(category: string, currentSlug: string): Promise<ApiProduct[]> {

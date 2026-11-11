@@ -3,7 +3,7 @@ import { ApiTags, ApiBearerAuth, ApiResponse, ApiBadRequestResponse, ApiUnauthor
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service.js';
 import { JwtAuthGuard } from './jwt-auth.guard.js';
-import { RegisterDto, LoginDto, UpdateMeDto, AuthResponseDto, UserDto, RefreshDto, ResetPasswordDto, OAuthCallbackDto } from './dto/auth.dto.js';
+import { RegisterDto, LoginDto, UpdateMeDto, AuthResponseDto, UserDto, RefreshDto, ResetPasswordDto, OAuthCallbackDto, PasswordRecoveryRequestDto } from './dto/auth.dto.js';
 import { ErrorResponseDto } from '../common/dto/error-response.dto.js';
 
 @Controller('auth')
@@ -39,6 +39,17 @@ export class AuthController {
   login(@Body() body: LoginDto, @Req() req: any) {
     const metadata = { userAgent: req.headers['user-agent'], ip: req.ip };
     return this.auth.login(body, metadata);
+  }
+
+  @Post('recovery-request')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 solicitudes de recuperación por minuto
+  @ApiOperation({ summary: 'Solicitar recuperación de contraseña', description: 'Envía un enlace de recuperación sin revelar si el correo existe.' })
+  @ApiResponse({ status: 200, description: 'Solicitud aceptada', schema: { properties: { success: { type: 'boolean' } } } })
+  @ApiBadRequestResponse({ description: 'Solicitud inválida', type: ErrorResponseDto })
+  requestPasswordRecovery(@Body() body: PasswordRecoveryRequestDto, @Req() req: any) {
+    const metadata = { userAgent: req.headers['user-agent'], ip: req.ip };
+    return this.auth.requestPasswordRecovery(body, metadata);
   }
 
   @Post('refresh')

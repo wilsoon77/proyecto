@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsOptional, IsString, MinLength, IsBoolean } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, MinLength, IsBoolean } from 'class-validator';
 
 export class RegisterDto {
   @ApiProperty({ example: 'juan@example.com' })
@@ -28,6 +28,11 @@ export class RegisterDto {
   @IsOptional()
   @IsString()
   captchaToken?: string;
+
+  @ApiProperty({ example: 'device-fingerprint-123', required: false, description: 'Identificador único del dispositivo' })
+  @IsOptional()
+  @IsString()
+  deviceId?: string;
 }
 
 export class LoginDto {
@@ -109,6 +114,27 @@ export class ResetPasswordDto {
   @IsString()
   @MinLength(8)
   newPassword!: string;
+}
+
+export class PasswordRecoveryRequestDto {
+  @ApiProperty({ example: 'juan@example.com' })
+  @IsEmail()
+  email!: string;
+
+  @ApiProperty({ example: 'https://panaderiasvetlana.app/reset-password' })
+  @IsString()
+  @IsNotEmpty()
+  redirectTo!: string;
+
+  @ApiProperty({ example: 'hcaptcha-token', required: false, description: 'Token de hCaptcha para protección anti-bots' })
+  @IsOptional()
+  @IsString()
+  captchaToken?: string;
+
+  @ApiProperty({ example: 'device-fingerprint-123', required: false, description: 'Identificador único del dispositivo' })
+  @IsOptional()
+  @IsString()
+  deviceId?: string;
 }
 
 export class OAuthCallbackDto {

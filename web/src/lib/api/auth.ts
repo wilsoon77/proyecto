@@ -19,6 +19,14 @@ export const authService = {
     return api.get<{ required: boolean }>(`/auth/check-captcha?${params}`, { skipAuth: true })
   },
 
+  async requestPasswordRecovery(data: { email: string; captchaToken?: string; deviceId?: string }): Promise<{ success: boolean }> {
+    return requestAuth<{ success: boolean }>('/api/auth/request-recovery', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+  },
+
   /**
    * Iniciar sesión
    */

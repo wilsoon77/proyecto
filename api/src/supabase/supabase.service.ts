@@ -41,6 +41,13 @@ export class SupabaseService {
     return this.supabase.auth.signInWithPassword({ email, password });
   }
 
+  async resetPasswordForEmail(email: string, redirectTo: string, captchaToken?: string) {
+    if (!this.supabase) {
+      throw new ServiceUnavailableException('Supabase Auth no está configurado.');
+    }
+    return this.supabase.auth.resetPasswordForEmail(email, { redirectTo, captchaToken });
+  }
+
   isConfigured(): boolean {
     return !!this.supabase;
   }

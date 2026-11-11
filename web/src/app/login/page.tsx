@@ -60,15 +60,18 @@ function LoginForm() {
     return () => window.clearTimeout(timer)
   }, [])
 
-  const checkCaptchaRequired = async (emailToCheck: string) => {
-    if (!emailToCheck || !deviceId) return
+  const checkCaptchaRequired = async (emailToCheck: string, deviceIdToUse = deviceId): Promise<boolean> => {
+    const currentDeviceId = deviceIdToUse || getDeviceId()
+    if (!emailToCheck || !currentDeviceId) return false
     setCheckingCaptcha(true)
     try {
-      const result = await authService.checkCaptcha(emailToCheck, deviceId)
+      const result = await authService.checkCaptcha(emailToCheck, currentDeviceId)
       setRequiresCaptcha(result.required)
       if (!result.required) setCaptchaToken(null)
+      return result.required
     } catch {
       setRequiresCaptcha(true)
+      return true
     } finally {
       setCheckingCaptcha(false)
     }
@@ -82,13 +85,16 @@ function LoginForm() {
       return
     }
 
-    if (isCaptchaEnabled() && requiresCaptcha && !captchaToken) {
+    const currentDeviceId = deviceId || getDeviceId()
+    if (!deviceId) setDeviceId(currentDeviceId)
+    const captchaRequired = requiresCaptcha || (await checkCaptchaRequired(email, currentDeviceId))
+    if (isCaptchaEnabled() && captchaRequired && !captchaToken) {
       setError("Completa la verificación de seguridad para continuar.")
       return
     }
 
     try {
-      const loggedUser = await login({ email, password, captchaToken: captchaToken || undefined, rememberMe, deviceId: deviceId || undefined })
+      const loggedUser = await login({ email, password, captchaToken: captchaToken || undefined, rememberMe, deviceId: currentDeviceId })
       show("Bienvenido de vuelta.", { variant: "success" })
       if (returnUrl === ROUTES.home) {
         if (loggedUser.role === "ADMIN" || loggedUser.role === "MANAGER") {

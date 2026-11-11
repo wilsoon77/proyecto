@@ -39,6 +39,7 @@ export interface RegisterDto {
   lastName: string
   phone?: string
   captchaToken?: string
+  deviceId?: string
 }
 
 export interface UpdateMeDto {

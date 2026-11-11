@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/client"
 import { useToast } from "@/context/ToastContext"
 import { requestAuth } from "@/lib/api/client"
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { Eye, EyeOff, Lock, AlertCircle, CheckCircle2, KeyRound } from "lucide-react"
+import { Eye, EyeOff, Lock, AlertCircle, KeyRound } from "lucide-react"
 
 export default function ResetPasswordPage() {
   const router = useRouter()
@@ -43,6 +43,32 @@ export default function ResetPasswordPage() {
 
         const session = data?.session
         if (!error && session) {
+          setIsValidSession(true)
+          window.history.replaceState(null, '', window.location.pathname)
+          return
+        }
+      }
+
+      const searchParams = new URLSearchParams(window.location.search)
+      const tokenHash = searchParams.get('token_hash')
+      const queryType = searchParams.get('type')
+      const code = searchParams.get('code')
+
+      if (tokenHash && queryType === 'recovery') {
+        const { data, error } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: 'recovery',
+        })
+        if (!error && data?.session) {
+          setIsValidSession(true)
+          window.history.replaceState(null, '', window.location.pathname)
+          return
+        }
+      }
+
+      if (code) {
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+        if (!error && data?.session) {
           setIsValidSession(true)
           window.history.replaceState(null, '', window.location.pathname)
           return

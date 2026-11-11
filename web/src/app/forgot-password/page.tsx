@@ -1,13 +1,14 @@
 ﻿"use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import Link from "next/link"
 import HCaptcha from "@hcaptcha/react-hcaptcha"
 import { ROUTES } from "@/lib/constants"
 import { Button } from "@/components/ui/button"
 import Captcha, { isCaptchaEnabled } from "@/components/ui/captcha"
-import { createClient } from "@/lib/supabase/client"
-import { Mail, KeyRound, CheckCircle2, ArrowLeft } from "lucide-react"
+import { Mail, KeyRound, CheckCircle2 } from "lucide-react"
+import { getDeviceId } from "@/lib/device-fingerprint"
+import { authService } from "@/lib/api/auth"
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("")
@@ -16,6 +17,32 @@ export default function ForgotPasswordPage() {
   const [success, setSuccess] = useState(false)
   const [captchaToken, setCaptchaToken] = useState<string | null>(null)
   const captchaRef = useRef<HCaptcha>(null)
+  const [deviceId, setDeviceId] = useState("")
+  const [requiresCaptcha, setRequiresCaptcha] = useState(false)
+  const [checkingCaptcha, setCheckingCaptcha] = useState(false)
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDeviceId(getDeviceId()), 0)
+    return () => window.clearTimeout(timer)
+  }, [])
+
+  const checkCaptchaRequired = async (emailToCheck: string, deviceIdToUse = deviceId): Promise<boolean> => {
+    if (!emailToCheck) return false
+    const currentDeviceId = deviceIdToUse || getDeviceId()
+    if (!deviceId) setDeviceId(currentDeviceId)
+    setCheckingCaptcha(true)
+    try {
+      const result = await authService.checkCaptcha(emailToCheck, currentDeviceId)
+      setRequiresCaptcha(result.required)
+      if (!result.required) setCaptchaToken(null)
+      return result.required
+    } catch {
+      setRequiresCaptcha(true)
+      return true
+    } finally {
+      setCheckingCaptcha(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -26,7 +53,9 @@ export default function ForgotPasswordPage() {
       return
     }
 
-    if (isCaptchaEnabled() && !captchaToken) {
+    const currentDeviceId = deviceId || getDeviceId()
+    const captchaRequired = await checkCaptchaRequired(email, currentDeviceId)
+    if (isCaptchaEnabled() && captchaRequired && !captchaToken) {
       setError("Por favor, completa la verificación de seguridad")
       return
     }
@@ -34,17 +63,11 @@ export default function ForgotPasswordPage() {
     setIsLoading(true)
 
     try {
-      const supabase = createClient()
-      const redirectUrl = `${window.location.origin}/reset-password`
-      
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: redirectUrl,
+      await authService.requestPasswordRecovery({
+        email,
         captchaToken: captchaToken || undefined,
+        deviceId: currentDeviceId,
       })
-
-      if (error) {
-        throw error
-      }
 
       setSuccess(true)
     } catch (err: unknown) {
@@ -52,6 +75,7 @@ export default function ForgotPasswordPage() {
       setError(message)
       captchaRef.current?.resetCaptcha()
       setCaptchaToken(null)
+      await checkCaptchaRequired(email, currentDeviceId)
     } finally {
       setIsLoading(false)
     }
@@ -118,6 +142,7 @@ export default function ForgotPasswordPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                onBlur={(e) => void checkCaptchaRequired(e.target.value)}
                 className="h-11 w-full rounded-xl border border-input bg-background pl-10 pr-3.5 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
                 placeholder="tu@correo.com"
                 disabled={isLoading}
@@ -125,18 +150,19 @@ export default function ForgotPasswordPage() {
             </div>
           </div>
 
-          {isCaptchaEnabled() && (
+          {isCaptchaEnabled() && requiresCaptcha && (
             <Captcha
               ref={captchaRef}
               onVerify={(token) => setCaptchaToken(token)}
               onExpire={() => setCaptchaToken(null)}
             />
           )}
+          {checkingCaptcha && <p className="text-xs text-muted-foreground">Verificando seguridad...</p>}
           
           <Button
             type="submit"
             className="w-full h-11 text-sm font-semibold shadow-warm touch-tactile"
-            disabled={isLoading}
+            disabled={isLoading || checkingCaptcha}
           >
             {isLoading ? "Enviando enlace..." : "Enviar Enlace de Recuperación"}
           </Button>

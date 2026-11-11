@@ -2,12 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 /**
- * SessionService — Gestión de sesiones, intentos de login, y dispositivos de confianza.
+ * SessionService — Gestión de sesiones, intentos de autenticación y dispositivos de confianza.
  * 
  * Aplica: nestjs-service-layer (SRP — solo maneja sesiones y seguridad anti-brute-force)
  * 
  * Responsabilidades:
- *  - Registrar intentos de login (éxito/fallo)
+ *  - Registrar intentos de autenticación (éxito/fallo)
  *  - Verificar si se requiere captcha basado en intentos recientes
  *  - Gestionar dispositivos de confianza (trusted devices)
  */
@@ -16,7 +16,7 @@ export class SessionService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Registra un intento de login en la base de datos.
+   * Registra un intento de autenticación en la base de datos.
    */
   async recordLoginAttempt(data: {
     email: string;
@@ -29,6 +29,7 @@ export class SessionService {
 
   /**
    * Verifica si se requiere captcha para un email/IP dados.
+   * La misma ventana de intentos se comparte entre login, registro y recuperación.
    * Se requiere después de 3 intentos fallidos en los últimos 5 minutos.
    * Dispositivos de confianza están exentos.
    */

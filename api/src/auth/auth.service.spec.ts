@@ -18,7 +18,7 @@ describe('AuthService OAuth callback', () => {
     },
   };
   const logger: Record<string, any> = { info: jest.fn(), warn: jest.fn(), auditLogin: jest.fn() };
-  const supabase: Record<string, any> = { getUser: jest.fn(), signInWithPassword: jest.fn(), isConfigured: jest.fn() };
+  const supabase: Record<string, any> = { getUser: jest.fn(), signInWithPassword: jest.fn(), resetPasswordForEmail: jest.fn(), isConfigured: jest.fn() };
   const tokenService = {
     signAccessToken: jest.fn().mockReturnValue('app-access-token'),
     createRefreshToken: jest.fn().mockResolvedValue('app-refresh-token'),
@@ -108,6 +108,56 @@ describe('AuthService OAuth callback', () => {
     expect(passwordService.compare).toHaveBeenCalledWith('admin123', adminUser.passwordHash);
     expect(tokenService.signAccessToken).toHaveBeenCalledWith(adminUser.id, adminUser.role);
     expect(result.user.email).toBe('admin@panaderia.com');
+  });
+
+  it('does not require captcha for registration before the progressive threshold', async () => {
+    const registeredUser = {
+      id: 'new-user-id',
+      email: 'new@example.com',
+      firstName: 'Nuevo',
+      lastName: 'Cliente',
+      role: 'CUSTOMER',
+    };
+
+    prisma.user.findUnique.mockResolvedValue(null);
+    prisma.user.create.mockResolvedValue(registeredUser);
+    supabase.isConfigured = jest.fn().mockReturnValue(false);
+    sessionService.requiresCaptcha = jest.fn().mockResolvedValue(false);
+    sessionService.recordLoginAttempt = jest.fn().mockResolvedValue(undefined);
+    passwordService.hash = jest.fn().mockResolvedValue('local-password-hash');
+
+    const result = await service.register({
+      email: registeredUser.email,
+      password: 'Password123',
+      firstName: registeredUser.firstName,
+      lastName: registeredUser.lastName,
+      deviceId: 'device-1',
+    }, { ip: '203.0.113.10', userAgent: 'jest' });
+
+    expect(captcha.verify).not.toHaveBeenCalled();
+    expect(sessionService.recordLoginAttempt).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+    expect(result.user.email).toBe(registeredUser.email);
+  });
+
+  it('requests password recovery through Supabase without captcha before the progressive threshold', async () => {
+    supabase.resetPasswordForEmail.mockResolvedValue({ error: null });
+    sessionService.requiresCaptcha = jest.fn().mockResolvedValue(false);
+    sessionService.recordLoginAttempt = jest.fn().mockResolvedValue(undefined);
+
+    const result = await service.requestPasswordRecovery({
+      email: 'cliente@example.com',
+      redirectTo: 'http://localhost:3000/reset-password',
+      deviceId: 'device-1',
+    }, { ip: '203.0.113.10', userAgent: 'jest' });
+
+    expect(captcha.verify).not.toHaveBeenCalled();
+    expect(supabase.resetPasswordForEmail).toHaveBeenCalledWith(
+      'cliente@example.com',
+      'http://localhost:3000/reset-password',
+      undefined,
+    );
+    expect(sessionService.recordLoginAttempt).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+    expect(result).toEqual({ success: true });
   });
 
   it('creates 30-day refresh token in OAuth callback when rememberMe is true', async () => {

@@ -78,58 +78,75 @@ export class AuthService {
   // ─── Flujo de Registro ─────────────────────────────────────────
 
   async register(
-    input: { email: string; password: string; firstName: string; lastName: string; phone?: string; captchaToken?: string },
+    input: { email: string; password: string; firstName: string; lastName: string; phone?: string; captchaToken?: string; deviceId?: string },
     metadata?: { userAgent?: string; ip?: string },
   ) {
-    if (this.captcha.isConfigured()) {
+    const attemptData = {
+      email: input.email,
+      ipAddress: metadata?.ip || 'unknown',
+      deviceId: input.deviceId,
+      success: false,
+    };
+    const captchaRequired = await this.sessionService.requiresCaptcha(
+      input.email,
+      attemptData.ipAddress,
+      input.deviceId,
+    );
+    if (captchaRequired) {
       await this.captcha.verify(input.captchaToken, metadata?.ip);
     }
 
-    const existing = await this.prisma.user.findUnique({ where: { email: input.email } });
-    if (existing) throw new BadRequestException('Email ya registrado');
+    try {
+      const existing = await this.prisma.user.findUnique({ where: { email: input.email } });
+      if (existing) throw new BadRequestException('Email ya registrado');
 
-    let user;
+      let user;
 
-    if (this.supabase.isConfigured()) {
-      const { data: authUser, error: authError } = await this.supabase.admin.createUser({
-        email: input.email,
-        password: input.password,
-        email_confirm: true,
-        user_metadata: {
-          first_name: input.firstName,
-          last_name: input.lastName,
+      if (this.supabase.isConfigured()) {
+        const { data: authUser, error: authError } = await this.supabase.admin.createUser({
+          email: input.email,
+          password: input.password,
+          email_confirm: true,
+          user_metadata: {
+            first_name: input.firstName,
+            last_name: input.lastName,
+            phone: input.phone,
+          },
+        });
+
+        if (authError) {
+          this.logger.error(`Error creando usuario en Supabase Auth: ${authError.message} - Email: ${input.email}`);
+          throw new BadRequestException(authError.message);
+        }
+
+        user = await this.syncRegisteredUser(authUser.user.id, {
+          email: input.email,
+          firstName: input.firstName,
+          lastName: input.lastName,
           phone: input.phone,
-        },
-      });
-
-      if (authError) {
-        this.logger.error(`Error creando usuario en Supabase Auth: ${authError.message} - Email: ${input.email}`);
-        throw new BadRequestException(authError.message);
+        });
+      } else {
+        const passwordHash = await this.passwordService.hash(input.password);
+        user = await this.prisma.user.create({
+          data: { email: input.email, passwordHash, firstName: input.firstName, lastName: input.lastName, phone: input.phone },
+        });
       }
 
-      user = await this.syncRegisteredUser(authUser.user.id, {
-        email: input.email,
-        firstName: input.firstName,
-        lastName: input.lastName,
-        phone: input.phone,
-      });
-    } else {
-      const passwordHash = await this.passwordService.hash(input.password);
-      user = await this.prisma.user.create({
-        data: { email: input.email, passwordHash, firstName: input.firstName, lastName: input.lastName, phone: input.phone },
-      });
+      const accessToken = this.tokenService.signAccessToken(user.id, user.role);
+      const refreshToken = await this.tokenService.createRefreshToken(user.id, metadata);
+
+      await this.sessionService.recordLoginAttempt({ ...attemptData, success: true });
+      this.logger.info('Usuario registrado', { userId: user.id, email: user.email, action: 'REGISTER', ip: metadata?.ip, supabaseAuth: this.supabase.isConfigured() });
+
+      return {
+        token: accessToken,
+        refreshToken,
+        user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, role: user.role },
+      };
+    } catch (error) {
+      await this.sessionService.recordLoginAttempt(attemptData);
+      throw error;
     }
-
-    const accessToken = this.tokenService.signAccessToken(user.id, user.role);
-    const refreshToken = await this.tokenService.createRefreshToken(user.id, metadata);
-
-    this.logger.info('Usuario registrado', { userId: user.id, email: user.email, action: 'REGISTER', ip: metadata?.ip, supabaseAuth: this.supabase.isConfigured() });
-
-    return {
-      token: accessToken,
-      refreshToken,
-      user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, role: user.role },
-    };
   }
 
   // ─── Flujo de Login ────────────────────────────────────────────
@@ -152,7 +169,7 @@ export class AuthService {
       attemptData.ipAddress,
       input.deviceId,
     );
-    if (captchaRequired && this.captcha.isConfigured()) {
+    if (captchaRequired) {
       await this.captcha.verify(input.captchaToken, metadata?.ip);
     }
 
@@ -232,6 +249,66 @@ export class AuthService {
 
   async requiresCaptcha(email: string, ip: string, deviceId?: string): Promise<boolean> {
     return this.sessionService.requiresCaptcha(email, ip, deviceId);
+  }
+
+  async requestPasswordRecovery(
+    input: { email: string; redirectTo: string; captchaToken?: string; deviceId?: string },
+    metadata?: { userAgent?: string; ip?: string },
+  ) {
+    const attemptData = {
+      email: input.email,
+      ipAddress: metadata?.ip || 'unknown',
+      deviceId: input.deviceId,
+      success: false,
+    };
+    const captchaRequired = await this.sessionService.requiresCaptcha(
+      input.email,
+      attemptData.ipAddress,
+      input.deviceId,
+    );
+    if (captchaRequired) {
+      await this.captcha.verify(input.captchaToken, metadata?.ip);
+    }
+
+    try {
+      const redirectUrl = new URL(input.redirectTo);
+      const configuredOrigins = (process.env.CORS_ORIGINS || '')
+        .split(',')
+        .map((origin) => origin.trim().replace(/\/$/, ''))
+        .filter(Boolean);
+      const allowedOrigins = Array.from(
+        new Set([
+          ...configuredOrigins,
+          'https://panaderiasvetlana.app',
+          'https://www.panaderiasvetlana.app',
+          'https://proyecto-wilsoon77.vercel.app',
+          'http://localhost:3000',
+        ]),
+      );
+      if (
+        redirectUrl.pathname !== '/reset-password'
+        || redirectUrl.search
+        || redirectUrl.hash
+        || !allowedOrigins.includes(redirectUrl.origin)
+      ) {
+        throw new BadRequestException('La dirección de recuperación no es válida.');
+      }
+
+      const { error } = await this.supabase.resetPasswordForEmail(
+        input.email,
+        redirectUrl.toString(),
+        input.captchaToken,
+      );
+      if (error) {
+        throw new BadRequestException(error.message);
+      }
+
+      await this.sessionService.recordLoginAttempt({ ...attemptData, success: true });
+      return { success: true };
+    } catch (error) {
+      await this.sessionService.recordLoginAttempt(attemptData);
+      throw error;
+    }
   }
 
   // ─── Refresh Token ─────────────────────────────────────────────

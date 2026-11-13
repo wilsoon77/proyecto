@@ -142,30 +142,33 @@ export default function ProduccionPage() {
   }, [])
 
   // Modificar cantidad de una receta específica en la tanda
-  const updateRecipeQuantity = (recipe: Recipe, newQuantity: number) => {
+  const updateRecipeQuantity = (
+    recipe: Recipe,
+    newQuantity: number,
+    options?: { removeOnZero?: boolean },
+  ) => {
     const { presentation, presentationsPerTray, hasPresentation } = getRecipePresentationData(recipe)
-    const validQty = Math.max(0, newQuantity)
+    const validQty = Number.isFinite(newQuantity) ? Math.max(0, Math.floor(newQuantity)) : 0
 
     setBatchItems((prev) => {
       const updated = { ...prev }
-      if (validQty <= 0) {
+      if (validQty <= 0 && options?.removeOnZero) {
         delete updated[recipe.id]
+      } else if (hasPresentation && presentation) {
+        updated[recipe.id] = {
+          recipeId: recipe.id,
+          productionPresentationId: presentation.id,
+          productionQuantity: validQty,
+          traysProduced: presentationsPerTray > 0 ? validQty / presentationsPerTray : 0,
+          note: updated[recipe.id]?.note || "",
+        }
       } else {
-        if (hasPresentation) {
-          updated[recipe.id] = {
-            recipeId: recipe.id,
-            productionPresentationId: presentation?.id,
-            productionQuantity: validQty,
-            traysProduced: presentationsPerTray > 0 ? validQty / presentationsPerTray : 0,
-            note: updated[recipe.id]?.note || "",
-          }
-        } else {
-          updated[recipe.id] = {
-            recipeId: recipe.id,
-            traysProduced: validQty,
-            productionQuantity: 0,
-            note: updated[recipe.id]?.note || "",
-          }
+        updated[recipe.id] = {
+          recipeId: recipe.id,
+          traysProduced: validQty,
+          productionPresentationId: undefined,
+          productionQuantity: undefined,
+          note: updated[recipe.id]?.note || "",
         }
       }
       return updated
@@ -214,17 +217,20 @@ export default function ProduccionPage() {
     if (hasPresentation) {
       const step = presentationsPerTray > 0 ? presentationsPerTray : 1
       const currentQty = currentItem.productionQuantity || 0
-      updateRecipeQuantity(recipe, currentQty + delta * step)
+      updateRecipeQuantity(recipe, currentQty + delta * step, { removeOnZero: delta < 0 })
     } else {
       const currentTrays = currentItem.traysProduced || 0
-      updateRecipeQuantity(recipe, currentTrays + delta)
+      updateRecipeQuantity(recipe, currentTrays + delta, { removeOnZero: delta < 0 })
     }
   }
 
   // Lista activa de items en la tanda
   const batchList = useMemo(() => {
     return Object.values(batchItems).filter((item) => {
-      return (item.productionQuantity ?? item.traysProduced) > 0
+      if (item.productionPresentationId !== undefined) {
+        return (item.productionQuantity ?? 0) > 0
+      }
+      return item.traysProduced > 0
     })
   }, [batchItems])
 
@@ -279,6 +285,24 @@ export default function ProduccionPage() {
         "error"
       )
       return
+    }
+
+    for (const item of batchList) {
+      const recipe = recipes.find((r) => r.id === item.recipeId)
+      if (!recipe) continue
+      const { presentationsPerTray, hasPresentation, unitLabel } = getRecipePresentationData(recipe)
+      if (
+        hasPresentation &&
+        presentationsPerTray > 0 &&
+        item.productionQuantity !== undefined &&
+        item.productionQuantity % presentationsPerTray !== 0
+      ) {
+        showToast(
+          `${recipe.product.name}: la cantidad debe ser múltiplo de ${presentationsPerTray} ${unitLabel.toLowerCase()} por lata`,
+          "error"
+        )
+        return
+      }
     }
 
     setIsSubmitting(true)
@@ -633,6 +657,12 @@ export default function ProduccionPage() {
                 ? currentQuantity / presentationsPerTray
                 : currentQuantity
 
+              const hasInvalidMultiple =
+                hasPresentation &&
+                currentQuantity > 0 &&
+                presentationsPerTray > 0 &&
+                currentQuantity % presentationsPerTray !== 0
+
               const isExpanded = Boolean(expandedIngredients[recipe.id])
               const displayFormulaTitle =
                 recipe.name.replace(/^Amasijo\s*(Estándar|Estandar)?\s*[-–—:]?\s*/i, "").trim() ||
@@ -767,9 +797,10 @@ export default function ProduccionPage() {
                             <input
                               type="number"
                               min="0"
+                              step={hasPresentation && presentationsPerTray > 0 ? presentationsPerTray : 1}
                               value={currentQuantity === 0 ? "" : currentQuantity}
                               onChange={(e) =>
-                                updateRecipeQuantity(recipe, parseInt(e.target.value) || 0)
+                                updateRecipeQuantity(recipe, parseInt(e.target.value, 10) || 0)
                               }
                               placeholder="0"
                               className="w-full h-11 text-center font-black text-xl bg-white border-2 border-[#D97706] rounded-xl text-[#2B170F] focus:outline-none focus:ring-2 focus:ring-[#D97706]/20 shadow-inner"
@@ -792,13 +823,19 @@ export default function ProduccionPage() {
                           {/* Botón Quitar de la Tanda */}
                           <button
                             type="button"
-                            onClick={() => updateRecipeQuantity(recipe, 0)}
+                            onClick={() => updateRecipeQuantity(recipe, 0, { removeOnZero: true })}
                             className="h-11 w-10 rounded-xl bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 flex items-center justify-center active:scale-95 transition-all shadow-2xs cursor-pointer shrink-0"
                             title="Quitar de la tanda"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
+
+                        {hasInvalidMultiple && (
+                          <p className="text-[11px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded-lg px-2.5 py-1">
+                            Debe ser múltiplo de {presentationsPerTray} {unitLabel.toLowerCase()} (1 lata)
+                          </p>
+                        )}
 
                         {/* Resultado Total en Piezas del Amasijo */}
                         <div className="bg-[#FAF5EE] rounded-xl px-3 py-1.5 border border-[#DECDBB] flex items-center justify-between text-xs">
@@ -1005,7 +1042,7 @@ export default function ProduccionPage() {
                       </div>
                       <button
                         type="button"
-                        onClick={() => updateRecipeQuantity(recipe, 0)}
+                        onClick={() => updateRecipeQuantity(recipe, 0, { removeOnZero: true })}
                         className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg cursor-pointer"
                         title="Quitar de la tanda"
                       >

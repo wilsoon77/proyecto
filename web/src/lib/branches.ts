@@ -9,6 +9,43 @@ export interface BranchLocation {
   mapsUrl: string
 }
 
+export const SELECTED_BRANCH_STORAGE_KEY = "selectedBranch"
+export const SELECTED_BRANCH_CHANGE_EVENT = "panaderia:selected-branch-changed"
+
+export function getStoredBranchSlug(): string | null {
+  if (typeof window === "undefined") return null
+  try {
+    const value = window.localStorage.getItem(SELECTED_BRANCH_STORAGE_KEY)?.trim()
+    return value || null
+  } catch {
+    return null
+  }
+}
+
+export function setStoredBranchSlug(slug: string): void {
+  if (typeof window === "undefined") return
+  try {
+    window.localStorage.setItem(SELECTED_BRANCH_STORAGE_KEY, slug)
+    window.dispatchEvent(new CustomEvent(SELECTED_BRANCH_CHANGE_EVENT, { detail: slug }))
+  } catch {
+    // Ignorar errores si el navegador restringe localStorage
+  }
+}
+
+export function resolveBranchSelection<T extends { id: number; slug: string }>(
+  branches: T[],
+  preferred?: string | null,
+): T | null {
+  if (!branches.length) return null
+  const normalized = preferred?.trim().toLowerCase()
+  if (!normalized) return branches[0]
+  return (
+    branches.find(
+      (branch) => branch.slug.toLowerCase() === normalized || String(branch.id) === normalized,
+    ) ?? branches[0]
+  )
+}
+
 // Enlaces oficiales verificados en Google Maps
 export const GOOGLE_MAPS_BRANCH_URLS: Record<string, string> = {
   central: "https://maps.app.goo.gl/tYQE6vyCkmRYVH8Y8",

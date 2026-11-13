@@ -10,8 +10,8 @@ import { useSystemConfig } from "@/context/SystemConfigContext"
 import { formatPrice } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ordersService, branchesService, authService } from "@/lib/api"
-import type { ApiBranch } from "@/lib/api/types"
+import { ordersService, authService } from "@/lib/api"
+import { useSelectedBranch } from "@/hooks/use-branches"
 import { useToast } from "@/context/ToastContext"
 import { Lightbulb, PartyPopper, Phone, MapPin, CheckCircle2 } from "lucide-react"
 import { presentationUnitPrice } from "@/lib/presentation-quantities"
@@ -27,15 +27,7 @@ export default function CheckoutPage() {
   const [phone, setPhone] = useState("")
   const [savePhoneToProfile, setSavePhoneToProfile] = useState(false)
   const [customerNotes, setCustomerNotes] = useState("")
-  const [selectedBranchId, setSelectedBranchId] = useState<number>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('selectedBranch')
-      if (saved) return Number(saved)
-    }
-    return 1
-  })
-  const [branches, setBranches] = useState<ApiBranch[]>([])
-  const [branchesError, setBranchesError] = useState(false)
+  const { branches, selectedBranch, error: branchesError } = useSelectedBranch()
   const [placing, setPlacing] = useState(false)
   const [placed, setPlaced] = useState(false)
   const [orderNumber, setOrderNumber] = useState<string | null>(null)
@@ -47,20 +39,6 @@ export default function CheckoutPage() {
       setPhone(user.phone || "")
     }
   }, [user])
-
-  useEffect(() => {
-    const loadBranches = async () => {
-      try {
-        setBranchesError(false)
-        const data = await branchesService.list()
-        setBranches(data)
-      } catch (err) {
-        console.error('Error cargando sucursales:', err)
-        setBranchesError(true)
-      }
-    }
-    loadBranches()
-  }, [])
 
   const belowMin = subtotal < minOrderAmount
 
@@ -77,8 +55,8 @@ export default function CheckoutPage() {
         }
       }
 
-      const selectedBranch = branches.find(b => b.id === selectedBranchId) || branches[0]
-      const branchSlug = selectedBranch?.slug || 'central'
+      const activeBranch = selectedBranch || branches[0]
+      const branchSlug = activeBranch?.slug || 'central'
 
       const payload = {
         branchSlug,
@@ -202,24 +180,22 @@ export default function CheckoutPage() {
           <div className="rounded-2xl border border-border/80 bg-card p-6 shadow-card space-y-3">
             <h2 className="font-serif text-xl font-bold text-foreground">Sucursal de retiro</h2>
             <p className="text-xs text-muted-foreground">Tu pedido se procesará exclusivamente para retiro en esta sucursal.</p>
-            {branches.length > 0 ? (
+            {selectedBranch ? (
               <div className="space-y-3 pt-1">
-                {branches.filter(b => b.id === selectedBranchId).map(branch => (
-                  <div
-                    key={branch.id}
-                    className="flex items-start gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4"
-                  >
-                    <div>
-                      <p className="font-bold text-foreground">{branch.name}</p>
-                      <p className="text-xs text-muted-foreground">{branch.address}</p>
-                      {branch.phone && (
-                        <p className="text-xs text-primary mt-1 inline-flex items-center gap-1 font-semibold">
-                          <Phone className="h-3.5 w-3.5" /> {branch.phone}
-                        </p>
-                      )}
-                    </div>
+                <div
+                  key={selectedBranch.id}
+                  className="flex items-start gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4"
+                >
+                  <div>
+                    <p className="font-bold text-foreground">{selectedBranch.name}</p>
+                    <p className="text-xs text-muted-foreground">{selectedBranch.address}</p>
+                    {selectedBranch.phone && (
+                      <p className="text-xs text-primary mt-1 inline-flex items-center gap-1 font-semibold">
+                        <Phone className="h-3.5 w-3.5" /> {selectedBranch.phone}
+                      </p>
+                    )}
                   </div>
-                ))}
+                </div>
               </div>
             ) : branchesError ? (
               <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">

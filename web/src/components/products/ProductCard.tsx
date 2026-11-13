@@ -76,8 +76,13 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
             <div className="min-w-0">
               <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8C522B]">Desde</p>
               <p className="mt-0.5 truncate text-base font-bold text-[#24140D] sm:text-lg">{formatPrice(displayPrice)}</p>
-              {isLowStock && <p className="mt-1 text-[10px] font-semibold text-[#D97706]">Quedan {presentationStock}</p>}
-              {isOutOfStock && <p className="mt-1 text-[10px] font-semibold text-destructive">Agotado por ahora</p>}
+              {isOutOfStock ? (
+                <p className="mt-1 text-[10px] font-semibold text-destructive">Agotado en sucursal</p>
+              ) : isLowStock ? (
+                <p className="mt-1 text-[10px] font-semibold text-[#D97706]">Quedan {presentationStock}</p>
+              ) : (
+                <p className="mt-1 text-[10px] font-medium text-[#6E5545]">{presentationStock} disponibles</p>
+              )}
             </div>
 
             {onAddToCart && (

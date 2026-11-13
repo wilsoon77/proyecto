@@ -21,7 +21,8 @@ import { ROUTES } from "@/lib/constants"
 import { useCart } from "@/context/CartContext"
 import { useAuth } from "@/context/AuthContext"
 import { useSystemConfig } from "@/context/SystemConfigContext"
-import { useBranches } from "@/hooks/use-branches"
+import { useSelectedBranch } from "@/hooks/use-branches"
+import { getStoredBranchSlug, setStoredBranchSlug } from "@/lib/branches"
 import type { ApiBranch } from "@/lib/api/types"
 import {
   DropdownMenu,
@@ -48,16 +49,8 @@ export function Navbar() {
   const { user, isLoggedIn, logout } = useAuth()
   const { canPurchase } = useSystemConfig()
   const pathname = usePathname()
-  const { branches } = useBranches()
-  const [selectedBranch, setSelectedBranch] = useState<ApiBranch | null>(null)
+  const { branches, selectedBranch } = useSelectedBranch()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-
-  useEffect(() => {
-    if (!branches.length) return
-    const savedSlug = typeof window !== "undefined" ? localStorage.getItem("selectedBranch") : null
-    const saved = savedSlug ? branches.find((branch) => branch.slug === savedSlug) : null
-    setSelectedBranch(saved || branches[0] || null)
-  }, [branches])
 
   useEffect(() => {
     document.body.style.overflow = mobileMenuOpen ? "hidden" : ""
@@ -67,14 +60,21 @@ export function Navbar() {
   }, [mobileMenuOpen])
 
   const handleBranchSelect = (branch: ApiBranch) => {
-    setSelectedBranch(branch)
     if (typeof window === "undefined") return
 
-    const currentBranch = localStorage.getItem("selectedBranch")
-    if (currentBranch === branch.slug) return
+    const currentBranch = getStoredBranchSlug()
+    if (currentBranch === branch.slug && selectedBranch?.id === branch.id) return
 
     localStorage.removeItem("cart")
-    localStorage.setItem("selectedBranch", branch.slug)
+    setStoredBranchSlug(branch.slug)
+
+    const currentUrl = new URL(window.location.href)
+    if (pathname === ROUTES.products || currentUrl.searchParams.has("branch")) {
+      currentUrl.searchParams.set("branch", branch.slug)
+      window.location.assign(currentUrl.toString())
+      return
+    }
+
     window.location.reload()
   }
 

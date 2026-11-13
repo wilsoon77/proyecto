@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { useCart } from '@/context/CartContext'
 import { useToast } from '@/context/ToastContext'
 import { useSystemConfig } from '@/context/SystemConfigContext'
+import { useSelectedBranch } from '@/hooks/use-branches'
 import { productsService } from '@/lib/api'
 import { apiProductToProduct } from '@/lib/api/transformers'
 import type { ApiCategory, PaginatedResponse, ProductFilters } from '@/lib/api/types'
@@ -43,11 +44,14 @@ export function CatalogClient({ initialCatalog, categories, filters }: CatalogCl
   const { addItem } = useCart()
   const { show } = useToast()
   const { canPurchase, isCatalogOnly, isLoading: isConfigLoading } = useSystemConfig()
+  const { selectedBranch, selectedBranchSlug } = useSelectedBranch()
+  const activeBranchSlug = filters.branch || selectedBranchSlug
   const [products, setProducts] = useState<Product[]>(() => initialCatalog.data.map(apiProductToProduct))
   const [currentPage, setCurrentPage] = useState(initialCatalog.meta.page)
   const [totalPages, setTotalPages] = useState(initialCatalog.meta.pageCount)
   const [totalProducts, setTotalProducts] = useState(initialCatalog.meta.total)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [isSyncingBranch, setIsSyncingBranch] = useState(false)
 
   // Estado para la búsqueda rápida en móvil y drawer
   const [mobileSearch, setMobileSearch] = useState(filters.search ?? '')
@@ -66,6 +70,38 @@ export function CatalogClient({ initialCatalog, categories, filters }: CatalogCl
     }, 0)
     return () => window.clearTimeout(timer)
   }, [initialCatalog])
+
+  useEffect(() => {
+    if (!activeBranchSlug || filters.branch === activeBranchSlug) return
+
+    let cancelled = false
+    const syncBranchCatalog = async () => {
+      setIsSyncingBranch(true)
+      try {
+        const response = await productsService.list({
+          ...filters,
+          branch: activeBranchSlug,
+          page: 1,
+          pageSize: filters.pageSize ?? 12,
+        })
+        if (!cancelled) {
+          setProducts(response.data.map(apiProductToProduct))
+          setCurrentPage(response.meta.page)
+          setTotalPages(response.meta.pageCount)
+          setTotalProducts(response.meta.total)
+        }
+      } catch (error) {
+        console.error('Error actualizando inventario por sucursal:', error)
+      } finally {
+        if (!cancelled) setIsSyncingBranch(false)
+      }
+    }
+
+    syncBranchCatalog()
+    return () => {
+      cancelled = true
+    }
+  }, [activeBranchSlug, filters])
 
   // Sincronizar estados locales cuando cambian los filtros
   useEffect(() => {
@@ -99,17 +135,17 @@ export function CatalogClient({ initialCatalog, categories, filters }: CatalogCl
   }
 
   const changeCategory = (category?: string) => {
-    router.push(catalogUrl({ ...filters, category, page: 1 }))
+    router.push(catalogUrl({ ...filters, branch: activeBranchSlug, category, page: 1 }))
   }
 
   const handleMobileSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    router.push(catalogUrl({ ...filters, search: mobileSearch.trim() || undefined, page: 1 }))
+    router.push(catalogUrl({ ...filters, branch: activeBranchSlug, search: mobileSearch.trim() || undefined, page: 1 }))
   }
 
   const handleClearSearch = () => {
     setMobileSearch('')
-    router.push(catalogUrl({ ...filters, search: undefined, page: 1 }))
+    router.push(catalogUrl({ ...filters, branch: activeBranchSlug, search: undefined, page: 1 }))
   }
 
   const applyDrawerFilters = () => {
@@ -118,6 +154,7 @@ export function CatalogClient({ initialCatalog, categories, filters }: CatalogCl
     const maxVal = tempMax ? Number(tempMax) : undefined
     router.push(catalogUrl({
       ...filters,
+      branch: activeBranchSlug,
       min: minVal,
       max: maxVal,
       sort: (tempSort as any) || undefined,
@@ -132,6 +169,7 @@ export function CatalogClient({ initialCatalog, categories, filters }: CatalogCl
     setIsFilterDrawerOpen(false)
     router.push(catalogUrl({
       ...filters,
+      branch: activeBranchSlug,
       min: undefined,
       max: undefined,
       sort: undefined,
@@ -142,6 +180,7 @@ export function CatalogClient({ initialCatalog, categories, filters }: CatalogCl
   const removeFilter = (key: 'search' | 'min' | 'max' | 'sort') => {
     router.push(catalogUrl({
       ...filters,
+      branch: activeBranchSlug,
       [key]: undefined,
       page: 1,
     }))
@@ -153,7 +192,7 @@ export function CatalogClient({ initialCatalog, categories, filters }: CatalogCl
     setTempMax('')
     setTempSort('')
     router.push(catalogUrl({
-      branch: filters.branch,
+      branch: activeBranchSlug,
       page: 1,
     }))
   }
@@ -163,7 +202,12 @@ export function CatalogClient({ initialCatalog, categories, filters }: CatalogCl
 
     setIsLoadingMore(true)
     try {
-      const response = await productsService.list({ ...filters, page: currentPage + 1, pageSize: filters.pageSize ?? 12 })
+      const response = await productsService.list({
+        ...filters,
+        branch: activeBranchSlug,
+        page: currentPage + 1,
+        pageSize: filters.pageSize ?? 12,
+      })
       setProducts((current) => [...current, ...response.data.map(apiProductToProduct)])
       setCurrentPage(response.meta.page)
       setTotalPages(response.meta.pageCount)
@@ -196,7 +240,9 @@ export function CatalogClient({ initialCatalog, categories, filters }: CatalogCl
           </p>
         </div>
         <p className="text-xs font-semibold text-[#8C522B] shrink-0 sm:text-sm">
+          {selectedBranch ? `${selectedBranch.name} · ` : ''}
           {totalProducts} {totalProducts === 1 ? 'producto' : 'productos'}
+          {isSyncingBranch ? ' (actualizando stock...)' : ''}
         </p>
       </header>
 
@@ -304,7 +350,7 @@ export function CatalogClient({ initialCatalog, categories, filters }: CatalogCl
         method="get"
         className="mt-6 hidden lg:grid gap-3.5 rounded-3xl border border-[#DECDBB] bg-[#F3E9DC] p-5 shadow-sm lg:grid-cols-[1.6fr_0.65fr_0.65fr_1fr_auto] lg:items-end lg:p-6"
       >
-        {filters.branch && <input type="hidden" name="branch" value={filters.branch} />}
+        {activeBranchSlug && <input type="hidden" name="branch" value={activeBranchSlug} />}
         {filters.category && <input type="hidden" name="cat" value={filters.category} />}
 
         <div>

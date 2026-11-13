@@ -17,6 +17,7 @@ import { ProductCard } from "@/components/products/ProductCard"
 import { Button } from "@/components/ui/button"
 import { useCart } from "@/context/CartContext"
 import { useSystemConfig } from "@/context/SystemConfigContext"
+import { useSelectedBranch } from "@/hooks/use-branches"
 import { productsService } from "@/lib/api"
 import { apiProductToProduct } from "@/lib/api/transformers"
 import { ROUTES } from "@/lib/constants"
@@ -32,6 +33,7 @@ export default function Home() {
   const router = useRouter()
   const { addItem } = useCart()
   const { canPurchase, isCatalogOnly, isLoading: isConfigLoading } = useSystemConfig()
+  const { selectedBranchSlug, isLoading: isBranchLoading } = useSelectedBranch()
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
@@ -43,20 +45,30 @@ export default function Home() {
   }, [router])
 
   useEffect(() => {
+    if (isBranchLoading && !selectedBranchSlug) return
+
+    let cancelled = false
     const loadProducts = async () => {
+      setIsLoading(true)
       try {
-        const branch = localStorage.getItem("selectedBranch")
-        const response = await productsService.featured(8, branch || undefined)
-        setFeaturedProducts(response.map(apiProductToProduct))
+        const response = await productsService.featured(8, selectedBranchSlug)
+        if (!cancelled) {
+          setFeaturedProducts(response.map(apiProductToProduct))
+        }
       } catch (error) {
         console.error("Error cargando productos destacados:", error)
       } finally {
-        setIsLoading(false)
+        if (!cancelled) {
+          setIsLoading(false)
+        }
       }
     }
 
     loadProducts()
-  }, [])
+    return () => {
+      cancelled = true
+    }
+  }, [isBranchLoading, selectedBranchSlug])
 
   return (
     <div className="bg-background text-foreground">
